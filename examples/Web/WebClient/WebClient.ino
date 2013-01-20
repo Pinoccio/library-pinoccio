@@ -1,26 +1,24 @@
 #include <Pinoccio.h>
 
 WIFI_PROFILE profile = {
-                        /* SSID */ "diysandbox",
-         /* WPA/WPA2 passphrase */ "12345678",
-                  /* IP address */ NULL,
-                 /* subnet mask */ NULL,
-                  /* Gateway IP */ NULL, };
+                        /* SSID */ "",
+         /* WPA/WPA2 passphrase */ "",
+                  /* IP address */ "",
+                 /* subnet mask */ "",
+                  /* Gateway IP */ "", };
 
-String server = "74.125.224.83"; // Google
+IPAddress server(74,125,224,83); // peer device IP address
+int port = 80;
 
-// Initialize the Ethernet client library
-// with the IP address and port of the server 
-// that you want to connect to (port 80 is default for HTTP):
-PinoccioWifiClient client(server, "80", PROTO_TCP);
+PinoccioWifiClient client();
 
-void setup()
-{
-  // connect to AP & start server
+void setup() {
+  Pinoccio.init();
+  
   Wifi.begin(&profile);
   
   // if you get a connection, report back via serial:
-  if (client.connect()) {
+  if (client.connect(server, port)) {
     Serial.println("connection Success..");
     
     // Make a HTTP request:

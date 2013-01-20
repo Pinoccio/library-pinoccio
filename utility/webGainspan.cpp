@@ -533,15 +533,46 @@ uint16_t webGainspan::readData(SOCKET s, uint8_t* buf, uint16_t len)
   return dataLen;
 }
 
-uint16_t webGainspan::writeData(SOCKET s, const uint8_t*  buf, uint16_t  len)
+uint16_t webGainspan::writeData(SOCKET s, const uint8_t*  buf, uint16_t len)
 {
   if ((len == 0) || (buf[0] == '\r')){
   } else {
     if ((this->sock_table[s].protocol == IPPROTO::TCP) ||
         (this->sock_table[s].protocol == IPPROTO::UDP_CLIENT)) {
+      Serial.println("DEBUG: webGainspan::writeData 1");
+      Serial.print("DEBUG: webGainspan::writeData length: ");
+      Serial.println(len);
+      Serial.print("DEBUG: webGainspan::writeData socket: ");
+      Serial.println(s);
       Serial1.write((uint8_t)0x1b);    // data start
       Serial1.write((uint8_t)0x53);
       Serial1.write((uint8_t)int_to_hex(this->client_cid));  // connection ID
+      if (len == 1){
+        if (buf[0] != '\r' && buf[0] != '\n'){
+          Serial1.write(buf[0]);           // data to send
+        } else if (buf[0] == '\n') {
+          Serial1.print("\n\r");           // new line
+        }
+      } else {
+        /*
+        String buffer;
+        buffer = (const char *)buf;
+        Serial1.print(buffer);
+        */
+        for (uint16_t i=0; i<len; i++) {
+          Serial1.write(buf[i]);  
+        }
+      }
+      Serial1.write((uint8_t)0x1b);    // data end
+      Serial1.write((uint8_t)0x45);
+    } else if (this->sock_table[s].protocol == IPPROTO::UDP) {
+      Serial1.write((uint8_t)0x1b);    // data start
+      Serial1.write((uint8_t)0x55);
+      Serial1.write((uint8_t)int_to_hex(this->sock_table[s].cid));  // connection ID
+      Serial1.print(srcIPUDP);
+      Serial1.print(":");
+      Serial1.print(srcPortUDP);
+      Serial1.print(":");
       if (len == 1){
         if (buf[0] != '\r' && buf[0] != '\n'){
           Serial1.write(buf[0]);           // data to send
@@ -555,33 +586,12 @@ uint16_t webGainspan::writeData(SOCKET s, const uint8_t*  buf, uint16_t  len)
         }
         Serial1.write((uint8_t)0x1b);    // data end
         Serial1.write((uint8_t)0x45);
-      } else if (this->sock_table[s].protocol == IPPROTO::UDP) {
-        Serial1.write((uint8_t)0x1b);    // data start
-        Serial1.write((uint8_t)0x55);
-        Serial1.write((uint8_t)int_to_hex(this->sock_table[s].cid));  // connection ID
-        Serial1.print(srcIPUDP);
-        Serial1.print(":");
-        Serial1.print(srcPortUDP);
-        Serial1.print(":");
-        if (len == 1){
-          if (buf[0] != '\r' && buf[0] != '\n'){
-            Serial1.write(buf[0]);           // data to send
-            } else if (buf[0] == '\n') {
-              Serial1.print("\n\r");           // new line
-            }
-          } else {
-            String buffer;
-            buffer = (const char *)buf;
-            Serial1.print(buffer);
-          }
-          Serial1.write((uint8_t)0x1b);    // data end
-          Serial1.write((uint8_t)0x45);
-        }
       }
-      delay(10);
-
-      return 1;
     }
+    delay(10);
+
+    return len;
+}
 
 void webGainspan::process()
 {

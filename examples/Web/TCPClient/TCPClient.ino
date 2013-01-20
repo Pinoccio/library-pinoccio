@@ -1,31 +1,29 @@
-#include <Wirefree.h>
-#include <WifiClient.h>
+#include <Pinoccio.h>
 
-WIFI_PROFILE wireless_prof = {
-                        /* SSID */ "diysandbox",
-         /* WPA/WPA2 passphrase */ NULL,
-                  /* IP address */ "192.168.1.2",
-                 /* subnet mask */ "255.255.255.0",
-                  /* Gateway IP */ "192.168.1.1", };
+WIFI_PROFILE profile = {
+        /* SSID */ "",
+        /* WPA/WPA2 passphrase */ "",
+        /* IP address */ "",
+        /* subnet mask */ "",
+        /* Gateway IP */ "" };
 
-String remote_server = "192.168.1.1"; // peer device IP address
-String remote_port = "12345";
+IPAddress server(192,168,1,1);
+int port = 12345;
 
-// Initialize client with IP address and port number
-WifiClient client(remote_server, remote_port, PROTO_TCP);
+PinoccioWifiClient client;
 
-void setup()
-{
-  // connect to AP
-  Wireless.begin(&wireless_prof);
-  
+void setup() {
+  Pinoccio.init();
+
+  Wifi.begin(&profile);
+
   // if you get a connection, report back via serial:
-  if (client.connect()) {
+  if (client.connect(server, port)) {
     Serial.println("connected");
-    
+
     // Send message over UDP socket to peer device
     client.println("Hello server!");
-  } 
+  }
   else {
     // if connection setup failed:
     Serial.println("failed");
@@ -34,7 +32,7 @@ void setup()
 
 void loop()
 {
-  // if there are incoming bytes available 
+  // if there are incoming bytes available
   // from the peer device, read them and print them:
   while (client.available()) {
     int in;

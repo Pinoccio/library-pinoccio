@@ -1,8 +1,8 @@
 #include <Pinoccio.h>
 
 WIFI_PROFILE profile = {
-        /* SSID */ "Radio Free Epnk",
-        /* WPA/WPA2 passphrase */ "tenor78!heavyweight",
+        /* SSID */ "",
+        /* WPA/WPA2 passphrase */ "",
         /* IP address */ "",
         /* subnet mask */ "",
         /* Gateway IP */ "", };

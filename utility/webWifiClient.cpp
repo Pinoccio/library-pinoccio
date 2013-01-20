@@ -1,22 +1,60 @@
 #include "webGainspan.h"
 #include "webSocket.h"
 
+extern "C" {
+  #include "string.h"
+}
+
+#include "Arduino.h"
+
 #include "webWifi.h"
 #include "webWifiClient.h"
 #include "webWifiServer.h"
 
 uint16_t PinoccioWifiClient::_srcport = 1024;
 
+PinoccioWifiClient::PinoccioWifiClient() : _sock(MAX_SOCK_NUM) { 
+  _protocol = IPPROTO::TCP;
+}
+
 PinoccioWifiClient::PinoccioWifiClient(uint8_t sock) : _sock(sock) {
+  _protocol = IPPROTO::TCP;
 }
 
-PinoccioWifiClient::PinoccioWifiClient(String ip, String port, uint8_t proto) : _ip(ip), _port(port), _protocol(proto), _sock(MAX_SOCK_NUM) {
+
+int PinoccioWifiClient::connect(const char* host, uint16_t port) {
+  /* TODO */
+  return 0;
+  
+  // Look up the host first
+ /*
+  int ret = 0;
+   DNSClient dns;
+   IPAddress remote_addr;
+
+   dns.begin(Ethernet.dnsServerIP());
+   ret = dns.getHostByName(host, remote_addr);
+   if (ret == 1) {
+     return connect(remote_addr, port);
+   } else {
+     return ret;
+   }*/
+ 
 }
 
 
-uint8_t PinoccioWifiClient::connect() {
-  if (_sock != MAX_SOCK_NUM)
+int PinoccioWifiClient::connect(IPAddress ip, uint16_t port) {
+  String ipAddress = String(ip[0]) + "." + String(ip[1]) + "." + String(ip[2]) + "." + String(ip[3]);
+  String ipPort = String(port);
+  
+  Serial.println("DEBUG: PinoccioWifiClient::connect 1");
+  
+  if (_sock != MAX_SOCK_NUM) {
+    Serial.println("DEBUG: PinoccioWifiClient::connect 1.1");
     return 0;
+  }
+  
+  Serial.println("DEBUG: PinoccioWifiClient::connect 2");
 
   for (int i = 0; i < MAX_SOCK_NUM; i++) {
     if (Gainspan.readSocketStatus(i) == SOCK_STATUS::CLOSED) {
@@ -24,33 +62,45 @@ uint8_t PinoccioWifiClient::connect() {
       break;
     }
   }
+  
+  Serial.print("DEBUG: PinoccioWifiClient::connect socket: ");
+  Serial.println(_sock);
 
-
-  if (_sock == MAX_SOCK_NUM)
+  Serial.println("DEBUG: PinoccioWifiClient::connect 3");
+  
+  if (_sock == MAX_SOCK_NUM) {
+    Serial.println("DEBUG: PinoccioWifiClient::connect 3.1");
     return 0;
-
+  }
+  
   _srcport++;
   if (_srcport == 0) _srcport = 1024;
-
+  Serial.println("DEBUG: PinoccioWifiClient::connect 4");
+  
   if (_protocol == IPPROTO::TCP) {
       socket(_sock, IPPROTO::TCP, _srcport, 0);
   } else if (_protocol == IPPROTO::UDP) {
       socket(_sock, IPPROTO::UDP_CLIENT, _srcport, 0);
   }
-
-  if (!::connect(_sock, _ip, _port)) {
+  Serial.println("DEBUG: PinoccioWifiClient::connect 5");
+  
+  if (!::connect(_sock, ipAddress, ipPort)) {
+    Serial.println("DEBUG: PinoccioWifiClient::connect 5.1");
     _sock = MAX_SOCK_NUM;
     return 0;
   }
 
+  Serial.println("DEBUG: PinoccioWifiClient::connect 6");
   while (status() != SOCK_STATUS::ESTABLISHED) {
     delay(1);
     if (status() == SOCK_STATUS::CLOSED) {
+      Serial.println("DEBUG: PinoccioWifiClient::connect 6.1");
       _sock = MAX_SOCK_NUM;
       return 0;
     }
   }
 
+  Serial.println("DEBUG: PinoccioWifiClient::connect 7");
   return 1;
 }
 
@@ -74,6 +124,7 @@ size_t PinoccioWifiClient::write(const uint8_t *buf, size_t size) {
   if (_sock != MAX_SOCK_NUM)
     send(_sock, buf, size);
 }
+
 int PinoccioWifiClient::available() {
   if (_sock != MAX_SOCK_NUM) {
     if (Gainspan.isDataOnSock(_sock)) {
@@ -93,6 +144,10 @@ int PinoccioWifiClient::read() {
     return -1;
 
   return b;
+}
+
+int PinoccioWifiClient::read(uint8_t *buf, size_t size) {
+  return recv(_sock, buf, size);
 }
 
 int PinoccioWifiClient::peek() {

@@ -17,6 +17,7 @@ void PinoccioClass::alive() {
 }
 
 void PinoccioClass::init() {
+  Serial.begin(115200);
   SYS_Init();
   HAL_MeasureAdcOffset();
 }

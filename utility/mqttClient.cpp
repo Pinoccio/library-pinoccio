@@ -1,24 +1,27 @@
-/**************************************************************************\
-* Pinoccio Arduino Library                                                 *
-* https://github.com/Pinoccio/pinoccio-arduino-library                     *
-* Copyright (c) 2008-2012 Nicholas O'Leary. All rights reserved.           *
-* ------------------------------------------------------------------------ *
-*  This program is free software; you can redistribute it and/or modify it *
-*  under the terms of the MIT license as described in license.txt.         *
-\**************************************************************************/
+/*
+mqttClient.cpp - A simple client for MQTT.
+Nicholas O'Leary
+http://knolleary.net
+*/
 
 #include "mqttClient.h"
 #include <string.h>
+#include "IPAddress.h"
 
 mqttClient::mqttClient() { }
 
-mqttClient::mqttClient(PinoccioWifiClient& client) {
-  this->_client = &client;
-}
-
-mqttClient::mqttClient(PinoccioWifiClient& client, void (*callback)(char*,uint8_t*,unsigned int)) {
+mqttClient::mqttClient(IPAddress& ip, uint16_t port, void (*callback)(char*,uint8_t*,unsigned int), Client& client) {
   this->_client = &client;
   this->callback = callback;
+  this->ip = ip;
+  this->port = port;
+}
+
+mqttClient::mqttClient(String& domain, uint16_t port, void (*callback)(char*,uint8_t*,unsigned int), Client& client) {
+  this->_client = &client;
+  this->callback = callback;
+  domain.toCharArray(this->domain, domain.length());
+  this->port = port;
 }
 
 boolean mqttClient::connect(char *id) {
@@ -36,82 +39,89 @@ boolean mqttClient::connect(char *id, char* willTopic, uint8_t willQos, uint8_t 
 
 boolean mqttClient::connect(char *id, char *user, char *pass, char* willTopic, uint8_t willQos, uint8_t willRetain, char* willMessage) {
   Serial.println("DEBUG: mqttClient::connect 1");
-  if (connected()) {
-    return false;
-  }
-  Serial.println("DEBUG: mqttClient::connect 2");
-  int result = 0;
-  result = _client->connect();
-  Serial.println("DEBUG: mqttClient::connect 3");
-
-  if (result) {
-    Serial.println("DEBUG: mqttClient::connect 4");
-    nextMsgId = 1;
-    uint8_t d[9] = {0x00,0x06,'M','Q','I','s','d','p',MQTTPROTOCOLVERSION};
-      // Leave room in the buffer for header and variable length field
-    uint16_t length = 5;
-    unsigned int j;
-    for (j = 0;j<9;j++) {
-      buffer[length++] = d[j];
-    }
-
-    uint8_t v;
-    if (willTopic) {
-      v = 0x06|(willQos<<3)|(willRetain<<5);
+  
+  if (!connected()) {
+    int result = 0;
+    
+    Serial.println("DEBUG: mqttClient::connect 2");
+    if (domain != NULL) {
+      result = _client->connect(this->domain, this->port);
     } else {
-      v = 0x02;
+      result = _client->connect(this->ip, this->port);
     }
 
-    if(user != NULL) {
-      v = v|0x80;
-
-      if(pass != NULL) {
-        v = v|(0x80>>1);
+    Serial.println("DEBUG: mqttClient::connect 3");
+    if (result) {
+      Serial.println("DEBUG: mqttClient::connect 4");
+      nextMsgId = 1;
+      uint8_t d[9] = {0x00,0x06,'M','Q','I','s','d','p',MQTTPROTOCOLVERSION};
+      // Leave room in the buffer for header and variable length field
+      uint16_t length = 5;
+      unsigned int j;
+      for (j = 0;j<9;j++) {
+        buffer[length++] = d[j];
       }
-    }
 
-    buffer[length++] = v;
-
-    buffer[length++] = ((MQTT_KEEPALIVE) >> 8);
-    buffer[length++] = ((MQTT_KEEPALIVE) & 0xFF);
-    length = writeString(id,buffer,length);
-    if (willTopic) {
-      length = writeString(willTopic,buffer,length);
-      length = writeString(willMessage,buffer,length);
-    }
-
-    if(user != NULL) {
-      length = writeString(user,buffer,length);
-      if(pass != NULL) {
-        length = writeString(pass,buffer,length);
+      uint8_t v;
+      if (willTopic) {
+        v = 0x06|(willQos<<3)|(willRetain<<5);
+      } else {
+        v = 0x02;
       }
-    }
-    Serial.println("DEBUG: mqttClient::connect 5");
-    write(MQTTCONNECT,buffer,length-5);
-    Serial.println("DEBUG: mqttClient::connect 6");
-    lastInActivity = lastOutActivity = millis();
 
-    while (!_client->available()) {
+      if(user != NULL) {
+        v = v|0x80;
+
+        if(pass != NULL) {
+          v = v|(0x80>>1);
+        }
+      }
+
+      buffer[length++] = v;
+
+      buffer[length++] = ((MQTT_KEEPALIVE) >> 8);
+      buffer[length++] = ((MQTT_KEEPALIVE) & 0xFF);
+      length = writeString(id,buffer,length);
+      if (willTopic) {
+        length = writeString(willTopic,buffer,length);
+        length = writeString(willMessage,buffer,length);
+      }
+
+      if(user != NULL) {
+        Serial.println("DEBUG: mqttClient::connect 4.1");
+        length = writeString(user,buffer,length);
+        if(pass != NULL) {
+          Serial.println("DEBUG: mqttClient::connect 4.2");
+          length = writeString(pass,buffer,length);
+        }
+      }
+
+      Serial.println("DEBUG: mqttClient::connect 5");
+      write(MQTTCONNECT,buffer,length-5);
+      Serial.println("DEBUG: mqttClient::connect 6");
+      
+      lastInActivity = lastOutActivity = millis();
+
+      while (!_client->available()) {
+        unsigned long t = millis();
+        if (t-lastInActivity > MQTT_KEEPALIVE*1000UL) {
+          _client->stop();
+          return false;
+        }
+      }
       Serial.println("DEBUG: mqttClient::connect 7");
-      unsigned long t = millis();
-      if (t-lastInActivity > MQTT_KEEPALIVE*1000UL) {
-        Serial.println("DEBUG: mqttClient::connect 8");
-        _client->stop();
+      uint16_t len = readPacket();
+      Serial.println("DEBUG: mqttClient::connect 8");
+      if (len == 4 && buffer[3] == 0) {
         Serial.println("DEBUG: mqttClient::connect 9");
-        return false;
+        lastInActivity = millis();
+        pingOutstanding = false;
+        return true;
       }
+      Serial.println("DEBUG: mqttClient::connect 10");
     }
-    Serial.println("DEBUG: mqttClient::connect 10");
-    uint16_t len = readPacket();
-
-    if (len == 4 && buffer[3] == 0) {
-      lastInActivity = millis();
-      pingOutstanding = false;
-      return true;
-    }
+    _client->stop();
   }
-  Serial.println("DEBUG: mqttClient::connect 11");
-  _client->stop();
   return false;
 }
 
@@ -284,13 +294,24 @@ boolean mqttClient::write(uint8_t header, uint8_t* buf, uint16_t length) {
   for (int i=0;i<llen;i++) {
     buf[5-llen+i] = lenBuf[i];
   }
-
-  for(int j=0; j<length+1+llen;j++) {
+  
+  for (int j=0;j<length+1+llen;j++) {
     Serial.print((buf+(4-llen))[j], HEX);
   }
+  Serial.println("");
+  Serial.print("length: ");
+  Serial.println(length+1+llen);
+  
   rc = _client->write(buf+(4-llen),length+1+llen);
 
   lastOutActivity = millis();
+  if (rc == 1+llen+length)
+    Serial.print("Wrote all ");
+  else {
+    Serial.print("Only wrote ");
+  }
+  Serial.print(rc);
+  Serial.println(" bytes");
   return (rc == 1+llen+length);
 }
 

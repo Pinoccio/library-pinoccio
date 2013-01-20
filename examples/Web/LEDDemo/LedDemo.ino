@@ -5,15 +5,15 @@ WIFI_PROFILE profile = {
         /* WPA/WPA2 passphrase */ "",
         /* IP address */ "",
         /* subnet mask */ "",
-        /* Gateway IP */ "", };
+        /* Gateway IP */ "" };
 
 // port 80 is default for HTTP
 PinoccioWifiServer server(80, PROTO_TCP);
 
-void setup() {
+void setup() {	
+  Serial.begin(115200);
   Serial.println("Starting up");
   Pinoccio.init();
-  Serial.begin(115200);
   Serial.println("Starting wireless...");
 
   Wifi.begin(&profile);

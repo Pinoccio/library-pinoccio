@@ -1,23 +1,22 @@
-/**************************************************************************\
-* Pinoccio Arduino Library                                                 *
-* https://github.com/Pinoccio/pinoccio-arduino-library                     *
-* Copyright (c) 2008-2012 Nicholas O'Leary. All rights reserved.           *
-* ------------------------------------------------------------------------ *
-*  This program is free software; you can redistribute it and/or modify it *
-*  under the terms of the MIT license as described in license.txt.         *
-\**************************************************************************/
+/*
+ mqttClient.h - A simple client for MQTT.
+  Nicholas O'Leary
+  http://knolleary.net
+*/
 
 #ifndef _PINOCCIO_MQTT_CLIENT_H
 #define _PINOCCIO_MQTT_CLIENT_H
 
 #include <Arduino.h>
 #include <Pinoccio.h>
+#include "Client.h"
+#include "IPAddress.h"
 
 // MQTT_MAX_PACKET_SIZE : Maximum packet size
 #define MQTT_MAX_PACKET_SIZE 128
 
 // MQTT_KEEPALIVE : keepAlive interval in Seconds
-#define MQTT_KEEPALIVE 15
+#define MQTT_KEEPALIVE 300
 
 #define MQTTPROTOCOLVERSION 3
 #define MQTTCONNECT     1 << 4  // Client request to connect to Server
@@ -42,7 +41,7 @@
 
 class mqttClient {
 private:
-   PinoccioWifiClient* _client;
+   Client* _client;
    uint8_t buffer[MQTT_MAX_PACKET_SIZE];
    uint16_t nextMsgId;
    unsigned long lastOutActivity;
@@ -53,13 +52,13 @@ private:
    uint8_t readByte();
    boolean write(uint8_t header, uint8_t* buf, uint16_t length);
    uint16_t writeString(char* string, uint8_t* buf, uint16_t pos);
-   uint8_t *ip;
+   IPAddress ip;
    char* domain;
    uint16_t port;
 public:
    mqttClient();
-   mqttClient(PinoccioWifiClient& client);
-   mqttClient(PinoccioWifiClient& client, void(*)(char*,uint8_t*,unsigned int));
+   mqttClient(IPAddress& ip, uint16_t, void(*)(char*,uint8_t*,unsigned int),Client& client);
+   mqttClient(String&, uint16_t, void(*)(char*,uint8_t*,unsigned int),Client& client);
    boolean connect(char *);
    boolean connect(char *, char *, char *);
    boolean connect(char *, char *, uint8_t, uint8_t, char *);
@@ -75,4 +74,4 @@ public:
 };
 
 
-#endif // _PINOCCIO_MQTT_CLIENT_H
+#endif /* _PINOCCIO_MQTT_CLIENT_H */

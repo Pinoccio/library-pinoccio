@@ -8,9 +8,8 @@ WIFI_PROFILE profile = {
         /* Gateway IP */ "", };
 
 void setup() {
-  Serial.println("Starting up");
   Pinoccio.init();
-  Serial.begin(115200);
+  Serial.println("Starting up");
   Serial.println("Starting wireless...");
 
   Wifi.begin(&profile);
@@ -22,7 +21,7 @@ void setup() {
 void loop() {
   Pinoccio.taskHandler();
 
-	// read from port 1, send to port 0:
+  // read from port 1, send to port 0:
   while (Serial1.available()) {
     int inByte = Serial1.read();
     Serial.write(inByte); 
