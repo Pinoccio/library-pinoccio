@@ -191,3 +191,19 @@ void HalRgbLed::setBlue(int value) {
     analogWrite(LED_BLUE, 255-value);
   }
 }
+
+void HalRgbLed::setHex(char* hex) {
+  unsigned int i, t, hn, ln;
+  int len = 6;
+  uint8_t out[3];
+  
+  for (t=0,i=0; i<len; i+=2,++t) {  
+    hn = hex[i] > '9' ? hex[i] - 'A' + 10 : hex[i] - '0';
+    ln = hex[i+1] > '9' ? hex[i+1] - 'A' + 10 : hex[i+1] - '0';  
+    out[t] = (hn << 4 ) | ln;
+  }
+
+  setRed(out[0]);
+  setGreen(out[1]);
+  setBlue(out[2]);
+}

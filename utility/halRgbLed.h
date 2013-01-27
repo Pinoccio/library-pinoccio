@@ -39,6 +39,8 @@ class HalRgbLed {
     void setGreen(int value);
     void setBlue(int value);
 
+    void setHex(char* hex);
+    
   protected:
     bool enabled;
 };

@@ -156,7 +156,7 @@ boolean mqttClient::connect() {
 
 uint8_t mqttClient::readByte() {
 
-  if(_client->available()) {
+  if (_client->available()) {
     return _client->read();
   }
   return 0;
@@ -352,16 +352,19 @@ boolean mqttClient::write(uint8_t header, uint8_t* buf, uint16_t length) {
     buf[5-llen+i] = lenBuf[i];
   }
 
+/*
   for (int j=0;j<length+1+llen;j++) {
     D(Serial.print((buf+(4-llen))[j], HEX));
   }
   D(Serial.println(""));
   D(Serial.print("length: "));
   D(Serial.println(length+1+llen));
+*/
 
   rc = _client->write(buf+(4-llen),length+1+llen);
-
   lastOutActivity = millis();
+  
+/*
   if (rc == 1+llen+length)
     D(Serial.print("Wrote all "));
   else {
@@ -369,6 +372,7 @@ boolean mqttClient::write(uint8_t header, uint8_t* buf, uint16_t length) {
   }
   D(Serial.print(rc));
   D(Serial.println(" bytes"));
+*/
   return (rc == 1+llen+length);
 }
 
