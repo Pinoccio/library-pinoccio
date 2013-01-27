@@ -55,6 +55,13 @@ private:
    IPAddress ip;
    char* domain;
    uint16_t port;
+   char* clientId;
+   char* username;
+   char* password;
+   char* willTopic;
+   uint8_t willQos;
+   uint8_t willRetain;
+   char* willMessage;
 public:
    mqttClient();
    mqttClient(IPAddress& ip, uint16_t, void(*)(char*,uint8_t*,unsigned int),Client& client);
@@ -63,6 +70,7 @@ public:
    boolean connect(char *, char *, char *);
    boolean connect(char *, char *, uint8_t, uint8_t, char *);
    boolean connect(char *, char *, char *, char *, uint8_t, uint8_t, char*);
+   boolean connect();
    void disconnect();
    boolean publish(char *, char *);
    boolean publish(char *, uint8_t *, unsigned int);

@@ -27,19 +27,20 @@ WIFI_PROFILE profile = {
     Serial.println("Done");
     
     Serial.println("Connecting to MQTT server...");
-    if (mqtt.connect("pinoccio", "erictj", "321")) {
+    if (mqtt.connect("pinoccio", "username", "password")) {
       Serial.println("Done");
       Serial.println("Publishing first MQTT packet...");
-      mqtt.publish("clienttest","hello world");
+      mqtt.publish("from-pinoccio", "hello world");
       Serial.println("Done");
-      Serial.println("Subscribing to colorpicker");
-      mqtt.subscribe("colorpicker");
+      Serial.println("Subscribing to topic");
+      mqtt.subscribe("to-pinoccio");
       Serial.println("Done");
     }
     Serial.println("Done with MQTT server connection attempt");
   }
 
   void loop() {
+    Pinoccio.loop();
     mqtt.loop();
   }
 

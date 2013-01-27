@@ -1,6 +1,14 @@
 #ifndef LIB_PINOCCIO_H_
 #define LIB_PINOCCIO_H_
 
+#define PINOCCIO_DEBUG 0
+
+#ifdef PINOCCIO_DEBUG
+#  define D(x) x
+#else
+#  define D(x) 
+#endif
+
 #include "utility/phy.h"
 #include "utility/hal.h"
 #include "utility/sys.h"
@@ -23,7 +31,7 @@ class PinoccioClass {
 
     void alive();
     void init();
-    void taskHandler();
+    void loop();
 
     float getTemperature();
 

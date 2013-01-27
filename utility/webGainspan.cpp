@@ -1,4 +1,5 @@
 #include <Arduino.h>
+#include <Pinoccio.h>
 #include <stdio.h>
 #include <avr/interrupt.h>
 #include <avr/pgmspace.h>
@@ -75,38 +76,38 @@ char int_to_hex(uint8_t c)
 
 uint8_t webGainspan::init()
 {
-  Serial.println("DEBUG: Gainspan::init 1");
+  D(Serial.println("DEBUG: Gainspan::init 1"));
   Serial1.begin(115200);
   delay(1000);
-  Serial.println("DEBUG: Gainspan::init 2");
+  D(Serial.println("DEBUG: Gainspan::init 2"));
   flush();
   Serial1.println();
   delay(1000);
-  Serial.println("DEBUG: Gainspan::init 3");
+  D(Serial.println("DEBUG: Gainspan::init 3"));
   dev_mode = DEV_OP_MODE_COMMAND;
   connection_state = DEV_CONN_ST_DISCONNECTED;
   dataOnSock = 255;
-  Serial.println("DEBUG: Gainspan::init 4");
+  D(Serial.println("DEBUG: Gainspan::init 4"));
   for (int i = 0; i < 4; i++) {
     this->sock_table[i].cid = 0;
     this->sock_table[i].port = 0;
     this->sock_table[i].protocol = 0;
     this->sock_table[i].status = 0;
   }
-  Serial.println("DEBUG: Gainspan::init 5");
+  D(Serial.println("DEBUG: Gainspan::init 5"));
   // disable echo
   if (!send_cmd_w_resp(CMD_DISABLE_ECHO)) {
-    Serial.println("DEBUG: Gainspan::init 5.1");
+    D(Serial.println("DEBUG: Gainspan::init 5.1"));
     //return 0;
   }
-  Serial.println("DEBUG: Gainspan::init 6");
+  D(Serial.println("DEBUG: Gainspan::init 6"));
 
   // get device ID
   if (!send_cmd_w_resp(CMD_GET_MAC_ADDR)) {
-    Serial.println("DEBUG: Gainspan::init 6.1");
+    D(Serial.println("DEBUG: Gainspan::init 6.1"));
     return 0;
   }
-  Serial.println("DEBUG: Gainspan::init 7");
+  D(Serial.println("DEBUG: Gainspan::init 7"));
   return 1;
 }
 
@@ -243,7 +244,7 @@ uint8_t webGainspan::parse_resp(uint8_t cmd)
         ret = 0;
         resp_done = 1;
       } else {
-        Serial.println(buf);
+        D(Serial.println(buf));
       }
       break;
     }
@@ -539,11 +540,11 @@ uint16_t webGainspan::writeData(SOCKET s, const uint8_t*  buf, uint16_t len)
   } else {
     if ((this->sock_table[s].protocol == IPPROTO::TCP) ||
         (this->sock_table[s].protocol == IPPROTO::UDP_CLIENT)) {
-      Serial.println("DEBUG: webGainspan::writeData 1");
-      Serial.print("DEBUG: webGainspan::writeData length: ");
-      Serial.println(len);
-      Serial.print("DEBUG: webGainspan::writeData socket: ");
-      Serial.println(s);
+      D(Serial.println("DEBUG: webGainspan::writeData 1"));
+      D(Serial.print("DEBUG: webGainspan::writeData length: "));
+      D(Serial.println(len));
+      D(Serial.print("DEBUG: webGainspan::writeData socket: "));
+      D(Serial.println(s));
       Serial1.write((uint8_t)0x1b);    // data start
       Serial1.write((uint8_t)0x53);
       Serial1.write((uint8_t)int_to_hex(this->client_cid));  // connection ID

@@ -7,42 +7,40 @@ WIFI_PROFILE profile = {
         /* subnet mask */ "",
         /* Gateway IP */ "", };
 
-String server = "85.119.83.194";
+IPAddress server(66,175,218,211);
 
 void callback(char* topic, byte* payload, unsigned int length) {
-	Serial.print("Received MQTT packet: ");
-	Serial.write(payload, length);
-	Serial.println("");
+  Serial.print("Received MQTT packet: ");
+  Serial.write(payload, length);
+  Serial.println("");
 }
 
-mqttClient mqtt;
+PinoccioWifiClient wifiClient;
+mqttClient mqtt(server, 1883, callback, wifiClient);
 
 void setup() {
-	PinoccioWifiClient wifiClient(server, "1883", PROTO_TCP);
-	mqtt = mqttClient(wifiClient, callback);
-	Serial.println("Starting up");
   Pinoccio.init();
-  Serial.begin(115200);
+
   Serial.println("Starting wireless...");
 
-	Wifi.begin(&profile);
-  delay(1000);
-	Serial.println("Done");
-	
-	Serial.println("Connecting to MQTT server...");
-	if (mqtt.connect("client")) {
-		Serial.println("Done");
-		Serial.println("Publishing first MQTT packet...");
-		mqtt.publish("clienttest","hello world");
-		Serial.println("Done");
-		Serial.println("Subscribing to colorpicker");
-		mqtt.subscribe("colorpicker");
-		Serial.println("Done");
-	}
-	Serial.println("Done with MQTT server connection attempt");
+  Wifi.begin(&profile);
+  Serial.println("Done");
+
+  Serial.println("Connecting to MQTT server...");
+  if (mqtt.connect("pinoccio", "username", "password")) {
+    Serial.println("Done");
+    Serial.println("Publishing first MQTT packet...");
+    mqtt.publish("clienttest","hello world");
+    Serial.println("Done");
+    Serial.println("Subscribing to colorpicker");
+    mqtt.subscribe("colorpicker");
+    Serial.println("Done");
+  }
+  Serial.println("Done with MQTT server connection attempt");
 }
 
 void loop() {
-	mqtt.loop();
+  Pinoccio.loop();
+  mqtt.loop();
 }
 

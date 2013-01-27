@@ -1,5 +1,6 @@
 #include <Arduino.h>
-#include "Pinoccio.h"
+#include <Pinoccio.h>
+#include "atmega128rfa1.h"
 
 PinoccioClass Pinoccio;
 
@@ -19,10 +20,11 @@ void PinoccioClass::alive() {
 void PinoccioClass::init() {
   Serial.begin(115200);
   SYS_Init();
+  // TODO PHY_TX_PWR_REG(TX_PWR_3_2DBM);
   HAL_MeasureAdcOffset();
 }
 
-void PinoccioClass::taskHandler() {
+void PinoccioClass::loop() {
   SYS_TaskHandler();
 }
 

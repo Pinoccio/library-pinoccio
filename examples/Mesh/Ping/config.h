@@ -24,9 +24,4 @@
 #define NWK_ENABLE_ROUTING
 //#define NWK_ENABLE_SECURITY
 
-#define HAL_ENABLE_UART
-#define HAL_UART_CHANNEL                    0
-#define HAL_UART_RX_FIFO_SIZE               200
-#define HAL_UART_TX_FIFO_SIZE               200
-
 #endif // _CONFIG_H_

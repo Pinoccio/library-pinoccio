@@ -1,3 +1,4 @@
+#include <Pinoccio.h>
 #include "webWifi.h"
 #include "webGainspan.h"
 #include "halRgbLed.h"
@@ -11,27 +12,27 @@ void webWifi::begin(WIFI_PROFILE* w_prof)
 
 void webWifi::begin(WIFI_PROFILE* w_prof, uint8_t mode)
 {
-  Serial.println("DEBUG: Wifi::begin 1");
+  D(Serial.println("DEBUG: Wifi::begin 1"));
   // setup LEDs
   RgbLed.turnOff();
-  Serial.println("DEBUG: Wifi::begin 2");
+  D(Serial.println("DEBUG: Wifi::begin 2"));
   Gainspan.mode = mode;
-  Serial.println("DEBUG: Wifi::begin 3");
+  D(Serial.println("DEBUG: Wifi::begin 3"));
   // initialize device
   if (!Gainspan.init()) {
 		RgbLed.red();
-    Serial.println("DEBUG: Wifi::begin 3.1");
+    D(Serial.println("DEBUG: Wifi::begin 3.1"));
     return;
   }
-  Serial.println("DEBUG: Wifi::begin 4");
+  D(Serial.println("DEBUG: Wifi::begin 4"));
   // configure params
   Gainspan.configure((GS_PROFILE*)w_prof);
-  Serial.println("DEBUG: Wifi::begin 5");
+  D(Serial.println("DEBUG: Wifi::begin 5"));
   // initiate wireless connection
   while (!Gainspan.connect());
-  Serial.println("DEBUG: Wifi::begin 6");
+  D(Serial.println("DEBUG: Wifi::begin 6"));
 	RgbLed.green();
-  Serial.println("DEBUG: Wifi::begin 7");
+  D(Serial.println("DEBUG: Wifi::begin 7"));
 }
 
 void webWifi::process()
