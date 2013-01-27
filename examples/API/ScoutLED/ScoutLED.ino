@@ -11,16 +11,7 @@ IPAddress server(66,175,218,211);
 //IPAddress server(85,119,83,194);
 
 PinoccioWifiClient wifiClient;
-mqttClient mqtt(server, 1883, callback, wifiClient);
-
-void callback(char* topic, byte* payload, unsigned int length) {
-  Serial.print("Received MQTT packet from topic : ");
-  Serial.println(topic);
-  Serial.write(payload, length);
-  Serial.println("");
-
-  RgbLed.setHex((char*)payload);
-}
+mqttClient mqtt(server, 1883, mqttReceive, wifiClient);
 
 void setup() {
   Pinoccio.init();
@@ -34,4 +25,13 @@ void setup() {
 void loop() {
   Pinoccio.loop();
   mqtt.loop();
+}
+
+void mqttReceive(char* topic, byte* payload, unsigned int length) {
+  Serial.print("Received MQTT packet from topic : ");
+  Serial.println(topic);
+  Serial.write(payload, length);
+  Serial.println("");
+
+  RgbLed.setHex((char*)payload);
 }

@@ -40,6 +40,51 @@ int leftMotor = 0;
 int rightMotor = 0;
 int safetyTimer = 10000; // start in a disabled state
 
+void setup() {
+  Pinoccio.init();
+  Wifi.begin(&profile); 
+  initialize3Pi();
+  
+  if (mqtt.connect("pinoccio")) {     
+    mqtt.subscribe("erictj/3pi-control");
+    mqtt.publish("erictj/3pi-telemetry", "Pinoccio 3Pi ready to go!");
+  }
+}
+
+void loop() {
+  Pinoccio.loop();
+  mqtt.loop();
+  
+  if (safetyTimer > 1000) {
+    RgbLed.red();
+    leftMotor = rightMotor = 0;
+    Serial.write(PI_STOP_PID); // stop all motors
+  } else {
+    safetyTimer++;
+    RgbLed.green();
+  }
+}
+
+void mqttReceive(char* topic, byte* payload, unsigned int length) { 
+  RgbLed.cyan();
+  safetyTimer = 0;
+
+  getMotorPayload(payload, length);
+  
+  if (leftMotor >= 0) {
+    Serial.write(PI_M1_FORWARD);
+  } else {
+    Serial.write(PI_M1_BACKWARD);
+  }
+  Serial.write(abs(leftMotor));
+  if (rightMotor >= 0) {
+    Serial.write(PI_M2_FORWARD);
+  } else {
+    Serial.write(PI_M2_BACKWARD);
+  }
+  Serial.write(abs(rightMotor));
+}
+
 void initialize3Pi() {
   Serial.write(PI_SIGNATURE);
   RgbLed.blinkRed();
@@ -75,49 +120,4 @@ void getMotorPayload(byte* payload, unsigned int length) {
   }
   buf[j++] = '\0';
   rightMotor = atoi(buf);
-}
-
-void mqttReceive(char* topic, byte* payload, unsigned int length) { 
-  RgbLed.cyan();
-  safetyTimer = 0;
-
-  getMotorPayload(payload, length);
-  
-  if (leftMotor >= 0) {
-    Serial.write(PI_M1_FORWARD);
-  } else {
-    Serial.write(PI_M1_BACKWARD);
-  }
-  Serial.write(abs(leftMotor));
-  if (rightMotor >= 0) {
-    Serial.write(PI_M2_FORWARD);
-  } else {
-    Serial.write(PI_M2_BACKWARD);
-  }
-  Serial.write(abs(rightMotor));
-}
-
-void setup() {
-  Pinoccio.init();
-  Wifi.begin(&profile); 
-  initialize3Pi();
-  
-  if (mqtt.connect("pinoccio")) {     
-    mqtt.subscribe("erictj/3pi-control");
-    mqtt.publish("erictj/3pi-telemetry", "Pinoccio 3Pi ready to go!");
-  }
-}
-
-void loop() {
-  Pinoccio.loop();
-  mqtt.loop();
-  
-  if (safetyTimer > 1000) {
-    RgbLed.red();
-    leftMotor = rightMotor = 0;
-    Serial.write(PI_STOP_PID); // stop all motors
-  } else {
-    safetyTimer++;
-    RgbLed.green();
-  }
 }
