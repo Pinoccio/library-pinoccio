@@ -142,15 +142,15 @@ int PinoccioWifiClient::available() {
       return 0;
     }
   }
-  D(Serial.println("DEBUG: PinoccioWifiClient::available 3"));
+  //D(Serial.println("DEBUG: PinoccioWifiClient::available 3"));
   return 0;
 }
 
 int PinoccioWifiClient::read() {
   uint8_t b = 0;
-  if (!available() || (recv(_sock, &b, 1) != 1))
+  if (!available() || (recv(_sock, &b, 1) != 1)) {
     return -1;
-
+  }
   return b;
 }
 

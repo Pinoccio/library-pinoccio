@@ -540,11 +540,11 @@ uint16_t webGainspan::writeData(SOCKET s, const uint8_t*  buf, uint16_t len)
   } else {
     if ((this->sock_table[s].protocol == IPPROTO::TCP) ||
         (this->sock_table[s].protocol == IPPROTO::UDP_CLIENT)) {
-      D(Serial.println("DEBUG: webGainspan::writeData 1"));
-      D(Serial.print("DEBUG: webGainspan::writeData length: "));
-      D(Serial.println(len));
-      D(Serial.print("DEBUG: webGainspan::writeData socket: "));
-      D(Serial.println(s));
+      // D(Serial.println("DEBUG: webGainspan::writeData 1"));
+      // D(Serial.print("DEBUG: webGainspan::writeData length: "));
+      // D(Serial.println(len));
+      // D(Serial.print("DEBUG: webGainspan::writeData socket: "));
+      // D(Serial.println(s));
       Serial1.write((uint8_t)0x1b);    // data start
       Serial1.write((uint8_t)0x53);
       Serial1.write((uint8_t)int_to_hex(this->client_cid));  // connection ID
@@ -846,8 +846,7 @@ void webGainspan::execSocketCmd(SOCKET s, uint8_t cmd)
 {
   this->socket_num = s;
 
-  if (!send_cmd_w_resp(cmd)) {
-  }
+  if (!send_cmd_w_resp(cmd)) {}
 }
 
 uint8_t webGainspan::readSocketStatus(SOCKET s)
@@ -872,8 +871,7 @@ void webGainspan::flush()
   // clear the buffer
   // since we need to clear the buffer, need to create this
   // workaround
-  while (Serial1.available())
-  {
+  while (Serial1.available()) {
     Serial1.read();
   }
 }
