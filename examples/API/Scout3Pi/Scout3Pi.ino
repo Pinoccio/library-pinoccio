@@ -109,7 +109,7 @@ void setup() {
 void loop() {
   Pinoccio.loop();
   
-  if (safetyTimer > 5000) {
+  if (safetyTimer > 10000) {
     RgbLed.red();
     leftMotor = rightMotor = 0;
     Serial1.write(PI_STOP_PID); // stop all motors
