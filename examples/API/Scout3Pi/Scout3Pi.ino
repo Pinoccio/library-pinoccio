@@ -1,3 +1,4 @@
+#include "config.h"
 #include <Pinoccio.h>
 
 // http://www.pololu.com/docs/0J21/10.a
@@ -23,83 +24,25 @@ enum {
   PI_M2_BACKWARD         = 0xC6
 };
 
-WIFI_PROFILE profile = {
-                /* SSID */ "",
- /* WPA/WPA2 passphrase */ "",
-          /* IP address */ "",
-         /* subnet mask */ "",
-          /* Gateway IP */ "" };
-
-//IPAddress server(66,175,218,211);
-IPAddress server(85,119,83,194);
-
-PinoccioWifiClient wifiClient;
-mqttClient mqtt(server, 1883, mqttReceive, wifiClient);
-
 int leftMotor = 0;
 int rightMotor = 0;
-int safetyTimer = 10000; // start in a disabled state
-
-void setup() {
-  Pinoccio.init();
-  Wifi.begin(&profile); 
-  initialize3Pi();
-  
-  if (mqtt.connect("pinoccio")) {     
-    mqtt.subscribe("erictj/3pi-control");
-    mqtt.publish("erictj/3pi-telemetry", "Pinoccio 3Pi ready to go!");
-  }
-}
-
-void loop() {
-  Pinoccio.loop();
-  mqtt.loop();
-  
-  if (safetyTimer > 1000) {
-    RgbLed.red();
-    leftMotor = rightMotor = 0;
-    Serial.write(PI_STOP_PID); // stop all motors
-  } else {
-    safetyTimer++;
-    RgbLed.green();
-  }
-}
-
-void mqttReceive(char* topic, byte* payload, unsigned int length) { 
-  RgbLed.cyan();
-  safetyTimer = 0;
-
-  getMotorPayload(payload, length);
-  
-  if (leftMotor >= 0) {
-    Serial.write(PI_M1_FORWARD);
-  } else {
-    Serial.write(PI_M1_BACKWARD);
-  }
-  Serial.write(abs(leftMotor));
-  if (rightMotor >= 0) {
-    Serial.write(PI_M2_FORWARD);
-  } else {
-    Serial.write(PI_M2_BACKWARD);
-  }
-  Serial.write(abs(rightMotor));
-}
+int safetyTimer = 50000; // start in a disabled state
 
 void initialize3Pi() {
-  Serial.write(PI_SIGNATURE);
+  Serial1.write(PI_SIGNATURE);
   RgbLed.blinkRed();
   RgbLed.blinkRed();
   RgbLed.blinkRed();
-  Serial.write(PI_CLEAR_LCD);
-  Serial.write(PI_PRINT);
-  Serial.write(8);
-  Serial.print("Pinoccio");
-  Serial.write(PI_LCD_GOTO_XY);
-  Serial.write(0);
-  Serial.write(1);
-  Serial.write(PI_PRINT);
-  Serial.write(8);
-  Serial.print("Lets go!");
+  Serial1.write(PI_CLEAR_LCD);
+  Serial1.write(PI_PRINT);
+  Serial1.write(8);
+  Serial1.print("Pinoccio");
+  Serial1.write(PI_LCD_GOTO_XY);
+  Serial1.write(0);
+  Serial1.write(1);
+  Serial1.write(PI_PRINT);
+  Serial1.write(8);
+  Serial1.print("Lets go!");
 }
 
 void getMotorPayload(byte* payload, unsigned int length) {
@@ -120,4 +63,58 @@ void getMotorPayload(byte* payload, unsigned int length) {
   }
   buf[j++] = '\0';
   rightMotor = atoi(buf);
+}
+
+static bool appDataInd(NWK_DataInd_t *ind) {
+  Serial.println("Received control message");
+  safetyTimer = 0;
+
+  getMotorPayload(ind->data, ind->size);
+  Serial.print("leftMotor: ");
+  Serial.println(leftMotor);
+  Serial.print("rightMotor: ");
+  Serial.println(rightMotor);
+
+  if (leftMotor >= 0) {
+    Serial1.write(PI_M1_FORWARD);
+  } else {
+    Serial1.write(PI_M1_BACKWARD);
+  }
+  Serial1.write(abs(leftMotor));
+  if (rightMotor >= 0) {
+    Serial1.write(PI_M2_FORWARD);
+  } else {
+    Serial1.write(PI_M2_BACKWARD);
+  }
+  Serial1.write(abs(rightMotor));
+}
+
+void setup() {
+  Pinoccio.init();
+  initialize3Pi();
+  
+  RgbLed.blinkRed(200);
+  RgbLed.blinkGreen(200);
+  RgbLed.blinkBlue(200);
+  Serial.println("3pi Scout ready for duty");
+
+  NWK_SetAddr(APP_MESH_ADDR);
+  NWK_SetPanId(APP_MESH_PANID);
+  PHY_SetChannel(APP_MESH_CHANNEL);
+  PHY_SetRxState(true);
+  
+  NWK_OpenEndpoint(1, appDataInd);
+}
+
+void loop() {
+  Pinoccio.loop();
+  
+  if (safetyTimer > 5000) {
+    RgbLed.red();
+    leftMotor = rightMotor = 0;
+    Serial1.write(PI_STOP_PID); // stop all motors
+  } else {
+    safetyTimer++;
+    RgbLed.green();
+  }
 }

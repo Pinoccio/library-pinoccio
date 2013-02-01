@@ -252,8 +252,9 @@ static uint16_t phyGetRandomNumber(void)
 
   IRQ_MASK_REG = 0x00;
   phyTrxSetState(TRX_CMD_RX_ON);
-
-  for (uint8_t i = 0; i < 16; i += 2)
+  uint8_t i;
+  
+  for (i = 0; i < 16; i += 2)
   {
     HAL_Delay(RANDOM_NUMBER_UPDATE_INTERVAL);
     rnd |= PHY_RSSI_REG_s.rndValue << i;

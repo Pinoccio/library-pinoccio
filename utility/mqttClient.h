@@ -64,8 +64,9 @@ private:
    char* willMessage;
 public:
    mqttClient();
-   mqttClient(IPAddress& ip, uint16_t, void(*)(char*,uint8_t*,unsigned int),Client& client);
-   mqttClient(String&, uint16_t, void(*)(char*,uint8_t*,unsigned int),Client& client);
+   // TODO mqttClient(void(*)(char*,uint8_t*,unsigned int), Client& client);
+   mqttClient(IPAddress& ip, uint16_t, void(*)(char*,uint8_t*,unsigned int), Client& client);
+   mqttClient(String&, uint16_t, void(*)(char*,uint8_t*,unsigned int), Client& client);
    boolean connect(char *);
    boolean connect(char *, char *, char *);
    boolean connect(char *, char *, uint8_t, uint8_t, char *);

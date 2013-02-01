@@ -18,6 +18,17 @@ mqttClient::mqttClient() {
   this->willMessage = 0;
 }
 
+// TODO
+/*
+mqttClient(void (*callback)(char*,uint8_t*,unsigned int), Client& client) {
+  mqttClient();
+  this->_client = &client;
+  this->callback = callback;
+  this->ip = APP_API_SERVER;
+  this->port = APP_API_PORT;
+}
+*/
+
 mqttClient::mqttClient(IPAddress& ip, uint16_t port, void (*callback)(char*,uint8_t*,unsigned int), Client& client) {
   mqttClient();
   this->_client = &client;

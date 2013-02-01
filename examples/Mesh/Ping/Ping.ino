@@ -64,7 +64,6 @@ static bool appDataInd(NWK_DataInd_t *ind) {
 
 void setup() {
   Pinoccio.init();
-  Serial.begin(115200);
   
   NWK_SetAddr(APP_ADDR);
   NWK_SetPanId(APP_PANID);

@@ -1,37 +1,37 @@
+#include "config.h"
 #include <Pinoccio.h>
-
-WIFI_PROFILE profile = {
-                /* SSID */ "",
- /* WPA/WPA2 passphrase */ "",
-          /* IP address */ "",
-         /* subnet mask */ "",
-          /* Gateway IP */ "" };
-
-IPAddress server(66,175,218,211);
-//IPAddress server(85,119,83,194);
-
-PinoccioWifiClient wifiClient;
-mqttClient mqtt(server, 1883, mqttReceive, wifiClient);
 
 void setup() {
   Pinoccio.init();
-  Wifi.begin(&profile);
-
-  if (mqtt.connect("pinoccio")) {
-    mqtt.subscribe("erictj/colorwheel");
-  }
+  RgbLed.blinkRed(200);
+  RgbLed.blinkGreen(200);
+  RgbLed.blinkBlue(200);
+  Serial.println("Scout ready for duty");
+  
+  NWK_SetAddr(APP_MESH_ADDR);
+  NWK_SetPanId(APP_MESH_PANID);
+  PHY_SetChannel(APP_MESH_CHANNEL);
+  PHY_SetRxState(true);
+  
+  NWK_OpenEndpoint(1, appDataInd);
+  //Pinoccio.subscribe("erictj/led");
 }
 
 void loop() {
   Pinoccio.loop();
-  mqtt.loop();
 }
 
-void mqttReceive(char* topic, byte* payload, unsigned int length) {
-  Serial.print("Received MQTT packet from topic : ");
-  Serial.println(topic);
-  Serial.write(payload, length);
+static bool appDataInd(NWK_DataInd_t *ind) {
+  // process the frame
+  RgbLed.blinkCyan(200);
+  Serial.println("srcAddr: " + ind->srcAddr);
+  Serial.println("dstEndpoint: " + ind->dstEndpoint);
+  Serial.println("srcEndpoint: " + ind->srcEndpoint);
+  Serial.println("options: " + ind->options);
+  Serial.print("data: ");
+  Serial.write(ind->data, ind->size);
   Serial.println("");
-
-  RgbLed.setHex((char*)payload);
+  Serial.println("lqi: " + ind->lqi);
+  Serial.println("rssi: " + ind->rssi);
+  return true;
 }

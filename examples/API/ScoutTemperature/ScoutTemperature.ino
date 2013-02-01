@@ -1,17 +1,6 @@
+#include "config.h"
 #include <Pinoccio.h>
 
-WIFI_PROFILE profile = {
-                /* SSID */ "",
- /* WPA/WPA2 passphrase */ "",
-          /* IP address */ "",
-         /* subnet mask */ "",
-          /* Gateway IP */ "" };
-
-IPAddress server(66,175,218,211);
-//IPAddress server(85,119,83,194);
-
-PinoccioWifiClient wifiClient;
-mqttClient mqtt(server, 1883, mqttReceive, wifiClient);
 static char temp[6];
 
 void setup() {

@@ -23,6 +23,9 @@
 #include "utility/webWifiClient.h"
 #include "utility/mqttClient.h"
 
+// typedef struct NWK_DataReq_t sendMessage;
+// typedef struct NWK_DataInd_t receiveMessage;
+
 class PinoccioClass {
 
   public:
@@ -31,14 +34,22 @@ class PinoccioClass {
 
     void alive();
     void init();
+    // TODO void initMesh();
     void loop();
 
     float getTemperature();
-
     bool isBatteryCharging();
     float getBatteryVoltage();
-
+    void setRandomNumber(uint16_t number);
+    
+    bool publish(char* topic, char* payload, int size);
+    bool subscribe(char*, bool (*handler)(NWK_DataInd_t *msg));
+    
+    bool sendMessage(NWK_DataReq_t *msg);
+    bool listenForMessage(uint8_t id, bool (*handler)(NWK_DataInd_t *msg));
+    
   protected:
+    uint16_t randomNumber;
 };
 
 extern PinoccioClass Pinoccio;
