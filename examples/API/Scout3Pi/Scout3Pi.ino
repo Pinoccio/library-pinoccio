@@ -29,6 +29,7 @@ int rightMotor = 0;
 int safetyTimer = 50000; // start in a disabled state
 
 void initialize3Pi() {
+  Serial1.begin(115200);
   Serial1.write(PI_SIGNATURE);
   RgbLed.blinkRed();
   RgbLed.blinkRed();
@@ -109,7 +110,7 @@ void setup() {
 void loop() {
   Pinoccio.loop();
   
-  if (safetyTimer > 10000) {
+  if (safetyTimer > 30000) {
     RgbLed.red();
     leftMotor = rightMotor = 0;
     Serial1.write(PI_STOP_PID); // stop all motors

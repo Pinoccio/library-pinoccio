@@ -38,8 +38,14 @@ class PinoccioClass {
     void loop();
 
     float getTemperature();
+    
     bool isBatteryCharging();
+    bool isBatteryPresent();
     float getBatteryVoltage();
+    
+    void enableShieldVcc();
+    void disableShieldVcc();
+    
     void setRandomNumber(uint16_t number);
     
     bool publish(char* topic, char* payload, int size);
@@ -49,6 +55,7 @@ class PinoccioClass {
     bool listenForMessage(uint8_t id, bool (*handler)(NWK_DataInd_t *msg));
     
   protected:
+    uint8_t triStateBatteryCheck();
     uint16_t randomNumber;
 };
 

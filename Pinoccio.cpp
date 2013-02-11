@@ -5,11 +5,12 @@
 PinoccioClass Pinoccio;
 
 PinoccioClass::PinoccioClass() {
+  RgbLed.turnOff();
   pinMode(CHG_STATUS, INPUT);
-  pinMode(BATT_CHECK, OUTPUT);
   digitalWrite(BATT_CHECK, LOW);
-  // TODO pinMode(VCC_ENABLE, OUTPUT);
-  // digitalWrite(VCC_ENABLE, HIGH);
+  pinMode(BATT_CHECK, OUTPUT);
+  digitalWrite(VCC_ENABLE, HIGH);
+  pinMode(VCC_ENABLE, OUTPUT); 
 }
 
 PinoccioClass::~PinoccioClass() { }
@@ -33,15 +34,55 @@ float PinoccioClass::getTemperature() {
   return HAL_MeasureTemperature();
 }
 
+bool PinoccioClass::isBatteryPresent() {
+  return (triStateBatteryCheck() == 1);
+}
+
 bool PinoccioClass::isBatteryCharging() {
-  return (digitalRead(CHG_STATUS) == 0);
+  //return (triStateBatteryCheck() == 0);
+  return (digitalRead(CHG_STATUS) == LOW);
+}
+
+uint8_t PinoccioClass::triStateBatteryCheck() {
+  // TODO, get this working:  http://forums.parallax.com/showthread.php/141525-Tri-State-Logic-and-a-propeller-input?p=1113946&viewfull=1#post1113946
+  // returns 0 for charging, 1 for no battery, and 3 for charged
+  uint8_t state = 0;
+
+  // The DDxn bit in the DDRx Register selects the direction of this pin. 1==output, 0==input
+  DDRD = (1<<DDB7);
+
+  // If PORTxn is written logic one when the pin is configured as an input pin, the pull-up resistor is activated.
+  // To switch the pull-up resistor off, PORTxn has to be written logic zero or the pin has to be configured as an output pin.
+  // If PORTxn is written logic one when the pin is configured as an output pin, output is HIGH, else LOW
+  PORTD = (0<<PD7);
+  DDRD = (0<<DDB7);
+  PORTD = (1<<PD7);
+  asm volatile("nop");
+  state = PIND;
+  DDRD = (1<<DDB7);
+  DDRD = (0<<DDB7);
+  state <<= 1;
+  state |= PIND;
+  
+  return state;
 }
 
 float PinoccioClass::getBatteryVoltage() {
+  pinMode(A7, INPUT);
+  digitalWrite(A7, LOW);
   digitalWrite(BATT_CHECK, HIGH);
   int read = analogRead(A7);
   digitalWrite(BATT_CHECK, LOW);
-  return (read);
+  digitalWrite(A7, HIGH);
+  return read;
+}
+
+void PinoccioClass::enableShieldVcc() {
+  digitalWrite(VCC_ENABLE, HIGH);
+}
+
+void PinoccioClass::disableShieldVcc() {
+  digitalWrite(VCC_ENABLE, LOW);
 }
 
 void PinoccioClass::setRandomNumber(uint16_t number) {

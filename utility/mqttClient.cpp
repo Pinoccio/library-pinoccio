@@ -174,14 +174,14 @@ uint8_t mqttClient::readByte() {
 }
 
 uint16_t mqttClient::readPacket() {
-  D(Serial.println("DEBUG: mqttClient::readPacket - 1"));
+  //D(Serial.println("DEBUG: mqttClient::readPacket - 1"));
 
   uint16_t len = 0;
   buffer[len++] = readByte();
   uint8_t multiplier = 1;
   uint16_t length = 0;
   uint8_t digit = 0;
-  D(Serial.println("DEBUG: mqttClient::readPacket - 2"));
+  //D(Serial.println("DEBUG: mqttClient::readPacket - 2"));
   do {
     //D(Serial.println("DEBUG: mqttClient::readPacket - 2.1"));
     digit = readByte();
@@ -190,7 +190,7 @@ uint16_t mqttClient::readPacket() {
     multiplier *= 128;
   } while ((digit & 128) != 0);
 
-  D(Serial.println("DEBUG: mqttClient::readPacket - 3"));
+  //D(Serial.println("DEBUG: mqttClient::readPacket - 3"));
   
   for (uint16_t i = 0;i<length;i++) {
     //D(Serial.println("DEBUG: mqttClient::readPacket - 4"));
@@ -204,7 +204,7 @@ uint16_t mqttClient::readPacket() {
       len = 0; // This will cause the packet to be ignored.
     }
   }
-  D(Serial.println("DEBUG: mqttClient::readPacket - 5"));
+  //D(Serial.println("DEBUG: mqttClient::readPacket - 5"));
   return len;
 }
 
@@ -233,10 +233,10 @@ boolean mqttClient::loop() {
     }
     //D(Serial.println("DEBUG: mqttClient::loop - check is available"));
     if (_client->available()) {
-      D(Serial.println("DEBUG: mqttClient::loop - client is available"));
+      //D(Serial.println("DEBUG: mqttClient::loop - client is available"));
       uint16_t len = readPacket();
       if (len > 0) {
-        D(Serial.println("DEBUG: mqttClient::loop - received packet"));
+        //D(Serial.println("DEBUG: mqttClient::loop - received packet"));
         lastInActivity = t;
         uint8_t type = buffer[0]&0xF0;
         if (type == MQTTPUBLISH) {
