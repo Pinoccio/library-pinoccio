@@ -125,13 +125,13 @@ static void nwkDataReqConfirm(NWK_DataReq_t *req)
 {
   if (nwkDataReqQueue == req)
   {
-    nwkDataReqQueue = (NWK_DataReq_t *)nwkDataReqQueue->next;
+    nwkDataReqQueue = nwkDataReqQueue->next;
   }
   else
   {
     NWK_DataReq_t *prev = nwkDataReqQueue;
     while (prev->next != req)
-      prev = (NWK_DataReq_t *)prev->next;
+      prev = prev->next;
     prev->next = ((NWK_DataReq_t *)prev->next)->next;
   }
 

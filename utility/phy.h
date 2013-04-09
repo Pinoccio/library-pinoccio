@@ -16,7 +16,12 @@ extern "C"{
 #include <stdint.h>
 #include <stdbool.h>
 #include "sysConfig.h"
+
+#ifdef __AVR_ATmega128RFA1__
 #include "atmega128rfa1.h"
+#else
+#include "atmega256rfr2.h"
+#endif
 
 /*****************************************************************************
 *****************************************************************************/
@@ -37,10 +42,10 @@ typedef struct PHY_DataInd_t
 
 /*****************************************************************************
 *****************************************************************************/
-
 void PHY_Init(void);
 void PHY_SetRxState(bool rx);
 void PHY_SetChannel(uint8_t channel);
+void PHY_SetBand(uint8_t band);
 void PHY_SetPanId(uint16_t panId);
 void PHY_SetShortAddr(uint16_t addr);
 bool PHY_Busy(void);

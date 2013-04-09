@@ -260,9 +260,9 @@ static bool nwkRxIndicateFrame(NwkFrame_t *frame)
   ind.options  = (header->nwkFcf.ackRequest) ? NWK_IND_OPT_ACK_REQUESTED : 0;
   ind.options |= (header->nwkFcf.securityEnabled) ? NWK_IND_OPT_SECURED : 0;
   ind.options |= (header->nwkFcf.linkLocal) ? NWK_IND_OPT_LINK_LOCAL : 0;
-  ind.options |= (0xffff == header->nwkDstAddr) ? NWK_IND_OPT_BROADCAST : 0;
+  ind.options |= (NWK_BROADCAST_ADDR == header->nwkDstAddr) ? NWK_IND_OPT_BROADCAST : 0;
   ind.options |= (header->nwkSrcAddr == header->macSrcAddr) ? NWK_IND_OPT_LOCAL : 0;
-  ind.options |= (0xffff == header->macDstPanId) ? NWK_IND_OPT_BROADCAST_PAN_ID : 0;
+  ind.options |= (NWK_BROADCAST_PANID == header->macDstPanId) ? NWK_IND_OPT_BROADCAST_PAN_ID : 0;
 
   return nwkIb.endpoint[header->nwkDstEndpoint](&ind);
 }
@@ -275,7 +275,7 @@ static void nwkRxHandleReceivedFrame(NwkFrame_t *frame)
 
   frame->state = NWK_RX_STATE_FINISH;
 
-  if ((0xffff == header->nwkDstAddr && header->nwkFcf.ackRequest) ||
+  if ((NWK_BROADCAST_ADDR == header->nwkDstAddr && header->nwkFcf.ackRequest) ||
       (nwkIb.addr == header->nwkSrcAddr))
     return;
 
@@ -291,11 +291,11 @@ static void nwkRxHandleReceivedFrame(NwkFrame_t *frame)
   if (nwkRxRejectDuplicate(header))
     return;
 
-  if (0xffff == header->macDstAddr && nwkIb.addr != header->nwkDstAddr &&
-      0xffff != header->macDstPanId && 0 == header->nwkFcf.linkLocal)
+  if (NWK_BROADCAST_ADDR == header->macDstAddr && nwkIb.addr != header->nwkDstAddr &&
+      NWK_BROADCAST_PANID != header->macDstPanId && 0 == header->nwkFcf.linkLocal)
     nwkTxBroadcastFrame(frame);
 
-  if (nwkIb.addr == header->nwkDstAddr || 0xffff == header->nwkDstAddr)
+  if (nwkIb.addr == header->nwkDstAddr || NWK_BROADCAST_ADDR == header->nwkDstAddr)
   {
 #ifdef NWK_ENABLE_SECURITY
     if (header->nwkFcf.securityEnabled)
@@ -305,7 +305,7 @@ static void nwkRxHandleReceivedFrame(NwkFrame_t *frame)
       frame->state = NWK_RX_STATE_INDICATE;
   }
 #ifdef NWK_ENABLE_ROUTING
-  else if (nwkIb.addr == header->macDstAddr && 0xffff != header->macDstPanId)
+  else if (nwkIb.addr == header->macDstAddr && NWK_BROADCAST_PANID != header->macDstPanId)
   {
     frame->state = NWK_RX_STATE_ROUTE;
   }
@@ -346,7 +346,7 @@ void nwkRxTaskHandler(void)
 
         nwkRxAckControl = NWK_ACK_CONTROL_NONE;
         ack = nwkRxIndicateFrame(frame);
-        forceAck = (0xffff == header->macDstAddr && nwkIb.addr == header->nwkDstAddr);
+        forceAck = (NWK_BROADCAST_ADDR == header->macDstAddr && nwkIb.addr == header->nwkDstAddr);
 
         if ((header->nwkFcf.ackRequest && ack) || forceAck)
           nwkRxSendAck(frame);

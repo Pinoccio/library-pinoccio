@@ -8,7 +8,11 @@
 \**************************************************************************/
 
 #include "sysTypes.h"
+#ifdef __AVR_ATmega128RFA1__
 #include "atmega128rfa1.h"
+#else
+#include "atmega256rfr2.h"
+#endif
 #include "phy.h"
 #include "hal.h"
 
@@ -48,6 +52,7 @@ typedef struct PhyIb_t
   uint8_t     request;
 
   uint8_t     channel;
+  uint8_t     band;
   uint16_t    panId;
   uint16_t    addr;
   bool        rx;
@@ -81,6 +86,10 @@ void PHY_Init(void)
   TRXPR_REG_s.trxrst = 1;
 
   phyTrxSetState(TRX_CMD_TRX_OFF);
+
+#ifdef _ATMEGA256RFR2_H_
+  TRX_RPC_REG = 0xff;
+#endif
 
   CSMA_SEED_1_REG_s.aackSetPd = 1;
   CSMA_SEED_1_REG_s.aackDisAck = 0;

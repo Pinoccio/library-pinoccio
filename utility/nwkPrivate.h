@@ -20,6 +20,9 @@
 #define NWK_SECURITY_KEY_SIZE    16
 #define NWK_SECURITY_BLOCK_SIZE  16
 
+#define NWK_BROADCAST_PANID      0xffff
+#define NWK_BROADCAST_ADDR       0xffff
+
 #ifdef __cplusplus
 extern "C"{
 #endif

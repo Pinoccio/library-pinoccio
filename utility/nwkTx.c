@@ -78,7 +78,7 @@ void nwkTxFrame(NwkFrame_t *frame)
   frame->tx.status = NWK_SUCCESS_STATUS;
 
   if (frame->tx.control & NWK_TX_CONTROL_BROADCAST_PAN_ID)
-    frame->data.header.macDstPanId = 0xffff;
+    frame->data.header.macDstPanId = NWK_BROADCAST_PANID;
   else
     frame->data.header.macDstPanId = nwkIb.panId;
 
@@ -90,7 +90,7 @@ void nwkTxFrame(NwkFrame_t *frame)
   header->macSrcAddr = nwkIb.addr;
   header->macSeq = ++nwkIb.macSeqNum;
 
-  if (0xffff == header->macDstAddr)
+  if (NWK_BROADCAST_ADDR == header->macDstAddr)
     header->macFcf = 0x8841;
   else
     header->macFcf = 0x8861;
@@ -114,8 +114,8 @@ void nwkTxBroadcastFrame(NwkFrame_t *frame)
   newFrame->tx.status = NWK_SUCCESS_STATUS;
 
   newFrame->data.header.macFcf = 0x8841;
-  newFrame->data.header.macDstAddr = 0xffff;
-  newFrame->data.header.macDstPanId = nwkIb.panId;
+  newFrame->data.header.macDstAddr = NWK_BROADCAST_ADDR;
+  newFrame->data.header.macDstPanId = frame->data.header.macDstPanId;
   newFrame->data.header.macSrcAddr = nwkIb.addr;
   newFrame->data.header.macSeq = ++nwkIb.macSeqNum;
 

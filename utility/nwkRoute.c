@@ -85,7 +85,7 @@ void nwkRouteFrameReceived(NwkFrame_t *frame)
       (header->macSrcAddr != header->nwkSrcAddr))
     return;
 
-  if (0xffff == header->macDstPanId)
+  if (NWK_BROADCAST_PANID == header->macDstPanId)
     return;
 
   rec = nwkRouteFindRecord(header->nwkSrcAddr);
@@ -148,7 +148,7 @@ void nwkRouteFrameSent(NwkFrame_t *frame)
 *****************************************************************************/
 uint16_t nwkRouteNextHop(uint16_t dst)
 {
-  if (0xffff == dst)
+  if (NWK_BROADCAST_ADDR == dst)
     return NWK_ROUTE_UNKNOWN;
 
   for (uint8_t i = 0; i < NWK_ROUTE_TABLE_SIZE; i++)
