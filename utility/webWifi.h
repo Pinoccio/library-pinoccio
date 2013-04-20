@@ -30,6 +30,7 @@ class webWifi {
   public:
     static uint16_t _server_port[MAX_SOCK_NUM];
 
+    void begin();
     void begin(WIFI_PROFILE*);
     void begin(WIFI_PROFILE*, uint8_t mode);
 

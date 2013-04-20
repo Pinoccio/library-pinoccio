@@ -15,14 +15,10 @@ PinoccioClass::PinoccioClass() {
 
 PinoccioClass::~PinoccioClass() { }
 
-void PinoccioClass::alive() {
-  Serial.println("Hello, I'm alive");
-}
-
 void PinoccioClass::init() {
   Serial.begin(115200);
   SYS_Init();
-  // TODO PHY_TX_PWR_REG(TX_PWR_3_2DBM);
+  // TODO: PHY_TX_PWR_REG(TX_PWR_3_2DBM);
   HAL_MeasureAdcOffset();
 }
 
@@ -34,37 +30,9 @@ float PinoccioClass::getTemperature() {
   return HAL_MeasureTemperature();
 }
 
-bool PinoccioClass::isBatteryPresent() {
-  return (triStateBatteryCheck() == 1);
-}
-
 bool PinoccioClass::isBatteryCharging() {
   //return (triStateBatteryCheck() == 0);
   return (digitalRead(CHG_STATUS) == LOW);
-}
-
-uint8_t PinoccioClass::triStateBatteryCheck() {
-  // TODO, get this working:  http://forums.parallax.com/showthread.php/141525-Tri-State-Logic-and-a-propeller-input?p=1113946&viewfull=1#post1113946
-  // returns 0 for charging, 1 for no battery, and 3 for charged
-  uint8_t state = 0;
-
-  // The DDxn bit in the DDRx Register selects the direction of this pin. 1==output, 0==input
-  DDRD = (1<<DDB7);
-
-  // If PORTxn is written logic one when the pin is configured as an input pin, the pull-up resistor is activated.
-  // To switch the pull-up resistor off, PORTxn has to be written logic zero or the pin has to be configured as an output pin.
-  // If PORTxn is written logic one when the pin is configured as an output pin, output is HIGH, else LOW
-  PORTD = (0<<PD7);
-  DDRD = (0<<DDB7);
-  PORTD = (1<<PD7);
-  asm volatile("nop");
-  state = PIND;
-  DDRD = (1<<DDB7);
-  DDRD = (0<<DDB7);
-  state <<= 1;
-  state |= PIND;
-  
-  return state;
 }
 
 float PinoccioClass::getBatteryVoltage() {
@@ -77,11 +45,11 @@ float PinoccioClass::getBatteryVoltage() {
   return read;
 }
 
-void PinoccioClass::enableShieldVcc() {
+void PinoccioClass::enableBackpackVcc() {
   digitalWrite(VCC_ENABLE, HIGH);
 }
 
-void PinoccioClass::disableShieldVcc() {
+void PinoccioClass::disableBackpackVcc() {
   digitalWrite(VCC_ENABLE, LOW);
 }
 
@@ -98,6 +66,7 @@ void PinoccioClass::initMesh() {
   PHY_SetRxState(true);
 }
 */
+/*
 
 bool PinoccioClass::publish(char* topic, char* payload, int size) {
 
@@ -114,6 +83,7 @@ bool sendMessage(NWK_DataReq_t *msg) {
 bool listenForMessage(uint8_t id, bool (*handler)(NWK_DataInd_t *msg)) {
   NWK_OpenEndpoint(id, handler);
 }
+*/
 
 // TODO
 /*

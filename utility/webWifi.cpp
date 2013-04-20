@@ -5,6 +5,17 @@
 
 uint16_t webWifi::_server_port[MAX_SOCK_NUM] = { 0, 0, 0, 0 };
 
+void webWifi::begin() 
+{
+  WIFI_PROFILE profile = {
+          /* SSID */ "",
+          /* WPA/WPA2 passphrase */ "",
+          /* IP address */ "",
+          /* subnet mask */ "",
+          /* Gateway IP */ "" };
+  
+}
+
 void webWifi::begin(WIFI_PROFILE* w_prof)
 {
   begin(w_prof, NORMAL_MODE);

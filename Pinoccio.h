@@ -6,8 +6,23 @@
 #ifdef PINOCCIO_DEBUG
 #  define D(x) x
 #else
-#  define D(x) 
+#  define D(x)
 #endif
+
+// Start - Specifics for the LWM library
+#define NWK_ENABLE_SECURITY
+#define NWK_ENABLE_ROUTING
+#define PHY_ENABLE_ENERGY_DETECTION
+#define PHY_ENABLE_RANDOM_NUMBER_GENERATOR
+
+#define NWK_BUFFERS_AMOUNT                  3
+#define NWK_MAX_ENDPOINTS_AMOUNT            2
+#define NWK_DUPLICATE_REJECTION_TABLE_SIZE  10
+#define NWK_DUPLICATE_REJECTION_TTL         3000 // ms
+#define NWK_ROUTE_TABLE_SIZE                100
+#define NWK_ROUTE_DEFAULT_SCORE             3
+#define NWK_ACK_WAIT_TIME                   800  // ms
+// End - Specifics for the LWM library
 
 #include "utility/phy.h"
 #include "utility/hal.h"
@@ -17,14 +32,6 @@
 #include "utility/halSleep.h"
 #include "utility/halTemperature.h"
 #include "utility/halRgbLed.h"
-#include "utility/webGainspan.h"
-#include "utility/webWifi.h"
-#include "utility/webWifiServer.h"
-#include "utility/webWifiClient.h"
-#include "utility/mqttClient.h"
-
-// typedef struct NWK_DataReq_t sendMessage;
-// typedef struct NWK_DataInd_t receiveMessage;
 
 class PinoccioClass {
 
@@ -32,33 +39,22 @@ class PinoccioClass {
     PinoccioClass();
     ~PinoccioClass();
 
-    void alive();
     void init();
-    // TODO void initMesh();
     void loop();
 
     float getTemperature();
-    
-    bool isBatteryCharging();
-    bool isBatteryPresent();
-    float getBatteryVoltage();
-    
-    void enableShieldVcc();
-    void disableShieldVcc();
-    
-    void setRandomNumber(uint16_t number);
-    
-    bool publish(char* topic, char* payload, int size);
-    bool subscribe(char*, bool (*handler)(NWK_DataInd_t *msg));
-    
-    bool sendMessage(NWK_DataReq_t *msg);
-    bool listenForMessage(uint8_t id, bool (*handler)(NWK_DataInd_t *msg));
-    
-  protected:
-    uint8_t triStateBatteryCheck();
-    uint16_t randomNumber;
-};
 
-extern PinoccioClass Pinoccio;
+    bool isBatteryCharging();
+    float getBatteryVoltage();
+
+    void enableBackpackVcc();
+    void disableBackpackVcc();
+
+    void setRandomNumber(uint16_t number);
+
+  protected:
+    uint16_t randomNumber;
+    Backpack backpacks[3];
+};
 
 #endif

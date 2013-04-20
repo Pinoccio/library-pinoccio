@@ -3,7 +3,18 @@
 
 /*****************************************************************************
 *****************************************************************************/
-#define APP_MESH_ADDR             4
+#define APP_WIFI_ACCESS_POINT_ID  "My Access Point"
+#define APP_WIFI_PASSWORD         "s3cr3t"
+#define APP_WIFI_IP_ADDRESS       ""
+#define APP_WIFI_IP_SUBNET        ""
+#define APP_WIFI_IP_GATEWAY       ""
+
+#define APP_API_SERVER            "pinocc.io"
+#define APP_API_PORT              1883
+#define APP_API_USERNAME          "username"
+#define APP_API_PASSWORD          "password"
+
+#define APP_MESH_ADDR             1
 #define APP_MESH_PANID            0x4567
 #define APP_MESH_CHANNEL          0x1a  // channel 26, at the end of the 2.4GHz spectrum
 #define APP_MESH_SECURITY_KEY     "TestSecurityKey0"
