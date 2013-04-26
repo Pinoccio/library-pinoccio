@@ -240,9 +240,9 @@ boolean mqttClient::loop() {
         lastInActivity = t;
         uint8_t type = buffer[0]&0xF0;
         if (type == MQTTPUBLISH) {
-          D(Serial.println("DEBUG: mqttClient::loop - publish packet received"));
+          //D(Serial.println("DEBUG: mqttClient::loop - publish packet received"));
           if (callback) {
-            D(Serial.println("DEBUG: mqttClient::loop - calling subscribed callback"));
+            //D(Serial.println("DEBUG: mqttClient::loop - calling subscribed callback"));
             uint16_t tl = (buffer[2]<<8)+buffer[3];
             char topic[tl+1];
             for (uint16_t i=0;i<tl;i++) {

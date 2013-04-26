@@ -49,6 +49,8 @@ class PinoccioClass {
 
     void enableBackpackVcc();
     void disableBackpackVcc();
+    
+    void getFreeMemory();
 
     void setRandomNumber(uint16_t number);
 
