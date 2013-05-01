@@ -27,13 +27,13 @@ class HalRgbLed {
     void yellow();
     void white();
 
-    void blinkRed(int ms=500);
-    void blinkGreen(int ms=500);
-    void blinkBlue(int ms=500);
-    void blinkCyan(int ms=500);
-    void blinkMagenta(int ms=500);
-    void blinkYellow(int ms=500);
-    void blinkWhite(int ms=500);
+    void blinkRed(unsigned int ms=500);
+    void blinkGreen(unsigned int ms=500);
+    void blinkBlue(unsigned int ms=500);
+    void blinkCyan(unsigned int ms=500);
+    void blinkMagenta(unsigned int ms=500);
+    void blinkYellow(unsigned int ms=500);
+    void blinkWhite(unsigned int ms=500);
 
     void setRed(int value);
     void setGreen(int value);

@@ -2,9 +2,6 @@
 #include <Pinoccio.h>
 #include "atmega128rfa1.h"
 
-extern void __bss_end;
-extern void *__brkval;
-
 PinoccioClass Pinoccio;
 
 PinoccioClass::PinoccioClass() {
@@ -56,15 +53,11 @@ void PinoccioClass::disableBackpackVcc() {
   digitalWrite(VCC_ENABLE, LOW);
 }
 
-int getFreeMemory() {
-  int freeMemory;
-
-  if((int)__brkval == 0) {
-    freeMemory = ((int)&freeMemory) - ((int)&__bss_end);
-  } else {
-    freeMemory = ((int)&freeMemory) - ((int)__brkval);
-  }
-  return freeMemory;
+uintptr_t PinoccioClass::getFreeMemory() {
+  extern uintptr_t __heap_start;
+  extern void *__brkval; 
+  uintptr_t v; 
+  return (uintptr_t) &v - (__brkval == 0 ? (uintptr_t) &__heap_start : (uintptr_t) __brkval); 
 }
 
 void PinoccioClass::setRandomNumber(uint16_t number) {

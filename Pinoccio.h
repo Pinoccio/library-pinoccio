@@ -33,6 +33,8 @@
 #include "utility/halTemperature.h"
 #include "utility/halRgbLed.h"
 
+#include "Backpack.h"
+
 class PinoccioClass {
 
   public:
@@ -50,7 +52,7 @@ class PinoccioClass {
     void enableBackpackVcc();
     void disableBackpackVcc();
     
-    void getFreeMemory();
+    uintptr_t getFreeMemory();
 
     void setRandomNumber(uint16_t number);
 

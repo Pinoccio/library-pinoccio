@@ -13,8 +13,10 @@ class PinoccioBackpack {
     void loop();
     
   protected:
-    uint_16 family;
-    uint_32 id;
+    uint16_t family;
+    uint32_t id;
 };
+
+typedef PinoccioBackpack Backpack;
 
 #endif
