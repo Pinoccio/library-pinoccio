@@ -1,7 +1,7 @@
 #ifndef LIB_PINOCCIO_BACKPACK_H_
 #define LIB_PINOCCIO_BACKPACK_H_
 
-#include "Pinoccio.h"
+#include <Pinoccio.h>
 
 class PinoccioBackpack {
 
@@ -9,7 +9,7 @@ class PinoccioBackpack {
     PinoccioBackpack();
     ~PinoccioBackpack();
 
-    void init();
+    void setup();
     void loop();
     
   protected:

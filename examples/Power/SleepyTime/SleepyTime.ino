@@ -1,5 +1,4 @@
-#include "config.h"
-#include <Pinoccio.h>
+#include <Scout.h>
 
 typedef enum AppState_t
 {
@@ -12,20 +11,16 @@ static AppState_t appState = APP_STATE_START_SEND;
 static SYS_Timer_t appSleepTimer;
 static uint8_t sleepCtr;
 
+
 static void appSleepTimerHandler(SYS_Timer_t *timer) {
   appState = APP_STATE_START_SEND;
   (void)timer;
 }
 
-void PHY_EdConf(int8_t ed) {
-  Serial.println(ed - PHY_RSSI_BASE_VAL);
-}
-
 void setup() {
-  Pinoccio.init();
-  Serial.begin(115200);
+  Scout.setup();
 
-  appSleepTimer.interval = APP_SLEEP_INTERVAL;
+  appSleepTimer.interval = 5000;
   appSleepTimer.mode = SYS_TIMER_INTERVAL_MODE;
   appSleepTimer.handler = appSleepTimerHandler;
 
@@ -33,15 +28,13 @@ void setup() {
 }
 
 void loop() {
-  Pinoccio.taskHandler();
+  Scout.loop();
 
   switch (appState) {
     case APP_STATE_START_SEND:
       if (sleepCtr < 5) {
         Serial.println("Radio send");
       
-        PHY_SetChannel(APP_CHANNEL);
-        PHY_EdReq();
         appState = APP_STATE_GO_TO_SLEEP;
       } else {
         Serial.println("Deep sleep");

@@ -192,6 +192,12 @@ void PHY_RandomReq(void)
 {
   phyIb.request |= PHY_REQ_RANDOM;
 }
+
+/*****************************************************************************
+*****************************************************************************/
+void PHY_RandomConf(uint16_t rnd) {
+  srandom(rnd);
+}
 #endif
 
 #ifdef PHY_ENABLE_AES_MODULE

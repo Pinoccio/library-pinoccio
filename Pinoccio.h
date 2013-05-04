@@ -12,8 +12,6 @@
 // Start - Specifics for the LWM library
 #define NWK_ENABLE_SECURITY
 #define NWK_ENABLE_ROUTING
-#define PHY_ENABLE_ENERGY_DETECTION
-#define PHY_ENABLE_RANDOM_NUMBER_GENERATOR
 
 #define NWK_BUFFERS_AMOUNT                  3
 #define NWK_MAX_ENDPOINTS_AMOUNT            2
@@ -31,34 +29,30 @@
 #include "utility/sysTimer.h"
 #include "utility/halSleep.h"
 #include "utility/halTemperature.h"
-#include "utility/halRgbLed.h"
+#include "avr/sleep.h"
 
-#include "Backpack.h"
-
-class PinoccioClass {
+class Pinoccio {
 
   public:
-    PinoccioClass();
-    ~PinoccioClass();
+    Pinoccio();
+    ~Pinoccio();
 
-    void init();
+    void setup();
     void loop();
 
     float getTemperature();
+    uint32_t getRandomNumber();
 
-    bool isBatteryCharging();
-    float getBatteryVoltage();
-
-    void enableBackpackVcc();
-    void disableBackpackVcc();
-    
     uintptr_t getFreeMemory();
 
-    void setRandomNumber(uint16_t number);
+    bool sendMessage(NWK_DataReq_t *msg);
+    bool listenForMessage(uint8_t id, bool (*handler)(NWK_DataInd_t *msg));
+    
+    bool publish(char* topic, char* payload, int size);
+    bool subscribe(char*, bool (*handler)(NWK_DataInd_t *msg));
 
   protected:
     uint16_t randomNumber;
-    Backpack backpacks[3];
 };
 
 #endif

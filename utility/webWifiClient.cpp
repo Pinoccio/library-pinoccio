@@ -14,7 +14,7 @@ extern "C" {
 
 uint16_t PinoccioWifiClient::_srcport = 1024;
 
-PinoccioWifiClient::PinoccioWifiClient() : _sock(MAX_SOCK_NUM) { 
+PinoccioWifiClient::PinoccioWifiClient() : _sock(MAX_SOCK_NUM) {
   _protocol = IPPROTO::TCP;
 }
 
@@ -26,7 +26,7 @@ PinoccioWifiClient::PinoccioWifiClient(uint8_t sock) : _sock(sock) {
 int PinoccioWifiClient::connect(const char* host, uint16_t port) {
   /* TODO */
   return 0;
-  
+
   // Look up the host first
  /*
   int ret = 0;
@@ -40,21 +40,26 @@ int PinoccioWifiClient::connect(const char* host, uint16_t port) {
    } else {
      return ret;
    }*/
- 
+
+}
+
+int PinoccioWifiClient::connect(IPAddress ip, uint16_t port, uint8_t protocol) {
+  _protocol = protocol;
+  return PinoccioWifiClient::connect(ip, port);
 }
 
 
 int PinoccioWifiClient::connect(IPAddress ip, uint16_t port) {
   String ipAddress = String(ip[0]) + "." + String(ip[1]) + "." + String(ip[2]) + "." + String(ip[3]);
   String ipPort = String(port);
-  
+
   D(Serial.println("DEBUG: PinoccioWifiClient::connect 1"));
-  
+
   if (_sock != MAX_SOCK_NUM) {
     D(Serial.println("DEBUG: PinoccioWifiClient::connect 1.1"));
     return 0;
   }
-  
+
   D(Serial.println("DEBUG: PinoccioWifiClient::connect 2"));
 
   for (int i = 0; i < MAX_SOCK_NUM; i++) {
@@ -63,28 +68,28 @@ int PinoccioWifiClient::connect(IPAddress ip, uint16_t port) {
       break;
     }
   }
-  
+
   D(Serial.print("DEBUG: PinoccioWifiClient::connect socket: "));
   D(Serial.println(_sock));
 
   D(Serial.println("DEBUG: PinoccioWifiClient::connect 3"));
-  
+
   if (_sock == MAX_SOCK_NUM) {
     D(Serial.println("DEBUG: PinoccioWifiClient::connect 3.1"));
     return 0;
   }
-  
+
   _srcport++;
   if (_srcport == 0) _srcport = 1024;
   D(Serial.println("DEBUG: PinoccioWifiClient::connect 4"));
-  
+
   if (_protocol == IPPROTO::TCP) {
       socket(_sock, IPPROTO::TCP, _srcport, 0);
   } else if (_protocol == IPPROTO::UDP) {
       socket(_sock, IPPROTO::UDP_CLIENT, _srcport, 0);
   }
   D(Serial.println("DEBUG: PinoccioWifiClient::connect 5"));
-  
+
   if (!::connect(_sock, ipAddress, ipPort)) {
     D(Serial.println("DEBUG: PinoccioWifiClient::connect 5.1"));
     _sock = MAX_SOCK_NUM;

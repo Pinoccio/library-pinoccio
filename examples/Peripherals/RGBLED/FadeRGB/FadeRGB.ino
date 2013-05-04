@@ -1,8 +1,12 @@
-#include <Pinoccio.h>
+#include <Scout.h>
 
-void setup() { }
+void setup() {
+  Scout.setup();
+}
 
 void loop() {
+  Scout.loop();
+
   int red, green, blue;
   long time = 0;
 

@@ -1,7 +1,7 @@
 #ifndef LIB_PINOCCIO_LEADSCOUT_H_
 #define LIB_PINOCCIO_LEADSCOUT_H_
 
-#include "Pinoccio.h"
+#include <Pinoccio.h>
 
 #include "utility/phy.h"
 #include "utility/hal.h"
@@ -23,7 +23,7 @@ class PinoccioLeadScout : public PinoccioScout {
     PinoccioLeadScout();
     ~PinoccioLeadScout();
 
-    void init();
+    void setup();
     void loop();
     
     bool publishScoutToServer(uint16_t scoutAddress, char* topic, char* payload, int size);
