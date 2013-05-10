@@ -2,6 +2,7 @@
 #define LIB_PINOCCIO_LEADSCOUT_H_
 
 #include <Pinoccio.h>
+#include <Scout.h>
 
 #include "utility/phy.h"
 #include "utility/hal.h"
@@ -32,11 +33,13 @@ class PinoccioLeadScout : public PinoccioScout {
     bool publishTroopMetadataToServer(char* topic, char* payload, int size);
     
   protected:
-    Client netClient;
+    PinoccioWifiClient netClient;
     mqttClient mqtt;
   
     Scout scouts[NWK_ROUTE_TABLE_SIZE];
 };
+
+static void mqttMessageReceived(char* topic, byte* payload, unsigned int length);
 
 extern PinoccioLeadScout LeadScout;
 

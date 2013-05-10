@@ -45,11 +45,13 @@ class Pinoccio {
 
     uintptr_t getFreeMemory();
 
-    bool sendMessage(NWK_DataReq_t *msg);
-    bool listenForMessage(uint8_t id, bool (*handler)(NWK_DataInd_t *msg));
-    
-    bool publish(char* topic, char* payload, int size);
-    bool subscribe(char*, bool (*handler)(NWK_DataInd_t *msg));
+    void meshSendMessage(uint16_t destinationAddr, byte* message, uint8_t length, uint8_t options=0);
+    bool meshListenForMessages();
+
+    //bool publish(char* topic, char* payload, int size);
+    //bool subscribe(char*, bool (*handler)(NWK_DataInd_t *msg));
+
+    NWK_DataInd_t meshResponse;
 
   protected:
     uint16_t randomNumber;

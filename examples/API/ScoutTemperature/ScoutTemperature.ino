@@ -4,7 +4,7 @@
 static char temp[6];
 
 void setup() {
-  Pinoccio.init();
+  Pinoccio.setup();
   Wifi.begin(&profile);
 
   mqtt.connect("pinoccio");
