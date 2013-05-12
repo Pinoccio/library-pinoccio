@@ -6,10 +6,11 @@ PinoccioScout Scout;
 PinoccioScout::PinoccioScout() {
   RgbLed.turnOff();
   pinMode(CHG_STATUS, INPUT);
-  digitalWrite(BATT_CHECK, LOW);
-  pinMode(BATT_CHECK, OUTPUT);
-  digitalWrite(VCC_ENABLE, HIGH);
+  pinMode(BATT_ALERT, INPUT);
+  digitalWrite(BATT_ALERT, HIGH);
   pinMode(VCC_ENABLE, OUTPUT);
+  digitalWrite(VCC_ENABLE, HIGH);
+  pinMode(BACKPACK_BUS, INPUT);
   
   leadScoutAddress = 0;
   backpacks[0] = NULL;
