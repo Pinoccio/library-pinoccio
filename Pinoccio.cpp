@@ -43,6 +43,15 @@ uintptr_t Pinoccio::getFreeMemory() {
   return (uintptr_t) &v - (__brkval == 0 ? (uintptr_t) &__heap_start : (uintptr_t) __brkval);
 }
 
+void Pinoccio::goToSleep() {
+  // TODO
+  // - put radio to sleep
+  // - set all GPIO pins to inputs
+  // - turn off ADC
+  // - turn off backpack power
+  // - put MCU to sleep
+}
+
 void Pinoccio::meshSendMessage(uint16_t destinationAddr, uint8_t* message, uint8_t length, uint8_t options) {
   NWK_DataReq_t request;
 

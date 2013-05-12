@@ -47,6 +47,8 @@ class Pinoccio {
     uint32_t getRandomNumber();
 
     uintptr_t getFreeMemory();
+    
+    void goToSleep();
 
     void meshSendMessage(uint16_t destinationAddr, uint8_t* message, uint8_t length, uint8_t options=0);
     void meshListenForMessages();
