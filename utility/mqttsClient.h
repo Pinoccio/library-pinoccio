@@ -22,40 +22,40 @@ typedef enum {
   MQTTS_SEARCHGW      0x01,  // Client requesting response for gateway
   MQTTS_SEARCHGW      0x02,  // 
   //RESERVED          0x03,  
-  MQTTS_CONNECT       0x04,  // Client request to connect to Server
-  MQTTS_CONNACK       0x05,  // Connect Acknowledgment
-  MQTTS_WILLTOPICREQ  0x06,  // Connect Acknowledgment
-  MQTTS_WILLTOPIC     0x07,  // Connect Acknowledgment
-  MQTTS_WILLMSGREQ    0x08,  // Connect Acknowledgment
-  MQTTS_WILLMSG       0x09,  // Connect Acknowledgment
-  MQTTS_REGISTER      0x0A,  // Connect Acknowledgment
-  MQTTS_REGACK        0x0B,  // Connect Acknowledgment
+  MQTTS_CONNECT       0x04,  // Client request to connect to server
+  MQTTS_CONNACK       0x05,  // Connect acknowledgment
+  MQTTS_WILLTOPICREQ  0x06,  // Request will topic
+  MQTTS_WILLTOPIC     0x07,  // Will topic sent
+  MQTTS_WILLMSGREQ    0x08,  // Request will message 
+  MQTTS_WILLMSG       0x09,  // Will message sent
+  MQTTS_REGISTER      0x0A,  // Register a topic
+  MQTTS_REGACK        0x0B,  // Register topic acknowledgment
   MQTTS_PUBLISH       0x0C,  // Publish message
-  MQTTS_PUBACK        0x0D,  // Publish Acknowledgment
-  MQTTS_PUBCOMP       0x0E,  // Publish Received (assured delivery part 1)
-  MQTTS_PUBREC        0x0F,  // Publish Release (assured delivery part 2)
-  MQTTS_PUBREL        0x10,  // Publish Complete (assured delivery part 3)
+  MQTTS_PUBACK        0x0D,  // Publish acknowledgment
+  MQTTS_PUBCOMP       0x0E,  // Publish received (assured delivery part 1)
+  MQTTS_PUBREC        0x0F,  // Publish release (assured delivery part 2)
+  MQTTS_PUBREL        0x10,  // Publish complete (assured delivery part 3)
   //RESERVED          0x11,  
-  MQTTS_SUBSCRIBE     0x12,  // Client Subscribe request
-  MQTTS_SUBACK        0x13,  // Subscribe Acknowledgment
-  MQTTS_UNSUBSCRIBE   0x14,  // Client Unsubscribe request
-  MQTTS_UNSUBACK      0x15,  // Unsubscribe Acknowledgment
-  MQTTS_PINGREQ       0x16,  // PING Request
-  MQTTS_PINGRESP      0x17,  // PING Response
-  MQTTS_DISCONNECT    0x18,  // Client is Disconnecting
+  MQTTS_SUBSCRIBE     0x12,  // Client subscribe request
+  MQTTS_SUBACK        0x13,  // Subscribe acknowledgment
+  MQTTS_UNSUBSCRIBE   0x14,  // Client unsubscribe request
+  MQTTS_UNSUBACK      0x15,  // Unsubscribe acknowledgment
+  MQTTS_PINGREQ       0x16,  // PING request
+  MQTTS_PINGRESP      0x17,  // PING response
+  MQTTS_DISCONNECT    0x18,  // Client is disconnecting
   //RESERVED          0x19,  
-  MQTTS_WILLTOPICUPD  0x1A,  // Connect Acknowledgment
-  MQTTS_WILLTOPICRESP 0x1B,  // Connect Acknowledgment
-  MQTTS_WILLMSGUPD    0x1C,  // Connect Acknowledgment
-  MQTTS_WILLMSGRESP   0x1D,  // Connect Acknowledgment
+  MQTTS_WILLTOPICUPD  0x1A,  // Will topic updated request
+  MQTTS_WILLTOPICRESP 0x1B,  // Will topic updated response
+  MQTTS_WILLMSGUPD    0x1C,  // Will message updated request
+  MQTTS_WILLMSGRESP   0x1D,  // Will message updated response
   //RESERVED          0x1E-0xFD, 
   MQTTS_ENCAPSULATED  0xFE,  // Encapsulated message
   //RESERVED          0xFF,  // reserved
 }
 
-#define MQTTS_QOS0        (0 << 1)
-#define MQTTS_QOS1        (1 << 1)
-#define MQTTS_QOS2        (2 << 1)
+#define MQTTS_QOS0    (0 << 1)
+#define MQTTS_QOS1    (1 << 1)
+#define MQTTS_QOS2    (2 << 1)
 
 class mqttClient {
 private:

@@ -36,7 +36,7 @@ class PinoccioLeadScout : public PinoccioScout {
     PinoccioWifiClient netClient;
     mqttClient mqtt;
   
-    Scout scouts[NWK_ROUTE_TABLE_SIZE];
+    PinoccioScout* scouts[NWK_ROUTE_TABLE_SIZE];
 };
 
 static void mqttMessageReceived(char* topic, byte* payload, unsigned int length);

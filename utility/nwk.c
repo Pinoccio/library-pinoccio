@@ -67,6 +67,13 @@ void NWK_OpenEndpoint(uint8_t id, bool (*handler)(NWK_DataInd_t *ind))
   nwkIb.endpoint[id] = handler;
 }
 
+/*****************************************************************************
+*****************************************************************************/
+void NWK_OpenEndpoint(uint8_t id, FuncDelegate1 delegate)
+{
+  nwkIb.endpoint[id] = delegate;
+}
+
 #ifdef NWK_ENABLE_SECURITY
 /*****************************************************************************
 *****************************************************************************/

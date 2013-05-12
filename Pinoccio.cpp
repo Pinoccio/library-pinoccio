@@ -43,7 +43,7 @@ uintptr_t Pinoccio::getFreeMemory() {
   return (uintptr_t) &v - (__brkval == 0 ? (uintptr_t) &__heap_start : (uintptr_t) __brkval);
 }
 
-void Pinoccio::meshSendMessage(uint16_t destinationAddr, byte* message, uint8_t length, uint8_t options=0) {
+void Pinoccio::meshSendMessage(uint16_t destinationAddr, uint8_t* message, uint8_t length, uint8_t options) {
   NWK_DataReq_t request;
 
   request.dstAddr = destinationAddr;
@@ -52,17 +52,19 @@ void Pinoccio::meshSendMessage(uint16_t destinationAddr, byte* message, uint8_t 
   request.options = options;
   request.data = message;
   request.size = length;
-  request.confirm = meshSendMessageConfirm;
+  //TODO request.confirm = meshSendMessageConfirm;
 
   NWK_DataReq(&request);
 }
 
 void Pinoccio::meshListenForMessages() {
-   NWK_OpenEndpoint(1, meshReceiveMessage);
+  FuncDelegate1 receiveDelegate;
+  receiveDelegate = MakeDelegate(this, &Pinoccio::meshReceiveMessage);
+  NWK_OpenEndpoint(1, receiveDelegate);
 }
 
 void Pinoccio::meshReceiveMessage(NWK_DataInd_t *ind) {
-  
+  Serial.println("received mesh message");
 }
 
 static void meshSendMessageConfirm(NWK_DataReq_t *req) {

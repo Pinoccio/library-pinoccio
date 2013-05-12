@@ -1,4 +1,3 @@
-#include "config.h"
 #include <Arduino.h>
 #include <LeadScout.h>
 
@@ -9,13 +8,15 @@ WIFI_PROFILE profile = {
          /* subnet mask */ "",
           /* Gateway IP */ "" };
 
-PinoccioLeadScout LeadScout; 
+PinoccioLeadScout LeadScout;
 
 PinoccioLeadScout::PinoccioLeadScout() {
   scouts[0] = NULL;
-  
+  //TODO 
+  IPAddress server(85,119,83,194);
+
   mqttClient mqtt(server, 1883, mqttMessageReceived, netClient);
-  
+
   Wifi.begin(&profile);
 
   mqtt.connect("pinoccio");
@@ -23,12 +24,12 @@ PinoccioLeadScout::PinoccioLeadScout() {
 
 PinoccioLeadScout::~PinoccioLeadScout() { }
 
-void PinoccioLeadScout::setup() { 
-  Scout::setup();
+void PinoccioLeadScout::setup() {
+  PinoccioScout::setup();
 }
 
-void PinoccioLeadScout::loop() { 
-  Scout::loop();
+void PinoccioLeadScout::loop() {
+  PinoccioScout::loop();
   mqtt.loop();
 }
 
@@ -38,5 +39,5 @@ static void mqttMessageReceived(char* topic, byte* payload, unsigned int length)
   Serial.write(payload, length);
   Serial.println("");
   Serial.println("Sending message over mesh network");
-  meshSendMessage(payload, length);
+  //meshSendMessage(payload, length);
 }
