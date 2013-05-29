@@ -32,31 +32,25 @@ static void appSendData(void) {
 }
 
 static void appTimerHandler(SYS_Timer_t *timer) {
-  if (APP_ADDR == 0) {
-    appSendData();
-    (void)timer;
-  }
   if (APP_ADDR == 1) {
-    Serial.println("Waiting....");
+    //Serial.println("Waiting....");
   }
 }
 
 static bool appDataInd(NWK_DataInd_t *ind) {
   receivedPacket = true;
   Serial.print("lqi: ");
-  Serial.print(ind->lqi >> 4, HEX);
-  Serial.print(ind->lqi, HEX);
+  Serial.print(ind->lqi, DEC);
 
   Serial.print("  ");
 
   Serial.print("rssi: ");
-  Serial.print(ind->rssi >> 4, HEX);
-  Serial.print(ind->rssi, HEX);
+  Serial.print(ind->rssi, DEC);
   Serial.print("  ");
 
   Serial.print("data: ");
   for (int i=0; i<ind->size; i++) {
-    Serial.write(ind->data[i]);
+    Serial.print(ind->data[i], DEC);
   }
   Serial.println("");
   return true;
@@ -82,4 +76,8 @@ void setup() {
 
 void loop() {
   Pinoccio.loop();
+  if (APP_ADDR == 0) {
+    appSendData();
+    delay(APP_FLUSH_TIMER_INTERVAL);
+  }
 }

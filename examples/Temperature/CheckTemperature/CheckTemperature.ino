@@ -7,7 +7,7 @@ void setup() {
 }
 
 void loop() {
-  Pinoccio.taskHandler();
+  Pinoccio.loop();
 
   Serial.print("Temp: ");
   Serial.println(Pinoccio.getTemperature());

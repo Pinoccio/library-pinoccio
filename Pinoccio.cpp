@@ -7,8 +7,8 @@ PinoccioClass Pinoccio;
 PinoccioClass::PinoccioClass() {
   RgbLed.turnOff();
   pinMode(CHG_STATUS, INPUT);
-  digitalWrite(BATT_CHECK, LOW);
-  pinMode(BATT_CHECK, OUTPUT);
+  //digitalWrite(BATT_CHECK, LOW);
+  //pinMode(BATT_CHECK, OUTPUT);
   digitalWrite(VCC_ENABLE, HIGH);
   pinMode(VCC_ENABLE, OUTPUT); 
 }
@@ -70,9 +70,9 @@ uint8_t PinoccioClass::triStateBatteryCheck() {
 float PinoccioClass::getBatteryVoltage() {
   pinMode(A7, INPUT);
   digitalWrite(A7, LOW);
-  digitalWrite(BATT_CHECK, HIGH);
+  //digitalWrite(BATT_CHECK, HIGH);
   int read = analogRead(A7);
-  digitalWrite(BATT_CHECK, LOW);
+  //digitalWrite(BATT_CHECK, LOW);
   digitalWrite(A7, HIGH);
   return read;
 }
