@@ -17,9 +17,9 @@ extern "C"{
 #include <stdbool.h>
 #include "sysConfig.h"
 
-#ifdef __AVR_ATmega128RFA1__
+#if defined(__AVR_ATmega128RFA1__)
 #include "atmega128rfa1.h"
-#else
+#elif defined(__AVR_ATmega256RFR2__)
 #include "atmega256rfr2.h"
 #endif
 

@@ -67,9 +67,11 @@ void Pinoccio::meshSendMessage(uint16_t destinationAddr, uint8_t* message, uint8
 }
 
 void Pinoccio::meshListenForMessages() {
+  /*
   FuncDelegate1 receiveDelegate;
-  receiveDelegate = MakeDelegate(this, &Pinoccio::meshReceiveMessage);
-  NWK_OpenEndpoint(1, receiveDelegate);
+    receiveDelegate = MakeDelegate(this, &Pinoccio::meshReceiveMessage);
+    NWK_OpenEndpoint(1, receiveDelegate);*/
+  
 }
 
 void Pinoccio::meshReceiveMessage(NWK_DataInd_t *ind) {

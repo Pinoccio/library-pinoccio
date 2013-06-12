@@ -29,10 +29,10 @@
 #include "utility/sysTimer.h"
 #include "utility/halSleep.h"
 #include "utility/halTemperature.h"
-#include "utility/fastDelegate.h"
+//#include "utility/fastDelegate.h"
 #include "avr/sleep.h"
 
-typedef FastDelegate1<> FuncDelegate1;
+//typedef FastDelegate1<> FuncDelegate1;
 
 class Pinoccio {
 
