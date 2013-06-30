@@ -31,7 +31,7 @@ const char PROGMEM cmd_15[] = "AT+NCUDP=";
 const char PROGMEM cmd_16[] = "AT+NSTAT=?";
 const char PROGMEM cmd_17[] = "AT";
 
-const char* PROGMEM cmd_tbl[] =
+const char* const PROGMEM cmd_tbl[] =
 {
   cmd_0, cmd_1, cmd_2, cmd_3, cmd_4, cmd_5, cmd_6, cmd_7,
   cmd_8, cmd_9, cmd_10, cmd_11, cmd_12, cmd_13, cmd_14,

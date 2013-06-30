@@ -1,8 +1,21 @@
 #include <Arduino.h>
 #include <Pinoccio.h>
-#include "utility/atmega128rfa1.h"
 
-Pinoccio::Pinoccio() { }
+#if  defined(__AVR_ATmega128RFA1__)
+#include "atmega128rfa1.h"
+#elif defined(__AVR_ATmega256RFR2__)
+#include "atmega256rfr2.h"
+#endif
+
+
+Pinoccio::Pinoccio() {
+  RgbLed.turnOff();
+  pinMode(CHG_STATUS, INPUT);
+  //digitalWrite(BATT_CHECK, LOW);
+  //pinMode(BATT_CHECK, OUTPUT);
+  digitalWrite(VCC_ENABLE, HIGH);
+  pinMode(VCC_ENABLE, OUTPUT);
+}
 
 Pinoccio::~Pinoccio() { }
 
@@ -41,6 +54,10 @@ uintptr_t Pinoccio::getFreeMemory() {
   extern void *__brkval;
   uintptr_t v;
   return (uintptr_t) &v - (__brkval == 0 ? (uintptr_t) &__heap_start : (uintptr_t) __brkval);
+}
+
+float PinoccioClass::getBatteryVoltage() {
+  return 0.0;
 }
 
 void Pinoccio::goToSleep() {

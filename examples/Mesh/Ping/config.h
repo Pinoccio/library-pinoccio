@@ -8,7 +8,7 @@
 #define APP_PANID                 0x4567
 #define APP_ENDPOINT              1
 #define APP_SECURITY_KEY          "TestSecurityKey0"
-#define APP_FLUSH_TIMER_INTERVAL  1000
+#define APP_FLUSH_TIMER_INTERVAL  500
 
 #define SYS_SECURITY_MODE                   0
 
