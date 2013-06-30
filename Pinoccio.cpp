@@ -52,26 +52,21 @@ void Pinoccio::goToSleep() {
   // - put MCU to sleep
 }
 
-void Pinoccio::meshSendMessage(uint16_t destinationAddr, uint8_t* message, uint8_t length, uint8_t options) {
-  NWK_DataReq_t request;
+void Pinoccio::meshSendMessage(MeshRequest request) {
 
-  request.dstAddr = destinationAddr;
-  request.dstEndpoint = 1;
-  request.srcEndpoint = 1;
-  request.options = options;
-  request.data = message;
-  request.size = length;
+  // request.dstAddr = destinationAddr;
+  // request.dstEndpoint = 1;
+  // request.srcEndpoint = 1;
+  // request.options = options;
+  // request.data = message;
+  // request.size = length;
   //TODO request.confirm = meshSendMessageConfirm;
 
-  NWK_DataReq(&request);
+  NWK_DataReq(&(request.data));
 }
 
-void Pinoccio::meshListenForMessages() {
-  /*
-  FuncDelegate1 receiveDelegate;
-    receiveDelegate = MakeDelegate(this, &Pinoccio::meshReceiveMessage);
-    NWK_OpenEndpoint(1, receiveDelegate);*/
-  
+void Pinoccio::meshListenForMessagesAt(uint8_t endpoint, bool (*handler)(NWK_DataInd_t *ind)) {
+  NWK_OpenEndpoint(endpoint, handler);
 }
 
 void Pinoccio::meshReceiveMessage(NWK_DataInd_t *ind) {

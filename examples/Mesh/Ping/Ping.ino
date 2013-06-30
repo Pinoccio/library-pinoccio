@@ -44,14 +44,12 @@ static void appTimerHandler(SYS_Timer_t *timer) {
 static bool appDataInd(NWK_DataInd_t *ind) {
   receivedPacket = true;
   Serial.print("lqi: ");
-  Serial.print(ind->lqi >> 4, HEX);
-  Serial.print(ind->lqi, HEX);
+  Serial.print(ind->lqi, DEC);
 
   Serial.print("  ");
 
   Serial.print("rssi: ");
-  Serial.print(ind->rssi >> 4, HEX);
-  Serial.print(ind->rssi, HEX);
+  Serial.print(ind->rssi, DEC);
   Serial.print("  ");
 
   Serial.print("data: ");

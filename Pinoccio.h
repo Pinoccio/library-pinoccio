@@ -29,10 +29,7 @@
 #include "utility/sysTimer.h"
 #include "utility/halSleep.h"
 #include "utility/halTemperature.h"
-//#include "utility/fastDelegate.h"
 #include "avr/sleep.h"
-
-//typedef FastDelegate1<> FuncDelegate1;
 
 class Pinoccio {
 
@@ -50,13 +47,11 @@ class Pinoccio {
     
     void goToSleep();
 
-    void meshSendMessage(uint16_t destinationAddr, uint8_t* message, uint8_t length, uint8_t options=0);
-    void meshListenForMessages();
+    void meshSendMessage(MeshRequest request);
+    void meshListenForMessagesAt(uint8_t endpoint, bool (*handler)(NWK_DataInd_t *ind));
 
     //bool publish(char* topic, char* payload, int size);
     //bool subscribe(char*, bool (*handler)(NWK_DataInd_t *msg));
-
-    NWK_DataInd_t meshResponse;
 
   protected:
     uint16_t randomNumber;
