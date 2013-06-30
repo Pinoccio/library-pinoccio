@@ -2,7 +2,7 @@
 #define  _PINOCCIO_WEB_GAINSPAN_H_
 
 #include <avr/pgmspace.h>
-#include <WString.h>
+#include "WString.h"
 
 typedef uint8_t SOCKET;
 

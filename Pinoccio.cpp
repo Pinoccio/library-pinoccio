@@ -1,6 +1,10 @@
 #include <Arduino.h>
 #include <Pinoccio.h>
+#if  defined(__AVR_ATmega128RFA1__)
 #include "atmega128rfa1.h"
+#elif defined(__AVR_ATmega256RFR2__)
+#include "atmega256rfr2.h"
+#endif
 
 PinoccioClass Pinoccio;
 
