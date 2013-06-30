@@ -3,6 +3,7 @@
 
 #include <Pinoccio.h>
 #include <Backpack.h>
+#include <Wire.h>
 
 #include "utility/phy.h"
 #include "utility/hal.h"
@@ -11,10 +12,11 @@
 #include "utility/sysTimer.h"
 #include "utility/halSleep.h"
 #include "utility/halTemperature.h"
+#include "utility/halFuelGauge.h"
 #include "utility/halRgbLed.h"
 #include "utility/mqttClient.h"
 
-class PinoccioScout : public Pinoccio {
+class PinoccioScout : public PinoccioClass {
 
   public:
     PinoccioScout();
@@ -24,7 +26,8 @@ class PinoccioScout : public Pinoccio {
     void loop();
 
     bool isBatteryCharging();
-    int getBatteryPercentage();
+    float getBatteryPercentage();
+    float getBatteryVoltage();
 
     void enableBackpackVcc();
     void disableBackpackVcc();

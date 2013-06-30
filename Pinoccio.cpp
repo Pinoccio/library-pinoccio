@@ -7,27 +7,15 @@
 #include "atmega256rfr2.h"
 #endif
 
+PinoccioClass Pinoccio;
 
-Pinoccio::Pinoccio() {
-  RgbLed.turnOff();
-  pinMode(CHG_STATUS, INPUT);
-  //digitalWrite(BATT_CHECK, LOW);
-  //pinMode(BATT_CHECK, OUTPUT);
-  digitalWrite(VCC_ENABLE, HIGH);
-  pinMode(VCC_ENABLE, OUTPUT);
-}
+PinoccioClass::PinoccioClass() { }
 
-Pinoccio::~Pinoccio() { }
+PinoccioClass::~PinoccioClass() { }
 
-void Pinoccio::setup() {
+void PinoccioClass::setup() {
   Serial.begin(115200);
   SYS_Init();
-
-  // TODO--get from EEPROM
-  NWK_SetAddr(1);
-  NWK_SetPanId(0x4567);
-  PHY_SetChannel(0x1a);
-  PHY_SetRxState(true);
 
   // TODO: PHY_TX_PWR_REG(TX_PWR_3_2DBM);
   HAL_MeasureAdcOffset();
@@ -36,31 +24,11 @@ void Pinoccio::setup() {
   getRandomNumber();
 }
 
-void Pinoccio::loop() {
+void PinoccioClass::loop() {
   SYS_TaskHandler();
 }
 
-float Pinoccio::getTemperature() {
-  return HAL_MeasureTemperature();
-}
-
-uint32_t Pinoccio::getRandomNumber() {
-  PHY_RandomReq();
-  return random();
-}
-
-uintptr_t Pinoccio::getFreeMemory() {
-  extern uintptr_t __heap_start;
-  extern void *__brkval;
-  uintptr_t v;
-  return (uintptr_t) &v - (__brkval == 0 ? (uintptr_t) &__heap_start : (uintptr_t) __brkval);
-}
-
-float PinoccioClass::getBatteryVoltage() {
-  return 0.0;
-}
-
-void Pinoccio::goToSleep() {
+void PinoccioClass::goToSleep() {
   // TODO
   // - put radio to sleep
   // - set all GPIO pins to inputs
@@ -69,48 +37,38 @@ void Pinoccio::goToSleep() {
   // - put MCU to sleep
 }
 
-void Pinoccio::meshSendMessage(MeshRequest request) {
-
-  // request.dstAddr = destinationAddr;
-  // request.dstEndpoint = 1;
-  // request.srcEndpoint = 1;
-  // request.options = options;
-  // request.data = message;
-  // request.size = length;
-  //TODO request.confirm = meshSendMessageConfirm;
-
-  NWK_DataReq(&(request.data));
+float PinoccioClass::getTemperature() {
+  return HAL_MeasureTemperature();
 }
 
-void Pinoccio::meshListenForMessagesAt(uint8_t endpoint, bool (*handler)(NWK_DataInd_t *ind)) {
+uint32_t PinoccioClass::getRandomNumber() {
+  PHY_RandomReq();
+  return random();
+}
+
+uintptr_t PinoccioClass::getFreeMemory() {
+  extern uintptr_t __heap_start;
+  extern void *__brkval;
+  uintptr_t v;
+  return (uintptr_t) &v - (__brkval == 0 ? (uintptr_t) &__heap_start : (uintptr_t) __brkval);
+}
+
+void PinoccioClass::meshSetRadio(uint16_t addr, uint16_t panId, uint8_t channel) {
+  // TODO--get from EEPROM
+  NWK_SetAddr(addr);
+  NWK_SetPanId(panId);
+  PHY_SetChannel(channel);
+  PHY_SetRxState(true);
+}
+  
+void PinoccioClass::meshSetSecurityKey(uint8_t *key) {
+  NWK_SetSecurityKey(key);
+}
+
+void PinoccioClass::meshSendMessage(MeshRequest request) {
+  NWK_DataReq(request.getRequest());
+}
+
+void PinoccioClass::meshListen(uint8_t endpoint, bool (*handler)(NWK_DataInd_t *ind)) {
   NWK_OpenEndpoint(endpoint, handler);
 }
-
-void Pinoccio::meshReceiveMessage(NWK_DataInd_t *ind) {
-  Serial.println("received mesh message");
-}
-
-static void meshSendMessageConfirm(NWK_DataReq_t *req) {
- if (NWK_SUCCESS_STATUS == req->status)
-   Serial.println("Message successfully sent");
- else {
-   Serial.print("Error sending message: ");
-   Serial.println(req->status, HEX);
- }
-}
-
-static bool meshReceiveMessage(NWK_DataInd_t *ind) {
-  Pinoccio::meshReceiveMessage(ind);
-}
-
-// TODO
-/*
-
-bool Pinoccio::publish(char* topic, char* payload, int size) {
-
-}
-
-bool Pinoccio::subscribe(char* topic, bool (*handler)(NWK_DataInd_t *msg)) {
-
-}
-*/
