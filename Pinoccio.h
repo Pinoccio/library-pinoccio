@@ -14,8 +14,8 @@
 #define NWK_ENABLE_ROUTING
 
 #define SYS_SECURITY_MODE                   0
-#define NWK_BUFFERS_AMOUNT                  3
-#define NWK_MAX_ENDPOINTS_AMOUNT            3
+#define NWK_BUFFERS_AMOUNT                  4
+#define NWK_MAX_ENDPOINTS_AMOUNT            4
 #define NWK_DUPLICATE_REJECTION_TABLE_SIZE  10
 #define NWK_DUPLICATE_REJECTION_TTL         3000 // ms
 #define NWK_ROUTE_TABLE_SIZE                100
@@ -24,7 +24,6 @@
 // End - Specifics for the LWM library
 
 #include <Arduino.h>
-#include <Wire.h>
 
 #include "utility/phy.h"
 #include "utility/hal.h"

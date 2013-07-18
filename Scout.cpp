@@ -1,6 +1,5 @@
 #include <Arduino.h>
 #include <Wire.h>
-
 #include "Scout.h"
 #include <math.h>
 
@@ -31,8 +30,8 @@ void PinoccioScout::setup() {
   
   Wire.begin(); 
   delay(100);
-  HAL_configMAX17048G(20);   // Configure the MAX17048G's alert percentage
-  HAL_qsMAX17048G();         // restart fuel-gauge calculations
+  HAL_FuelGaugeConfig(20);   // Configure the MAX17048G's alert percentage to 20%
+  HAL_FuelGaugeQuickStart(); // Restart fuel-gauge calculations
 }
 
 void PinoccioScout::loop() { 
@@ -44,11 +43,11 @@ bool PinoccioScout::isBatteryCharging() {
 }
 
 float PinoccioScout::getBatteryPercentage() {
-  return roundf(HAL_percentMAX17048G() * 10.0f) / 10.0f;
+  return roundf(HAL_FuelGaugePercent() * 10.0f) / 10.0f;
 }
 
 float PinoccioScout::getBatteryVoltage() {
-  return roundf((HAL_vcellMAX17048G() * 1/800) * 10.0f) / 10.0f;
+  return roundf((HAL_FuelGaugeVoltage() * 1/800) * 10.0f) / 10.0f;
 }
 
 void PinoccioScout::enableBackpackVcc() {

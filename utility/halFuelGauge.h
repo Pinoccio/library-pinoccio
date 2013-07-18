@@ -12,7 +12,6 @@
 #define _PINOCCIO_HAL_FUEL_GAUGE_H_
 
 #include "Arduino.h"
-#include "Wire.h"
 
 /*****************************************************************************
 *****************************************************************************/
@@ -30,13 +29,13 @@ as reported by the MAX17048G's VCELL register.
 This does not return a voltage value. To convert this to a voltage,
 multiply by 5 and divide by 4096.
 */
-unsigned int HAL_vcellMAX17048G();
+unsigned int HAL_FuelGaugeVoltage();
 
 /*
 percentMAX17048G() returns a float value of the battery percentage
 reported from the SOC register of the MAX17048G.
 */
-float HAL_percentMAX17048G();
+float HAL_FuelGaugePercent();
 
 /* 
 configMAX17048G(byte percent) configures the config register of
@@ -44,7 +43,7 @@ the MAX170143, specifically the alert threshold therein. Pass a
 value between 1 and 32 to set the alert threshold to a value between
 1 and 32%. Any other values will set the threshold to 32%.
 */
-void HAL_configMAX17048G(byte percent);
+void HAL_FuelGaugeConfig(byte percent);
 
 /* 
 qsMAX17048G() issues a quick-start command to the MAX17048G.
@@ -54,20 +53,20 @@ power-up sequence is very noisy, such that excess error is introduced
 into the IC's first guess of SOC, you can issue a quick-start
 to reduce the error.
 */
-void HAL_qsMAX17048G();
+void HAL_FuelGaugeQuickStart();
 
 /* 
 i2cRead16(unsigned char address) reads a 16-bit value beginning
 at the 8-bit address, and continuing to the next address. A 16-bit
 value is returned.
 */
-unsigned int HAL_i2cRead16(unsigned char address);
+unsigned int HAL_FuelGaugei2cRead16(unsigned char address);
 
 /*
 i2cWrite16(unsigned int data, unsigned char address) writes 16 bits
 of data beginning at an 8-bit address, and continuing to the next.
 */
-void HAL_i2cWrite16(unsigned int data, unsigned char address);
+void HAL_FuelGaugei2cWrite16(unsigned int data, unsigned char address);
 
 #ifdef __cplusplus
 } // extern "C"

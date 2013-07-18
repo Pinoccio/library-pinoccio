@@ -16,7 +16,7 @@ extern "C"{
 //#define PHY_ENABLE_ENERGY_DETECTION
 #define PHY_ENABLE_RANDOM_NUMBER_GENERATOR
 
-#include <sysTypes.h>
+#include "sysTypes.h"
 
 /*****************************************************************************
 *****************************************************************************/
