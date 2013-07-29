@@ -15,6 +15,7 @@ HalRgbLed RgbLed;
 HalRgbLed::HalRgbLed() {
   turnOff();
   enable();
+  redValue = greenValue = blueValue = 0;
 }
 
 void HalRgbLed::enable() {
@@ -31,9 +32,9 @@ bool HalRgbLed::isEnabled() {
 }
 
 void HalRgbLed::turnOff() {
-  setRed(0);
-  setGreen(0);
-  setBlue(0);
+  setRedValue(0);
+  setGreenValue(0);
+  setBlueValue(0);
 }
 
 void HalRgbLed::red() {
@@ -41,7 +42,7 @@ void HalRgbLed::red() {
     return;
   }
   turnOff();
-  setRed(255);
+  setRedValue(255);
 }
 
 void HalRgbLed::green() {
@@ -49,7 +50,7 @@ void HalRgbLed::green() {
     return;
   }
   turnOff();
-  setGreen(255);
+  setGreenValue(255);
 }
 
 void HalRgbLed::blue() {
@@ -57,7 +58,7 @@ void HalRgbLed::blue() {
     return;
   }
   turnOff();
-  setBlue(255);
+  setBlueValue(255);
 }
 
 void HalRgbLed::cyan() {
@@ -65,8 +66,8 @@ void HalRgbLed::cyan() {
     return;
   }
   turnOff();
-  setGreen(255);
-  setBlue(255);
+  setGreenValue(255);
+  setBlueValue(255);
 }
 
 void HalRgbLed::magenta() {
@@ -74,8 +75,8 @@ void HalRgbLed::magenta() {
     return;
   }
   turnOff();
-  setRed(255);
-  setBlue(255);
+  setRedValue(255);
+  setBlueValue(255);
 }
 
 void HalRgbLed::yellow() {
@@ -83,8 +84,8 @@ void HalRgbLed::yellow() {
     return;
   }
   turnOff();
-  setRed(255);
-  setGreen(255);
+  setRedValue(255);
+  setGreenValue(255);
 }
 
 void HalRgbLed::white() {
@@ -92,9 +93,9 @@ void HalRgbLed::white() {
     return;
   }
   turnOff();
-  setRed(255);
-  setGreen(255);
-  setBlue(255);
+  setRedValue(255);
+  setGreenValue(255);
+  setBlueValue(255);
 }
 
 void HalRgbLed::blinkRed(unsigned int ms) {
@@ -174,22 +175,37 @@ void HalRgbLed::blinkWhite(unsigned int ms) {
   delay(ms);
 }
 
-void HalRgbLed::setRed(int value) {
+void HalRgbLed::setRedValue(int value) {
   if (isEnabled()) {
     analogWrite(LED_RED, 255-value);
+    redValue = value;
   }
 }
 
-void HalRgbLed::setGreen(int value) {
+void HalRgbLed::setGreenValue(int value) {
   if (isEnabled()) {
     analogWrite(LED_GREEN, 255-value);
+    greenValue = value;
   }
 }
 
-void HalRgbLed::setBlue(int value) {
+void HalRgbLed::setBlueValue(int value) {
   if (isEnabled()) {
     analogWrite(LED_BLUE, 255-value);
+    blueValue = value;
   }
+}
+
+int HalRgbLed::getRedValue() {
+  return redValue;
+}
+
+int HalRgbLed::getGreenValue() {
+  return greenValue;
+}
+
+int HalRgbLed::getBlueValue() {
+  return blueValue;
 }
 
 void HalRgbLed::setHex(char* hex) {
@@ -203,7 +219,7 @@ void HalRgbLed::setHex(char* hex) {
     out[t] = (uint8_t)(hn << 4 ) | (uint8_t)ln;
   }
 
-  setRed(out[0]);
-  setGreen(out[1]);
-  setBlue(out[2]);
+  setRedValue(out[0]);
+  setGreenValue(out[1]);
+  setBlueValue(out[2]);
 }

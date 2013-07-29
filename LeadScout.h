@@ -31,7 +31,7 @@ class PinoccioLeadScout : public PinoccioScout {
     bool subscribeScoutToServer(uint16_t scoutAddress, char* topic);
     
     bool publishTroopMetadataToServer(char* topic, char* payload, int size);
-    
+
   protected:
     PinoccioWifiClient netClient;
     mqttClient mqtt;

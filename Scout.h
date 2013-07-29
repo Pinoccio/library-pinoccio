@@ -1,6 +1,9 @@
 #ifndef LIB_PINOCCIO_SCOUT_H_
 #define LIB_PINOCCIO_SCOUT_H_
 
+#define P_MAX_BACKPACKS 3
+#define P_MAX_LEAD_SCOUTS 3
+
 #include <Pinoccio.h>
 #include <Backpack.h>
 
@@ -27,11 +30,9 @@ class PinoccioScout : public PinoccioClass {
     void enableBackpackVcc();
     void disableBackpackVcc();
 
-    friend class LeadScout;
-
   protected:
-    uint16_t leadScoutAddress;   
-    Backpack* backpacks[3];
+    uint16_t leadScoutAddresses[P_MAX_LEAD_SCOUTS];   
+    Backpack* backpacks[P_MAX_BACKPACKS];
 };
 
 extern PinoccioScout Scout;

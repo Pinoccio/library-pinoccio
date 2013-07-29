@@ -15,14 +15,15 @@ PinoccioLeadScout::PinoccioLeadScout() {
   //TODO 
   IPAddress server(85,119,83,194);
 
-  mqttClient mqtt(server, 1883, mqttMessageReceived, netClient);
+  //mqttClient mqtt(server, 1883, mqttMessageReceived, netClient);
 
-  Wifi.begin(&profile);
+  //Wifi.begin(&profile);
 
-  mqtt.connect("pinoccio");
+  //mqtt.connect("pinoccio");
 }
 
 PinoccioLeadScout::~PinoccioLeadScout() { }
+
 
 void PinoccioLeadScout::setup() {
   PinoccioScout::setup();
@@ -30,7 +31,7 @@ void PinoccioLeadScout::setup() {
 
 void PinoccioLeadScout::loop() {
   PinoccioScout::loop();
-  mqtt.loop();
+  //mqtt.loop();
 }
 
 static void mqttMessageReceived(char* topic, byte* payload, unsigned int length) {

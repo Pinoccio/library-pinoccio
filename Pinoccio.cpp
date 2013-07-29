@@ -1,7 +1,7 @@
 #include <Arduino.h>
 #include <Pinoccio.h>
 
-#if  defined(__AVR_ATmega128RFA1__)
+#if defined(__AVR_ATmega128RFA1__)
 #include "atmega128rfa1.h"
 #elif defined(__AVR_ATmega256RFR2__)
 #include "atmega256rfr2.h"
@@ -22,13 +22,16 @@ void PinoccioClass::setup() {
 
   // initial seeding of RNG
   getRandomNumber();
+  
+  initBitlash(115200);
 }
 
 void PinoccioClass::loop() {
   SYS_TaskHandler();
+  runBitlash();
 }
 
-void PinoccioClass::goToSleep() {
+void PinoccioClass::goToSleep(uint32_t sleepForMs) {
   // TODO
   // - put radio to sleep
   // - set all GPIO pins to inputs
@@ -62,7 +65,8 @@ void PinoccioClass::meshSetRadio(uint16_t addr, uint16_t panId, uint8_t channel)
 }
   
 void PinoccioClass::meshSetSecurityKey(uint8_t *key) {
-  NWK_SetSecurityKey(key);
+  // TODO:
+  // NWK_SetSecurityKey(key);
 }
 
 void PinoccioClass::meshSendMessage(MeshRequest request) {

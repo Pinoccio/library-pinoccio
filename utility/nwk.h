@@ -135,7 +135,6 @@ void NWK_Init(void);
 void NWK_SetAddr(uint16_t addr);
 void NWK_SetPanId(uint16_t panId);
 void NWK_OpenEndpoint(uint8_t id, bool (*handler)(NWK_DataInd_t *ind));
-//void NWK_OpenEndpoint(uint8_t id, FuncDelegate1 delegate);
 #ifdef NWK_ENABLE_SECURITY
 void NWK_SetSecurityKey(uint8_t *key);
 #endif

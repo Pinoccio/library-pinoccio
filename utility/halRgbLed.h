@@ -35,14 +35,21 @@ class HalRgbLed {
     void blinkYellow(unsigned int ms=500);
     void blinkWhite(unsigned int ms=500);
 
-    void setRed(int value);
-    void setGreen(int value);
-    void setBlue(int value);
+    void setRedValue(int value);
+    void setGreenValue(int value);
+    void setBlueValue(int value);
+    
+    int getRedValue();
+    int getGreenValue();
+    int getBlueValue();
 
     void setHex(char* hex);
     
   protected:
     bool enabled;
+    int redValue;
+    int greenValue;
+    int blueValue;
 };
 
 extern HalRgbLed RgbLed;

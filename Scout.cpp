@@ -19,11 +19,12 @@ PinoccioScout::PinoccioScout() {
   
   pinMode(BACKPACK_BUS, INPUT);
   
-  leadScoutAddress = 0;
+  leadScoutAddresses[0] = NULL;
   backpacks[0] = NULL;
 }
 
 PinoccioScout::~PinoccioScout() { }
+
 
 void PinoccioScout::setup() { 
   PinoccioClass::setup();

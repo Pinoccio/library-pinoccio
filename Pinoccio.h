@@ -12,6 +12,7 @@
 // Start - Specifics for the LWM library
 #define NWK_ENABLE_SECURITY
 #define NWK_ENABLE_ROUTING
+#define PHY_ENABLE_RANDOM_NUMBER_GENERATOR
 
 #define SYS_SECURITY_MODE                   0
 #define NWK_BUFFERS_AMOUNT                  4
@@ -24,6 +25,8 @@
 // End - Specifics for the LWM library
 
 #include <Arduino.h>
+
+#include "bitlash.h"
 
 #include "utility/phy.h"
 #include "utility/hal.h"
@@ -43,7 +46,8 @@ class PinoccioClass {
 
     void setup();
     void loop();
-    void goToSleep();
+
+    void goToSleep(uint32_t sleepForMs);
         
     float getTemperature();
     uint32_t getRandomNumber();
