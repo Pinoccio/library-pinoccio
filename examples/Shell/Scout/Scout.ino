@@ -69,11 +69,13 @@ numvar isBatteryCharging(void) {
 }
 
 numvar getBatteryPercentage(void) {
-  return Scout.getBatteryPercentage();
+  // TODO: broken, crashes board
+  //return Scout.getBatteryPercentage();
 }
 
 numvar getBatteryVoltage(void) {
-  return Scout.getBatteryVoltage();
+  // TODO: broken, crashes board
+  //return Scout.getBatteryVoltage();
 }
 
 numvar enableBackpackVcc(void) {
@@ -85,11 +87,13 @@ numvar disableBackpackVcc(void) {
 }
 
 numvar goToSleep(void) {
-  Pinoccio.goToSleep(getarg(1));
+  // TODO: not implemented yet
+  //Pinoccio.goToSleep(getarg(1));
 }
 
 numvar powerReport(void) {
-  // TODO
+  // TODO: return JSON formmated report of power details
+  // ie: {pct:85,vlt:4.1,chg:false,vcc:true}
   return true;
 }
 
@@ -188,7 +192,7 @@ numvar ledSetBlueValue(void) {
 }
 
 numvar ledSetHex(void) {
-  // TODO
+  // TODO: broken
   /*
   if (isstringarg(1)) {
     RgbLed.setHex(getstringarg(1));
@@ -200,7 +204,9 @@ numvar ledSetHex(void) {
 }
 
 numvar ledReport(void) {
-  return printf("{r:%d,g:%d,b:%d}\n", RgbLed.getRedValue(), RgbLed.getGreenValue(), RgbLed.getBlueValue());
+  // TODO: not working yet
+  // ie: {"r":120,"g":80,"b":0}
+  return printf("{\"r\":%d,\"g\":%d,\"b\":%d}\n", RgbLed.getRedValue(), RgbLed.getGreenValue(), RgbLed.getBlueValue());
 }
 
 /****************************\
@@ -215,27 +221,32 @@ numvar meshSetKey(void) {
 }
 
 numvar meshRemoteRun(void) {
-  // TODO
+  // TODO: run a function that's defined on another scout
+  // ie: meshRemoteRun(scoutId, "remoteFunctionName");
   return true;
 }
 
 numvar meshBroadcastRun(void) {
-  // TODO
+  // TODO: run a function that's defined on on all boards in a troop
+  // ie: meshRemoteRun("remoteFunctionName");
   return true;
 }
 
 numvar meshPublish(void) {
-  // TODO
+  // TODO: send a payload to a multicast address on the mesh
+  // ie: meshPublish(multicastId, callbackFunctionThatReturnsPayloadToPublish, frequencyToPublish);
   return true;
 }
 
 numvar meshSubscribe(void) {
-  // TODO
+  // TODO: subscribe to/join a multicast address on the mesh
+  // ie: meshSubscribe(multicastId, callbackFunctionThatIsCalledWhenMessageArrives);
   return true;
 }
 
 numvar meshReport(void) {
-  // TODO
+  // TODO: return JSON formatted report of radio details
+  // ie: {"id":34,"pid":1,"ch":26,"sec":true}
   return true;
 }
 
@@ -243,22 +254,23 @@ numvar meshReport(void) {
 *        I/O HANDLERS       *
 \****************************/
 numvar ioGetPin(void) {
-  // TODO
+  // TODO: return JSON formatted status of a single pin
   return true;
 }
 
 numvar ioSetPin(void) {
-  // TODO
+  // TODO: set a pin's value
   return true;
 }
 
 numvar ioThreshold(void) {
-  // TODO
+  // TODO: create a threshold function with the following format:
+  // threshold(pin, value, fnToCallIfValueLessThan, fnToCallIfValueEqual, fnToCallIfValueGreaterThan)
   return true;
 }
 
 numvar ioReport(void) {
-  // TODO
+  // TODO: return JSON formmated report of all IO pins and their values
   return true;
 }
 
