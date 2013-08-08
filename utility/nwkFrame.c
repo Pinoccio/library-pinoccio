@@ -7,78 +7,97 @@
 *  under the terms of the ASF license as described in license.txt.         *
 \**************************************************************************/
 
+/*- Includes ---------------------------------------------------------------*/
 #include <stdlib.h>
 #include <stdint.h>
 #include <stdbool.h>
 #include <string.h>
-#include "nwkPrivate.h"
+#include "sysConfig.h"
+#include "nwk.h"
+#include "nwkFrame.h"
 
-/*****************************************************************************
-*****************************************************************************/
+/*- Types ------------------------------------------------------------------*/
 enum
 {
   NWK_FRAME_STATE_FREE = 0x00,
 };
 
-/*****************************************************************************
-*****************************************************************************/
+/*- Variables --------------------------------------------------------------*/
 static NwkFrame_t nwkFrameFrames[NWK_BUFFERS_AMOUNT];
 
-/*****************************************************************************
+/*- Implementations --------------------------------------------------------*/
+
+/*************************************************************************//**
+  @brief Initializes the Frame module
 *****************************************************************************/
 void nwkFrameInit(void)
 {
-  int i = 0;
-  for (i; i < NWK_BUFFERS_AMOUNT; i++)
+  uint8_t i = 0;
+  for (i=0; i < NWK_BUFFERS_AMOUNT; i++)
     nwkFrameFrames[i].state = NWK_FRAME_STATE_FREE;
 }
 
-/*****************************************************************************
+/*************************************************************************//**
+  @brief Allocates an empty frame from the buffer pool
+  @return Pointer to the frame or @c NULL if there are no free frames
 *****************************************************************************/
-NwkFrame_t *nwkFrameAlloc(uint8_t size)
+NwkFrame_t *nwkFrameAlloc(void)
 {
-  int i = 0;
+  uint8_t i = 0;
   for (i = 0; i < NWK_BUFFERS_AMOUNT; i++)
   {
     if (NWK_FRAME_STATE_FREE == nwkFrameFrames[i].state)
     {
-      nwkFrameFrames[i].size = sizeof(NwkFrameHeader_t) + size;
+      memset(&nwkFrameFrames[i], 0, sizeof(NwkFrame_t));
+      nwkFrameFrames[i].size = sizeof(NwkFrameHeader_t);
+      nwkFrameFrames[i].payload = nwkFrameFrames[i].data + sizeof(NwkFrameHeader_t);
       return &nwkFrameFrames[i];
     }
   }
   return NULL;
 }
 
-/*****************************************************************************
+/*************************************************************************//**
+  @brief Frees a @a frame and returns it to the buffer pool
+  @param[in] frame Pointer to the frame to be freed
 *****************************************************************************/
 void nwkFrameFree(NwkFrame_t *frame)
 {
   frame->state = NWK_FRAME_STATE_FREE;
 }
 
-/*****************************************************************************
+/*************************************************************************//**
+  @brief Cycles through the allocated frames starting from the specified @a frame
+  @param[in] frame Pointer to the current frame or @c NULL for the first frame
+  @return Next allocated frame or @c NULL if there are no more frames
 *****************************************************************************/
-NwkFrame_t *nwkFrameByIndex(uint8_t i)
+NwkFrame_t *nwkFrameNext(NwkFrame_t *frame)
 {
-  return &nwkFrameFrames[i];
+  if (NULL == frame)
+    frame = nwkFrameFrames;
+  else
+    frame++;
+
+  while (NWK_FRAME_STATE_FREE == frame->state)
+  {
+    frame++;
+    if (frame == &nwkFrameFrames[NWK_BUFFERS_AMOUNT])
+      return NULL;
+  }
+
+  return frame;
 }
 
-/*****************************************************************************
+/*************************************************************************//**
+  @brief Sets default parameters for the the command @a frame
+  @param[in] frame Pointer to the command frame
 *****************************************************************************/
 void nwkFrameCommandInit(NwkFrame_t *frame)
 {
   frame->tx.status = NWK_SUCCESS_STATUS;
-  frame->tx.timeout = 0;
-  frame->tx.control = 0;
-  frame->tx.confirm = NULL;
-
-  frame->data.header.nwkFcf.ackRequest = 0;
-  frame->data.header.nwkFcf.securityEnabled = 0;
-  frame->data.header.nwkFcf.linkLocal = 0;
-  frame->data.header.nwkFcf.reserved = 0;
-  frame->data.header.nwkSeq = ++nwkIb.nwkSeqNum;
-  frame->data.header.nwkSrcAddr = nwkIb.addr;
-  frame->data.header.nwkDstAddr = 0;
-  frame->data.header.nwkSrcEndpoint = 0;
-  frame->data.header.nwkDstEndpoint = 0;
+  frame->header.nwkSeq = ++nwkIb.nwkSeqNum;
+  frame->header.nwkSrcAddr = nwkIb.addr;
+#ifdef NWK_ENABLE_SECURE_COMMANDS
+  frame->header.nwkFcf.security = 1;
+#endif
 }

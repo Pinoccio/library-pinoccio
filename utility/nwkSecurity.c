@@ -7,17 +7,21 @@
 *  under the terms of the ASF license as described in license.txt.         *
 \**************************************************************************/
 
+/*- Includes ---------------------------------------------------------------*/
 #include <stdlib.h>
 #include <stdint.h>
 #include <stdbool.h>
 #include <string.h>
-#include "nwk.h"
-#include "nwkPrivate.h"
+#include "sysConfig.h"
 #include "sysEncrypt.h"
+#include "nwk.h"
+#include "nwkTx.h"
+#include "nwkFrame.h"
+#include "nwkSecurity.h"
 
 #ifdef NWK_ENABLE_SECURITY
-/*****************************************************************************
-*****************************************************************************/
+
+/*- Types ------------------------------------------------------------------*/
 enum
 {
   NWK_SECURITY_STATE_ENCRYPT_PENDING = 0x30,
@@ -27,8 +31,7 @@ enum
   NWK_SECURITY_STATE_CONFIRM         = 0x34,
 };
 
-/*****************************************************************************
-*****************************************************************************/
+/*- Variables --------------------------------------------------------------*/
 static uint8_t nwkSecurityActiveFrames;
 static NwkFrame_t *nwkSecurityActiveFrame;
 static uint8_t nwkSecuritySize;
@@ -36,7 +39,10 @@ static uint8_t nwkSecurityOffset;
 static bool nwkSecurityEncrypt;
 static uint32_t nwkSecurityVector[4];
 
-/*****************************************************************************
+/*- Implementations --------------------------------------------------------*/
+
+/*************************************************************************//**
+  @brief Initializes the Security module
 *****************************************************************************/
 void nwkSecurityInit(void)
 {
@@ -44,7 +50,14 @@ void nwkSecurityInit(void)
   nwkSecurityActiveFrame = NULL;
 }
 
-/*****************************************************************************
+/*************************************************************************//**
+*****************************************************************************/
+void NWK_SetSecurityKey(uint8_t *key)
+{
+  memcpy((uint8_t *)nwkIb.key, key, NWK_SECURITY_KEY_SIZE);
+}
+
+/*************************************************************************//**
 *****************************************************************************/
 void nwkSecurityProcess(NwkFrame_t *frame, bool encrypt)
 {
@@ -55,35 +68,39 @@ void nwkSecurityProcess(NwkFrame_t *frame, bool encrypt)
   ++nwkSecurityActiveFrames;
 }
 
-/*****************************************************************************
+/*************************************************************************//**
 *****************************************************************************/
 static void nwkSecurityStart(void)
 {
-  NwkFrameHeader_t *header = &nwkSecurityActiveFrame->data.header;
+  NwkFrameHeader_t *header = &nwkSecurityActiveFrame->header;
 
   nwkSecurityVector[0] = header->nwkSeq;
   nwkSecurityVector[1] = ((uint32_t)header->nwkDstAddr << 16) | header->nwkDstEndpoint;
   nwkSecurityVector[2] = ((uint32_t)header->nwkSrcAddr << 16) | header->nwkSrcEndpoint;
   nwkSecurityVector[3] = ((uint32_t)header->macDstPanId << 16) | *(uint8_t *)&header->nwkFcf;
 
-  nwkSecuritySize = nwkSecurityActiveFrame->size - sizeof(NwkFrameHeader_t) - NWK_SECURITY_MIC_SIZE;
+  if (NWK_SECURITY_STATE_DECRYPT_PENDING == nwkSecurityActiveFrame->state)
+    nwkSecurityActiveFrame->size -= NWK_SECURITY_MIC_SIZE;
+
+  nwkSecuritySize = nwkFramePayloadSize(nwkSecurityActiveFrame);
   nwkSecurityOffset = 0;
   nwkSecurityEncrypt = (NWK_SECURITY_STATE_ENCRYPT_PENDING == nwkSecurityActiveFrame->state);
 
   nwkSecurityActiveFrame->state = NWK_SECURITY_STATE_PROCESS;
 }
 
-/*****************************************************************************
+/*************************************************************************//**
 *****************************************************************************/
 void SYS_EncryptConf(void)
 {
   uint8_t *vector = (uint8_t *)nwkSecurityVector;
-  uint8_t *text = &nwkSecurityActiveFrame->data.payload[nwkSecurityOffset];
+  uint8_t *text = &nwkSecurityActiveFrame->payload[nwkSecurityOffset];
   uint8_t block;
 
   block = (nwkSecuritySize < NWK_SECURITY_BLOCK_SIZE) ? nwkSecuritySize : NWK_SECURITY_BLOCK_SIZE;
 
-  for (uint8_t i = 0; i < block; i++)
+  uint8_t i = 0;
+  for (i = 0; i < block; i++)
   {
     text[i] ^= vector[i];
 
@@ -102,11 +119,11 @@ void SYS_EncryptConf(void)
     nwkSecurityActiveFrame->state = NWK_SECURITY_STATE_CONFIRM;
 }
 
-/*****************************************************************************
+/*************************************************************************//**
 *****************************************************************************/
 static bool nwkSecurityProcessMic(void)
 {
-  uint8_t *mic = &nwkSecurityActiveFrame->data.payload[nwkSecurityOffset];
+  uint8_t *mic = &nwkSecurityActiveFrame->payload[nwkSecurityOffset];
   uint32_t vmic = nwkSecurityVector[0] ^ nwkSecurityVector[1] ^
                   nwkSecurityVector[2] ^ nwkSecurityVector[3];
   uint32_t tmic;
@@ -114,6 +131,7 @@ static bool nwkSecurityProcessMic(void)
   if (nwkSecurityEncrypt)
   {
     memcpy(mic, (uint8_t *)&vmic, NWK_SECURITY_MIC_SIZE);
+    nwkSecurityActiveFrame->size += NWK_SECURITY_MIC_SIZE;
     return true;
   }
   else
@@ -123,10 +141,13 @@ static bool nwkSecurityProcessMic(void)
   }
 }
 
-/*****************************************************************************
+/*************************************************************************//**
+  @brief Security Module task handler
 *****************************************************************************/
 void nwkSecurityTaskHandler(void)
 {
+  NwkFrame_t *frame = NULL;
+
   if (0 == nwkSecurityActiveFrames)
     return;
 
@@ -153,10 +174,8 @@ void nwkSecurityTaskHandler(void)
     return;
   }
 
-  for (int i = 0; i < NWK_BUFFERS_AMOUNT; i++)
+  while (NULL != (frame = nwkFrameNext(frame)))
   {
-    NwkFrame_t *frame = nwkFrameByIndex(i);
-
     if (NWK_SECURITY_STATE_ENCRYPT_PENDING == frame->state ||
         NWK_SECURITY_STATE_DECRYPT_PENDING == frame->state)
     {

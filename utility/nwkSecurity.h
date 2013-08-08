@@ -7,24 +7,34 @@
 *  under the terms of the ASF license as described in license.txt.         *
 \**************************************************************************/
 
-#ifndef _PINOCCIO_SYS_H_
-#define _PINOCCIO_SYS_H_
-
+#ifndef _PINOCCIO_NWK_SECURITY_H_
+#define _PINOCCIO_NWK_SECURITY_H_
 #ifdef __cplusplus
 extern "C"{
 #endif
 
 /*- Includes ---------------------------------------------------------------*/
+#include <stdint.h>
+#include <stdbool.h>
 #include "sysConfig.h"
-#include "phy.h"
-#include "nwk.h"
-#include "hal.h"
+
+#ifdef NWK_ENABLE_SECURITY
+
+/*- Definitions ------------------------------------------------------------*/
+#define NWK_SECURITY_MIC_SIZE        4
+#define NWK_SECURITY_KEY_SIZE        16
+#define NWK_SECURITY_BLOCK_SIZE      16
 
 /*- Prototypes -------------------------------------------------------------*/
-void SYS_Init(void);
-void SYS_TaskHandler(void);
+void NWK_SetSecurityKey(uint8_t *key);
+
+void nwkSecurityInit(void);
+void nwkSecurityProcess(NwkFrame_t *frame, bool encrypt);
+void nwkSecurityTaskHandler(void);
+
+#endif // NWK_ENABLE_SECURITY
 
 #ifdef __cplusplus
 } // extern "C"
 #endif
-#endif // _PINOCCIO_SYS_H_
+#endif // _PINOCCIO_NWK_SECURITY_H_

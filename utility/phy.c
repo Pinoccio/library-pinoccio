@@ -7,6 +7,7 @@
 *  under the terms of the ASF license as described in license.txt.         *
 \**************************************************************************/
 
+/*- Includes ---------------------------------------------------------------*/
 #include "sysTypes.h"
 #if  defined(__AVR_ATmega128RFA1__)
 #include "atmega128rfa1.h"
@@ -16,13 +17,11 @@
 #include "phy.h"
 #include "hal.h"
 
-/*****************************************************************************
-*****************************************************************************/
+/*- Definitions ------------------------------------------------------------*/
 #define IRQ_STATUS_CLEAR_VALUE         0xff
 #define RANDOM_NUMBER_UPDATE_INTERVAL  1 // us
 
-/*****************************************************************************
-*****************************************************************************/
+/*- Types ------------------------------------------------------------------*/
 typedef enum PhyState_t
 {
   PHY_STATE_INITIAL,
@@ -37,14 +36,15 @@ typedef enum PhyState_t
 
 enum
 {
-  PHY_REQ_NONE    = 0,
-  PHY_REQ_CHANNEL = (1 << 0),
-  PHY_REQ_PANID   = (1 << 1),
-  PHY_REQ_ADDR    = (1 << 2),
-  PHY_REQ_RX      = (1 << 3),
-  PHY_REQ_RANDOM  = (1 << 4),
-  PHY_REQ_ENCRYPT = (1 << 5),
-  PHY_REQ_ED      = (1 << 6),
+  PHY_REQ_NONE     = 0,
+  PHY_REQ_CHANNEL  = (1 << 0),
+  PHY_REQ_PANID    = (1 << 1),
+  PHY_REQ_ADDR     = (1 << 2),
+  PHY_REQ_TX_POWER = (1 << 3),
+  PHY_REQ_RX       = (1 << 4),
+  PHY_REQ_RANDOM   = (1 << 5),
+  PHY_REQ_ENCRYPT  = (1 << 6),
+  PHY_REQ_ED       = (1 << 7),
 };
 
 typedef struct PhyIb_t
@@ -55,6 +55,7 @@ typedef struct PhyIb_t
   uint8_t     band;
   uint16_t    panId;
   uint16_t    addr;
+  uint8_t     txPower;
   bool        rx;
 #ifdef PHY_ENABLE_AES_MODULE
   uint8_t     *text;
@@ -62,16 +63,14 @@ typedef struct PhyIb_t
 #endif
 } PhyIb_t;
 
-/*****************************************************************************
-*****************************************************************************/
+/*- Prototypes -------------------------------------------------------------*/
 static inline void phyTrxSetState(uint8_t state);
 static void phySetRxState(void);
 #ifdef PHY_ENABLE_RANDOM_NUMBER_GENERATOR
 static uint16_t phyGetRandomNumber(void);
 #endif
 
-/*****************************************************************************
-*****************************************************************************/
+/*- Variables --------------------------------------------------------------*/
 static PhyIb_t              phyIb;
 static volatile PhyState_t  phyState = PHY_STATE_INITIAL;
 static volatile uint8_t     phyTxStatus;
@@ -79,7 +78,9 @@ static volatile int8_t      phyRxRssi;
 static volatile uint8_t     phyRxSize;
 static uint8_t              phyRxBuffer[128];
 
-/*****************************************************************************
+/*- Implementations --------------------------------------------------------*/
+
+/*************************************************************************//**
 *****************************************************************************/
 void PHY_Init(void)
 {
@@ -108,10 +109,11 @@ void PHY_Init(void)
 
   phyIb.request = PHY_REQ_NONE;
   phyIb.rx = false;
+  phyIb.band = 0;
   phyState = PHY_STATE_IDLE;
 }
 
-/*****************************************************************************
+/*************************************************************************//**
 *****************************************************************************/
 void PHY_SetRxState(bool rx)
 {
@@ -119,7 +121,7 @@ void PHY_SetRxState(bool rx)
   phyIb.rx = rx;
 }
 
-/*****************************************************************************
+/*************************************************************************//**
 *****************************************************************************/
 void PHY_SetChannel(uint8_t channel)
 {
@@ -127,7 +129,15 @@ void PHY_SetChannel(uint8_t channel)
   phyIb.channel = channel;
 }
 
-/*****************************************************************************
+/*************************************************************************//**
+*****************************************************************************/
+void PHY_SetBand(uint8_t band)
+{
+  phyIb.request |= PHY_REQ_CHANNEL;
+  phyIb.band = band;
+}
+
+/*************************************************************************//**
 *****************************************************************************/
 void PHY_SetPanId(uint16_t panId)
 {
@@ -135,7 +145,7 @@ void PHY_SetPanId(uint16_t panId)
   phyIb.panId = panId;
 }
 
-/*****************************************************************************
+/*************************************************************************//**
 *****************************************************************************/
 void PHY_SetShortAddr(uint16_t addr)
 {
@@ -143,14 +153,22 @@ void PHY_SetShortAddr(uint16_t addr)
   phyIb.addr = addr;
 }
 
-/*****************************************************************************
+/*************************************************************************//**
+*****************************************************************************/
+void PHY_SetTxPower(uint8_t txPower)
+{
+  phyIb.request |= PHY_REQ_TX_POWER;
+  phyIb.txPower = txPower;
+}
+
+/*************************************************************************//**
 *****************************************************************************/
 bool PHY_Busy(void)
 {
   return PHY_STATE_IDLE != phyState || PHY_REQ_NONE != phyIb.request;
 }
 
-/*****************************************************************************
+/*************************************************************************//**
 *****************************************************************************/
 void PHY_Sleep(void)
 {
@@ -159,7 +177,7 @@ void PHY_Sleep(void)
   phyState = PHY_STATE_SLEEP;
 }
 
-/*****************************************************************************
+/*************************************************************************//**
 *****************************************************************************/
 void PHY_Wakeup(void)
 {
@@ -168,7 +186,7 @@ void PHY_Wakeup(void)
   phyState = PHY_STATE_IDLE;
 }
 
-/*****************************************************************************
+/*************************************************************************//**
 *****************************************************************************/
 void PHY_DataReq(uint8_t *data, uint8_t size)
 {
@@ -186,22 +204,16 @@ void PHY_DataReq(uint8_t *data, uint8_t size)
 }
 
 #ifdef PHY_ENABLE_RANDOM_NUMBER_GENERATOR
-/*****************************************************************************
+/*************************************************************************//**
 *****************************************************************************/
 void PHY_RandomReq(void)
 {
   phyIb.request |= PHY_REQ_RANDOM;
 }
-
-/*****************************************************************************
-*****************************************************************************/
-void PHY_RandomConf(uint16_t rnd) {
-  srandom(rnd);
-}
 #endif
 
 #ifdef PHY_ENABLE_AES_MODULE
-/*****************************************************************************
+/*************************************************************************//**
 *****************************************************************************/
 void PHY_EncryptReq(uint8_t *text, uint8_t *key)
 {
@@ -212,7 +224,7 @@ void PHY_EncryptReq(uint8_t *text, uint8_t *key)
 #endif
 
 #ifdef PHY_ENABLE_ENERGY_DETECTION
-/*****************************************************************************
+/*************************************************************************//**
 *****************************************************************************/
 void PHY_EdReq(void)
 {
@@ -220,17 +232,15 @@ void PHY_EdReq(void)
 }
 #endif
 
-/*****************************************************************************
+/*************************************************************************//**
 *****************************************************************************/
 ISR(TRX24_TX_END_vect)
 {
   if (TRX_STATUS_TX_ARET_ON == TRX_STATUS_REG_s.trxStatus)
   {
-    //TRX_STATE_REG = TRX_CMD_PLL_ON; // Don't wait for this to complete
-    phyTrxSetState(TRX_CMD_PLL_ON);
-
-    phyState = PHY_STATE_TX_CONFIRM;
     phyTxStatus = TRX_STATE_REG_s.tracStatus;
+    TRX_STATE_REG = TRX_CMD_PLL_ON; // Don't wait for this to complete
+    phyState = PHY_STATE_TX_CONFIRM;
   }
   else
   {
@@ -238,17 +248,7 @@ ISR(TRX24_TX_END_vect)
   }
 }
 
-#ifdef PHY_ENABLE_ENERGY_DETECTION
-/*****************************************************************************
-*****************************************************************************/
-ISR(TRX24_CCA_ED_DONE_vect)
-{
-  phyRxRssi = (int8_t)PHY_ED_LEVEL_REG;
-  phyState = PHY_STATE_ED_DONE;
-}
-#endif
-
-/*****************************************************************************
+/*************************************************************************//**
 *****************************************************************************/
 ISR(TRX24_RX_END_vect)
 {
@@ -258,8 +258,18 @@ ISR(TRX24_RX_END_vect)
   phyState = PHY_STATE_RX_IND;
 }
 
+#ifdef PHY_ENABLE_ENERGY_DETECTION
+/*************************************************************************//**
+*****************************************************************************/
+ISR(TRX24_CCA_ED_DONE_vect)
+{
+  phyRxRssi = (int8_t)PHY_ED_LEVEL_REG;
+  phyState = PHY_STATE_ED_DONE;
+}
+#endif
+
 #ifdef PHY_ENABLE_RANDOM_NUMBER_GENERATOR
-/*****************************************************************************
+/*************************************************************************//**
 *****************************************************************************/
 static uint16_t phyGetRandomNumber(void)
 {
@@ -285,29 +295,39 @@ static uint16_t phyGetRandomNumber(void)
 }
 #endif
 
+#ifdef PHY_ENABLE_RANDOM_NUMBER_GENERATOR
+/*************************************************************************//**
+*****************************************************************************/
+void PHY_RandomConf(uint16_t rnd)
+{
+ srand(rnd);
+}
+#endif
+
 #ifdef PHY_ENABLE_AES_MODULE
-/*****************************************************************************
+/*************************************************************************//**
 *****************************************************************************/
 static void phyEncryptBlock(void)
 {
-  for (uint8_t i = 0; i < AES_BLOCK_SIZE; i++)
+  uint8_t i = 0;
+  for (i = 0; i < AES_BLOCK_SIZE; i++)
     AES_KEY = phyIb.key[i];
 
   AES_CTRL = (0 << AES_CTRL_DIR) | (0 << AES_CTRL_MODE);
 
-  for (uint8_t i = 0; i < AES_BLOCK_SIZE; i++)
+  for (i = 0; i < AES_BLOCK_SIZE; i++)
     AES_STATE = phyIb.text[i];
 
   AES_CTRL |= (1 << AES_CTRL_REQUEST);
 
   while (0 == (AES_STATUS & (1 << AES_STATUS_RY)));
 
-  for (uint8_t i = 0; i < AES_BLOCK_SIZE; i++)
+  for (i = 0; i < AES_BLOCK_SIZE; i++)
     phyIb.text[i] = AES_STATE;
 }
 #endif
 
-/*****************************************************************************
+/*************************************************************************//**
 *****************************************************************************/
 static void phySetRxState(void)
 {
@@ -317,7 +337,7 @@ static void phySetRxState(void)
     phyTrxSetState(TRX_CMD_TRX_OFF);
 }
 
-/*****************************************************************************
+/*************************************************************************//**
 *****************************************************************************/
 static void phyHandleSetRequests(void)
 {
@@ -325,7 +345,17 @@ static void phyHandleSetRequests(void)
 
   if (phyIb.request & PHY_REQ_CHANNEL)
   {
+    #if defined(__AVR_ATmega128RFA1__)
     PHY_CC_CCA_REG_s.channel = phyIb.channel;
+    
+    #elif defined(__AVR_ATmega256RFR2__)
+    CC_CTRL_1_REG_s.ccBand = phyIb.band;
+
+    if (0 == phyIb.band)
+      PHY_CC_CCA_REG_s.channel = phyIb.channel;
+    else
+      CC_CTRL_0_REG = phyIb.channel;
+    #endif
   }
 
   if (phyIb.request & PHY_REQ_PANID)
@@ -340,6 +370,11 @@ static void phyHandleSetRequests(void)
     uint8_t *d = (uint8_t *)&phyIb.addr;
     SHORT_ADDR_0_REG = d[0];
     SHORT_ADDR_1_REG = d[1];
+  }
+
+  if (phyIb.request & PHY_REQ_TX_POWER)
+  {
+    PHY_TX_PWR_REG_s.txPwr = phyIb.txPower;
   }
 
 #ifdef PHY_ENABLE_RANDOM_NUMBER_GENERATOR
@@ -381,16 +416,18 @@ static void phyHandleSetRequests(void)
   phyIb.request = PHY_REQ_NONE;
 }
 
-/*****************************************************************************
+/*************************************************************************//**
 *****************************************************************************/
 static inline void phyTrxSetState(uint8_t state)
 {
   TRX_STATE_REG = TRX_CMD_FORCE_TRX_OFF;
+  while (TRX_STATUS_TRX_OFF != TRX_STATUS_REG_s.trxStatus);
+
   TRX_STATE_REG = state;
   while (state != TRX_STATUS_REG_s.trxStatus);
 }
 
-/*****************************************************************************
+/*************************************************************************//**
 *****************************************************************************/
 void PHY_TaskHandler(void)
 {

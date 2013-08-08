@@ -7,24 +7,29 @@
 *  under the terms of the ASF license as described in license.txt.         *
 \**************************************************************************/
 
-#ifndef _PINOCCIO_SYS_H_
-#define _PINOCCIO_SYS_H_
-
+#ifndef _PINOCCIO_NWK_ROUTE_DISCOVERY_H_
+#define _PINOCCIO_NWK_ROUTE_DISCOVERY_H_
 #ifdef __cplusplus
 extern "C"{
 #endif
 
 /*- Includes ---------------------------------------------------------------*/
-#include "sysConfig.h"
-#include "phy.h"
+#include <stdint.h>
 #include "nwk.h"
-#include "hal.h"
+#include "sysTypes.h"
+#include "nwkFrame.h"
+
+#ifdef NWK_ENABLE_ROUTE_DISCOVERY
 
 /*- Prototypes -------------------------------------------------------------*/
-void SYS_Init(void);
-void SYS_TaskHandler(void);
+void nwkRouteDiscoveryInit(void);
+void nwkRouteDiscoveryRequest(NwkFrame_t *frame);
+bool nwkRouteDiscoveryReplyReceived(NWK_DataInd_t *ind);
+bool nwkRouteDiscoveryRequestReceived(NWK_DataInd_t *ind);
+
+#endif // NWK_ENABLE_ROUTE_DISCOVERY
 
 #ifdef __cplusplus
 } // extern "C"
 #endif
-#endif // _PINOCCIO_SYS_H_
+#endif // _PINOCCIO_NWK_ROUTE_DISCOVERY_H_

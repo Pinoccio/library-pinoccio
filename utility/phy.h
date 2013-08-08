@@ -15,23 +15,21 @@ extern "C"{
 
 #include <stdint.h>
 #include <stdbool.h>
-#include "sysConfig.h"
+#include "utility/sysConfig.h"
 
-#if  defined(__AVR_ATmega128RFA1__)
+#if defined(__AVR_ATmega128RFA1__)
 #include "atmega128rfa1.h"
 #elif defined(__AVR_ATmega256RFR2__)
 #include "atmega256rfr2.h"
 #endif
 
-/*****************************************************************************
-*****************************************************************************/
+/*- Definitions ------------------------------------------------------------*/
 #define PHY_RSSI_BASE_VAL                  (-90)
-
+#define PHY_ENABLE_RANDOM_NUMBER_GENERATOR
 #define PHY_HAS_RANDOM_NUMBER_GENERATOR
 #define PHY_HAS_AES_MODULE
 
-/*****************************************************************************
-*****************************************************************************/
+/*- Types ------------------------------------------------------------------*/
 typedef struct PHY_DataInd_t
 {
   uint8_t    *data;
@@ -40,14 +38,14 @@ typedef struct PHY_DataInd_t
   int8_t     rssi;
 } PHY_DataInd_t;
 
-/*****************************************************************************
-*****************************************************************************/
+/*- Prototypes -------------------------------------------------------------*/
 void PHY_Init(void);
 void PHY_SetRxState(bool rx);
 void PHY_SetChannel(uint8_t channel);
 void PHY_SetBand(uint8_t band);
 void PHY_SetPanId(uint16_t panId);
 void PHY_SetShortAddr(uint16_t addr);
+void PHY_SetTxPower(uint8_t txPower);
 bool PHY_Busy(void);
 void PHY_Sleep(void);
 void PHY_Wakeup(void);

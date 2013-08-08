@@ -13,17 +13,14 @@
 extern "C"{
 #endif
 
-//#define PHY_ENABLE_ENERGY_DETECTION
-#define PHY_ENABLE_RANDOM_NUMBER_GENERATOR
+/*- Includes ---------------------------------------------------------------*/
+#include "utility/sysTypes.h"
 
-#include "sysTypes.h"
-
-/*****************************************************************************
-*****************************************************************************/
+/*- Definitions ------------------------------------------------------------*/
 #define AES_BLOCK_SIZE                 16
 
-/*****************************************************************************
-*****************************************************************************/
+/*- Types ------------------------------------------------------------------*/
+
 // Typed memory access macro
 #define MMIO_REG(mem_addr, type) (*(volatile type *)(mem_addr))
 
@@ -116,8 +113,7 @@ struct __struct_TRX_CTRL_1_REG
 struct __struct_PHY_TX_PWR_REG
 {
   uint8_t txPwr   : 4; // Transmit Power Setting
-  uint8_t paLt    : 2; // Power Amplifier Lead Time
-  uint8_t paBufLt : 2; // Power Amplifier Buffer Lead Time
+  uint8_t         : 4;
 };
 
 enum // txPwr values

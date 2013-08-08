@@ -9,24 +9,21 @@
 
 #ifndef _PINOCCIO_SYS_CONFIG_H_
 #define _PINOCCIO_SYS_CONFIG_H_
+
 #ifdef __cplusplus
 extern "C"{
 #endif
 
+/*- Includes ---------------------------------------------------------------*/
 //#include "config.h"
 
-/*****************************************************************************
-*****************************************************************************/
+/*- Definitions ------------------------------------------------------------*/
 #ifndef NWK_BUFFERS_AMOUNT
-#define NWK_BUFFERS_AMOUNT                       1
-#endif
-
-#ifndef NWK_MAX_ENDPOINTS_AMOUNT
-#define NWK_MAX_ENDPOINTS_AMOUNT                 1
+#define NWK_BUFFERS_AMOUNT                       5
 #endif
 
 #ifndef NWK_DUPLICATE_REJECTION_TABLE_SIZE
-#define NWK_DUPLICATE_REJECTION_TABLE_SIZE       1
+#define NWK_DUPLICATE_REJECTION_TABLE_SIZE       10
 #endif
 
 #ifndef NWK_DUPLICATE_REJECTION_TTL
@@ -34,7 +31,7 @@ extern "C"{
 #endif
 
 #ifndef NWK_ROUTE_TABLE_SIZE
-#define NWK_ROUTE_TABLE_SIZE                     0
+#define NWK_ROUTE_TABLE_SIZE                     10
 #endif
 
 #ifndef NWK_ROUTE_DEFAULT_SCORE
@@ -45,29 +42,31 @@ extern "C"{
 #define NWK_ACK_WAIT_TIME                        1000 // ms
 #endif
 
-//#define NWK_ENABLE_ROUTING
-//#define NWK_ENABLE_SECURITY
+#ifndef NWK_GROUPS_AMOUNT
+#define NWK_GROUPS_AMOUNT                        10
+#endif
+
+#ifndef NWK_ROUTE_DISCOVERY_TABLE_SIZE
+#define NWK_ROUTE_DISCOVERY_TABLE_SIZE           5
+#endif
+
+#ifndef NWK_ROUTE_DISCOVERY_TIMEOUT
+#define NWK_ROUTE_DISCOVERY_TIMEOUT              1000 // ms
+#endif
+
+#define NWK_ENABLE_ROUTING
+#define NWK_ENABLE_SECURITY
+#define NWK_ENABLE_MULTICAST
+#define NWK_ENABLE_ROUTE_DISCOVERY
+//#define NWK_ENABLE_SECURE_COMMANDS
 
 #ifndef SYS_SECURITY_MODE
 #define SYS_SECURITY_MODE                        0
 #endif
 
-#ifdef HAL_ENABLE_UART
-#define HAL_UART_CHANNEL                    0
-#define HAL_UART_RX_FIFO_SIZE               200
-#define HAL_UART_TX_FIFO_SIZE               200
-#endif
-
-/*****************************************************************************
-*****************************************************************************/
+/*- Sanity checks ----------------------------------------------------------*/
 #if defined(NWK_ENABLE_SECURITY) && (SYS_SECURITY_MODE == 0)
   #define PHY_ENABLE_AES_MODULE
-#endif
-
-#ifdef NWK_ENABLE_SECURITY
-  #define APP_BUFFER_SIZE     NWK_MAX_SECURED_PAYLOAD_SIZE
-#else
-  #define APP_BUFFER_SIZE     NWK_MAX_PAYLOAD_SIZE
 #endif
 
 #ifdef __cplusplus

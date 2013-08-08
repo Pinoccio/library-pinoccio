@@ -17,6 +17,10 @@ void HAL_Init(void)
 {
   MCUSR = 0;
   wdt_disable();
+
+  CLKPR = 1 << CLKPCE;
+  CLKPR = 0;
+
   SYS_EnableInterrupts();
 
   HAL_TimerInit();

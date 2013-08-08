@@ -10,15 +10,19 @@
 #ifndef _PINOCCIO_SYS_ENCRYPT_H_
 #define _PINOCCIO_SYS_ENCRYPT_H_
 
-#include <stdint.h>
-#include <stdbool.h>
-
 #ifdef __cplusplus
 extern "C"{
 #endif
 
-/*****************************************************************************
-*****************************************************************************/
+#ifndef _SYS_ENCRYPT_H_
+#define _SYS_ENCRYPT_H_
+#endif
+
+/*- Includes ---------------------------------------------------------------*/
+#include <stdint.h>
+#include <stdbool.h>
+
+/*- Prototypes -------------------------------------------------------------*/
 void SYS_EncryptReq(uint8_t *text, uint8_t *key);
 void SYS_EncryptConf(void);
 

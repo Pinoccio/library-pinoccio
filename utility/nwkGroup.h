@@ -7,24 +7,31 @@
 *  under the terms of the ASF license as described in license.txt.         *
 \**************************************************************************/
 
-#ifndef _PINOCCIO_SYS_H_
-#define _PINOCCIO_SYS_H_
-
+#ifndef _PINOCCIO_NWK_GROUP_H_
+#define _PINOCCIO_NWK_GROUP_H_
 #ifdef __cplusplus
 extern "C"{
 #endif
 
 /*- Includes ---------------------------------------------------------------*/
-#include "sysConfig.h"
-#include "phy.h"
-#include "nwk.h"
-#include "hal.h"
+#include <stdint.h>
+#include "sysTypes.h"
+
+#ifdef NWK_ENABLE_MULTICAST
+
+/*- Definitions ------------------------------------------------------------*/
+#define NWK_MULTICAST_HEADER_SIZE    2
 
 /*- Prototypes -------------------------------------------------------------*/
-void SYS_Init(void);
-void SYS_TaskHandler(void);
+bool NWK_GroupIsMember(uint16_t group);
+bool NWK_GroupAdd(uint16_t group);
+bool NWK_GroupRemove(uint16_t group);
+
+void nwkGroupInit(void);
+
+#endif // NWK_ENABLE_MULTICAST
 
 #ifdef __cplusplus
 } // extern "C"
 #endif
-#endif // _PINOCCIO_SYS_H_
+#endif // _PINOCCIO_NWK_GROUP_H_

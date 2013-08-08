@@ -9,11 +9,6 @@
 #  define D(x)
 #endif
 
-// Start - Specifics for the LWM library
-#define NWK_ENABLE_SECURITY
-#define NWK_ENABLE_ROUTING
-#define PHY_ENABLE_RANDOM_NUMBER_GENERATOR
-
 #define SYS_SECURITY_MODE                   0
 #define NWK_BUFFERS_AMOUNT                  4
 #define NWK_MAX_ENDPOINTS_AMOUNT            4
