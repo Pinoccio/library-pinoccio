@@ -1,25 +1,19 @@
-#include <Pinoccio.h>
-
-WIFI_PROFILE profile = {
-        /* SSID */ "",
-        /* WPA/WPA2 passphrase */ "",
-        /* IP address */ "",
-        /* subnet mask */ "",
-        /* Gateway IP */ "", };
-
 void setup() {
-  Pinoccio.init();
-  Serial.println("Starting up");
-  Serial.println("Starting wireless...");
-
-  Wifi.begin(&profile);
-
-  Serial.println("Done");
+  Serial.begin(115200);
+  Serial1.begin(115200);
+   
+  // uncomment these if you want to put the WiFi module into firmware update mode
+  //pinMode(6, OUTPUT);
+  //digitalWrite(6, HIGH);
+  
+  pinMode(VCC_ENABLE, OUTPUT);
+  digitalWrite(VCC_ENABLE, LOW);
+  delay(1000);
+  digitalWrite(VCC_ENABLE, HIGH);
   delay(1000);
 }
 
 void loop() {
-  Pinoccio.taskHandler();
 
   // read from port 1, send to port 0:
   while (Serial1.available()) {

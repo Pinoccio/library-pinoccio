@@ -46,10 +46,9 @@ class PinoccioClass {
         
     float getTemperature();
     uint32_t getRandomNumber();
-    uintptr_t getFreeMemory();
 
     void meshSetRadio(uint16_t addr, uint16_t panId=0x4567, uint8_t channel=0x1a);
-    void meshSetSecurityKey(uint8_t *key);
+    void meshSetSecurityKey(const char *key);
     void meshSendMessage(MeshRequest request);
     void meshListen(uint8_t endpoint, bool (*handler)(NWK_DataInd_t *ind));
 

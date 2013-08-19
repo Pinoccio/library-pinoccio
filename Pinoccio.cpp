@@ -1,5 +1,6 @@
 #include <Arduino.h>
 #include <Pinoccio.h>
+#include <bitlash.h>
 
 #if defined(__AVR_ATmega128RFA1__)
 #include "atmega128rfa1.h"
@@ -49,24 +50,17 @@ uint32_t PinoccioClass::getRandomNumber() {
   return random();
 }
 
-uintptr_t PinoccioClass::getFreeMemory() {
-  extern uintptr_t __heap_start;
-  extern void *__brkval;
-  uintptr_t v;
-  return (uintptr_t) &v - (__brkval == 0 ? (uintptr_t) &__heap_start : (uintptr_t) __brkval);
-}
-
 void PinoccioClass::meshSetRadio(uint16_t addr, uint16_t panId, uint8_t channel) {
-  // TODO--get from EEPROM
+  // TODO--get from EEPROM -- last 32 bytes
   NWK_SetAddr(addr);
   NWK_SetPanId(panId);
   PHY_SetChannel(channel);
   PHY_SetRxState(true);
 }
   
-void PinoccioClass::meshSetSecurityKey(uint8_t *key) {
+void PinoccioClass::meshSetSecurityKey(const char *key) {
   // TODO:
-  // NWK_SetSecurityKey(key);
+  NWK_SetSecurityKey((uint8_t *)key);
 }
 
 void PinoccioClass::meshSendMessage(MeshRequest request) {

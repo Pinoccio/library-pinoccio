@@ -170,7 +170,7 @@ numvar meshConfig(void) {
 }
 
 numvar meshSetKey(void) {
-  Pinoccio.meshSetSecurityKey((uint8_t*) getstringarg(1));
+  Pinoccio.meshSetSecurityKey((const char *)getstringarg(1));
 }
 
 numvar meshRemoteRun(void) {

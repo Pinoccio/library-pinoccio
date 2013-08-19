@@ -17,6 +17,9 @@ PinoccioScout::PinoccioScout() {
   pinMode(VCC_ENABLE, OUTPUT);
   digitalWrite(VCC_ENABLE, HIGH);
   
+  digitalWrite(SS, HIGH);
+  pinMode(SS, OUTPUT);
+  
   pinMode(BACKPACK_BUS, INPUT);
   
   leadScoutAddresses[0] = NULL;
@@ -43,12 +46,12 @@ bool PinoccioScout::isBatteryCharging() {
   return (digitalRead(CHG_STATUS) == LOW);
 }
 
-float PinoccioScout::getBatteryPercentage() {
-  return roundf(HAL_FuelGaugePercent() * 10.0f) / 10.0f;
+int PinoccioScout::getBatteryPercentage() {
+  return constrain(HAL_FuelGaugePercent(), 0, 100);
 }
 
 float PinoccioScout::getBatteryVoltage() {
-  return roundf((HAL_FuelGaugeVoltage() * 1/800) * 10.0f) / 10.0f;
+  return HAL_FuelGaugeVoltage();
 }
 
 void PinoccioScout::enableBackpackVcc() {

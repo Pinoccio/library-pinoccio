@@ -24,7 +24,7 @@ class PinoccioScout : public PinoccioClass {
     void loop();
 
     bool isBatteryCharging();
-    float getBatteryPercentage();
+    int getBatteryPercentage();
     float getBatteryVoltage();
 
     void enableBackpackVcc();

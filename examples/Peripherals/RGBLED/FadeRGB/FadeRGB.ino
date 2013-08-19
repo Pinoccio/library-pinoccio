@@ -15,7 +15,7 @@ void loop() {
   green = 128 + 127 * cos(2 * PI / 2000 * (500 - time));
   blue = 128 + 127 * cos(2 * PI / 2000 * (1000 - time));
 
-  RgbLed.setRed(red);
-  RgbLed.setGreen(green);
-  RgbLed.setBlue(blue);
+  RgbLed.setRedValue(red);
+  RgbLed.setGreenValue(green);
+  RgbLed.setBlueValue(blue);
 }
