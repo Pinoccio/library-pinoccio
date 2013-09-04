@@ -30,6 +30,8 @@ void HAL_TimerInit(void)
   TCCR4B = (1 << WGM12);              // CTC mode
   TCCR4B |= (1 << CS11);              // Prescaler 8
   TIMSK4 |= (1 << OCIE4A);            // Enable TC4 interrupt
+  //TCCR0A = (1 << WGM00);
+  //TCCR0A = TCCR0A & 0b11111000 | 0x01;
 }
 
 /*************************************************************************//**

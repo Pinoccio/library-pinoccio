@@ -60,7 +60,7 @@ float HAL_MeasureTemperature(void)
 
   ADCSRA &= ~((1 << ADEN) | (1 << ADIE));
 
-  return ((1.13 * val - 272.8)) + HAL_TEMPERATURE_CALIBRATION_OFFSET;
+  return ((1.13 * val - 272.8)) + HAL_TEMPERATURE_CALIBRATION_OFFSET - 3;
 }
 
 /*****************************************************************************
