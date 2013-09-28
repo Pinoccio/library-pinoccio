@@ -41,7 +41,7 @@ void PinoccioClass::goToSleep(uint32_t sleepForMs) {
   // - put MCU to sleep
 }
 
-float PinoccioClass::getTemperature() {
+int8_t PinoccioClass::getTemperature() {
   return HAL_MeasureTemperature();
 }
 

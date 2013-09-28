@@ -2,7 +2,7 @@
 
 void setup(void) {
   Scout.setup();
-  
+
   addBitlashFunction("power.charging", (bitlash_function) isBatteryCharging);
   addBitlashFunction("power.percent", (bitlash_function) getBatteryPercentage);
   addBitlashFunction("power.voltage", (bitlash_function) getBatteryVoltage);
@@ -10,7 +10,7 @@ void setup(void) {
   addBitlashFunction("power.disablevcc", (bitlash_function) disableBackpackVcc);
   addBitlashFunction("power.sleep", (bitlash_function) goToSleep);
   addBitlashFunction("power.report", (bitlash_function) powerReport);
-  
+
   addBitlashFunction("mesh.config", (bitlash_function) meshConfig);
   addBitlashFunction("mesh.key", (bitlash_function) meshSetKey);
   addBitlashFunction("mesh.remoterun", (bitlash_function) meshRemoteRun);
@@ -18,10 +18,10 @@ void setup(void) {
   addBitlashFunction("mesh.publish", (bitlash_function) meshPublish);
   addBitlashFunction("mesh.subscribe", (bitlash_function) meshSubscribe);
   addBitlashFunction("mesh.report", (bitlash_function) meshReport);
-  
+
   addBitlashFunction("temperature", (bitlash_function) getTemperature);
   addBitlashFunction("randomnumber", (bitlash_function) getRandomNumber);
-  
+
   addBitlashFunction("led.off", (bitlash_function) ledOff);
   addBitlashFunction("led.red", (bitlash_function) ledRed);
   addBitlashFunction("led.green", (bitlash_function) ledGreen);
@@ -34,7 +34,7 @@ void setup(void) {
   addBitlashFunction("led.greenvalue", (bitlash_function) ledSetGreenValue);
   addBitlashFunction("led.bluevalue", (bitlash_function) ledSetBlueValue);
   addBitlashFunction("led.report", (bitlash_function) ledReport);
-  
+
   addBitlashFunction("pin.on", (bitlash_function) pinOn);
   addBitlashFunction("pin.off", (bitlash_function) pinOff);
   addBitlashFunction("pin.makeinput", (bitlash_function) pinMakeInput);
@@ -42,12 +42,41 @@ void setup(void) {
   addBitlashFunction("pin.read", (bitlash_function) pinRead);
   addBitlashFunction("pin.write", (bitlash_function) pinWrite);
   addBitlashFunction("pin.report", (bitlash_function) pinReport);
-  
+
   addBitlashFunction("backpack.report", (bitlash_function) backpackReport);
+  
+  Scout.meshListen(1, receiveMessage);
 }
 
 void loop(void) {
   Scout.loop();
+}
+
+static bool receiveMessage(NWK_DataInd_t *ind) {
+  Serial.print("Received message - ");
+  Serial.print("lqi: ");
+  Serial.print(ind->lqi, DEC);
+
+  Serial.print("  ");
+
+  Serial.print("rssi: ");
+  Serial.print(ind->rssi, DEC);
+  Serial.print("  ");
+  
+  uint8_t header = ind->data[0];
+  
+  Serial.print("header: ");
+  Serial.println(header, HEX);
+  
+  Serial.print("payload: ");
+  for (int i=1; i<ind->size; i++) {
+    Serial.print(ind->data[i], DEC);
+  }
+  Serial.println("");
+  
+  // run the Bitlash callback function, if defined
+  //doCommand("mesh.receive(...)")
+  return true;
 }
 
 /****************************\
@@ -80,10 +109,12 @@ numvar getBatteryVoltage(void) {
 
 numvar enableBackpackVcc(void) {
   Scout.enableBackpackVcc();
+  return true;
 }
 
 numvar disableBackpackVcc(void) {
   Scout.disableBackpackVcc();
+  return true;
 }
 
 numvar goToSleep(void) {
@@ -173,9 +204,44 @@ numvar meshSetKey(void) {
   Pinoccio.meshSetSecurityKey((const char *)getstringarg(1));
 }
 
+// Run a command that's defined on another scout.  ie: meshRemoteRun(scoutId, "remote command string");
 numvar meshRemoteRun(void) {
-  // TODO: run a function that's defined on another scout
-  // ie: meshRemoteRun(scoutId, "remoteFunctionName");
+  MeshRequest request;
+  request.setDstAddress(getarg(1));
+  request.setDstEndpoint(1);
+  request.setSrcEndpoint(1);
+  
+  if (!isstringarg(2)) {
+    Serial.println("Second argument must be a valid Bitlash command (and a string)");
+    return false;
+  }
+  
+  if (sizeof(getarg(2)) > 100) {
+    Serial.println("Size of payload cannot exceed 100 bytes");
+    return false;
+  }
+  
+  uint8_t size = strlen((const char *)getstringarg(2));
+  
+  Serial.println(getarg(0));
+  Serial.println(getarg(1));
+  Serial.println((const char *) getstringarg(2));
+  Serial.println(size);
+  
+  request.setHeader(NWK_PAYLOAD_HEADER_FINAL);
+  request.setPayload((byte *)getstringarg(2), size+1);
+  
+  NWK_DataReq_t* dataReq = request.getRequest();
+  Serial.println("Data request");
+  Serial.println(dataReq->dstAddr);
+  Serial.println(dataReq->dstEndpoint);
+  Serial.println(dataReq->srcEndpoint);  
+  Serial.println(dataReq->size);
+  Serial.println(dataReq->data[0], HEX);
+  for (int i=1; i<dataReq->size; i++) {
+    Serial.write((const char*)dataReq->data[i]);
+  }
+  //Pinoccio.meshSendMessage(request);
   return true;
 }
 
@@ -194,6 +260,11 @@ numvar meshPublish(void) {
 numvar meshSubscribe(void) {
   // TODO: subscribe to/join a multicast address on the mesh
   // ie: meshSubscribe(multicastId, callbackFunctionThatIsCalledWhenMessageArrives);
+  NWK_GroupAdd(getarg(1));
+  if (!NWK_GroupIsMember(getarg(1))) {
+    Serial.println("Error attempting to subscribe to topic");
+    return false;
+  }
   return true;
 }
 

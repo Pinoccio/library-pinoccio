@@ -24,7 +24,7 @@ extern "C"{
 
 /*****************************************************************************
 *****************************************************************************/
-float HAL_MeasureTemperature(void);
+int8_t HAL_MeasureTemperature(void);
 int8_t HAL_MeasureAdcOffset(void);
 
 #ifdef __cplusplus

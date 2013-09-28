@@ -39,6 +39,8 @@
 #include "avr/eeprom.h"
 #endif
 
+#define MEGA
+
 // Interpreter globals
 byte fetchtype;		// current script type
 numvar fetchptr;	// pointer to current char in script

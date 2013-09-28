@@ -22,6 +22,7 @@
 #include <Arduino.h>
 
 #include "bitlash.h"
+#include "src/bitlash.h"
 
 #include "utility/phy.h"
 #include "utility/hal.h"
@@ -44,7 +45,7 @@ class PinoccioClass {
 
     void goToSleep(uint32_t sleepForMs);
         
-    float getTemperature();
+    int8_t getTemperature();
     uint32_t getRandomNumber();
 
     void meshSetRadio(uint16_t addr, uint16_t panId=0x4567, uint8_t channel=0x1a);

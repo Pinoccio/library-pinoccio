@@ -38,7 +38,7 @@ static inline int16_t HAL_AdcMeasure(void)
 
 /*****************************************************************************
 *****************************************************************************/
-float HAL_MeasureTemperature(void)
+int8_t HAL_MeasureTemperature(void)
 {
   int32_t val = 0;
 
@@ -60,7 +60,7 @@ float HAL_MeasureTemperature(void)
 
   ADCSRA &= ~((1 << ADEN) | (1 << ADIE));
 
-  return ((1.13 * val - 272.8)) + HAL_TEMPERATURE_CALIBRATION_OFFSET - 3;
+  return (int)((1.13 * val - 272.8)) + HAL_TEMPERATURE_CALIBRATION_OFFSET - 3;
 }
 
 /*****************************************************************************
