@@ -241,7 +241,7 @@ numvar meshRemoteRun(void) {
   for (int i=1; i<dataReq->size; i++) {
     Serial.write((const char*)dataReq->data[i]);
   }
-  //Pinoccio.meshSendMessage(request);
+  Pinoccio.meshSendMessage(request);
   return true;
 }
 
