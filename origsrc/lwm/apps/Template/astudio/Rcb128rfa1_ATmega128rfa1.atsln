@@ -1,0 +1,16 @@
+Microsoft Visual Studio Solution File, Format Version 11.00
+# AvrStudio Solution File, Format Version 11.00
+Project("{C9370FEF-1197-4AF6-A27A-1676D0DF21FA}") = "Rcb128rfa1_ATmega128rfa1", "Rcb128rfa1_ATmega128rfa1.cproj", "{F9CDF4DC-C39C-4B24-8587-18E4C5210A13}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Default|AVR = Default|AVR
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{F9CDF4DC-C39C-4B24-8587-18E4C5210A13}.Default|AVR.ActiveCfg = Debug|AVR
+		{F9CDF4DC-C39C-4B24-8587-18E4C5210A13}.Default|AVR.Build.0 = Debug|AVR
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal

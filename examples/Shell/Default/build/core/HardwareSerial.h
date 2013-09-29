@@ -1,0 +1,1 @@
+/Applications/Pinoccio.app/Contents/Resources/Java/hardware/pinoccio/avr/cores/pinoccio/HardwareSerial.h

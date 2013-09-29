@@ -1,0 +1,72 @@
+##############################################################################
+CONFIG = Debug
+#CONFIG = Release
+
+##############################################################################
+.PHONY: all directory clean size
+
+STACK_PATH = ../../..
+APP_PATH = ..
+
+CC = avr-gcc
+OBJCOPY = avr-objcopy
+SIZE = avr-size
+
+CFLAGS += -W -Wall --std=gnu99 -Os
+CFLAGS += -fdata-sections -ffunction-sections -fpack-struct -fshort-enums
+CFLAGS += -funsigned-char -funsigned-bitfields
+CFLAGS += -mmcu=atmega128rfa1
+CFLAGS += -MD -MP -MT $(CONFIG)/$(*F).o -MF $(CONFIG)/$(@F).d
+
+ifeq ($(CONFIG), Debug)
+  CFLAGS += -g
+endif
+
+LDFLAGS += -Wl,--gc-sections
+LDFLAGS += -mmcu=atmega128rfa1
+LDFLAGS += -Wl,--script=../linker/atmega128rfa1.ld
+
+INCLUDES += \
+  -I$(STACK_PATH)/sys/inc 
+
+SRCS += \
+  $(APP_PATH)/Bootloader.c 
+
+DEFINES += \
+  -DHAL_ATMEGA128RFA1 \
+  -DF_CPU=8000000 
+
+CFLAGS += $(INCLUDES) $(DEFINES)
+
+OBJS = $(addprefix $(CONFIG)/, $(notdir %/$(subst .c,.o, $(SRCS))))
+
+all: directory $(CONFIG)/Bootloader.elf $(CONFIG)/Bootloader.hex $(CONFIG)/Bootloader.bin size
+
+$(CONFIG)/Bootloader.elf: $(OBJS)
+	@echo LD $@
+	@$(CC) $(LDFLAGS) $(OBJS) $(LIBS) -o $@
+
+$(CONFIG)/Bootloader.hex: $(CONFIG)/Bootloader.elf
+	@echo OBJCOPY $@
+	@$(OBJCOPY) -O ihex -R .eeprom $^ $@
+
+$(CONFIG)/Bootloader.bin: $(CONFIG)/Bootloader.elf
+	@echo OBJCOPY $@
+	@$(OBJCOPY) -O binary -R .eeprom $^ $@
+
+%.o:
+	@echo CC $@
+	@$(CC) $(CFLAGS) $(filter %$(subst .o,.c,$(notdir $@)), $(SRCS)) -c -o $@
+
+directory:
+	@gmkdir -p $(CONFIG)
+
+size: $(CONFIG)/Bootloader.elf
+	@echo size:
+	@$(SIZE) -t $^
+
+clean:
+	@echo clean
+	@-rm -rf $(CONFIG)
+
+-include $(wildcard $(CONFIG)/*.d)

@@ -1,0 +1,16 @@
+Microsoft Visual Studio Solution File, Format Version 11.00
+# AvrStudio Solution File, Format Version 11.00
+Project("{9882CEBB-7589-43CA-A415-08ED3C8487EB}") = "Xplained_ATxmega128b1_Rf212", "Xplained_ATxmega128b1_Rf212.cproj", "{1C4AF1A2-E21E-40C5-A7DF-09325973C6F6}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Default|AVR = Default|AVR
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{1C4AF1A2-E21E-40C5-A7DF-09325973C6F6}.Default|AVR.ActiveCfg = Debug|AVR
+		{1C4AF1A2-E21E-40C5-A7DF-09325973C6F6}.Default|AVR.Build.0 = Debug|AVR
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal

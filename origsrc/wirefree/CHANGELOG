@@ -1,0 +1,10 @@
+Date        Changes
+----------- --------------------------------------------------------------------
+Jul 05 2011 - Initial version of WebServer code.
+            - Modifications to webpage and HTTP output need to be done in gs.cpp
+            - This is an interim fix until the code that is compatible with the
+              Ethernet library is fully working
+
+Nov 07 2011 - Added WebServer & WebClient sketches
+	    
+

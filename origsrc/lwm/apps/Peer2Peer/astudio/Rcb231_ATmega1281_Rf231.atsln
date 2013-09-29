@@ -1,0 +1,16 @@
+Microsoft Visual Studio Solution File, Format Version 11.00
+# AvrStudio Solution File, Format Version 11.00
+Project("{95D9F7C8-EECA-4389-B030-5B91ADAF9115}") = "Rcb231_ATmega1281_Rf231", "Rcb231_ATmega1281_Rf231.cproj", "{0DAD503F-0779-4967-8BC7-B54AB466284E}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Default|AVR = Default|AVR
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{0DAD503F-0779-4967-8BC7-B54AB466284E}.Default|AVR.ActiveCfg = Debug|AVR
+		{0DAD503F-0779-4967-8BC7-B54AB466284E}.Default|AVR.Build.0 = Debug|AVR
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal

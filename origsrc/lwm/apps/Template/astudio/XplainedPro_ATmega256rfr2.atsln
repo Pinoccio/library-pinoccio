@@ -1,0 +1,16 @@
+Microsoft Visual Studio Solution File, Format Version 11.00
+# AvrStudio Solution File, Format Version 11.00
+Project("{01ADF843-BE68-4109-B91F-A5CFB07B160E}") = "XplainedPro_ATmega256rfr2", "XplainedPro_ATmega256rfr2.cproj", "{545C73F9-FC3F-4D90-95B9-3B6DDECF1728}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Default|AVR = Default|AVR
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{545C73F9-FC3F-4D90-95B9-3B6DDECF1728}.Default|AVR.ActiveCfg = Debug|AVR
+		{545C73F9-FC3F-4D90-95B9-3B6DDECF1728}.Default|AVR.Build.0 = Debug|AVR
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
