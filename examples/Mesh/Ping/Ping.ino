@@ -1,5 +1,5 @@
 #include "config.h"
-#include <Pinoccio.h>
+#include <Scout.h>
 
 static SYS_Timer_t appTimer;
 static NWK_DataReq_t appDataReq;
@@ -57,7 +57,7 @@ static bool appDataInd(NWK_DataInd_t *ind) {
 }
 
 void setup() {
-  Pinoccio.init();
+  Scout.setup();
   
   NWK_SetAddr(APP_ADDR);
   NWK_SetPanId(APP_PANID);
@@ -75,7 +75,7 @@ void setup() {
 }
 
 void loop() {
-  Pinoccio.loop();
+  Scout.loop();
   if (APP_ADDR == 0) {
     appSendData();
     delay(APP_FLUSH_TIMER_INTERVAL);
