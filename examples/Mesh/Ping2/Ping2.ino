@@ -21,7 +21,7 @@ void loop() {
 
 
 static void sendMessage(void) {
-  static MeshRequest request = MeshRequest();
+  MeshRequest request = MeshRequest();
   
   if (meshAddress == 1) {
     request.setDstAddress(2);
