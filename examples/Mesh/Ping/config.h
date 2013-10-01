@@ -8,7 +8,7 @@
 #define APP_PANID                 0x4567
 #define APP_ENDPOINT              1
 #define APP_SECURITY_KEY          "TestSecurityKey0"
-#define APP_FLUSH_TIMER_INTERVAL  500
+#define APP_FLUSH_TIMER_INTERVAL  30000
 
 #define SYS_SECURITY_MODE                   0
 
@@ -20,8 +20,7 @@
 #define NWK_ROUTE_DEFAULT_SCORE             3
 #define NWK_ACK_WAIT_TIME                   800 // ms
 
-//#define PHY_ENABLE_ENERGY_DETECTION
-#define NWK_ENABLE_ROUTING
+//#define NWK_ENABLE_ROUTING
 //#define NWK_ENABLE_SECURITY
 
 #endif // _CONFIG_H_

@@ -20,6 +20,7 @@
 /*- Definitions ------------------------------------------------------------*/
 #define IRQ_STATUS_CLEAR_VALUE         0xff
 #define RANDOM_NUMBER_UPDATE_INTERVAL  1 // us
+//#define PHY_ENABLE_ENERGY_DETECTION
 
 /*- Types ------------------------------------------------------------------*/
 typedef enum PhyState_t

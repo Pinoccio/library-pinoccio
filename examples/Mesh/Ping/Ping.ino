@@ -9,7 +9,12 @@ static bool receivedPacket = false;
 
 static void appSendDataConf(NWK_DataReq_t *req) {
   appDataReqBusy = false;
-  appSendData();
+  if (NWK_SUCCESS_STATUS == req->status) {
+    Serial.println("- received response");
+  } else {
+     Serial.println("- error, no response received"); 
+  }
+  //appSendData();
   (void)req;
 }
 
@@ -32,9 +37,9 @@ static void appSendData(void) {
 }
 
 static void appTimerHandler(SYS_Timer_t *timer) {
-  if (APP_ADDR == 1) {
-    //Serial.println("Waiting....");
-  }
+  appSendData();
+  Serial.println("Sent data");
+  RgbLed.blinkCyan(200);
 }
 
 static bool appDataInd(NWK_DataInd_t *ind) {
@@ -57,7 +62,9 @@ static bool appDataInd(NWK_DataInd_t *ind) {
 }
 
 void setup() {
-  Scout.setup();
+  SYS_Init();
+  //Scout.setup();
+  Serial.begin(115200);
   
   NWK_SetAddr(APP_ADDR);
   NWK_SetPanId(APP_PANID);
@@ -65,19 +72,18 @@ void setup() {
   PHY_SetRxState(true);
   NWK_OpenEndpoint(APP_ENDPOINT, appDataInd);
 
-  appTimer.interval = APP_FLUSH_TIMER_INTERVAL;
-  appTimer.mode = SYS_TIMER_PERIODIC_MODE;
-  appTimer.handler = appTimerHandler;
-  SYS_TimerStart(&appTimer);
-
-  RgbLed.cyan();
   appPingCounter = 0;
+  
+  if (APP_ADDR == 1) {
+    Serial.println("Waiting for ping packets:");
+  } else {
+    appTimer.interval = APP_FLUSH_TIMER_INTERVAL;
+    appTimer.mode = SYS_TIMER_PERIODIC_MODE;
+    appTimer.handler = appTimerHandler;
+    SYS_TimerStart(&appTimer);
+  }
 }
 
 void loop() {
-  Scout.loop();
-  if (APP_ADDR == 0) {
-    appSendData();
-    delay(APP_FLUSH_TIMER_INTERVAL);
-  }
+  SYS_TaskHandler();
 }

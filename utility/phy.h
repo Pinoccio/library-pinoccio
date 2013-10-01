@@ -28,6 +28,7 @@ extern "C"{
 #define PHY_ENABLE_RANDOM_NUMBER_GENERATOR
 #define PHY_HAS_RANDOM_NUMBER_GENERATOR
 #define PHY_HAS_AES_MODULE
+//#define PHY_ENABLE_ENERGY_DETECTION
 
 /*- Types ------------------------------------------------------------------*/
 typedef struct PHY_DataInd_t

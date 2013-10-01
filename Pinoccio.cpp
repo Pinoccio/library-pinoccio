@@ -24,12 +24,12 @@ void PinoccioClass::setup() {
   // initial seeding of RNG
   getRandomNumber();
   
-  initBitlash(115200);
+  //initBitlash(115200);
 }
 
 void PinoccioClass::loop() {
   SYS_TaskHandler();
-  runBitlash();
+  //runBitlash();
 }
 
 void PinoccioClass::goToSleep(uint32_t sleepForMs) {
@@ -59,11 +59,15 @@ void PinoccioClass::meshSetRadio(uint16_t addr, uint16_t panId, uint8_t channel)
 }
   
 void PinoccioClass::meshSetSecurityKey(const char *key) {
-  // TODO:
   NWK_SetSecurityKey((uint8_t *)key);
 }
 
 void PinoccioClass::meshSendMessage(MeshRequest request) {
+  NWK_DataReq_t* req = request.getRequest();
+  Serial.print("sending message to: ");
+  Serial.print(req->dstAddr);
+  Serial.print(":");
+  Serial.println(req->dstEndpoint);
   NWK_DataReq(request.getRequest());
 }
 

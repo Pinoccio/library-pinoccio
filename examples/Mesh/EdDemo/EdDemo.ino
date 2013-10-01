@@ -1,16 +1,7 @@
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
 #include "config.h"
-#include "hal.h"
-#include "phy.h"
-#include "sys.h"
-#include "nwk.h"
-#include "halUart.h"
-#include "sysTimer.h"
+#include <Scout.h>
 
-/*****************************************************************************
-*****************************************************************************/
+/*- Types ------------------------------------------------------------------*/
 typedef enum AppState_t
 {
   APP_STATE_INITIAL,
@@ -20,40 +11,36 @@ typedef enum AppState_t
   APP_STATE_WAIT_SCAN_TIMER,
 } AppState_t;
 
-/*****************************************************************************
-*****************************************************************************/
+/*- Variables --------------------------------------------------------------*/
 static AppState_t appState = APP_STATE_INITIAL;
 static uint8_t channel;
 static uint8_t edValue[APP_LAST_CHANNEL - APP_FIRST_CHANNEL + 1];
 static SYS_Timer_t appScanTimer;
 
-/*****************************************************************************
-*****************************************************************************/
-void HAL_UartBytesReceived(uint16_t bytes)
-{
-  for (uint16_t i = 0; i < bytes; i++)
-    HAL_UartReadByte();
-}
+/*- Implementations --------------------------------------------------------*/
 
-/*****************************************************************************
+/*************************************************************************//**
 *****************************************************************************/
 static void appPrintEdValues(void)
 {
-  char hex[] = "0123456789abcdef";
-
+   char hex[] = "0123456789abcdef";
+   
   for (uint8_t i = 0; i < sizeof(edValue); i++)
   {
+    Serial.print("Channel ");
+    Serial.print(APP_FIRST_CHANNEL + i);
+    Serial.print(": 0x");
     uint8_t v = edValue[i] - PHY_RSSI_BASE_VAL;
-    HAL_UartWriteByte(hex[(v >> 4) & 0x0f]);
-    HAL_UartWriteByte(hex[v & 0x0f]);
-    HAL_UartWriteByte(' ');
+    Serial.print(hex[(v >> 4) & 0x0f]);
+    Serial.print(hex[v & 0x0f]);
+    Serial.print(" - ");
+    Serial.print(v, DEC);
+    Serial.println("");
   }
-
-  HAL_UartWriteByte('\r');
-  HAL_UartWriteByte('\n');
+  Serial.println("");
 }
 
-/*****************************************************************************
+/*************************************************************************//**
 *****************************************************************************/
 void PHY_EdConf(int8_t ed)
 {
@@ -61,7 +48,7 @@ void PHY_EdConf(int8_t ed)
   appState = APP_STATE_NEXT_CHANNEL;
 }
 
-/*****************************************************************************
+/*************************************************************************//**
 *****************************************************************************/
 static void appScanTimerHandler(SYS_Timer_t *timer)
 {
@@ -69,7 +56,7 @@ static void appScanTimerHandler(SYS_Timer_t *timer)
   (void)timer;
 }
 
-/*****************************************************************************
+/*************************************************************************//**
 *****************************************************************************/
 static void appInit(void)
 {
@@ -91,7 +78,7 @@ static void appInit(void)
   appState = APP_STATE_START_ED;
 }
 
-/*****************************************************************************
+/*************************************************************************//**
 *****************************************************************************/
 static void APP_TaskHandler(void)
 {
@@ -132,17 +119,16 @@ static void APP_TaskHandler(void)
   }
 }
 
-/*****************************************************************************
+/*************************************************************************//**
 *****************************************************************************/
 int main(void)
 {
   SYS_Init();
-  HAL_UartInit(38400);
+  Serial.begin(115200);
 
   while (1)
   {
     SYS_TaskHandler();
-    HAL_UartTaskHandler();
     APP_TaskHandler();
   }
 }
