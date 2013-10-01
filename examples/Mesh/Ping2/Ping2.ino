@@ -37,11 +37,10 @@ static void sendMessage(SYS_Timer_t *timer) {
   appDataReq.size = sizeof(pingCounter);
   appDataReq.confirm = sendMessageConfirm;
   NWK_DataReq(&appDataReq);
+  RgbLed.blinkCyan(200);
 
   Serial.print("Sent Message with data: ");
   Serial.println(pingCounter);
-  
-  RgbLed.blinkCyan(200);
 
   pingCounter++;
 }
@@ -57,6 +56,8 @@ static void sendMessageConfirm(NWK_DataReq_t *req) {
 }
 
 static bool receiveMessage(NWK_DataInd_t *ind) {
+  RgbLed.blinkGreen(200);
+  
   Serial.print("Received message - ");
   Serial.print("lqi: ");
   Serial.print(ind->lqi, DEC);
@@ -72,6 +73,5 @@ static bool receiveMessage(NWK_DataInd_t *ind) {
     Serial.print(ind->data[i], DEC);
   }
   Serial.println("");
-  RgbLed.blinkGreen(200);
   return true;
 }
