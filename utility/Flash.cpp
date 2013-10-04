@@ -1,0 +1,194 @@
+// Copyright 2013 Pervasive Displays, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at:
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+// express or implied.  See the License for the specific language
+// governing permissions and limitations under the License.
+
+
+#include <Arduino.h>
+//#include <pins_arduino.h>
+
+#include <SPI.h>
+
+#include "Flash.h"
+
+
+// FLASH MX25V8005 8Mbit flash chip command set (50MHz max clock)
+enum {
+  FLASH_WREN = 0x06,
+  FLASH_WRDI = 0x04,
+  FLASH_RDID = 0x9E,
+  FLASH_RDSR = 0x05,
+  FLASH_WRSR = 0x01,
+  FLASH_READ = 0x03,       // read at half frequency
+  FLASH_FAST_READ = 0x0B,  // read at full frequency
+  FLASH_SSE = 0x20,
+  FLASH_SE = 0xD8,
+  FLASH_BE = 0xC7,
+  FLASH_PP = 0x02,
+  FLASH_DP = 0xB9,
+  FLASH_RDP = 0xAB,
+  FLASH_NOP = 0xFF,
+
+  // status register bits
+  FLASH_WIP = 0x01,
+  FLASH_WEL = 0x02,
+  FLASH_BP0 = 0x04,
+  FLASH_BP1 = 0x08,
+  FLASH_BP2 = 0x10
+};
+
+
+// currently supported chip
+#define FLASH_MFG 0x20
+#define FLASH_ID 0x7115
+
+
+// the default FLASH device
+FlashClass Flash(SS, SPI);
+
+
+FlashClass::FlashClass(int chipSelectPin, SPIClass &SPIDriver) : SPI(SPIDriver), CS(chipSelectPin) {
+  SPI.setBitOrder(MSBFIRST);
+  SPI.setDataMode(SPI_MODE0);
+  //SPI.setClockDivider(SPI_CLOCK_DIV4);
+  begin(chipSelectPin, SPIDriver);
+}
+
+
+void FlashClass::begin(int chipSelectPin, SPIClass &SPIDriver) {
+  pinMode(chipSelectPin, OUTPUT);
+  digitalWrite(chipSelectPin, HIGH);
+  pinMode(SCK, OUTPUT);
+  pinMode(MOSI, OUTPUT);
+  pinMode(MISO, INPUT);
+  SPI.begin();
+  this->SPI = SPIDriver;
+  this->CS = chipSelectPin;
+}
+
+
+void FlashClass::end() {
+  SPI.end();
+}
+
+
+// return true if the chip is supported
+bool FlashClass::available(void) {
+
+  digitalWrite(this->CS, HIGH);
+  this->SPI.transfer(FLASH_NOP); // flush the SPI buffers
+  this->SPI.transfer(FLASH_NOP); // ..
+  this->SPI.transfer(FLASH_NOP); // ..
+
+  uint8_t manufacturer;
+  uint16_t device;
+  this->info(&manufacturer, &device); // initial read to reset the chip
+  this->info(&manufacturer, &device); // actual read
+
+  return (FLASH_MFG == manufacturer) && (FLASH_ID == device);
+}
+
+
+void FlashClass::info(uint8_t *manufacturer, uint16_t *device) {
+  while (this->isBusy()) { }
+
+  digitalWrite(this->CS, LOW);
+  this->SPI.transfer(FLASH_RDID);
+  *manufacturer = this->SPI.transfer(FLASH_NOP);
+  uint8_t id_high = this->SPI.transfer(FLASH_NOP);
+  uint8_t id_low = this->SPI.transfer(FLASH_NOP);
+  *device = (id_high << 8) | id_low;
+  digitalWrite(this->CS, HIGH);
+  this->SPI.transfer(FLASH_NOP);
+}
+
+
+void FlashClass::read(uint32_t address, void *buffer, uint16_t length) {
+  digitalWrite(this->CS, LOW);
+  this->SPI.transfer(FLASH_FAST_READ);
+  this->SPI.transfer(address >> 16);
+  this->SPI.transfer(address >> 8);
+  this->SPI.transfer(address);
+  this->SPI.transfer(FLASH_NOP); // read dummy byte
+
+  for (uint8_t *p = (uint8_t *)buffer; length != 0; --length) {
+    *p++ = this->SPI.transfer(FLASH_NOP);
+  }
+
+  digitalWrite(this->CS, HIGH);
+  //this->SPI.transfer(FLASH_NOP);
+}
+
+
+bool FlashClass::isBusy(void) {
+  digitalWrite(this->CS, LOW);
+  this->SPI.transfer(FLASH_RDSR);
+  bool busy = 0 != (FLASH_WIP & this->SPI.transfer(0xff));
+  digitalWrite(this->CS, HIGH);
+  delay(10);
+  return busy;
+}
+
+
+void FlashClass::writeEnable(void) {
+  while (this->isBusy()) { }
+  digitalWrite(this->CS, LOW);
+  this->SPI.transfer(FLASH_WREN);
+  digitalWrite(this->CS, HIGH);
+  delay(10);
+  //this->SPI.transfer(FLASH_NOP);
+}
+
+
+
+void FlashClass::writeDisable(void) {
+  while (this->isBusy()) { }
+  digitalWrite(this->CS, LOW);
+  this->SPI.transfer(FLASH_WRDI);
+  digitalWrite(this->CS, HIGH);
+  delay(10);
+  //this->SPI.transfer(FLASH_NOP);
+}
+
+
+void FlashClass::write(uint32_t address, void *buffer, uint16_t length) {
+  while (this->isBusy()) { }
+
+  Flash.writeEnable();
+  digitalWrite(this->CS, LOW);
+
+  this->SPI.transfer(FLASH_PP);
+  this->SPI.transfer(address >> 16);
+  this->SPI.transfer(address >> 8);
+  this->SPI.transfer(address);
+
+  for (uint8_t *p = (uint8_t *)buffer; length != 0; --length) {
+    this->SPI.transfer(*p++);
+  }
+
+  digitalWrite(this->CS, HIGH);
+  Flash.writeDisable();
+  //this->SPI.transfer(FLASH_NOP);
+}
+
+
+void FlashClass::sectorErase(uint32_t address) {
+  while (this->isBusy()) { }
+
+  digitalWrite(this->CS, LOW);
+  this->SPI.transfer(FLASH_SE);
+  this->SPI.transfer(address >> 16);
+  this->SPI.transfer(address >> 8);
+  this->SPI.transfer(address);
+  digitalWrite(this->CS, HIGH);
+  //this->SPI.transfer(FLASH_NOP);
+}

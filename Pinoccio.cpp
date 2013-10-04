@@ -24,12 +24,12 @@ void PinoccioClass::setup() {
   // initial seeding of RNG
   getRandomNumber();
   
-  //initBitlash(115200);
+  initBitlash(115200);
 }
 
 void PinoccioClass::loop() {
   SYS_TaskHandler();
-  //runBitlash();
+  runBitlash();
 }
 
 void PinoccioClass::goToSleep(uint32_t sleepForMs) {

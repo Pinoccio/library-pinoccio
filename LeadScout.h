@@ -16,6 +16,7 @@
 #include "utility/webWifi.h"
 #include "utility/webWifiServer.h"
 #include "utility/webWifiClient.h"
+#include "utility/Flash.h"
 #include "utility/mqttClient.h"
 
 class PinoccioLeadScout : public PinoccioScout {

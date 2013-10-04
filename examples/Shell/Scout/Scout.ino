@@ -1,4 +1,5 @@
-#include "Scout.h"
+#include <Wire.h>
+#include <Scout.h>
 
 void setup(void) {
   Scout.setup();
@@ -278,28 +279,29 @@ numvar meshReport(void) {
 *        I/O HANDLERS       *
 \****************************/
 numvar pinOn(void) {
-  // TODO: turn pin on
+  pinMode(getarg(1), OUTPUT);
+  digitalWrite(getarg(1), HIGH);
   return true;
 }
 
 numvar pinOff(void) {
-  // TODO: turn pin off
+  pinMode(getarg(1), OUTPUT);
+  digitalWrite(getarg(1), LOW);
   return true;
 }
 
 numvar pinMakeInput(void) {
-  // TODO: make pin an input
+  pinMode(getarg(1), INPUT);
   return true;
 }
 
 numvar pinMakeOutput(void) {
-  // TODO: make pin an ouptut
+  pinMode(getarg(1), OUTPUT);
   return true;
 }
 
 numvar pinRead(void) {
-  // TODO: return JSON formatted status of a single pin
-  return true;
+  return digitalRead(getarg(1));
 }
 
 numvar pinWrite(void) {
