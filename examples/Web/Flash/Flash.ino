@@ -1,7 +1,7 @@
 #include <LeadScout.h>
 
 void setup() {   
-  Scout.setup();
+  LeadScout.setup();
   Serial.begin(115200);
   Serial.print("Starting Flash Test: "); 
   
@@ -11,7 +11,7 @@ void setup() {
 }
 
 void loop() {
-  Scout.loop();
+  LeadScout.loop();
   char data_to_chip[128] = "Testing 9";
   char data_from_chip[128] = "         ";
   int i = 0;
