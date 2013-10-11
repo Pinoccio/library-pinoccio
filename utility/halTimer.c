@@ -12,7 +12,7 @@
 #include "halTimer.h"
 
 /*- Definitions ------------------------------------------------------------*/
-#define TIMER_PRESCALER     8
+#define TIMER_PRESCALER     1
 
 /*- Variables --------------------------------------------------------------*/
 volatile uint8_t halTimerIrqCount;
@@ -26,10 +26,20 @@ void HAL_TimerInit(void)
 {
   halTimerIrqCount = 0;
 
-  OCR4A = ((F_CPU / 1000ul) / TIMER_PRESCALER) * HAL_TIMER_INTERVAL;
-  TCCR4B = (1 << WGM12);              // CTC mode
-  TCCR4B |= (1 << CS11);              // Prescaler 8
-  TIMSK4 |= (1 << OCIE4A);            // Enable TC4 interrupt
+  // OCR4A = ((F_CPU / 1000ul) / TIMER_PRESCALER) * HAL_TIMER_INTERVAL;
+  // TCCR4B = (1 << WGM42);              // CTC mode
+  // TCCR4B |= (1 << CS40);              // Prescaler 
+  // TCCR4B |= (1 << CS41);              // Prescaler 
+  // TIMSK4 |= (1 << OCIE4A);            // Enable TC4 interrupt
+  
+  
+  //Timer4 Prescaler = 1024; Preload = 124; Actual Interrupt Time = 8 ms
+  TCCR4A = 0x80;
+  TCCR4B = 0x0D; 
+  OCR4AH = 0x00; 
+  OCR4AL = 0x7C; 
+  TIMSK4 |= (1 << OCIE4A);
+  
   //TCCR0A = (1 << WGM00);
   //TCCR0A = TCCR0A & 0b11111000 | 0x01;
 }

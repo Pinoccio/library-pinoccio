@@ -14,7 +14,7 @@
 #include "sysTypes.h"
 
 /*- Definitions ------------------------------------------------------------*/
-#define HAL_TIMER_INTERVAL      10ul // ms
+#define HAL_TIMER_INTERVAL      8ul // ms
 
 #ifdef __cplusplus
 extern "C"{
