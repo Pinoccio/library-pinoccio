@@ -42,8 +42,9 @@ public:
 #define CMD_ENABLE_DHCPSVR  13
 #define CMD_UDP_LISTEN      14
 #define CMD_UDP_CONN        15
-#define CMD_NET_STATUS       16
+#define CMD_NET_STATUS      16
 #define CMD_AT              17
+#define CMD_GET_VERSION     18
 
 #define CMD_INVALID         255
 
@@ -78,7 +79,7 @@ typedef struct _SOCK_TABLE {
 class webGainspan {
 public:
   uint8_t mode;
-  uint8_t init();
+  uint8_t init(uint32_t baud=115200);
   void configure(GS_PROFILE* prof);
   uint8_t connect();
   uint8_t connected();
@@ -89,6 +90,9 @@ public:
   void esc_seq_start();
   void esc_seq_stop();
   String get_dev_id();
+  String getAppVersion();
+  String getGepsVersion();
+  String getWlanVersion();
 
   void configSocket(SOCKET s, uint8_t protocol, uint16_t port);
   void execSocketCmd(SOCKET s, uint8_t cmd);
@@ -97,9 +101,19 @@ public:
   uint8_t isDataOnSock(SOCKET s);
   uint16_t readData(SOCKET s, uint8_t* buf, uint16_t len);
   uint16_t writeData(SOCKET s, const uint8_t*  buf, uint16_t  len);
-
+  
   static const uint16_t SSIZE = 256; // Max Tx buffer siz
 
+
+  String readline(void);
+  uint8_t send_cmd(uint8_t cmd);
+  uint8_t parse_resp(uint8_t cmd);
+  uint8_t send_cmd_w_resp(uint8_t cmd);
+  void parse_cmd(String buf);
+  void parse_data(String buf);
+
+  void flush();
+  
 private:
   String security_key;
   String ssid;
@@ -113,6 +127,9 @@ private:
   String port;
   uint8_t connection_state;
   String dev_id;
+  String appVersion;
+  String gepsVersion;
+  String wlanVersion;
   String dns_url_ip;
   uint8_t tx_done;
 
@@ -123,15 +140,6 @@ private:
   String srcPortUDP;
 
   void (*rx_data_handler)(String data);
-
-  String readline(void);
-  uint8_t send_cmd(uint8_t cmd);
-  uint8_t parse_resp(uint8_t cmd);
-  uint8_t send_cmd_w_resp(uint8_t cmd);
-  void parse_cmd(String buf);
-  void parse_data(String buf);
-
-  void flush();
 };
 
 extern webGainspan Gainspan;

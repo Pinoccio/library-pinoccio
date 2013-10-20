@@ -30,17 +30,18 @@ const char PROGMEM cmd_14[] = "AT+NSUDP=";
 const char PROGMEM cmd_15[] = "AT+NCUDP=";
 const char PROGMEM cmd_16[] = "AT+NSTAT=?";
 const char PROGMEM cmd_17[] = "AT";
+const char PROGMEM cmd_18[] = "AT+VER=?";
 
 const char* const PROGMEM cmd_tbl[] =
 {
   cmd_0, cmd_1, cmd_2, cmd_3, cmd_4, cmd_5, cmd_6, cmd_7,
   cmd_8, cmd_9, cmd_10, cmd_11, cmd_12, cmd_13, cmd_14,
-  cmd_15, cmd_16, cmd_17
+  cmd_15, cmd_16, cmd_17, cmd_18
 };
 
 /* Make sure the cmd_buffer is large enough to hold
  * the largest command in the above table */
-char cmd_buffer[18];
+char cmd_buffer[30];
 
 
 uint8_t hex_to_int(char c)
@@ -74,15 +75,15 @@ char int_to_hex(uint8_t c)
   return val;
 }
 
-uint8_t webGainspan::init()
+uint8_t webGainspan::init(uint32_t baud)
 {
   D(Serial.println("DEBUG: Gainspan::init 1"));
-  Serial1.begin(115200);
-  delay(1000);
+  Serial1.begin(baud);
   D(Serial.println("DEBUG: Gainspan::init 2"));
-  flush();
-  Serial1.println();
-  delay(1000);
+  if (!send_cmd_w_resp(CMD_AT)) {
+    D(Serial.println("DEBUG: Gainspan::init 2.1"));
+    return 0;
+  }
   D(Serial.println("DEBUG: Gainspan::init 3"));
   dev_mode = DEV_OP_MODE_COMMAND;
   connection_state = DEV_CONN_ST_DISCONNECTED;
@@ -97,13 +98,19 @@ uint8_t webGainspan::init()
   D(Serial.println("DEBUG: Gainspan::init 5"));
   // disable echo
   if (!send_cmd_w_resp(CMD_DISABLE_ECHO)) {
-    D(Serial.println("DEBUG: Gainspan::init 5.1"));
+    //D(Serial.println("DEBUG: Gainspan::init 5.1"));
     //return 0;
   }
   D(Serial.println("DEBUG: Gainspan::init 6"));
 
   // get device ID
   if (!send_cmd_w_resp(CMD_GET_MAC_ADDR)) {
+    D(Serial.println("DEBUG: Gainspan::init 6.1"));
+    return 0;
+  }
+  
+  // get version numbers
+  if (!send_cmd_w_resp(CMD_GET_VERSION)) {
     D(Serial.println("DEBUG: Gainspan::init 6.1"));
     return 0;
   }
@@ -114,11 +121,14 @@ uint8_t webGainspan::init()
 uint8_t webGainspan::send_cmd(uint8_t cmd)
 {
   flush();
-
+  
   memset(cmd_buffer, 16, 0);
   strcpy_P(cmd_buffer, (char*)pgm_read_word(&(cmd_tbl[cmd])));
   String cmd_str = String(cmd_buffer);
-
+  
+  D(Serial.print("DEBUG: command sent: "));
+  D(Serial.println(cmd_str));
+  
   switch(cmd) {
   case CMD_DISABLE_ECHO:
   case CMD_DISABLE_DHCP:
@@ -128,6 +138,8 @@ uint8_t webGainspan::send_cmd(uint8_t cmd)
   case CMD_WIRELESS_MODE:
   case CMD_ENABLE_DHCPSVR:
   case CMD_NET_STATUS:
+  case CMD_AT:
+  case CMD_GET_VERSION:
   {
     Serial1.println(cmd_str);
     break;
@@ -208,9 +220,27 @@ uint8_t webGainspan::parse_resp(uint8_t cmd)
   String buf;
 
   while (!resp_done) {
+    
     buf = readline();
 
     switch(cmd) {
+    case CMD_AT:
+    {
+      if (buf == "OK" || buf == "AT") {
+        /* got OK */
+        ret = 1;
+        resp_done = 1;
+      } else if (buf.startsWith("ERROR")) {
+        /* got ERROR */
+        ret = 0;
+        resp_done = 1;
+      } else {
+        /* got unknown response */
+        ret = 0;
+        resp_done = 1;
+      }
+      break;
+    }
     case CMD_DISABLE_ECHO:
     case CMD_DISABLE_DHCP:
     case CMD_DISCONNECT:
@@ -220,7 +250,6 @@ uint8_t webGainspan::parse_resp(uint8_t cmd)
     case CMD_NETWORK_SET:
     case CMD_WIRELESS_MODE:
     case CMD_ENABLE_DHCPSVR:
-    case CMD_AT:
     {
       if (buf == "OK") {
         /* got OK */
@@ -309,7 +338,7 @@ uint8_t webGainspan::parse_resp(uint8_t cmd)
     }
     case CMD_GET_MAC_ADDR:
     {
-      if (buf.startsWith("00")) {
+      if (buf.startsWith("0") || buf.startsWith("1") || buf.startsWith("2") || buf.startsWith("3") || buf.startsWith("4")) {
         /* got MAC addr */
         dev_id = buf;
       } else if (buf == "OK") {
@@ -321,6 +350,43 @@ uint8_t webGainspan::parse_resp(uint8_t cmd)
         dev_id = "ff:ff:ff:ff:ff:ff";
         ret = 0;
         resp_done = 1;
+      }
+      break;
+    }
+    case CMD_GET_VERSION:
+    {
+      char* versionStr = (char *)malloc(buf.length()+1);
+      if (versionStr) {
+        buf.toCharArray(versionStr, buf.length()+1);
+      }
+      
+      if (buf.startsWith("S2W APP VERSION")) {
+        /* got app version */
+        strtok(versionStr, "=");
+        appVersion = strtok(NULL, "=");
+      } else if (buf.startsWith("S2W GEPS VERSION")) {
+        /* got geps version */
+        strtok(versionStr, "=");
+        gepsVersion = strtok(NULL, "=");
+      } else if (buf.startsWith("S2W WLAN VERSION")) {
+        /* got wlan version */
+        strtok(versionStr, "=");
+        wlanVersion = strtok(NULL, "=");
+      } else if (buf == "OK") {
+        /* got OK */
+        ret = 1;
+        resp_done = 1;
+      } else if (buf.startsWith("ERROR")) {
+        /* got ERROR */
+        appVersion = "N/A";
+        gepsVersion = "N/A";
+        wlanVersion = "N/A";
+        ret = 0;
+        resp_done = 1;
+      }
+      
+      if (versionStr) {
+        free(versionStr);
       }
       break;
     }
@@ -453,11 +519,19 @@ String webGainspan::readline(void)
 {
   String strBuf;
   char inByte;
+  uint32_t start = millis();
+  bool timedOut = false;
 
   bool endDetected = false;
-
+  
   while (!endDetected)
   {
+    if (millis() - start > 30) {
+      timedOut = true;
+      strBuf = "";
+      break;
+    }
+    
     if (Serial1.available())
     {
       // valid data in HW UART buffer, so check if it's \r or \n
@@ -830,10 +904,18 @@ String webGainspan::dns_lookup(String url)
   return this->dns_url_ip;
 }
 
-String webGainspan::get_dev_id()
-{
-  return dev_id;
+String webGainspan::getAppVersion() {
+  return appVersion;
 }
+
+String webGainspan::getGepsVersion() {
+  return gepsVersion;
+}
+
+String webGainspan::getWlanVersion() {
+  return wlanVersion;
+}
+
 
 void webGainspan::configSocket(SOCKET s, uint8_t protocol, uint16_t port)
 {

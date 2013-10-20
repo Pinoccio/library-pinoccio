@@ -10,12 +10,21 @@
 
 PinoccioClass Pinoccio;
 
-PinoccioClass::PinoccioClass() { }
+PinoccioClass::PinoccioClass() { 
+  shellEnabled = true;
+}
 
 PinoccioClass::~PinoccioClass() { }
 
+void PinoccioClass::disableShell() {
+  shellEnabled = false;
+}
+
 void PinoccioClass::setup() {
-  Serial.begin(115200);
+  if (shellEnabled) {
+    initBitlash(115200);
+  }
+  
   SYS_Init();
 
   // TODO: PHY_TX_PWR_REG(TX_PWR_3_2DBM);
@@ -23,13 +32,14 @@ void PinoccioClass::setup() {
 
   // initial seeding of RNG
   getRandomNumber();
-  
-  initBitlash(115200);
 }
 
 void PinoccioClass::loop() {
   SYS_TaskHandler();
-  runBitlash();
+  
+  if (shellEnabled) {
+    runBitlash();
+  }
 }
 
 void PinoccioClass::goToSleep(uint32_t sleepForMs) {

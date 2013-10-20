@@ -31,7 +31,6 @@ PinoccioScout::~PinoccioScout() { }
 
 void PinoccioScout::setup() { 
   PinoccioClass::setup();
-  
   Wire.begin(); 
   delay(100);
   HAL_FuelGaugeConfig(20);   // Configure the MAX17048G's alert percentage to 20%

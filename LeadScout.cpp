@@ -2,8 +2,8 @@
 #include <LeadScout.h>
 
 WIFI_PROFILE profile = {
-                /* SSID */ "Radio Free Epnk",
- /* WPA/WPA2 passphrase */ "tenor78!heavyweight",
+                /* SSID */ "",
+ /* WPA/WPA2 passphrase */ "",
           /* IP address */ "",
          /* subnet mask */ "",
           /* Gateway IP */ "" };
@@ -13,7 +13,7 @@ PinoccioLeadScout LeadScout;
 PinoccioLeadScout::PinoccioLeadScout() {
   scouts[0] = NULL;
   //TODO 
-  IPAddress server(85,119,83,194);
+  //IPAddress server(8,8,8,8);
 
   //mqttClient mqtt(server, 1883, mqttMessageReceived, netClient);
 

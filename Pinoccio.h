@@ -1,7 +1,7 @@
 #ifndef LIB_PINOCCIO_H_
 #define LIB_PINOCCIO_H_
 
-#define PINOCCIO_DEBUG
+//#define PINOCCIO_DEBUG
 
 #ifdef PINOCCIO_DEBUG
 #  define D(x) x
@@ -40,6 +40,7 @@ class PinoccioClass {
     PinoccioClass();
     ~PinoccioClass();
 
+    void disableShell();
     void setup();
     void loop();
 
@@ -55,6 +56,7 @@ class PinoccioClass {
 
   protected:
     uint16_t randomNumber;
+    bool shellEnabled;
 };
 
 extern PinoccioClass Pinoccio;

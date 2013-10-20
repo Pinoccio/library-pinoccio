@@ -1,23 +1,16 @@
-// Copyright 2013 Pervasive Displays, Inc.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at:
-//
-//   http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing,
-// software distributed under the License is distributed on an
-// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
-// express or implied.  See the License for the specific language
-// governing permissions and limitations under the License.
+/**************************************************************************\
+* Pinoccio Arduino Library                                                 *
+* https://github.com/Pinoccio/pinoccio-arduino-library                     *
+* Copyright (c) 2012-2013, Pinoccio. All rights reserved.                  *
+* ------------------------------------------------------------------------ *
+*  This program is free software; you can redistribute it and/or modify it *
+*  under the terms of the Apache license as described in license.txt.      *
+\**************************************************************************/
 
-#if !defined(EPD_FLASH_H)
-#define EPD_FLASH_H 1
+#ifndef _PINOCCIO_FLASH_H
+#define _PINOCCIO_FLASH_H
 
-#include <Arduino.h>
 #include <SPI.h>
-
 
 class FlashClass {
 private:
