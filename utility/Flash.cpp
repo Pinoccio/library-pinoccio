@@ -77,8 +77,7 @@ bool FlashClass::available(void) {
 
   uint8_t manufacturer;
   uint16_t device;
-  this->info(&manufacturer, &device); // initial read to reset the chip
-  this->info(&manufacturer, &device); // actual read
+  this->info(&manufacturer, &device);
 
   return (FLASH_MFG == manufacturer) && (FLASH_ID == device);
 }
@@ -146,7 +145,6 @@ void FlashClass::write(uint32_t address, void *buffer, uint16_t length) {
 
   Flash.writeEnable();
   digitalWrite(this->CS, LOW);
-
   this->SPI.transfer(FLASH_PP);
   this->SPI.transfer(address >> 16);
   this->SPI.transfer(address >> 8);
@@ -169,4 +167,14 @@ void FlashClass::sectorErase(uint32_t address) {
   this->SPI.transfer(address >> 8);
   this->SPI.transfer(address);
   digitalWrite(this->CS, HIGH);
+}
+
+void FlashClass::bulkErase(void) {
+  while (this->isBusy()) { }
+  
+  Flash.writeEnable();
+  digitalWrite(this->CS, LOW);
+  this->SPI.transfer(FLASH_BE);
+  digitalWrite(this->CS, HIGH);
+  Flash.writeDisable();
 }

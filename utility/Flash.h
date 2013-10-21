@@ -25,6 +25,7 @@ public:
 	void writeDisable(void);
 	void write(uint32_t address, void *buffer, uint16_t length);
 	void sectorErase(uint32_t address);
+	void bulkErase(void);
 
 	// inline static void attachInterrupt();
 	// inline static void detachInterrupt();
