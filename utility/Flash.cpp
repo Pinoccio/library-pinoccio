@@ -69,7 +69,7 @@ void FlashClass::end() {
 }
 
 // return true if the chip is supported
-bool FlashClass::available(void) {  
+bool FlashClass::available(void) {
   digitalWrite(this->CS, HIGH);
   this->SPI.transfer(FLASH_NOP); // flush the SPI buffers
   this->SPI.transfer(FLASH_NOP); // ..
@@ -84,7 +84,7 @@ bool FlashClass::available(void) {
 
 void FlashClass::info(uint8_t *manufacturer, uint16_t *device) {
   uint32_t start = millis();
-  while (this->isBusy()) { 
+  while (this->isBusy()) {
     if (millis() - start > 30) {
       return;
     }
@@ -97,7 +97,6 @@ void FlashClass::info(uint8_t *manufacturer, uint16_t *device) {
   uint8_t id_low = this->SPI.transfer(FLASH_NOP);
   *device = (id_high << 8) | id_low;
   digitalWrite(this->CS, HIGH);
-  this->SPI.transfer(FLASH_NOP);
 }
 
 bool FlashClass::isBusy(void) {
@@ -171,7 +170,7 @@ void FlashClass::sectorErase(uint32_t address) {
 
 void FlashClass::bulkErase(void) {
   while (this->isBusy()) { }
-  
+
   Flash.writeEnable();
   digitalWrite(this->CS, LOW);
   this->SPI.transfer(FLASH_BE);
