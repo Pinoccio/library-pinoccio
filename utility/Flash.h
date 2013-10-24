@@ -37,8 +37,6 @@ public:
 
 };
 
-extern FlashClass Flash;
-
 #endif
 
 

@@ -41,11 +41,6 @@ enum {
 #define FLASH_MFG 0x20
 #define FLASH_ID 0x7115
 
-
-// the default FLASH device
-FlashClass Flash(SS, SPI);
-
-
 FlashClass::FlashClass(int chipSelectPin, SPIClass &SPIDriver) : SPI(SPIDriver), CS(chipSelectPin) {
   SPI.setBitOrder(MSBFIRST);
   SPI.setDataMode(SPI_MODE0);
@@ -71,9 +66,6 @@ void FlashClass::end() {
 // return true if the chip is supported
 bool FlashClass::available(void) {
   digitalWrite(this->CS, HIGH);
-  this->SPI.transfer(FLASH_NOP); // flush the SPI buffers
-  this->SPI.transfer(FLASH_NOP); // ..
-  this->SPI.transfer(FLASH_NOP); // ..
 
   uint8_t manufacturer;
   uint16_t device;
@@ -102,7 +94,7 @@ void FlashClass::info(uint8_t *manufacturer, uint16_t *device) {
 bool FlashClass::isBusy(void) {
   digitalWrite(this->CS, LOW);
   this->SPI.transfer(FLASH_RDSR);
-  bool busy = 0 != (FLASH_WIP & this->SPI.transfer(0xff));
+  bool busy = 0 != ((FLASH_WIP | FLASH_WEL) & this->SPI.transfer(0xff));
   digitalWrite(this->CS, HIGH);
   delay(10);
   return busy;
@@ -142,7 +134,7 @@ void FlashClass::writeDisable(void) {
 void FlashClass::write(uint32_t address, void *buffer, uint16_t length) {
   while (this->isBusy()) { }
 
-  Flash.writeEnable();
+  writeEnable();
   digitalWrite(this->CS, LOW);
   this->SPI.transfer(FLASH_PP);
   this->SPI.transfer(address >> 16);
@@ -154,7 +146,7 @@ void FlashClass::write(uint32_t address, void *buffer, uint16_t length) {
   }
 
   digitalWrite(this->CS, HIGH);
-  Flash.writeDisable();
+  writeDisable();
 }
 
 void FlashClass::sectorErase(uint32_t address) {
@@ -171,9 +163,9 @@ void FlashClass::sectorErase(uint32_t address) {
 void FlashClass::bulkErase(void) {
   while (this->isBusy()) { }
 
-  Flash.writeEnable();
+  writeEnable();
   digitalWrite(this->CS, LOW);
   this->SPI.transfer(FLASH_BE);
   digitalWrite(this->CS, HIGH);
-  Flash.writeDisable();
+  writeDisable();
 }

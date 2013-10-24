@@ -9,6 +9,7 @@ WIFI_PROFILE profile = {
           /* Gateway IP */ "" };
 
 PinoccioLeadScout LeadScout;
+FlashClass Flash(SS, SPI);
 
 PinoccioLeadScout::PinoccioLeadScout() {
   scouts[0] = NULL;

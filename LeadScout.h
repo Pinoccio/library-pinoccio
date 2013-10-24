@@ -42,6 +42,7 @@ class PinoccioLeadScout : public PinoccioScout {
 
 static void mqttMessageReceived(char* topic, byte* payload, unsigned int length);
 
+extern FlashClass Flash;
 extern PinoccioLeadScout LeadScout;
 
 #endif
