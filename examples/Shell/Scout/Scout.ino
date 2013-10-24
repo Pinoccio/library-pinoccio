@@ -29,8 +29,10 @@ void setup(void) {
   addBitlashFunction("led.green", (bitlash_function) ledGreen);
   addBitlashFunction("led.blue", (bitlash_function) ledBlue);
   addBitlashFunction("led.cyan", (bitlash_function) ledCyan);
+  addBitlashFunction("led.purple", (bitlash_function) ledPurple);
   addBitlashFunction("led.magenta", (bitlash_function) ledMagenta);
   addBitlashFunction("led.yellow", (bitlash_function) ledYellow);
+  addBitlashFunction("led.orange", (bitlash_function) ledOrange);
   addBitlashFunction("led.white", (bitlash_function) ledWhite);
   addBitlashFunction("led.redvalue", (bitlash_function) ledSetRedValue);
   addBitlashFunction("led.greenvalue", (bitlash_function) ledSetGreenValue);
@@ -46,7 +48,7 @@ void setup(void) {
   addBitlashFunction("pin.report", (bitlash_function) pinReport);
 
   addBitlashFunction("backpack.report", (bitlash_function) backpackReport);
-  
+
   Scout.meshListen(1, receiveMessage);
 }
 
@@ -64,18 +66,18 @@ static bool receiveMessage(NWK_DataInd_t *ind) {
   Serial.print("rssi: ");
   Serial.print(ind->rssi, DEC);
   Serial.print("  ");
-  
+
   uint8_t header = ind->data[0];
-  
+
   Serial.print("header: ");
   Serial.println(header, HEX);
-  
+
   Serial.print("payload: ");
   for (int i=1; i<ind->size; i++) {
     Serial.print(ind->data[i], DEC);
   }
   Serial.println("");
-  
+
   // run the Bitlash callback function, if defined
   //doCommand("mesh.receive(...)")
   return true;
@@ -153,12 +155,20 @@ numvar ledCyan(void) {
   RgbLed.cyan();
 }
 
+numvar ledPurple(void) {
+  RgbLed.purple();
+}
+
 numvar ledMagenta(void) {
   RgbLed.magenta();
 }
 
 numvar ledYellow(void) {
   RgbLed.yellow();
+}
+
+numvar ledOrange(void) {
+  RgbLed.orange();
 }
 
 numvar ledWhite(void) {
@@ -212,32 +222,32 @@ numvar meshRemoteRun(void) {
   request.setDstAddress(getarg(1));
   request.setDstEndpoint(1);
   request.setSrcEndpoint(1);
-  
+
   if (!isstringarg(2)) {
     Serial.println("Second argument must be a valid Bitlash command (and a string)");
     return false;
   }
-  
+
   if (sizeof(getarg(2)) > 100) {
     Serial.println("Size of payload cannot exceed 100 bytes");
     return false;
   }
-  
+
   uint8_t size = strlen((const char *)getstringarg(2));
-  
+
   Serial.println(getarg(0));
   Serial.println(getarg(1));
   Serial.println((const char *) getstringarg(2));
   Serial.println(size);
-  
+
   request.setHeader(NWK_PAYLOAD_HEADER_FINAL);
   request.setPayload((byte *)getstringarg(2), size+1);
-  
+
   NWK_DataReq_t* dataReq = request.getRequest();
   Serial.println("Data request");
   Serial.println(dataReq->dstAddr);
   Serial.println(dataReq->dstEndpoint);
-  Serial.println(dataReq->srcEndpoint);  
+  Serial.println(dataReq->srcEndpoint);
   Serial.println(dataReq->size);
   Serial.println(dataReq->data[0], HEX);
   for (int i=1; i<dataReq->size; i++) {

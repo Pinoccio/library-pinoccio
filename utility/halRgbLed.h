@@ -23,28 +23,32 @@ class HalRgbLed {
     void green();
     void blue();
     void cyan();
+    void purple();
     void magenta();
     void yellow();
+    void orange();
     void white();
 
     void blinkRed(unsigned int ms=500);
     void blinkGreen(unsigned int ms=500);
     void blinkBlue(unsigned int ms=500);
     void blinkCyan(unsigned int ms=500);
+    void blinkPurple(unsigned int ms=500);
     void blinkMagenta(unsigned int ms=500);
     void blinkYellow(unsigned int ms=500);
+    void blinkOrange(unsigned int ms=500);
     void blinkWhite(unsigned int ms=500);
 
     void setRedValue(int value);
     void setGreenValue(int value);
     void setBlueValue(int value);
-    
+
     int getRedValue();
     int getGreenValue();
     int getBlueValue();
 
     void setHex(char* hex);
-    
+
   protected:
     bool enabled;
     int redValue;

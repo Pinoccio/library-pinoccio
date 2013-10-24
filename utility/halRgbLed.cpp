@@ -70,6 +70,15 @@ void HalRgbLed::cyan() {
   setBlueValue(255);
 }
 
+void HalRgbLed::purple() {
+  if (!isEnabled()) {
+    return;
+  }
+  turnOff();
+  setRedValue(50);
+  setBlueValue(255);
+}
+
 void HalRgbLed::magenta() {
   if (!isEnabled()) {
     return;
@@ -86,6 +95,15 @@ void HalRgbLed::yellow() {
   turnOff();
   setRedValue(255);
   setGreenValue(255);
+}
+
+void HalRgbLed::orange() {
+  if (!isEnabled()) {
+    return;
+  }
+  turnOff();
+  setRedValue(255);
+  setGreenValue(127);
 }
 
 void HalRgbLed::white() {
@@ -142,6 +160,17 @@ void HalRgbLed::blinkCyan(unsigned int ms) {
   delay(ms);
 }
 
+void HalRgbLed::blinkPurple(unsigned int ms) {
+  if (!isEnabled()) {
+    return;
+  }
+  turnOff();
+  purple();
+  delay(ms);
+  turnOff();
+  delay(ms);
+}
+
 void HalRgbLed::blinkMagenta(unsigned int ms) {
   if (!isEnabled()) {
     return;
@@ -159,6 +188,17 @@ void HalRgbLed::blinkYellow(unsigned int ms) {
   }
   turnOff();
   yellow();
+  delay(ms);
+  turnOff();
+  delay(ms);
+}
+
+void HalRgbLed::blinkOrange(unsigned int ms) {
+  if (!isEnabled()) {
+    return;
+  }
+  turnOff();
+  orange();
   delay(ms);
   turnOff();
   delay(ms);
@@ -212,10 +252,10 @@ void HalRgbLed::setHex(char* hex) {
   uint8_t i, t, hn, ln, len;
   len = 6;
   uint8_t out[3];
-  
-  for (t=0,i=0; i<len; i+=2,++t) {  
+
+  for (t=0,i=0; i<len; i+=2,++t) {
     hn = hex[i] > '9' ? (uint8_t)hex[i] - 'A' + 10 : (uint8_t)hex[i] - '0';
-    ln = hex[i+1] > '9' ? (uint8_t)hex[i+1] - 'A' + 10 : (uint8_t)hex[i+1] - '0';  
+    ln = hex[i+1] > '9' ? (uint8_t)hex[i+1] - 'A' + 10 : (uint8_t)hex[i+1] - '0';
     out[t] = (uint8_t)(hn << 4 ) | (uint8_t)ln;
   }
 
