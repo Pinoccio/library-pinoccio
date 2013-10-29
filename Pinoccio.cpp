@@ -60,14 +60,42 @@ uint32_t PinoccioClass::getRandomNumber() {
   return random();
 }
 
-void PinoccioClass::meshSetRadio(uint16_t addr, uint16_t panId, uint8_t channel) {
+void PinoccioClass::meshSetRadio(uint16_t theAddress, uint16_t thePanId, uint8_t theChannel) {
   // TODO--get from EEPROM -- last 32 bytes
-  NWK_SetAddr(addr);
-  NWK_SetPanId(panId);
-  PHY_SetChannel(channel);
+  NWK_SetAddr(theAddress);
+  address = theAddress;
+  NWK_SetPanId(thePanId);
+  panId = thePanId;
+  PHY_SetChannel(theChannel);
+  channel = theChannel;
   PHY_SetRxState(true);
+  meshSetPower(0);
 }
-  
+ 
+ 
+void PinoccioClass::meshSetPower(uint8_t theTxPower) {
+  /* Page 116 of the 256RFR2 datasheet 
+    0   3.5 dBm
+    1   3.3 dBm
+    2   2.8 dBm
+    3   2.3 dBm
+    4   1.8 dBm
+    5   1.2 dBm
+    6   0.5 dBm
+    7  -0.5 dBm
+    8  -1.5 dBm
+    9  -2.5 dBm
+    10 -3.5 dBm
+    11 -4.5 dBm
+    12 -6.5 dBm
+    13 -8.5 dBm
+    14 -11.5 dBm
+    15 -16.5 dBm
+  */
+  PHY_SetTxPower(theTxPower);
+  txPower = theTxPower;
+} 
+
 void PinoccioClass::meshSetSecurityKey(const char *key) {
   NWK_SetSecurityKey((uint8_t *)key);
 }
@@ -83,4 +111,32 @@ void PinoccioClass::meshSendMessage(MeshRequest request) {
 
 void PinoccioClass::meshListen(uint8_t endpoint, bool (*handler)(NWK_DataInd_t *ind)) {
   NWK_OpenEndpoint(endpoint, handler);
+}
+
+void PinoccioClass::meshJoinGroup(uint16_t groupAddress) {
+  if (!NWK_GroupIsMember(groupAddress)) {
+      NWK_GroupAdd(groupAddress);
+    }
+}
+
+void PinoccioClass::meshLeaveGroup(uint16_t groupAddress) {
+  if (NWK_GroupIsMember(groupAddress)) {
+      NWK_GroupRemove(groupAddress);
+    }
+}
+
+uint16_t PinoccioClass::getAddress() {
+  return address;
+}
+
+uint16_t PinoccioClass::getPanId() {
+  return panId;
+}
+
+uint8_t PinoccioClass::getChannel() {
+  return channel;
+}
+
+uint8_t PinoccioClass::getTxPower() {
+  return txPower;
 }

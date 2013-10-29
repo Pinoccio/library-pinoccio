@@ -17,6 +17,7 @@
 #define NWK_ROUTE_TABLE_SIZE                100
 #define NWK_ROUTE_DEFAULT_SCORE             3
 #define NWK_ACK_WAIT_TIME                   800  // ms
+#define NWK_ENABLE_MULTICAST
 // End - Specifics for the LWM library
 
 #include <Arduino.h>
@@ -49,14 +50,27 @@ class PinoccioClass {
     int8_t getTemperature();
     uint32_t getRandomNumber();
 
-    void meshSetRadio(uint16_t addr, uint16_t panId=0x4567, uint8_t channel=0x1a);
+    void meshSetRadio(uint16_t theAddress, uint16_t thePanId=0x4567, uint8_t theChannel=0x1a);
+    void meshSetPower(uint8_t theTxPower);
     void meshSetSecurityKey(const char *key);
     void meshSendMessage(MeshRequest request);
     void meshListen(uint8_t endpoint, bool (*handler)(NWK_DataInd_t *ind));
-
+    
+    void meshJoinGroup(uint16_t groupAddress);
+    void meshLeaveGroup(uint16_t groupAddress);
+      
+    uint16_t getAddress();
+    uint16_t getPanId();
+    uint8_t getChannel();
+    uint8_t getTxPower();
+    
   protected:
     uint16_t randomNumber;
     bool shellEnabled;
+    uint16_t address;
+    uint16_t panId;
+    uint8_t channel;
+    uint8_t txPower;
 };
 
 extern PinoccioClass Pinoccio;
