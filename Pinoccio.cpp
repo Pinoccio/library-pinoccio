@@ -33,6 +33,8 @@ void PinoccioClass::setup() {
 
   // initial seeding of RNG
   getRandomNumber();
+  
+  loadSettingsFromEeprom();
 }
 
 void PinoccioClass::loop() {
