@@ -81,8 +81,15 @@ void PinoccioClass::loadSettingsFromEeprom() {
   }
   meshSetSecurityKey((char *)key);
   memset(key, 0x00, 16);
-  meshSetRadio(eeprom_read_word((uint16_t *)8182), eeprom_read_word((uint16_t *)8180), eeprom_read_byte((uint8_t *)8179));
-  meshSetPower(eeprom_read_byte((uint8_t *)8178));
+
+  if (eeprom_read_word((uint16_t *)8182) != 0xFFFF || 
+      eeprom_read_word((uint16_t *)8180) != 0xFFFF || 
+      eeprom_read_byte((uint8_t *)8179) != 0xFF) {
+    meshSetRadio(eeprom_read_word((uint16_t *)8182), eeprom_read_word((uint16_t *)8180), eeprom_read_byte((uint8_t *)8179));
+  }
+  if (eeprom_read_byte((uint8_t *)8178) != 0xFF) {
+    meshSetPower(eeprom_read_byte((uint8_t *)8178));
+  }
 }
 
 void PinoccioClass::meshSetRadio(const uint16_t theAddress, const uint16_t thePanId, const uint8_t theChannel) {
@@ -123,7 +130,7 @@ void PinoccioClass::meshSetPower(const uint8_t theTxPower) {
   */
   PHY_SetTxPower(theTxPower);
   txPower = theTxPower;
-  eeprom_update_byte((uint8_t *)8178, 8178);
+  eeprom_update_byte((uint8_t *)8178, theTxPower);
 } 
 
 void PinoccioClass::meshSetSecurityKey(const char *key) {
