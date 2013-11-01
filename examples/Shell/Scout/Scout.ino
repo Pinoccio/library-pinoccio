@@ -29,7 +29,7 @@ void setup(void) {
   addBitlashFunction("mesh.publish", (bitlash_function) meshPublish);
   addBitlashFunction("mesh.subscribe", (bitlash_function) meshSubscribe);
   addBitlashFunction("mesh.report", (bitlash_function) meshReport);
-  
+
   addBitlashFunction("temperature", (bitlash_function) getTemperature);
   addBitlashFunction("randomnumber", (bitlash_function) getRandomNumber);
 
@@ -105,7 +105,7 @@ numvar disableBackpackVcc(void) {
 
 numvar goToSleep(void) {
   // TODO: not implemented yet
-  //Pinoccio.goToSleep(getarg(1));
+  //Scout.goToSleep(getarg(1));
 }
 
 numvar powerReport(void) {
@@ -197,11 +197,11 @@ numvar meshConfig(void) {
     panId = getarg(2);
     channel = getarg(3);
   }
-  Pinoccio.meshSetRadio(getarg(1), panId, channel);
+  Scout.meshSetRadio(getarg(1), panId, channel);
 }
 
 numvar meshSetKey(void) {
-  Pinoccio.meshSetSecurityKey((const char *)getstringarg(1));
+  Scout.meshSetSecurityKey((const char *)getstringarg(1));
 }
 
 numvar meshJoinGroup(void) {
@@ -257,7 +257,7 @@ numvar meshRemoteRun(void) {
   for (int i=1; i<dataReq->size; i++) {
     Serial.write((const char*)dataReq->data[i]);
   }
-  Pinoccio.meshSendMessage(request);
+  Scout.meshSendMessage(request);
   return true;
 }
 
@@ -309,7 +309,7 @@ numvar meshReport(void) {
 //  Serial.println();
 //  Serial.print("   -  Routing: ");
 //  Serial.println();
-  
+
 }
 
 /****************************\
@@ -365,8 +365,8 @@ numvar backpackReport(void) {
   return true;
 }
 
-// Helper functions 
-static void pingScout(int address) {  
+// Helper functions
+static void pingScout(int address) {
   appDataReq.dstAddr = address;
 
   appDataReq.dstEndpoint = 1;
@@ -380,12 +380,12 @@ static void pingScout(int address) {
 
   Serial.print("PING ");
   Serial.print(address);
-  Serial.print(": "); 
+  Serial.print(": ");
 
   pingCounter++;
 }
 
-static void pingGroup(int address) {  
+static void pingGroup(int address) {
   appDataReq.dstAddr = address;
 
   appDataReq.dstEndpoint = 1;
@@ -398,7 +398,7 @@ static void pingGroup(int address) {
 
   Serial.print("PING ");
   Serial.print(address);
-  Serial.print(": "); 
+  Serial.print(": ");
 
   pingCounter++;
 }
@@ -434,7 +434,7 @@ static void pingConfirm(NWK_DataReq_t *req) {
   }
 }
 
-static bool receiveMessage(NWK_DataInd_t *ind) {  
+static bool receiveMessage(NWK_DataInd_t *ind) {
   Serial.print("Received message - ");
   Serial.print("lqi: ");
   Serial.print(ind->lqi, DEC);
@@ -451,7 +451,7 @@ static bool receiveMessage(NWK_DataInd_t *ind) {
   }
   Serial.println("");
   NWK_SetAckControl(abs(ind->rssi));
-  
+
   // run the Bitlash callback function, if defined
   //doCommand("mesh.receive(...)")
   return true;
