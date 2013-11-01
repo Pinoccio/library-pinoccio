@@ -19,18 +19,12 @@ void setup() {
   addBitlashFunction("mesh.report", (bitlash_function) meshReport);
   
   Scout.setup();
+  Scout.meshJoinGroup(groupId);
   
   Scout.meshSetRadio(meshAddress);
   Scout.meshSetSecurityKey("TestSecurityKey1");
   
-//  if (meshAddress == 1) {
-//    appTimer.interval = 1000;
-//    appTimer.mode = SYS_TIMER_PERIODIC_MODE;
-//    appTimer.handler = sendMessage;
-//    SYS_TimerStart(&appTimer);
-//  } else {
-    Scout.meshListen(1, receiveMessage);  
-//  }
+  Scout.meshListen(1, receiveMessage);  
 }
 
 void loop() {
@@ -52,15 +46,11 @@ numvar meshPing(void) {
 }
 
 numvar meshJoinGroup(void) {
-  if (!NWK_GroupIsMember(groupId)) {
-    NWK_GroupAdd(groupId);
-  }
+  Scout.meshJoinGroup(groupId);
 }
 
 numvar meshLeaveGroup(void) {
-  if (NWK_GroupIsMember(groupId)) {
-    NWK_GroupAdd(groupId);
-  }
+  Scout.meshLeaveGroup(groupId);
 }
 
 numvar meshPingGroup(void) {
@@ -69,20 +59,27 @@ numvar meshPingGroup(void) {
 
 numvar meshReport(void) {
   Serial.println("-- Mesh Radio Settings --");
-  Serial.print("   -  Address: ");
+  Serial.print("      Address: ");
+  Serial.println(Scout.getAddress());
+  Serial.print("       Pan ID: 0x");
+  Serial.println(Scout.getPanId(), HEX);
+  Serial.print("      Channel: ");
+  Serial.println(Scout.getChannel());
+  Serial.print("     Tx Power: ");
+  // gotta read these from program memory (for SRAM savings)
+  char c;
+  const char *dbString = Scout.getTxPowerDb();
+  while((c = pgm_read_byte(dbString++))) {
+     Serial.write(c);
+  }
   Serial.println();
-  Serial.print("   -   Pan ID: ");
-  Serial.println();
-  Serial.print("   -  Channel: ");
-  Serial.println();
-  Serial.print("   - Tx Power: ");
-  Serial.println();
-  Serial.print("   -   Asleep: ");
-  Serial.println();
-  Serial.print("   - In group: ");
-  Serial.println();
-  Serial.print("   -  Routing: ");
-  Serial.println();
+// TODO
+//  Serial.print("   -   Asleep: ");
+//  Serial.println();
+//  Serial.print("   - In group: ");
+//  Serial.println();
+//  Serial.print("   -  Routing: ");
+//  Serial.println();
   
 }
 
@@ -115,7 +112,6 @@ static void pingGroup(int address) {
   appDataReq.size = sizeof(pingCounter);
   appDataReq.confirm = pingConfirm;
   NWK_DataReq(&appDataReq);
-  //RgbLed.blinkCyan(200);
 
   Serial.print("PING ");
   Serial.print(address);
@@ -152,13 +148,10 @@ static void pingConfirm(NWK_DataReq_t *req) {
     Serial.print("(");
     Serial.print(req->status, HEX);
     Serial.println(")");
-    doCommand("\r\n");
   }
 }
 
-static bool receiveMessage(NWK_DataInd_t *ind) {
-  //RgbLed.blinkGreen(200);
-  
+static bool receiveMessage(NWK_DataInd_t *ind) {  
   Serial.print("Received message - ");
   Serial.print("lqi: ");
   Serial.print(ind->lqi, DEC);

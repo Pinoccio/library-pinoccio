@@ -49,9 +49,10 @@ class PinoccioClass {
         
     int8_t getTemperature();
     uint32_t getRandomNumber();
-
-    void meshSetRadio(uint16_t theAddress, uint16_t thePanId=0x4567, uint8_t theChannel=0x1a);
-    void meshSetPower(uint8_t theTxPower);
+    void loadSettingsFromEeprom();
+    
+    void meshSetRadio(const uint16_t theAddress, const uint16_t thePanId=0x4567, const uint8_t theChannel=0x1a);
+    void meshSetPower(const uint8_t theTxPower);
     void meshSetSecurityKey(const char *key);
     void meshSendMessage(MeshRequest request);
     void meshListen(uint8_t endpoint, bool (*handler)(NWK_DataInd_t *ind));
@@ -63,6 +64,7 @@ class PinoccioClass {
     uint16_t getPanId();
     uint8_t getChannel();
     uint8_t getTxPower();
+    const char* getTxPowerDb();
     
   protected:
     uint16_t randomNumber;

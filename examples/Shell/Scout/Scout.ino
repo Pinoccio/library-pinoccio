@@ -1,6 +1,11 @@
+#include <EEPROM.h>
 #include <SPI.h>
 #include <Wire.h>
 #include <Scout.h>
+
+const uint16_t groupId = 0xBEEF;
+static byte pingCounter = 0;
+static NWK_DataReq_t appDataReq;
 
 void setup(void) {
   Scout.setup();
@@ -15,12 +20,16 @@ void setup(void) {
 
   addBitlashFunction("mesh.config", (bitlash_function) meshConfig);
   addBitlashFunction("mesh.key", (bitlash_function) meshSetKey);
+  addBitlashFunction("mesh.joingroup", (bitlash_function) meshJoinGroup);
+  addBitlashFunction("mesh.leavegroup", (bitlash_function) meshLeaveGroup);
+  addBitlashFunction("mesh.ping", (bitlash_function) meshPing);
+  addBitlashFunction("mesh.pinggroup", (bitlash_function) meshPingGroup);
   addBitlashFunction("mesh.remoterun", (bitlash_function) meshRemoteRun);
   addBitlashFunction("mesh.broadcastrun", (bitlash_function) meshBroadcastRun);
   addBitlashFunction("mesh.publish", (bitlash_function) meshPublish);
   addBitlashFunction("mesh.subscribe", (bitlash_function) meshSubscribe);
   addBitlashFunction("mesh.report", (bitlash_function) meshReport);
-
+  
   addBitlashFunction("temperature", (bitlash_function) getTemperature);
   addBitlashFunction("randomnumber", (bitlash_function) getRandomNumber);
 
@@ -54,33 +63,6 @@ void setup(void) {
 
 void loop(void) {
   Scout.loop();
-}
-
-static bool receiveMessage(NWK_DataInd_t *ind) {
-  Serial.print("Received message - ");
-  Serial.print("lqi: ");
-  Serial.print(ind->lqi, DEC);
-
-  Serial.print("  ");
-
-  Serial.print("rssi: ");
-  Serial.print(ind->rssi, DEC);
-  Serial.print("  ");
-
-  uint8_t header = ind->data[0];
-
-  Serial.print("header: ");
-  Serial.println(header, HEX);
-
-  Serial.print("payload: ");
-  for (int i=1; i<ind->size; i++) {
-    Serial.print(ind->data[i], DEC);
-  }
-  Serial.println("");
-
-  // run the Bitlash callback function, if defined
-  //doCommand("mesh.receive(...)")
-  return true;
 }
 
 /****************************\
@@ -209,11 +191,33 @@ numvar ledReport(void) {
 *    MESH RADIO HANDLERS    *
 \****************************/
 numvar meshConfig(void) {
-  Pinoccio.meshSetRadio(getarg(1), getarg(2), getarg(3));
+  uint16_t panId = 0x4567;
+  uint8_t channel = 0x1a;
+  if (getarg(0) == 2) {
+    panId = getarg(2);
+    channel = getarg(3);
+  }
+  Pinoccio.meshSetRadio(getarg(1), panId, channel);
 }
 
 numvar meshSetKey(void) {
   Pinoccio.meshSetSecurityKey((const char *)getstringarg(1));
+}
+
+numvar meshJoinGroup(void) {
+  Scout.meshJoinGroup(groupId);
+}
+
+numvar meshLeaveGroup(void) {
+  Scout.meshLeaveGroup(groupId);
+}
+
+numvar meshPing(void) {
+  pingScout(getarg(1));
+}
+
+numvar meshPingGroup(void) {
+  pingGroup(groupId);
 }
 
 // Run a command that's defined on another scout.  ie: meshRemoteRun(scoutId, "remote command string");
@@ -283,7 +287,29 @@ numvar meshSubscribe(void) {
 numvar meshReport(void) {
   // TODO: return JSON formatted report of radio details
   // ie: {"id":34,"pid":1,"ch":26,"sec":true}
-  return true;
+  Serial.println("-- Mesh Radio Settings --");
+  Serial.print("      Address: ");
+  Serial.println(Scout.getAddress());
+  Serial.print("       Pan ID: 0x");
+  Serial.println(Scout.getPanId(), HEX);
+  Serial.print("      Channel: ");
+  Serial.println(Scout.getChannel());
+  Serial.print("     Tx Power: ");
+  // gotta read these from program memory (for SRAM savings)
+  char c;
+  const char *dbString = Scout.getTxPowerDb();
+  while((c = pgm_read_byte(dbString++))) {
+     Serial.write(c);
+  }
+  Serial.println();
+// TODO
+//  Serial.print("   -   Asleep: ");
+//  Serial.println();
+//  Serial.print("   - In group: ");
+//  Serial.println();
+//  Serial.print("   -  Routing: ");
+//  Serial.println();
+  
 }
 
 /****************************\
@@ -336,5 +362,97 @@ numvar pinReport(void) {
 \****************************/
 numvar backpackReport(void) {
   // TODO: return JSON formmated report of all backpacks attached
+  return true;
+}
+
+// Helper functions 
+static void pingScout(int address) {  
+  appDataReq.dstAddr = address;
+
+  appDataReq.dstEndpoint = 1;
+  appDataReq.srcEndpoint = 1;
+  appDataReq.options = NWK_OPT_ACK_REQUEST|NWK_OPT_ENABLE_SECURITY;
+  appDataReq.data = &pingCounter;
+  appDataReq.size = sizeof(pingCounter);
+  appDataReq.confirm = pingConfirm;
+  NWK_DataReq(&appDataReq);
+  //RgbLed.blinkCyan(200);
+
+  Serial.print("PING ");
+  Serial.print(address);
+  Serial.print(": "); 
+
+  pingCounter++;
+}
+
+static void pingGroup(int address) {  
+  appDataReq.dstAddr = address;
+
+  appDataReq.dstEndpoint = 1;
+  appDataReq.srcEndpoint = 1;
+  appDataReq.options = NWK_OPT_MULTICAST|NWK_OPT_ACK_REQUEST|NWK_OPT_ENABLE_SECURITY;
+  appDataReq.data = &pingCounter;
+  appDataReq.size = sizeof(pingCounter);
+  appDataReq.confirm = pingConfirm;
+  NWK_DataReq(&appDataReq);
+
+  Serial.print("PING ");
+  Serial.print(address);
+  Serial.print(": "); 
+
+  pingCounter++;
+}
+
+static void pingConfirm(NWK_DataReq_t *req) {
+  if (req->status == NWK_SUCCESS_STATUS) {
+    Serial.print("1 byte from ");
+    Serial.print(req->dstAddr);
+    Serial.print(" RSSI=-");
+    Serial.println(req->control);
+  } else {
+    Serial.print("Error: ");
+    switch (req->status) {
+      case NWK_OUT_OF_MEMORY_STATUS:
+        Serial.print("Out of memory: ");
+        break;
+      case NWK_NO_ACK_STATUS:
+      case NWK_PHY_NO_ACK_STATUS:
+        Serial.print("No acknowledgement received: ");
+        break;
+      case NWK_NO_ROUTE_STATUS:
+        Serial.print("No route to destination: ");
+        break;
+      case NWK_PHY_CHANNEL_ACCESS_FAILURE_STATUS:
+        Serial.print("Physical channel access failure: ");
+        break;
+      default:
+        Serial.print("unknown failure: ");
+    }
+    Serial.print("(");
+    Serial.print(req->status, HEX);
+    Serial.println(")");
+  }
+}
+
+static bool receiveMessage(NWK_DataInd_t *ind) {  
+  Serial.print("Received message - ");
+  Serial.print("lqi: ");
+  Serial.print(ind->lqi, DEC);
+
+  Serial.print("  ");
+
+  Serial.print("rssi: ");
+  Serial.print(abs(ind->rssi), DEC);
+  Serial.print("  ");
+
+  Serial.print("data: ");
+  for (int i=0; i<ind->size; i++) {
+    Serial.print(ind->data[i], DEC);
+  }
+  Serial.println("");
+  NWK_SetAckControl(abs(ind->rssi));
+  
+  // run the Bitlash callback function, if defined
+  //doCommand("mesh.receive(...)")
   return true;
 }

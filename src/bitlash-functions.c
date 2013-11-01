@@ -389,7 +389,7 @@ const bitlash_function function_table[] PROGMEM = {
 #endif
 
 #ifdef USER_FUNCTIONS
-#define MAX_USER_FUNCTIONS 40		// increase this if needed, but keep free() > 200 ish
+#define MAX_USER_FUNCTIONS 64		// increase this if needed, but keep free() > 200 ish
 #define USER_FUNCTION_FLAG 0x80
 
 typedef struct {
