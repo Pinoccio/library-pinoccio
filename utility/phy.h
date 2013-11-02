@@ -15,7 +15,7 @@ extern "C"{
 
 #include <stdint.h>
 #include <stdbool.h>
-#include "utility/sysConfig.h"
+#include "sysConfig.h"
 
 #if defined(__AVR_ATmega128RFA1__)
 #include "atmega128rfa1.h"

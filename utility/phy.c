@@ -90,7 +90,7 @@ void PHY_Init(void)
   phyTrxSetState(TRX_CMD_TRX_OFF);
 
 #ifdef _ATMEGA256RFR2_H_
-  TRX_RPC_REG = 0xff;
+  TRX_RPC_REG = 0xeb;
 #endif
 
   CSMA_SEED_1_REG_s.aackSetPd = 1;
@@ -274,23 +274,26 @@ ISR(TRX24_CCA_ED_DONE_vect)
 *****************************************************************************/
 static uint16_t phyGetRandomNumber(void)
 {
-  uint16_t rnd = 0;
+  uint16_t rnd = 0; 
 
-  IRQ_MASK_REG = 0x00;
-  phyTrxSetState(TRX_CMD_RX_ON);
+  IRQ_MASK_REG = 0x00; 
+  TRX_RPC_REG = 0x00; 
+
+  phyTrxSetState(TRX_CMD_RX_ON); 
   uint8_t i;
   
-  for (i = 0; i < 16; i += 2)
-  {
-    HAL_Delay(RANDOM_NUMBER_UPDATE_INTERVAL);
-    rnd |= PHY_RSSI_REG_s.rndValue << i;
-  }
+  for (i = 0; i < 16; i += 2) 
+  { 
+    HAL_Delay(RANDOM_NUMBER_UPDATE_INTERVAL); 
+    rnd |= PHY_RSSI_REG_s.rndValue << i; 
+  } 
 
-  phyTrxSetState(TRX_CMD_TRX_OFF);
+  phyTrxSetState(TRX_CMD_TRX_OFF); 
 
-  IRQ_STATUS_REG = IRQ_STATUS_CLEAR_VALUE;
-  IRQ_MASK_REG_s.rxEndEn = 1;
-  IRQ_MASK_REG_s.txEndEn = 1;
+  TRX_RPC_REG = 0xEB; 
+  IRQ_STATUS_REG = IRQ_STATUS_CLEAR_VALUE; 
+  IRQ_MASK_REG_s.rxEndEn = 1; 
+  IRQ_MASK_REG_s.txEndEn = 1; 
 
   return rnd;
 }
@@ -301,7 +304,8 @@ static uint16_t phyGetRandomNumber(void)
 *****************************************************************************/
 void PHY_RandomConf(uint16_t rnd)
 {
- srand(rnd);
+  srand(rnd);
+  srandom(rnd);
 }
 #endif
 

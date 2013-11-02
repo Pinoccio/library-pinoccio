@@ -32,7 +32,7 @@ void PinoccioClass::setup() {
   HAL_MeasureAdcOffset();
 
   // initial seeding of RNG
-  getRandomNumber();
+  PHY_RandomReq();
   
   loadSettingsFromEeprom();
 }
@@ -56,11 +56,6 @@ void PinoccioClass::goToSleep(uint32_t sleepForMs) {
 
 int8_t PinoccioClass::getTemperature() {
   return HAL_MeasureTemperature();
-}
-
-uint32_t PinoccioClass::getRandomNumber() {
-  PHY_RandomReq();
-  return random();
 }
 
 void PinoccioClass::loadSettingsFromEeprom() {
@@ -164,6 +159,10 @@ void PinoccioClass::meshLeaveGroup(uint16_t groupAddress) {
   if (NWK_GroupIsMember(groupAddress)) {
     NWK_GroupRemove(groupAddress);
   }
+}
+
+bool PinoccioClass::meshIsInGroup(uint16_t groupAddress) {
+  return NWK_GroupIsMember(groupAddress);
 }
 
 uint16_t PinoccioClass::getAddress() {
