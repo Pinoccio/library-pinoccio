@@ -17,8 +17,8 @@ float HAL_FuelGaugeVoltage() {
 
   vcell = HAL_FuelGaugei2cRead16(0x02);
   vcell = vcell >> 4;  // last 4 bits of vcell are nothing
-
-  return round(vcell / 805.0f * 100) / 100.0f;
+  return (vcell / 805.0f * 100);
+  //return round(vcell / 805.0f * 100) / 100.0f;
 }
 
 int HAL_FuelGaugePercent() {
