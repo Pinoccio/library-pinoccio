@@ -73,19 +73,18 @@ void nwkFrameFree(NwkFrame_t *frame)
 *****************************************************************************/
 NwkFrame_t *nwkFrameNext(NwkFrame_t *frame)
 {
-  if (NULL == frame)
-    frame = nwkFrameFrames;
-  else
-    frame++;
+  if (NULL == frame) 
+      frame = nwkFrameFrames; 
+    else 
+      frame++; 
 
-  while (NWK_FRAME_STATE_FREE == frame->state)
-  {
-    frame++;
-    if (frame == &nwkFrameFrames[NWK_BUFFERS_AMOUNT])
-      return NULL;
-  }
+    for (; frame < &nwkFrameFrames[NWK_BUFFERS_AMOUNT]; frame++) 
+    { 
+      if (NWK_FRAME_STATE_FREE != frame->state) 
+        return frame; 
+    } 
 
-  return frame;
+    return NULL;
 }
 
 /*************************************************************************//**
