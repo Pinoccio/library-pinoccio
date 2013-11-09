@@ -46,7 +46,7 @@ void PinoccioClass::loop() {
 }
 
 void PinoccioClass::goToSleep(uint32_t sleepForMs) {
-  // TODO
+  // TODO  http://www.avrfreaks.net/index.php?name=PNphpBB2&file=viewtopic&t=136036
   // - put radio to sleep
   // - set all GPIO pins to inputs
   // - turn off ADC
