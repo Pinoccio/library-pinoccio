@@ -19,22 +19,19 @@ private:
 public:
 	bool available(void);
 	void info(uint8_t *maufacturer, uint16_t *device);
-	void read(uint32_t address, void *buffer, uint16_t length);
+	void read(uint32_t address, void *buffer, uint32_t length);
 	bool isBusy(void);
 	void writeEnable(void);
 	void writeDisable(void);
 	void write(uint32_t address, void *buffer, uint16_t length);
+  void subSectorErase(uint32_t address);
 	void sectorErase(uint32_t address);
 	void bulkErase(void);
-
-	// inline static void attachInterrupt();
-	// inline static void detachInterrupt();
 
 	void begin(int chipSelectPin, SPIClass &SPIDriver);
 	void end();
 
 	FlashClass(int chipSelectPin, SPIClass &SPIDriver);
-
 };
 
 #endif
