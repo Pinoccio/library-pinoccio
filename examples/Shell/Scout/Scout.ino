@@ -391,7 +391,7 @@ numvar pinReport(void) {
 \****************************/
 numvar backpackReport(void) {
   // TODO: return JSON formmated report of all backpacks attached
-  return true;
+  Serial.println("[{\"name\":\"wifi\",\"version\":\"1.0\"},{\"name\":\"environment\",\"version\":\"2.0\"}]");
 }
 
 // Helper functions
