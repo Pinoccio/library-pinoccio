@@ -30,7 +30,7 @@ void setup(void) {
   addBitlashFunction("mesh.publish", (bitlash_function) meshPublish);
   addBitlashFunction("mesh.subscribe", (bitlash_function) meshSubscribe);
   addBitlashFunction("mesh.report", (bitlash_function) meshReport);
-  
+
   addBitlashFunction("temperature", (bitlash_function) getTemperature);
   addBitlashFunction("randomnumber", (bitlash_function) getRandomNumber);
 
@@ -394,8 +394,8 @@ numvar backpackReport(void) {
   return true;
 }
 
-// Helper functions 
-static void pingScout(int address) {  
+// Helper functions
+static void pingScout(int address) {
   appDataReq.dstAddr = address;
 
   appDataReq.dstEndpoint = 1;
@@ -409,12 +409,12 @@ static void pingScout(int address) {
 
   Serial.print("PING ");
   Serial.print(address);
-  Serial.print(": "); 
+  Serial.print(": ");
 
   pingCounter++;
 }
 
-static void pingGroup(int address) {  
+static void pingGroup(int address) {
   appDataReq.dstAddr = address;
 
   appDataReq.dstEndpoint = 1;
@@ -427,7 +427,7 @@ static void pingGroup(int address) {
 
   Serial.print("PING ");
   Serial.print(address, HEX);
-  Serial.print(": "); 
+  Serial.print(": ");
 
   pingCounter++;
 }
@@ -445,7 +445,7 @@ static void pingConfirm(NWK_DataReq_t *req) {
   Serial.println(req->size);
   Serial.print("status: ");
   Serial.println(req->status, HEX);
-  
+
   if (req->status == NWK_SUCCESS_STATUS) {
     Serial.print("1 byte from ");
     Serial.print(req->dstAddr);
@@ -476,7 +476,7 @@ static void pingConfirm(NWK_DataReq_t *req) {
   }
 }
 
-static bool receiveMessage(NWK_DataInd_t *ind) {  
+static bool receiveMessage(NWK_DataInd_t *ind) {
   Serial.print("Received message - ");
   Serial.print("lqi: ");
   Serial.print(ind->lqi, DEC);
@@ -493,7 +493,7 @@ static bool receiveMessage(NWK_DataInd_t *ind) {
   }
   Serial.println("");
   NWK_SetAckControl(abs(ind->rssi));
-  
+
   // run the Bitlash callback function, if defined
   //doCommand("mesh.receive(...)")
   return true;
