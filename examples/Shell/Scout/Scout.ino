@@ -59,6 +59,8 @@ void setup(void) {
 
   addBitlashFunction("backpack.report", (bitlash_function) backpackReport);
 
+  addBitlashFunction("scout.report", (bitlash_function) getScoutVersion);
+
   meshJoinGroup();
   Scout.meshListen(1, receiveMessage);
 }
@@ -497,4 +499,11 @@ static bool receiveMessage(NWK_DataInd_t *ind) {
   // run the Bitlash callback function, if defined
   //doCommand("mesh.receive(...)")
   return true;
+}
+
+/****************************\
+*   SCOUT REPORT HANDLERS    *
+\****************************/
+numvar getScoutVersion(void){
+  Serial.println("1.0");
 }
