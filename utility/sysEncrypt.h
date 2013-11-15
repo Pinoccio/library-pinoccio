@@ -14,10 +14,6 @@
 extern "C"{
 #endif
 
-#ifndef _SYS_ENCRYPT_H_
-#define _SYS_ENCRYPT_H_
-#endif
-
 /*- Includes ---------------------------------------------------------------*/
 #include <stdint.h>
 #include <stdbool.h>

@@ -16,10 +16,6 @@
 /*- Definitions ------------------------------------------------------------*/
 #define HAL_TIMER_INTERVAL      8ul // ms
 
-#ifdef __cplusplus
-extern "C"{
-#endif
-
 /*- Variables --------------------------------------------------------------*/
 extern volatile uint8_t halTimerIrqCount;
 

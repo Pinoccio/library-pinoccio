@@ -227,37 +227,37 @@ void nwkRouteFrameSent(NwkFrame_t *frame)
 
 /*************************************************************************//**
 *****************************************************************************/
-void nwkRoutePrepareTx(NwkFrame_t *frame)
-{
-  NwkFrameHeader_t *header = &frame->header;
+void nwkRoutePrepareTx(NwkFrame_t *frame) 
+{ 
+  NwkFrameHeader_t *header = &frame->header; 
 
-  if (NWK_BROADCAST_ADDR == header->nwkDstAddr)
-  {
-    header->macDstAddr = NWK_BROADCAST_ADDR;
-  }
+  if (NWK_BROADCAST_ADDR == header->nwkDstAddr) 
+  { 
+    header->macDstAddr = NWK_BROADCAST_ADDR; 
+  } 
 
-  else if (header->nwkFcf.linkLocal)
-  {
-    header->macDstAddr = header->nwkDstAddr;
-  }
+#ifdef NWK_ENABLE_MULTICAST 
+  else if (header->nwkFcf.multicast && NWK_GroupIsMember(header->nwkDstAddr)) 
+  { 
+    header->macDstAddr = NWK_BROADCAST_ADDR; 
+    header->nwkFcf.linkLocal = 1; 
+  } 
+#endif 
 
-#ifdef NWK_ENABLE_MULTICAST
-  else if (header->nwkFcf.multicast && NWK_GroupIsMember(header->nwkDstAddr))
-  {
-    header->macDstAddr = NWK_BROADCAST_ADDR;
-    header->nwkFcf.linkLocal = 1;
-  }
-#endif
+  else if (header->nwkFcf.linkLocal) 
+  { 
+    header->macDstAddr = header->nwkDstAddr; 
+  } 
 
-  else
-  {
-    header->macDstAddr = NWK_RouteNextHop(header->nwkDstAddr, header->nwkFcf.multicast);
+  else 
+  { 
+    header->macDstAddr = NWK_RouteNextHop(header->nwkDstAddr, header->nwkFcf.multicast); 
 
-  #ifdef NWK_ENABLE_ROUTE_DISCOVERY
-    if (NWK_ROUTE_UNKNOWN == header->macDstAddr)
-      nwkRouteDiscoveryRequest(frame);
-  #endif
-  }
+  #ifdef NWK_ENABLE_ROUTE_DISCOVERY 
+    if (NWK_ROUTE_UNKNOWN == header->macDstAddr) 
+      nwkRouteDiscoveryRequest(frame); 
+  #endif 
+  } 
 }
 
 /*************************************************************************//**
