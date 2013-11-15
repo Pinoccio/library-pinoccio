@@ -498,6 +498,9 @@ static bool receiveMessage(NWK_DataInd_t *ind) {
   NWK_SetAckControl(abs(ind->rssi));
   
   // run the Bitlash callback function, if defined
-  //doCommand("mesh.receive(...)")
+  char *callback = "mesh.receive";
+  if (findscript(callback)) {
+    doCommand(callback);
+  }
   return true;
 }
