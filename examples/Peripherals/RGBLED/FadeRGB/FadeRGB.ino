@@ -4,11 +4,11 @@ void setup() {
   Scout.setup();
 }
 
+int red, green, blue;
+long time = 0;
+
 void loop() {
   Scout.loop();
-
-  int red, green, blue;
-  long time = 0;
 
   time = millis();
   red = 128 + 127 * cos(2 * PI / 2000 * time);
