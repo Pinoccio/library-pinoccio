@@ -184,9 +184,13 @@ numvar ledSetHex(void) {
 }
 
 numvar ledReport(void) {
-  // TODO: not working yet
-  // ie: {"r":120,"g":80,"b":0}
-  return printf("{\"r\":%d,\"g\":%d,\"b\":%d}\n", RgbLed.getRedValue(), RgbLed.getGreenValue(), RgbLed.getBlueValue());
+  Serial.print("{\"r\":");
+  Serial.print(RgbLed.getRedValue());
+  Serial.print(",\"g\":");
+  Serial.print(RgbLed.getGreenValue());
+  Serial.print(",\"b\":");
+  Serial.print(RgbLed.getBlueValue());
+  Serial.println("}");
 }
 
 /****************************\
