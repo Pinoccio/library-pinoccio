@@ -9,11 +9,7 @@
 
 /*- Includes ---------------------------------------------------------------*/
 #include "sysTypes.h"
-#if  defined(__AVR_ATmega128RFA1__)
-#include "atmega128rfa1.h"
-#elif defined(__AVR_ATmega256RFR2__)
 #include "atmega256rfr2.h"
-#endif
 #include "phy.h"
 #include "hal.h"
 
@@ -67,7 +63,7 @@ typedef struct PhyIb_t
 /*- Prototypes -------------------------------------------------------------*/
 static inline void phyTrxSetState(uint8_t state);
 static void phySetRxState(void);
-#ifdef PHY_ENABLE_RANDOM_NUMBER_GENERATOR
+#ifdef PHY_HAS_RANDOM_NUMBER_GENERATOR
 static uint16_t phyGetRandomNumber(void);
 #endif
 
@@ -89,9 +85,7 @@ void PHY_Init(void)
 
   phyTrxSetState(TRX_CMD_TRX_OFF);
 
-#ifdef _ATMEGA256RFR2_H_
   TRX_RPC_REG = 0xff;
-#endif
 
   CSMA_SEED_1_REG_s.aackSetPd = 1;
   CSMA_SEED_1_REG_s.aackDisAck = 0;
@@ -102,7 +96,7 @@ void PHY_Init(void)
 
   TRX_CTRL_2_REG_s.rxSafeMode = 1;
 
-#ifdef PHY_ENABLE_RANDOM_NUMBER_GENERATOR
+#ifdef PHY_HAS_RANDOM_NUMBER_GENERATOR
   CSMA_SEED_0_REG = (uint8_t)phyGetRandomNumber();
 #else
   CSMA_SEED_0_REG = 0x11;
@@ -204,7 +198,7 @@ void PHY_DataReq(uint8_t *data, uint8_t size)
   phyState = PHY_STATE_TX_WAIT_END;
 }
 
-#ifdef PHY_ENABLE_RANDOM_NUMBER_GENERATOR
+#ifdef PHY_HAS_RANDOM_NUMBER_GENERATOR
 /*************************************************************************//**
 *****************************************************************************/
 void PHY_RandomReq(void)
@@ -269,39 +263,43 @@ ISR(TRX24_CCA_ED_DONE_vect)
 }
 #endif
 
-#ifdef PHY_ENABLE_RANDOM_NUMBER_GENERATOR
+#ifdef PHY_HAS_RANDOM_NUMBER_GENERATOR
 /*************************************************************************//**
 *****************************************************************************/
 static uint16_t phyGetRandomNumber(void)
 {
-  uint16_t rnd = 0;
+  uint16_t rnd = 0; 
 
-  IRQ_MASK_REG = 0x00;
-  phyTrxSetState(TRX_CMD_RX_ON);
+  IRQ_MASK_REG = 0x00; 
+  TRX_RPC_REG = 0x00; 
+
+  phyTrxSetState(TRX_CMD_RX_ON); 
   uint8_t i;
   
-  for (i = 0; i < 16; i += 2)
-  {
-    HAL_Delay(RANDOM_NUMBER_UPDATE_INTERVAL);
-    rnd |= PHY_RSSI_REG_s.rndValue << i;
-  }
+  for (i = 0; i < 16; i += 2) 
+  { 
+    HAL_Delay(RANDOM_NUMBER_UPDATE_INTERVAL); 
+    rnd |= PHY_RSSI_REG_s.rndValue << i; 
+  } 
 
-  phyTrxSetState(TRX_CMD_TRX_OFF);
+  phyTrxSetState(TRX_CMD_TRX_OFF); 
 
-  IRQ_STATUS_REG = IRQ_STATUS_CLEAR_VALUE;
-  IRQ_MASK_REG_s.rxEndEn = 1;
-  IRQ_MASK_REG_s.txEndEn = 1;
+  TRX_RPC_REG = 0xEB; 
+  IRQ_STATUS_REG = IRQ_STATUS_CLEAR_VALUE; 
+  IRQ_MASK_REG_s.rxEndEn = 1; 
+  IRQ_MASK_REG_s.txEndEn = 1; 
 
   return rnd;
 }
 #endif
 
-#ifdef PHY_ENABLE_RANDOM_NUMBER_GENERATOR
+#ifdef PHY_HAS_RANDOM_NUMBER_GENERATOR
 /*************************************************************************//**
 *****************************************************************************/
 void PHY_RandomConf(uint16_t rnd)
 {
- srand(rnd);
+  srand(rnd);
+  srandom(rnd);
 }
 #endif
 
@@ -346,17 +344,12 @@ static void phyHandleSetRequests(void)
 
   if (phyIb.request & PHY_REQ_CHANNEL)
   {
-    #if defined(__AVR_ATmega128RFA1__)
-    PHY_CC_CCA_REG_s.channel = phyIb.channel;
-    
-    #elif defined(__AVR_ATmega256RFR2__)
     CC_CTRL_1_REG_s.ccBand = phyIb.band;
 
     if (0 == phyIb.band)
       PHY_CC_CCA_REG_s.channel = phyIb.channel;
     else
       CC_CTRL_0_REG = phyIb.channel;
-    #endif
   }
 
   if (phyIb.request & PHY_REQ_PANID)

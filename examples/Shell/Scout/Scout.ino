@@ -1,9 +1,8 @@
-#include <EEPROM.h>
 #include <SPI.h>
 #include <Wire.h>
 #include <Scout.h>
 
-const uint16_t groupId = 0xBEEF;
+const uint16_t groupId = 0x1234;
 static byte pingCounter = 0;
 static NWK_DataReq_t appDataReq;
 
@@ -19,9 +18,11 @@ void setup(void) {
   addBitlashFunction("power.report", (bitlash_function) powerReport);
 
   addBitlashFunction("mesh.config", (bitlash_function) meshConfig);
+  addBitlashFunction("mesh.setpower", (bitlash_function) meshSetPower);
   addBitlashFunction("mesh.key", (bitlash_function) meshSetKey);
   addBitlashFunction("mesh.joingroup", (bitlash_function) meshJoinGroup);
   addBitlashFunction("mesh.leavegroup", (bitlash_function) meshLeaveGroup);
+  addBitlashFunction("mesh.ingroup", (bitlash_function) meshIsInGroup);
   addBitlashFunction("mesh.ping", (bitlash_function) meshPing);
   addBitlashFunction("mesh.pinggroup", (bitlash_function) meshPingGroup);
   addBitlashFunction("mesh.remoterun", (bitlash_function) meshRemoteRun);
@@ -29,7 +30,7 @@ void setup(void) {
   addBitlashFunction("mesh.publish", (bitlash_function) meshPublish);
   addBitlashFunction("mesh.subscribe", (bitlash_function) meshSubscribe);
   addBitlashFunction("mesh.report", (bitlash_function) meshReport);
-
+  
   addBitlashFunction("temperature", (bitlash_function) getTemperature);
   addBitlashFunction("randomnumber", (bitlash_function) getRandomNumber);
 
@@ -46,6 +47,7 @@ void setup(void) {
   addBitlashFunction("led.redvalue", (bitlash_function) ledSetRedValue);
   addBitlashFunction("led.greenvalue", (bitlash_function) ledSetGreenValue);
   addBitlashFunction("led.bluevalue", (bitlash_function) ledSetBlueValue);
+  addBitlashFunction("led.hexvalue", (bitlash_function) ledSetHexValue);
   addBitlashFunction("led.report", (bitlash_function) ledReport);
 
   addBitlashFunction("pin.on", (bitlash_function) pinOn);
@@ -58,6 +60,7 @@ void setup(void) {
 
   addBitlashFunction("backpack.report", (bitlash_function) backpackReport);
 
+  meshJoinGroup();
   Scout.meshListen(1, receiveMessage);
 }
 
@@ -73,7 +76,7 @@ numvar getTemperature(void) {
 }
 
 numvar getRandomNumber(void) {
-  return Scout.getRandomNumber();
+  return random();
 }
 
 /****************************\
@@ -84,12 +87,10 @@ numvar isBatteryCharging(void) {
 }
 
 numvar getBatteryPercentage(void) {
-  // TODO: broken, crashes board
   return Scout.getBatteryPercentage();
 }
 
 numvar getBatteryVoltage(void) {
-  // TODO: broken, crashes board
   return Scout.getBatteryVoltage();
 }
 
@@ -105,7 +106,7 @@ numvar disableBackpackVcc(void) {
 
 numvar goToSleep(void) {
   // TODO: not implemented yet
-  //Scout.goToSleep(getarg(1));
+  //Pinoccio.goToSleep(getarg(1));
 }
 
 numvar powerReport(void) {
@@ -169,22 +170,24 @@ numvar ledSetBlueValue(void) {
   RgbLed.setBlueValue(getarg(1));
 }
 
-numvar ledSetHex(void) {
-  // TODO: broken
-  /*
+numvar ledSetHexValue(void) {
+  Serial.println((char *)getstringarg(1));
   if (isstringarg(1)) {
-    RgbLed.setHex(getstringarg(1));
+    RgbLed.setHex((char *)getstringarg(1));
     return true;
   } else {
     return false;
   }
-  */
 }
 
 numvar ledReport(void) {
-  // TODO: not working yet
-  // ie: {"r":120,"g":80,"b":0}
-  return printf("{\"r\":%d,\"g\":%d,\"b\":%d}\n", RgbLed.getRedValue(), RgbLed.getGreenValue(), RgbLed.getBlueValue());
+  Serial.print("{\"r\":");
+  Serial.print(RgbLed.getRedValue());
+  Serial.print(",\"g\":");
+  Serial.print(RgbLed.getGreenValue());
+  Serial.print(",\"b\":");
+  Serial.print(RgbLed.getBlueValue());
+  Serial.println("}");
 }
 
 /****************************\
@@ -200,8 +203,12 @@ numvar meshConfig(void) {
   Scout.meshSetRadio(getarg(1), panId, channel);
 }
 
+numvar meshSetPower(void) {
+  Scout.meshSetPower(getarg(1));
+}
+
 numvar meshSetKey(void) {
-  Scout.meshSetSecurityKey((const char *)getstringarg(1));
+  Pinoccio.meshSetSecurityKey((const char *)getstringarg(1));
 }
 
 numvar meshJoinGroup(void) {
@@ -210,6 +217,10 @@ numvar meshJoinGroup(void) {
 
 numvar meshLeaveGroup(void) {
   Scout.meshLeaveGroup(groupId);
+}
+
+numvar meshIsInGroup(void) {
+  return Scout.meshIsInGroup(groupId);
 }
 
 numvar meshPing(void) {
@@ -257,7 +268,7 @@ numvar meshRemoteRun(void) {
   for (int i=1; i<dataReq->size; i++) {
     Serial.write((const char*)dataReq->data[i]);
   }
-  Scout.meshSendMessage(request);
+  Pinoccio.meshSendMessage(request);
   return true;
 }
 
@@ -288,13 +299,13 @@ numvar meshReport(void) {
   // TODO: return JSON formatted report of radio details
   // ie: {"id":34,"pid":1,"ch":26,"sec":true}
   Serial.println("-- Mesh Radio Settings --");
-  Serial.print("      Address: ");
+  Serial.print(" - Address: ");
   Serial.println(Scout.getAddress());
-  Serial.print("       Pan ID: 0x");
+  Serial.print(" - Pan ID: 0x");
   Serial.println(Scout.getPanId(), HEX);
-  Serial.print("      Channel: ");
+  Serial.print(" - Channel: ");
   Serial.println(Scout.getChannel());
-  Serial.print("     Tx Power: ");
+  Serial.print(" - Tx Power: ");
   // gotta read these from program memory (for SRAM savings)
   char c;
   const char *dbString = Scout.getTxPowerDb();
@@ -302,14 +313,35 @@ numvar meshReport(void) {
      Serial.write(c);
   }
   Serial.println();
-// TODO
-//  Serial.print("   -   Asleep: ");
-//  Serial.println();
-//  Serial.print("   - In group: ");
-//  Serial.println();
-//  Serial.print("   -  Routing: ");
-//  Serial.println();
-
+  Serial.print(" - In group: ");
+  if (Scout.meshIsInGroup(groupId)) {
+    Serial.println("Yes");
+  } else {
+    Serial.println("No");
+  }
+  Serial.println(" - Routing: ");
+  Serial.println("|    Fixed    |  Multicast  |    Score    |    DstAdd   | NextHopAddr |    Rank     |     LQI    |");
+  NWK_RouteTableEntry_t *table = NWK_RouteTable();
+  for (int i=0; i < NWK_ROUTE_TABLE_SIZE; i++) {
+    if (table[i].dstAddr == NWK_ROUTE_UNKNOWN) {
+      continue;
+    }
+    Serial.print("|      ");
+    Serial.print(table[i].fixed);
+    Serial.print("      |      ");
+    Serial.print(table[i].multicast);
+    Serial.print("      |      ");
+    Serial.print(table[i].score);
+    Serial.print("      |     0x");
+    Serial.print(table[i].dstAddr, HEX);
+    Serial.print("     |     0x");
+    Serial.print(table[i].nextHopAddr, HEX);
+    Serial.print("     |     ");
+    Serial.print(table[i].rank);
+    Serial.print("     |     ");
+    Serial.print(table[i].lqi);
+    Serial.println("    |");
+  }
 }
 
 /****************************\
@@ -365,8 +397,8 @@ numvar backpackReport(void) {
   return true;
 }
 
-// Helper functions
-static void pingScout(int address) {
+// Helper functions 
+static void pingScout(int address) {  
   appDataReq.dstAddr = address;
 
   appDataReq.dstEndpoint = 1;
@@ -380,30 +412,43 @@ static void pingScout(int address) {
 
   Serial.print("PING ");
   Serial.print(address);
-  Serial.print(": ");
+  Serial.print(": "); 
 
   pingCounter++;
 }
 
-static void pingGroup(int address) {
+static void pingGroup(int address) {  
   appDataReq.dstAddr = address;
 
   appDataReq.dstEndpoint = 1;
   appDataReq.srcEndpoint = 1;
-  appDataReq.options = NWK_OPT_MULTICAST|NWK_OPT_ACK_REQUEST|NWK_OPT_ENABLE_SECURITY;
+  appDataReq.options = NWK_OPT_MULTICAST|NWK_OPT_ENABLE_SECURITY;
   appDataReq.data = &pingCounter;
   appDataReq.size = sizeof(pingCounter);
   appDataReq.confirm = pingConfirm;
   NWK_DataReq(&appDataReq);
 
   Serial.print("PING ");
-  Serial.print(address);
-  Serial.print(": ");
+  Serial.print(address, HEX);
+  Serial.print(": "); 
 
   pingCounter++;
 }
 
 static void pingConfirm(NWK_DataReq_t *req) {
+  Serial.print("dstAddr: ");
+  Serial.println(req->dstAddr, HEX);
+  Serial.print("dstEndpoint: ");
+  Serial.println(req->dstEndpoint);
+  Serial.print("srcEndpoint: ");
+  Serial.println(req->srcEndpoint);
+  Serial.print("options: ");
+  Serial.println(req->options, BIN);
+  Serial.print("size: ");
+  Serial.println(req->size);
+  Serial.print("status: ");
+  Serial.println(req->status, HEX);
+  
   if (req->status == NWK_SUCCESS_STATUS) {
     Serial.print("1 byte from ");
     Serial.print(req->dstAddr);
@@ -434,7 +479,7 @@ static void pingConfirm(NWK_DataReq_t *req) {
   }
 }
 
-static bool receiveMessage(NWK_DataInd_t *ind) {
+static bool receiveMessage(NWK_DataInd_t *ind) {  
   Serial.print("Received message - ");
   Serial.print("lqi: ");
   Serial.print(ind->lqi, DEC);
@@ -451,8 +496,11 @@ static bool receiveMessage(NWK_DataInd_t *ind) {
   }
   Serial.println("");
   NWK_SetAckControl(abs(ind->rssi));
-
+  
   // run the Bitlash callback function, if defined
-  //doCommand("mesh.receive(...)")
+  char *callback = "mesh.receive";
+  if (findscript(callback)) {
+    doCommand(callback);
+  }
   return true;
 }

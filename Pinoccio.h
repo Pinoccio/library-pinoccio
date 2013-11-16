@@ -9,22 +9,26 @@
 #  define D(x)
 #endif
 
-#define NWK_ENABLE_ROUTING
-#define NWK_ENABLE_SECURITY
-#define NWK_ENABLE_MULTICAST
-#define NWK_ENABLE_ROUTE_DISCOVERY
-
-#define NWK_BUFFERS_AMOUNT                  5
-#define NWK_MAX_ENDPOINTS_AMOUNT            4
-#define NWK_DUPLICATE_REJECTION_TABLE_SIZE  10
-#define NWK_DUPLICATE_REJECTION_TTL         1000 // ms
-#define NWK_ROUTE_TABLE_SIZE                100
-#define NWK_ROUTE_DEFAULT_SCORE             3
-#define NWK_ACK_WAIT_TIME                   1000  // ms
-#define NWK_GROUPS_AMOUNT                   10
-#define NWK_ROUTE_DISCOVERY_TABLE_SIZE      5
-#define NWK_ROUTE_DISCOVERY_TIMEOUT         1000 // ms
-#define SYS_SECURITY_MODE                   0
+// Begin - Specifics for the LWM library
+// #define NWK_ENABLE_ROUTING
+// #define NWK_ENABLE_SECURITY
+// #define NWK_ENABLE_MULTICAST
+// #define NWK_ENABLE_ROUTE_DISCOVERY
+// 
+// #define NWK_BUFFERS_AMOUNT                  5
+// #define NWK_MAX_ENDPOINTS_AMOUNT            4
+// #define NWK_ACK_WAIT_TIME                   1000  // ms
+// #define NWK_GROUPS_AMOUNT                   10
+// 
+// #define NWK_DUPLICATE_REJECTION_TABLE_SIZE  10
+// #define NWK_DUPLICATE_REJECTION_TTL         1000 // ms
+// 
+// #define NWK_ROUTE_DEFAULT_SCORE             3
+// #define NWK_ROUTE_TABLE_SIZE                100
+// #define NWK_ROUTE_DISCOVERY_TABLE_SIZE      5
+// #define NWK_ROUTE_DISCOVERY_TIMEOUT         1000 // ms
+// 
+// #define SYS_SECURITY_MODE                   0
 // End - Specifics for the LWM library
 
 #include <Arduino.h>
@@ -32,6 +36,7 @@
 #include "bitlash.h"
 #include "src/bitlash.h"
 
+#include "utility/sysConfig.h"
 #include "utility/phy.h"
 #include "utility/hal.h"
 #include "utility/sys.h"
@@ -55,7 +60,6 @@ class PinoccioClass {
     void goToSleep(uint32_t sleepForMs);
         
     int8_t getTemperature();
-    uint32_t getRandomNumber();
     void loadSettingsFromEeprom();
     
     void meshSetRadio(const uint16_t theAddress, const uint16_t thePanId=0x4567, const uint8_t theChannel=0x1a);
@@ -66,6 +70,7 @@ class PinoccioClass {
     
     void meshJoinGroup(uint16_t groupAddress);
     void meshLeaveGroup(uint16_t groupAddress);
+    bool meshIsInGroup(uint16_t groupAddress);
       
     uint16_t getAddress();
     uint16_t getPanId();

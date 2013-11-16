@@ -46,6 +46,7 @@
 #include "phy.h"
 #include "nwk.h"
 #include "hal.h"
+#include "sys.h"
 #include "sysTimer.h"
 
 /*- Implementations --------------------------------------------------------*/

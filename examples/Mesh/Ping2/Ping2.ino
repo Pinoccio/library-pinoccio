@@ -14,7 +14,7 @@ void setup() {
   Scout.meshSetSecurityKey("TestSecurityKey1");
   
   if (meshAddress == 1) {
-    appTimer.interval = 30000;
+    appTimer.interval = 1000;
     appTimer.mode = SYS_TIMER_PERIODIC_MODE;
     appTimer.handler = sendMessage;
     SYS_TimerStart(&appTimer);

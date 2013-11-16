@@ -107,7 +107,7 @@ static void pingGroup(int address) {
 
   appDataReq.dstEndpoint = 1;
   appDataReq.srcEndpoint = 1;
-  appDataReq.options = NWK_OPT_MULTICAST|NWK_OPT_ACK_REQUEST|NWK_OPT_ENABLE_SECURITY;
+  appDataReq.options = NWK_OPT_MULTICAST|NWK_OPT_ENABLE_SECURITY;
   appDataReq.data = &pingCounter;
   appDataReq.size = sizeof(pingCounter);
   appDataReq.confirm = pingConfirm;

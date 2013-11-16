@@ -15,7 +15,7 @@ extern "C"{
 
 #include <stdint.h>
 #include <stdbool.h>
-#include "utility/sysConfig.h"
+#include "sysConfig.h"
 
 #if defined(__AVR_ATmega128RFA1__)
 #include "atmega128rfa1.h"
@@ -25,7 +25,7 @@ extern "C"{
 
 /*- Definitions ------------------------------------------------------------*/
 #define PHY_RSSI_BASE_VAL                  (-90)
-#define PHY_ENABLE_RANDOM_NUMBER_GENERATOR
+
 #define PHY_HAS_RANDOM_NUMBER_GENERATOR
 #define PHY_HAS_AES_MODULE
 //#define PHY_ENABLE_ENERGY_DETECTION
@@ -55,7 +55,7 @@ void PHY_DataConf(uint8_t status);
 void PHY_DataInd(PHY_DataInd_t *ind);
 void PHY_TaskHandler(void);
 
-#ifdef PHY_ENABLE_RANDOM_NUMBER_GENERATOR
+#ifdef PHY_HAS_RANDOM_NUMBER_GENERATOR
 void PHY_RandomReq(void);
 void PHY_RandomConf(uint16_t rnd);
 #endif
