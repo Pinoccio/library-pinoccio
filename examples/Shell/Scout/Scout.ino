@@ -59,6 +59,7 @@ void setup(void) {
   addBitlashFunction("pin.report", (bitlash_function) pinReport);
 
   addBitlashFunction("backpack.report", (bitlash_function) backpackReport);
+  addBitlashFunction("scout.report", (bitlash_function) getScoutVersion);
 
   meshJoinGroup();
   Scout.meshListen(1, receiveMessage);
@@ -393,9 +394,16 @@ numvar pinReport(void) {
 *     BACKPACK HANDLERS     *
 \****************************/
 numvar backpackReport(void) {
-  // TODO: return JSON formmated report of all backpacks attached
-  return true;
+  Serial.println("[{\"name\":\"wifi\",\"version\":\"1.0\"},{\"name\":\"environment\",\"version\":\"2.0\"}]");
 }
+
+/****************************\
+ *   SCOUT REPORT HANDLERS  *
+\****************************/
+numvar getScoutVersion(void){
+  Serial.println("1.0");
+}
+
 
 // Helper functions 
 static void pingScout(int address) {  
