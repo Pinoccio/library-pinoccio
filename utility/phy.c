@@ -189,7 +189,7 @@ void PHY_DataReq(uint8_t *data, uint8_t size)
 
   TRX_FRAME_BUFFER(0) = size + 2/*crc*/;
   uint8_t i = 0;
-  
+
   for (i = 0; i < size; i++)
     TRX_FRAME_BUFFER(i+1) = data[i];
 
@@ -268,26 +268,26 @@ ISR(TRX24_CCA_ED_DONE_vect)
 *****************************************************************************/
 static uint16_t phyGetRandomNumber(void)
 {
-  uint16_t rnd = 0; 
+  uint16_t rnd = 0;
 
-  IRQ_MASK_REG = 0x00; 
-  TRX_RPC_REG = 0x00; 
+  IRQ_MASK_REG = 0x00;
+  TRX_RPC_REG = 0x00;
 
-  phyTrxSetState(TRX_CMD_RX_ON); 
+  phyTrxSetState(TRX_CMD_RX_ON);
   uint8_t i;
-  
-  for (i = 0; i < 16; i += 2) 
-  { 
-    HAL_Delay(RANDOM_NUMBER_UPDATE_INTERVAL); 
-    rnd |= PHY_RSSI_REG_s.rndValue << i; 
-  } 
 
-  phyTrxSetState(TRX_CMD_TRX_OFF); 
+  for (i = 0; i < 16; i += 2)
+  {
+    HAL_Delay(RANDOM_NUMBER_UPDATE_INTERVAL);
+    rnd |= PHY_RSSI_REG_s.rndValue << i;
+  }
 
-  TRX_RPC_REG = 0xEB; 
-  IRQ_STATUS_REG = IRQ_STATUS_CLEAR_VALUE; 
-  IRQ_MASK_REG_s.rxEndEn = 1; 
-  IRQ_MASK_REG_s.txEndEn = 1; 
+  phyTrxSetState(TRX_CMD_TRX_OFF);
+
+  TRX_RPC_REG = 0xEB;
+  IRQ_STATUS_REG = IRQ_STATUS_CLEAR_VALUE;
+  IRQ_MASK_REG_s.rxEndEn = 1;
+  IRQ_MASK_REG_s.txEndEn = 1;
 
   return rnd;
 }
@@ -446,7 +446,7 @@ void PHY_TaskHandler(void)
     {
       PHY_DataInd_t ind;
       uint8_t i = 0;
-      
+
       for (i = 0; i < phyRxSize + 1/*lqi*/; i++)
         phyRxBuffer[i] = TRX_FRAME_BUFFER(i);
 

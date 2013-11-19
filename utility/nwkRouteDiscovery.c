@@ -82,7 +82,7 @@ void nwkRouteDiscoveryRequest(NwkFrame_t *frame)
 {
   NwkFrameHeader_t *header = &frame->header;
   NwkRouteDiscoveryTableEntry_t *entry;
-  
+
   entry = nwkRouteDiscoveryFindEntry(nwkIb.addr, header->nwkDstAddr, header->nwkFcf.multicast);
 
   if (entry)
@@ -134,7 +134,7 @@ static NwkRouteDiscoveryTableEntry_t *nwkRouteDiscoveryNewEntry(void)
 {
   NwkRouteDiscoveryTableEntry_t *entry = NULL;
   uint8_t i = 0;
-  
+
   for (i = 0; i < NWK_ROUTE_DISCOVERY_TABLE_SIZE; i++)
   {
     if (0 == nwkRouteDiscoveryTable[i].timeout)
@@ -162,7 +162,7 @@ static void nwkRouteDiscoveryTimerHandler(SYS_Timer_t *timer)
   NwkRouteDiscoveryTableEntry_t *entry;
   bool restart = false;
   uint8_t i = 0;
-  
+
   for (i = 0; i < NWK_ROUTE_DISCOVERY_TABLE_SIZE; i++)
   {
     entry = &nwkRouteDiscoveryTable[i];

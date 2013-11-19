@@ -37,15 +37,15 @@ reported from the SOC register of the MAX17048G.
 */
 int HAL_FuelGaugePercent();
 
-/* 
+/*
 configMAX17048G(byte percent) configures the config register of
-the MAX170143, specifically the alert threshold therein. Pass a 
+the MAX170143, specifically the alert threshold therein. Pass a
 value between 1 and 32 to set the alert threshold to a value between
 1 and 32%. Any other values will set the threshold to 32%.
 */
 void HAL_FuelGaugeConfig(byte percent);
 
-/* 
+/*
 qsMAX17048G() issues a quick-start command to the MAX17048G.
 A quick start allows the MAX17048G to restart fuel-gauge calculations
 in the same manner as initial power-up of the IC. If an application's
@@ -55,7 +55,7 @@ to reduce the error.
 */
 void HAL_FuelGaugeQuickStart();
 
-/* 
+/*
 i2cRead16(unsigned char address) reads a 16-bit value beginning
 at the 8-bit address, and continuing to the next address. A 16-bit
 value is returned.

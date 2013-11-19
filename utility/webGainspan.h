@@ -101,7 +101,7 @@ public:
   uint8_t isDataOnSock(SOCKET s);
   uint16_t readData(SOCKET s, uint8_t* buf, uint16_t len);
   uint16_t writeData(SOCKET s, const uint8_t*  buf, uint16_t  len);
-  
+
   static const uint16_t SSIZE = 256; // Max Tx buffer siz
 
 
@@ -113,7 +113,7 @@ public:
   void parse_data(String buf);
 
   void flush();
-  
+
 private:
   String security_key;
   String ssid;

@@ -7,7 +7,7 @@ MeshRequest::MeshRequest() {
   request.srcEndpoint = 1;
   request.options = 0;
   //TODO: request.options = NWK_OPT_ACK_REQUEST | NWK_OPT_ENABLE_SECURITY;
-  
+
   header = 0x00;
 }
 
@@ -36,12 +36,12 @@ int MeshRequest::setPayload(byte *data, uint8_t size) {
     return -1;
   }
   byte payload[APP_BUFFER_SIZE];
-  
+
   payload[0] = header;
   memcpy((void *)payload[1], (const void *)data, size);
   request.data = (uint8_t*)payload;
   request.size = size + 1;
-  
+
   return 0;
 }
 

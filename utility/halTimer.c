@@ -27,11 +27,11 @@ void HAL_TimerInit(void)
   halTimerIrqCount = 0;
 
   //Timer4 Prescaler = 1024; Preload = 124; Actual Interrupt Time = 8 ms
-	TCCR4A = 0x80;
-	TCCR4B = 0x0D; 
-	OCR4AH = 0x00; 
-	OCR4AL = 0x7C; 
-	TIMSK4 |= (1 << OCIE4A);
+  TCCR4A = 0x80;
+  TCCR4B = 0x0D;
+  OCR4AH = 0x00;
+  OCR4AL = 0x7C;
+  TIMSK4 |= (1 << OCIE4A);
 }
 
 /*************************************************************************//**

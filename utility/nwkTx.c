@@ -95,7 +95,7 @@ void nwkTxFrame(NwkFrame_t *frame)
     header->macDstPanId = nwkIb.panId;
 
 #ifdef NWK_ENABLE_ROUTING
-  if (0 == (frame->tx.control & NWK_TX_CONTROL_DIRECT_LINK) && 
+  if (0 == (frame->tx.control & NWK_TX_CONTROL_DIRECT_LINK) &&
       0 == (frame->tx.control & NWK_TX_CONTROL_BROADCAST_PAN_ID))
     nwkRoutePrepareTx(frame);
   else
@@ -309,7 +309,7 @@ void nwkTxTaskHandler(void)
         else
         {
           frame->state = NWK_TX_STATE_CONFIRM;
-	}
+  }
       } break;
 
       case NWK_TX_STATE_WAIT_ACK:

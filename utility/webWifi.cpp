@@ -5,7 +5,7 @@
 
 uint16_t webWifi::_server_port[MAX_SOCK_NUM] = { 0, 0, 0, 0 };
 
-void webWifi::begin() 
+void webWifi::begin()
 {
   WIFI_PROFILE profile = {
           /* SSID */ "",
@@ -13,7 +13,7 @@ void webWifi::begin()
           /* IP address */ "",
           /* subnet mask */ "",
           /* Gateway IP */ "" };
-  
+
 }
 
 void webWifi::begin(WIFI_PROFILE* w_prof)
@@ -31,7 +31,7 @@ void webWifi::begin(WIFI_PROFILE* w_prof, uint8_t mode)
   D(Serial.println("DEBUG: Wifi::begin 3"));
   // initialize device
   if (!Gainspan.init()) {
-		RgbLed.red();
+    RgbLed.red();
     D(Serial.println("DEBUG: Wifi::begin 3.1"));
     return;
   }
@@ -42,7 +42,7 @@ void webWifi::begin(WIFI_PROFILE* w_prof, uint8_t mode)
   // initiate wireless connection
   while (!Gainspan.connect());
   D(Serial.println("DEBUG: Wifi::begin 6"));
-	RgbLed.green();
+  RgbLed.green();
   D(Serial.println("DEBUG: Wifi::begin 7"));
 }
 

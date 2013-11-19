@@ -42,7 +42,7 @@ void SYS_TimerStop(SYS_Timer_t *timer)
 {
   SYS_Timer_t *prev = NULL;
   SYS_Timer_t *t;
-  
+
   for (t = timers; t; t = t->next)
   {
     if (t == timer)
@@ -113,7 +113,7 @@ static void placeTimer(SYS_Timer_t *timer)
     SYS_Timer_t *prev = NULL;
     uint32_t timeout = timer->interval;
     SYS_Timer_t *t;
-    
+
     for (t = timers; t; t = t->next)
     {
       if (timeout < t->timeout)

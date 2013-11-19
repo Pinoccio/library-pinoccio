@@ -37,7 +37,7 @@ void NWK_Init(void)
   nwkIb.addr = 0;
 
   uint8_t i = 0;
-  
+
   for (i=0; i < NWK_ENDPOINTS_AMOUNT; i++)
     nwkIb.endpoint[i] = NULL;
 
@@ -128,7 +128,7 @@ uint8_t NWK_LinearizeLqi(uint8_t lqi)
   const uint8_t val[] = { 3, 8, 26, 64, 128, 190, 230, 247, 252 };
   uint8_t cl = 25;
   uint8_t i = 0;
-  
+
   for (i=0; i < sizeof(val); i++)
   {
     if (lqi < cl)

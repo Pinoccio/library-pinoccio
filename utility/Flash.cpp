@@ -51,10 +51,10 @@ void FlashClass::begin(int chipSelectPin, SPIClass &SPIDriver) {
   pinMode(SCK, OUTPUT);
   pinMode(MOSI, OUTPUT);
   pinMode(MISO, INPUT);
-  
+
   this->SPI = SPIDriver;
   this->CS = chipSelectPin;
-  
+
   this->SPI.begin();
   this->SPI.setBitOrder(MSBFIRST);
   this->SPI.setDataMode(SPI_MODE0);

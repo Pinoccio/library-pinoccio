@@ -108,7 +108,7 @@ uint8_t webGainspan::init(uint32_t baud)
     D(Serial.println("DEBUG: Gainspan::init 6.1"));
     return 0;
   }
-  
+
   // get version numbers
   if (!send_cmd_w_resp(CMD_GET_VERSION)) {
     D(Serial.println("DEBUG: Gainspan::init 6.1"));
@@ -121,14 +121,14 @@ uint8_t webGainspan::init(uint32_t baud)
 uint8_t webGainspan::send_cmd(uint8_t cmd)
 {
   flush();
-  
+
   memset(cmd_buffer, 16, 0);
   strcpy_P(cmd_buffer, (char*)pgm_read_word(&(cmd_tbl[cmd])));
   String cmd_str = String(cmd_buffer);
-  
+
   D(Serial.print("DEBUG: command sent: "));
   D(Serial.println(cmd_str));
-  
+
   switch(cmd) {
   case CMD_DISABLE_ECHO:
   case CMD_DISABLE_DHCP:
@@ -220,7 +220,7 @@ uint8_t webGainspan::parse_resp(uint8_t cmd)
   String buf;
 
   while (!resp_done) {
-    
+
     buf = readline();
 
     switch(cmd) {
@@ -359,7 +359,7 @@ uint8_t webGainspan::parse_resp(uint8_t cmd)
       if (versionStr) {
         buf.toCharArray(versionStr, buf.length()+1);
       }
-      
+
       if (buf.startsWith("S2W APP VERSION")) {
         /* got app version */
         strtok(versionStr, "=");
@@ -384,7 +384,7 @@ uint8_t webGainspan::parse_resp(uint8_t cmd)
         ret = 0;
         resp_done = 1;
       }
-      
+
       if (versionStr) {
         free(versionStr);
       }
@@ -523,7 +523,7 @@ String webGainspan::readline(void)
   bool timedOut = false;
 
   bool endDetected = false;
-  
+
   while (!endDetected)
   {
     if (millis() - start > 30) {
@@ -531,7 +531,7 @@ String webGainspan::readline(void)
       strBuf = "";
       break;
     }
-    
+
     if (Serial1.available())
     {
       // valid data in HW UART buffer, so check if it's \r or \n
@@ -635,7 +635,7 @@ uint16_t webGainspan::writeData(SOCKET s, const uint8_t*  buf, uint16_t len)
         Serial1.print(buffer);
         */
         for (uint16_t i=0; i<len; i++) {
-          Serial1.write(buf[i]);  
+          Serial1.write(buf[i]);
         }
       }
       Serial1.write((uint8_t)0x1b);    // data end
