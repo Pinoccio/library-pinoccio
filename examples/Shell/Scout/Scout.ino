@@ -1,10 +1,42 @@
 #include <SPI.h>
 #include <Wire.h>
 #include <Scout.h>
+#include <PBBP.h>
 
 const uint16_t groupId = 0x1234;
 static byte pingCounter = 0;
 static NWK_DataReq_t appDataReq;
+
+PBBP bp;
+
+// Example code to dump backpack EEPROM contents:
+void print_hex(const uint8_t *buf, uint8_t len) {
+    while (len--) {
+        if (*buf < 0x10) Serial.print("0");
+        Serial.print(*buf++, HEX);
+    }
+}
+
+void dump_backpacks() {
+  if (bp.enumerate()) {
+      Serial.print("Found ");
+      Serial.print(bp.num_slaves);
+      Serial.println(" slaves");
+
+      for (uint8_t i = 0; i < bp.num_slaves; ++ i) {
+          print_hex(bp.slave_ids[i], sizeof(bp.slave_ids[0]));
+          Serial.println();
+          uint8_t buf[64];
+          bp.readEeprom(i + 1, 0, buf, sizeof(buf));
+          Serial.print("EEPROM: ");
+          print_hex(buf, sizeof(buf));
+          Serial.println();
+      }
+  } else {
+      bp.printLastError(Serial);
+      Serial.println();
+  }
+}
 
 void setup(void) {
   Scout.setup();
@@ -63,6 +95,9 @@ void setup(void) {
 
   meshJoinGroup();
   Scout.meshListen(1, receiveMessage);
+
+  bp.begin(BACKPACK_BUS);
+  //dump_backpacks();
 }
 
 void loop(void) {
