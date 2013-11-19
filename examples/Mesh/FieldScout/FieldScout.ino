@@ -28,6 +28,38 @@ void loop() {
   Scout.loop();
 }
 
+// can only send one at a atime, locks up!
+int mcsending = 0;
+static void sendMulticastConfirm(NWK_DataReq_t *req) {
+  mcsending = 0;
+}
+
+static void sendMulticast(int chan, char *message) {  
+  int len = strlen(message);
+  if(mcsending) return;
+  // hard truncate too long messages
+  if(len > 100)
+  {
+    len = 99;
+    message[len] = 0;
+  }
+  Serial.print("channel sending ");
+  Serial.print(chan, DEC);
+  Serial.print(" ");
+  Serial.println(message);
+  Scout.meshJoinGroup(chan); // must be joined to send
+  appDataReq.dstAddr = chan;
+  appDataReq.dstEndpoint = 2;
+  appDataReq.srcEndpoint = 1;
+  appDataReq.options = NWK_OPT_MULTICAST|NWK_OPT_ENABLE_SECURITY;
+  appDataReq.data = (uint8_t*)message;
+  appDataReq.size = len+1;
+  appDataReq.confirm = sendMulticastConfirm;
+  mcsending = 1;
+  NWK_DataReq(&appDataReq);
+  RgbLed.blinkGreen(200);
+}
+
 char *chunks;
 int chunkat;
 int chunkto;
@@ -83,17 +115,45 @@ static void sendMessage(int to, char *message) {
   sendMessageChunk();
 }
 
+int outmode = 0;
 void doMessage(int from, char *message)
 {
   int ret;
 	Serial.println(message);
+  if(strncmp(message,"chan", 4) == 0)
+  {
+    Serial.println("multicast");
+//    sendMulticast(1, message);
+    sendMulticast(4, message);
+    return;
+  }
 	offset=0;
+  outmode=1; // command capture mode
   ret = (int)doCommand(message);
+  outmode=0; // filter output mode
   Serial.println(ret);
   bufout[offset] = 0; // null terminate
   if(offset > 1) offset -= 2; // remove trailing "\n"
   if(!offset) strcpy(bufout, "(empty)");
 	sendMessage(1, bufout);
+}
+
+// check a line of bitlash output for any special flags
+void doFilter(char *line)
+{
+  char *space;
+  int chan;
+  Serial.print("BITLASH: ");
+  Serial.println(line);
+  // any lines looking like "CHAN:4 message" will send "message" to channel 4
+  if(strncmp("CH4N:",line,5) != 0) return;
+  space = strchr(line,' ');
+  if(!space) return;
+  *space = 0;
+  space++;
+  chan = atoi(line+5);
+  if(!chan) return;
+  sendMulticast(chan, space);
 }
 
 char *message = NULL;
@@ -149,6 +209,14 @@ void serialHandler(byte b) {
   // escape newlines and quotes
   if(b == '\n')
   {
+    // newline termination in filter mode checks each line
+    if(outmode == 0)
+    {
+      bufout[offset] = 0;
+      doFilter(bufout);
+      offset=0;
+      return;
+    }
     bufout[offset++] = '\\';
     b = 'n';
   }

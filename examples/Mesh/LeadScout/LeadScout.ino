@@ -7,7 +7,7 @@ extern "C" {
 
 WIFI_PROFILE wifiprofile = {
                         /* SSID */ "Air Patrol",
-         /* WPA/WPA2 passphrase */ "Jabber",
+         /* WPA/WPA2 passphrase */ "UberJabber",
                   /* IP address */ "",
                  /* subnet mask */ "",
                   /* Gateway IP */ "", };
@@ -20,6 +20,7 @@ char token[] = "perin";
 static NWK_DataReq_t appDataReq, pingReq;
 int retries;
 int meshAddress = 1;
+
 
 // globals
 #define RFCHUNK 100
@@ -41,12 +42,14 @@ static bool receiveMessage(NWK_DataInd_t *ind);
 
 void setup() {
   Scout.setup();
+  for(int i = 1; i < 10; i++) Scout.meshJoinGroup(i);
   Scout.meshSetRadio(meshAddress);
   Scout.meshSetSecurityKey("TestSecurityKey1");
   Wifi.begin(&wifiprofile);
   HQ();
   setOutputHandler(&serialHandler);
   Scout.meshListen(1, receiveMessage);
+  Scout.meshListen(2, receiveMulticast);
 }
 
 // buffer must be a null terminated string, returns updated buffer pointer for next call
@@ -333,6 +336,13 @@ static bool receiveMessage(NWK_DataInd_t *ind) {
     Serial.print(ind->data[i], HEX);
   }
   Serial.println("");
+
+  if(ind->options&NWK_IND_OPT_MULTICAST)
+  {
+    Serial.println("MULTICAST on wrong endpoint");
+    return true;
+  }
+
   total = messagelen + ind->size;
   message = (char*)realloc(message, total);
   if(!message) return false; // TODO we need to restart, no memory
@@ -350,3 +360,15 @@ static bool receiveMessage(NWK_DataInd_t *ind) {
 	return true;
 }
 
+static bool receiveMulticast(NWK_DataInd_t *ind) {
+  char sig[256];
+  RgbLed.blinkBlue(200);
+  
+  // be safe
+  if(!ind->options&NWK_IND_OPT_MULTICAST) return true;
+
+  Serial.print("MULTICAST");
+  sprintf(sig,"{\"type\":\"channel\",\"id\":%d,\"from\":%d,\"data\":\"%s\"}\n", ind->dstAddr, ind->srcAddr, (char*)ind->data);
+  signal(sig);
+  return true;
+}
