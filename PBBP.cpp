@@ -39,7 +39,7 @@ bool PBBP::enumerate() {
         // Other error
         return false;
       }
-      crc = crc_update(UNIQUE_ID_CRC_POLY, crc, id[i]);
+      crc = pinoccio_crc_update(UNIQUE_ID_CRC_POLY, crc, id[i]);
     }
 
     if (crc != 0) {

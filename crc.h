@@ -3,5 +3,5 @@
 
 #include <stdint.h>
 
-uint8_t crc_update(const uint8_t poly, uint8_t crc, uint8_t data);
+uint8_t pinoccio_crc_update(const uint8_t poly, uint8_t crc, uint8_t data);
 #endif // CRC_H

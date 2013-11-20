@@ -6,7 +6,7 @@
  * (translating the polynomial into a binary number, dropping the
  * topmost 1-bit).
  */
-uint8_t crc_update(const uint8_t poly, uint8_t crc, uint8_t data)
+uint8_t pinoccio_crc_update(const uint8_t poly, uint8_t crc, uint8_t data)
 {
     unsigned int i;
     bool bit;
