@@ -2,10 +2,11 @@
 #define _PINOCCIO_PBBP_PROTOCOL_H
 // Broadcast commands (i.e., special addresses sent over the wire)
 enum {
-    ADDRESS_RESERVED = 0x0,
     // Start bus enumeration
-    BC_CMD_ENUMERATE = 0xff,
+    BC_CMD_ENUMERATE = 0xfe,
     BC_FIRST = BC_CMD_ENUMERATE,
+
+    ADDRESS_RESERVED = 0xff,
 };
 
 // Targeted commands (i.e,. sent over the wire after the address)
@@ -18,7 +19,6 @@ enum {
     CMD_LAST = CMD_WRITE_EEPROM,
 };
 
-uint8_t const FIRST_VALID_ADDRESS = 0x1;
 uint8_t const UNIQUE_ID_LENGTH = 8;
 uint8_t const UNIQUE_ID_CRC_POLY = 0x2f;
 

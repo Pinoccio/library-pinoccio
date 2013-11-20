@@ -27,7 +27,7 @@ void dump_backpacks() {
           print_hex(bp.slave_ids[i], sizeof(bp.slave_ids[0]));
           Serial.println();
           uint8_t buf[64];
-          bp.readEeprom(i + 1, 0, buf, sizeof(buf));
+          bp.readEeprom(i, 0, buf, sizeof(buf));
           Serial.print("EEPROM: ");
           print_hex(buf, sizeof(buf));
           Serial.println();
