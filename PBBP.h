@@ -64,8 +64,8 @@ protected:
   // The end time (in micros) of the previous bit
   unsigned long bit_end;
 
-  static const uint16_t reset_time = 2000;
-  static const uint16_t start_time = 100;
+  static const uint16_t reset_time = 2500;
+  static const uint16_t start_time = 125;
   static const uint16_t value_time = 650;
   static const uint16_t sample_time = 350;
   static const uint16_t idle_time = 50;
