@@ -27,7 +27,7 @@ void dump_backpacks() {
           print_hex(bp.slave_ids[i], sizeof(bp.slave_ids[0]));
           Serial.println();
           uint8_t buf[64];
-          bp.readEeprom(i, 0, buf, sizeof(buf));
+          bp.readEeprom(i + 1, 0, buf, sizeof(buf));
           Serial.print("EEPROM: ");
           print_hex(buf, sizeof(buf));
           Serial.println();
@@ -41,7 +41,7 @@ void dump_backpacks() {
 void setup(void) {
   Scout.setup();
 
-  addBitlashFunction("power.charging", (bitlash_function) isBatteryCharging);
+  addBitlashFunction("power.ischarging", (bitlash_function) isBatteryCharging);
   addBitlashFunction("power.percent", (bitlash_function) getBatteryPercentage);
   addBitlashFunction("power.voltage", (bitlash_function) getBatteryVoltage);
   addBitlashFunction("power.enablevcc", (bitlash_function) enableBackpackVcc);
@@ -92,6 +92,7 @@ void setup(void) {
 
   addBitlashFunction("backpack.report", (bitlash_function) backpackReport);
   addBitlashFunction("scout.report", (bitlash_function) getScoutVersion);
+  addBitlashFunction("scout.isleadscout", (bitlash_function) isLeadScout);
 
   meshJoinGroup();
   Scout.meshListen(1, receiveMessage);
@@ -437,6 +438,10 @@ numvar backpackReport(void) {
 \****************************/
 numvar getScoutVersion(void){
   Serial.println("1.0");
+}
+
+numvar isLeadScout(void){
+  return Scout.isLeadScout();
 }
 
 
