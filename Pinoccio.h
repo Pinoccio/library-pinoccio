@@ -14,20 +14,20 @@
 // #define NWK_ENABLE_SECURITY
 // #define NWK_ENABLE_MULTICAST
 // #define NWK_ENABLE_ROUTE_DISCOVERY
-// 
+//
 // #define NWK_BUFFERS_AMOUNT                  5
 // #define NWK_MAX_ENDPOINTS_AMOUNT            4
 // #define NWK_ACK_WAIT_TIME                   1000  // ms
 // #define NWK_GROUPS_AMOUNT                   10
-// 
+//
 // #define NWK_DUPLICATE_REJECTION_TABLE_SIZE  10
 // #define NWK_DUPLICATE_REJECTION_TTL         1000 // ms
-// 
+//
 // #define NWK_ROUTE_DEFAULT_SCORE             3
 // #define NWK_ROUTE_TABLE_SIZE                100
 // #define NWK_ROUTE_DISCOVERY_TABLE_SIZE      5
 // #define NWK_ROUTE_DISCOVERY_TIMEOUT         1000 // ms
-// 
+//
 // #define SYS_SECURITY_MODE                   0
 // End - Specifics for the LWM library
 
@@ -58,28 +58,27 @@ class PinoccioClass {
     void loop();
 
     void goToSleep(uint32_t sleepForMs);
-        
+
     int8_t getTemperature();
     void loadSettingsFromEeprom();
-    
+
     void meshSetRadio(const uint16_t theAddress, const uint16_t thePanId=0x4567, const uint8_t theChannel=0x1a);
     void meshSetPower(const uint8_t theTxPower);
     void meshSetSecurityKey(const char *key);
     void meshSendMessage(MeshRequest request);
     void meshListen(uint8_t endpoint, bool (*handler)(NWK_DataInd_t *ind));
-    
+
     void meshJoinGroup(uint16_t groupAddress);
     void meshLeaveGroup(uint16_t groupAddress);
     bool meshIsInGroup(uint16_t groupAddress);
-      
+
     uint16_t getAddress();
     uint16_t getPanId();
     uint8_t getChannel();
     uint8_t getTxPower();
     const char* getTxPowerDb();
-    
+
   protected:
-    uint16_t randomNumber;
     bool shellEnabled;
     uint16_t address;
     uint16_t panId;
