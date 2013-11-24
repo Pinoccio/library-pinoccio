@@ -5,7 +5,7 @@
 #define P_MAX_LEAD_SCOUTS 3
 
 #include <Pinoccio.h>
-#include <Backpack.h>
+#include <backpacks/Backpack.h>
 #include <Wire.h>
 
 #include "utility/phy.h"
@@ -23,9 +23,6 @@ class PinoccioScout : public PinoccioClass {
 
     void setup();
     void loop();
-
-    void sendStateToHQ();
-    void setHQToken(const char *key);
 
     bool isBatteryCharging();
     int getBatteryPercentage();

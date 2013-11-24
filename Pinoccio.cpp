@@ -66,6 +66,10 @@ void PinoccioClass::getHQToken(char *token) {
   }
 }
 
+void PinoccioClass::sendStateToHQ() {
+  // TODO - Send state to HQ, and set pin values and pinmodes from response
+}
+
 void PinoccioClass::loadSettingsFromEeprom() {
   // Address 8130 - 32 bytes - HQ Token
   // Address 8162 - 16 bytes - Security Key

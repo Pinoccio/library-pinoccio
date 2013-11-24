@@ -37,30 +37,13 @@ void PinoccioScout::setup() {
   HAL_FuelGaugeConfig(20);   // Configure the MAX17048G's alert percentage to 20%
   HAL_FuelGaugeQuickStart(); // Restart fuel-gauge calculations
   stateSaved = false;
+
+  // TODO - Find lead scouts in this network via ping and save locally
+  // TODO - Enumerate attached backpacks, if any are attached
 }
 
 void PinoccioScout::loop() {
   PinoccioClass::loop();
-}
-
-void PinoccioScout::sendStateToHQ() {
-  // TODO - Send state to HQ, and set pin values and pinmodes from response
-}
-
-void PinoccioScout::setHQToken(const char *key) {
-  // Address 8130 - 32 bytes - HQ Token
-  // Address 8162 - 16 bytes - Security Key
-  // Address 8178 - 1 byte   - Transmitter Power
-  // Address 8179 - 1 byte   - Frequency Channel
-  // Address 8180 - 2 bytes  - Network Identifier/Troop ID
-  // Address 8182 - 2 bytes  - Network Address/Scout ID
-  // Address 8184 - 4 bytes  - Unique ID
-  // Address 8188 - 2 bytes  - HW family
-  // Address 8190 - 1 byte   - HW Version
-  // Address 8191 - 1 byte   - EEPROM Version
-  for (int i=0; i<32; i++) {
-    eeprom_update_byte((uint8_t *)8130+i, key[i]);
-  }
 }
 
 bool PinoccioScout::isBatteryCharging() {
@@ -102,32 +85,10 @@ bool PinoccioScout::isLeadScout() {
       if (strncmp((const char*)buffer, "AT", 2) == 0) {
         return true;
       }
-
-      //Serial.write(inByte);
-      //Serial.println(ctr);
-      //buffer[ctr++] = inByte;
-      //if (inByte == '\n' || inByte == '\r') {
-        //buffer[ctr--] = 0;
-        //Serial.println("Found new line");
-      //}
-      //if (ctr > 2) {
-        //Serial.println("breaking");
-        //break;
-      //}
     }
   }
 
   return false;
-
-  Serial.println("result: ");
-  Serial.println(buffer);
-
-  if (ctr > 2) {
-    if (strncmp((const char*)buffer, "AT", 2) != 0) {
-      return false;
-    }
-    return true;
-  }
 }
 
 
