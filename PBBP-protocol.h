@@ -1,5 +1,5 @@
-#ifndef _PINOCCIO_PBBP_PROTOCOL_H
-#define _PINOCCIO_PBBP_PROTOCOL_H
+#ifndef LIB_PINOCCIO_PBBP_PROTOCOL_H
+#define LIB_PINOCCIO_PBBP_PROTOCOL_H
 // Broadcast commands (i.e., special addresses sent over the wire)
 enum {
     // Start bus enumeration
@@ -35,6 +35,6 @@ enum {
     ERR_READ_EEPROM_INVALID_ADDRESS = 0xff,
 };
 
-#endif // _PINOCCIO_PBBP_PROTOCOL_H
+#endif // LIB_PINOCCIO_PBBP_PROTOCOL_H
 
 /* vim: set filetype=cpp sw=4 sts=4 expandtab: */

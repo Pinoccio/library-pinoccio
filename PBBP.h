@@ -1,6 +1,6 @@
 // Class for communicating using the Pinoccio Backpack Bus protocol
-#ifndef _PINOCCIO_PBBP_H
-#define _PINOCCIO_PBBP_H
+#ifndef LIB_PINOCCIO_PBBP_H
+#define LIB_PINOCCIO_PBBP_H
 
 #include <stdint.h>
 #include <Print.h>
@@ -56,7 +56,7 @@ protected:
   bool receiveBit(bool *value);
   bool receiveReady();
   bool receiveAck();
-  
+
   uint8_t pin;
 
   // The start time (in micros) of the current or previous bit
@@ -73,12 +73,12 @@ protected:
   static const uint16_t max_next_bit_time = 1100;
 
   static const uint8_t max_stall_bits = 20;
-  
+
   static const uint8_t max_slaves = 127;
 
   static const char *error_code_str[];
 };
 
-#endif // _PINOCCIO_PBBP_H
+#endif // LIB_PINOCCIO_PBBP_H
 
 /* vim: set filetype=cpp sw=2 sts=2 expandtab: */
