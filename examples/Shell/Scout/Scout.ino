@@ -91,8 +91,11 @@ void setup(void) {
   addBitlashFunction("pin.report", (bitlash_function) pinReport);
 
   addBitlashFunction("backpack.report", (bitlash_function) backpackReport);
+
   addBitlashFunction("scout.report", (bitlash_function) getScoutVersion);
   addBitlashFunction("scout.isleadscout", (bitlash_function) isLeadScout);
+  addBitlashFunction("scout.sethqtoken", (bitlash_function) setHQToken);
+  addBitlashFunction("scout.gethqtoken", (bitlash_function) getHQToken);
 
   meshJoinGroup();
   Scout.meshListen(1, receiveMessage);
@@ -436,16 +439,29 @@ numvar backpackReport(void) {
 /****************************\
  *   SCOUT REPORT HANDLERS  *
 \****************************/
-numvar getScoutVersion(void){
+numvar getScoutVersion(void) {
   Serial.println("1.0");
 }
 
-numvar isLeadScout(void){
+numvar isLeadScout(void) {
   return Scout.isLeadScout();
 }
 
+numvar setHQToken(void) {
+  Pinoccio.setHQToken((const char *)getstringarg(1));
+}
 
-// Helper functions
+numvar getHQToken(void) {
+  char token[32];
+  Pinoccio.getHQToken((char *)token);
+  token[32] = 0;
+  Serial.println(token);
+}
+
+
+/****************************\
+ *     HELPER FUNCTIONS     *
+\****************************/
 static void pingScout(int address) {
   appDataReq.dstAddr = address;
 

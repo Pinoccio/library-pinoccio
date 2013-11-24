@@ -54,6 +54,18 @@ int8_t PinoccioClass::getTemperature() {
   return HAL_MeasureTemperature();
 }
 
+void PinoccioClass::setHQToken(const char *token) {
+  for (int i=0; i<32; i++) {
+    eeprom_update_byte((uint8_t *)8130+i, token[i]);
+  }
+}
+
+void PinoccioClass::getHQToken(char *token) {
+  for (int i=0; i<32; i++) {
+    token[i] = eeprom_read_byte((uint8_t *)8130+i);
+  }
+}
+
 void PinoccioClass::loadSettingsFromEeprom() {
   // Address 8130 - 32 bytes - HQ Token
   // Address 8162 - 16 bytes - Security Key
@@ -65,13 +77,19 @@ void PinoccioClass::loadSettingsFromEeprom() {
   // Address 8188 - 2 bytes  - HW family
   // Address 8190 - 1 byte   - HW Version
   // Address 8191 - 1 byte   - EEPROM Version
-  byte key[16];
+  byte buffer[32];
+
+  for (int i=0; i<32; i++) {
+    buffer[i] = eeprom_read_byte((uint8_t *)8130+i);
+  }
+  setHQToken((char *)buffer);
+  memset(buffer, 0x00, 32);
 
   for (int i=0; i<16; i++) {
-    key[i] = eeprom_read_byte((uint8_t *)8162+i);
+    buffer[i] = eeprom_read_byte((uint8_t *)8162+i);
   }
-  meshSetSecurityKey((char *)key);
-  memset(key, 0x00, 16);
+  meshSetSecurityKey((char *)buffer);
+  memset(buffer, 0x00, 16);
 
   if (eeprom_read_word((uint16_t *)8182) != 0xFFFF ||
       eeprom_read_word((uint16_t *)8180) != 0xFFFF ||

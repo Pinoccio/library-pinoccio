@@ -62,6 +62,9 @@ class PinoccioClass {
     int8_t getTemperature();
     void loadSettingsFromEeprom();
 
+    void setHQToken(const char *token);
+    void getHQToken(char *token);
+
     void meshSetRadio(const uint16_t theAddress, const uint16_t thePanId=0x4567, const uint8_t theChannel=0x1a);
     void meshSetPower(const uint8_t theTxPower);
     void meshSetSecurityKey(const char *key);
