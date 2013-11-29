@@ -11,7 +11,7 @@
 
 PinoccioClass Pinoccio;
 
-PinoccioClass::PinoccioClass() { 
+PinoccioClass::PinoccioClass() {
   shellEnabled = true;
 }
 
@@ -25,21 +25,17 @@ void PinoccioClass::setup() {
   if (shellEnabled) {
     initBitlash(115200);
   }
-  
+
   SYS_Init();
-
-  // TODO: PHY_TX_PWR_REG(TX_PWR_3_2DBM);
   HAL_MeasureAdcOffset();
-
-  // initial seeding of RNG
   PHY_RandomReq();
-  
+
   loadSettingsFromEeprom();
 }
 
 void PinoccioClass::loop() {
   SYS_TaskHandler();
-  
+
   if (shellEnabled) {
     runBitlash();
   }
@@ -58,6 +54,22 @@ int8_t PinoccioClass::getTemperature() {
   return HAL_MeasureTemperature();
 }
 
+void PinoccioClass::setHQToken(const char *token) {
+  for (int i=0; i<32; i++) {
+    eeprom_update_byte((uint8_t *)8130+i, token[i]);
+  }
+}
+
+void PinoccioClass::getHQToken(char *token) {
+  for (int i=0; i<32; i++) {
+    token[i] = eeprom_read_byte((uint8_t *)8130+i);
+  }
+}
+
+void PinoccioClass::sendStateToHQ() {
+  // TODO - Send state to HQ, and set pin values and pinmodes from response
+}
+
 void PinoccioClass::loadSettingsFromEeprom() {
   // Address 8130 - 32 bytes - HQ Token
   // Address 8162 - 16 bytes - Security Key
@@ -69,16 +81,22 @@ void PinoccioClass::loadSettingsFromEeprom() {
   // Address 8188 - 2 bytes  - HW family
   // Address 8190 - 1 byte   - HW Version
   // Address 8191 - 1 byte   - EEPROM Version
-  byte key[16];
-  
-  for (int i=0; i<16; i++) {
-    key[i] = eeprom_read_byte((uint8_t *)8162+i);
-  }
-  meshSetSecurityKey((char *)key);
-  memset(key, 0x00, 16);
+  byte buffer[32];
 
-  if (eeprom_read_word((uint16_t *)8182) != 0xFFFF || 
-      eeprom_read_word((uint16_t *)8180) != 0xFFFF || 
+  for (int i=0; i<32; i++) {
+    buffer[i] = eeprom_read_byte((uint8_t *)8130+i);
+  }
+  setHQToken((char *)buffer);
+  memset(buffer, 0x00, 32);
+
+  for (int i=0; i<16; i++) {
+    buffer[i] = eeprom_read_byte((uint8_t *)8162+i);
+  }
+  meshSetSecurityKey((char *)buffer);
+  memset(buffer, 0x00, 16);
+
+  if (eeprom_read_word((uint16_t *)8182) != 0xFFFF ||
+      eeprom_read_word((uint16_t *)8180) != 0xFFFF ||
       eeprom_read_byte((uint8_t *)8179) != 0xFF) {
     meshSetRadio(eeprom_read_word((uint16_t *)8182), eeprom_read_word((uint16_t *)8180), eeprom_read_byte((uint8_t *)8179));
   }
@@ -95,17 +113,17 @@ void PinoccioClass::meshSetRadio(const uint16_t theAddress, const uint16_t thePa
   PHY_SetChannel(theChannel);
   channel = theChannel;
   PHY_SetRxState(true);
-  
+
   eeprom_update_word((uint16_t *)8182, address);
   eeprom_update_word((uint16_t *)8180, panId);
   eeprom_update_byte((uint8_t *)8179, channel);
 
   meshSetPower(0);
 }
- 
- 
+
+
 void PinoccioClass::meshSetPower(const uint8_t theTxPower) {
-  /* Page 116 of the 256RFR2 datasheet 
+  /* Page 116 of the 256RFR2 datasheet
     0   3.5 dBm
     1   3.3 dBm
     2   2.8 dBm
@@ -126,11 +144,11 @@ void PinoccioClass::meshSetPower(const uint8_t theTxPower) {
   PHY_SetTxPower(theTxPower);
   txPower = theTxPower;
   eeprom_update_byte((uint8_t *)8178, theTxPower);
-} 
+}
 
 void PinoccioClass::meshSetSecurityKey(const char *key) {
   NWK_SetSecurityKey((uint8_t *)key);
-  
+
   for (int i=0; i<16; i++) {
     eeprom_update_byte((uint8_t *)8162+i, key[i]);
   }
@@ -233,6 +251,6 @@ const char* PinoccioClass::getTxPowerDb() {
       break;
     default:
       return PSTR("unknown");
-      break; 
+      break;
   }
 }

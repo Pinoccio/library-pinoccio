@@ -5,7 +5,8 @@
 #define P_MAX_LEAD_SCOUTS 3
 
 #include <Pinoccio.h>
-#include <Backpack.h>
+#include <backpacks/Backpack.h>
+#include <Wire.h>
 
 #include "utility/phy.h"
 #include "utility/hal.h"
@@ -30,9 +31,19 @@ class PinoccioScout : public PinoccioClass {
     void enableBackpackVcc();
     void disableBackpackVcc();
 
+    bool isLeadScout();
+
   protected:
-    uint16_t leadScoutAddresses[P_MAX_LEAD_SCOUTS];   
+    void checkStateChange();
+
+    uint16_t leadScoutAddresses[P_MAX_LEAD_SCOUTS];
     Backpack* backpacks[P_MAX_BACKPACKS];
+
+    uint8_t batteryPercent;
+
+    bool stateSaved;
+    uint8_t digitalPinState[13];
+    uint8_t analogPinState[8];
 };
 
 extern PinoccioScout Scout;

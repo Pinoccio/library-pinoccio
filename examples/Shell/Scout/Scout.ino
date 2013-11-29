@@ -1,15 +1,47 @@
 #include <SPI.h>
 #include <Wire.h>
 #include <Scout.h>
+#include <PBBP.h>
 
 const uint16_t groupId = 0x1234;
 static byte pingCounter = 0;
 static NWK_DataReq_t appDataReq;
 
+PBBP bp;
+
+// Example code to dump backpack EEPROM contents:
+void print_hex(const uint8_t *buf, uint8_t len) {
+    while (len--) {
+        if (*buf < 0x10) Serial.print("0");
+        Serial.print(*buf++, HEX);
+    }
+}
+
+void dump_backpacks() {
+  if (bp.enumerate()) {
+      Serial.print("Found ");
+      Serial.print(bp.num_slaves);
+      Serial.println(" slaves");
+
+      for (uint8_t i = 0; i < bp.num_slaves; ++ i) {
+          print_hex(bp.slave_ids[i], sizeof(bp.slave_ids[0]));
+          Serial.println();
+          uint8_t buf[64];
+          bp.readEeprom(i + 1, 0, buf, sizeof(buf));
+          Serial.print("EEPROM: ");
+          print_hex(buf, sizeof(buf));
+          Serial.println();
+      }
+  } else {
+      bp.printLastError(Serial);
+      Serial.println();
+  }
+}
+
 void setup(void) {
   Scout.setup();
 
-  addBitlashFunction("power.charging", (bitlash_function) isBatteryCharging);
+  addBitlashFunction("power.ischarging", (bitlash_function) isBatteryCharging);
   addBitlashFunction("power.percent", (bitlash_function) getBatteryPercentage);
   addBitlashFunction("power.voltage", (bitlash_function) getBatteryVoltage);
   addBitlashFunction("power.enablevcc", (bitlash_function) enableBackpackVcc);
@@ -30,7 +62,7 @@ void setup(void) {
   addBitlashFunction("mesh.publish", (bitlash_function) meshPublish);
   addBitlashFunction("mesh.subscribe", (bitlash_function) meshSubscribe);
   addBitlashFunction("mesh.report", (bitlash_function) meshReport);
-  
+
   addBitlashFunction("temperature", (bitlash_function) getTemperature);
   addBitlashFunction("randomnumber", (bitlash_function) getRandomNumber);
 
@@ -59,10 +91,17 @@ void setup(void) {
   addBitlashFunction("pin.report", (bitlash_function) pinReport);
 
   addBitlashFunction("backpack.report", (bitlash_function) backpackReport);
+
   addBitlashFunction("scout.report", (bitlash_function) getScoutVersion);
+  addBitlashFunction("scout.isleadscout", (bitlash_function) isLeadScout);
+  addBitlashFunction("scout.sethqtoken", (bitlash_function) setHQToken);
+  addBitlashFunction("scout.gethqtoken", (bitlash_function) getHQToken);
 
   meshJoinGroup();
   Scout.meshListen(1, receiveMessage);
+
+  bp.begin(BACKPACK_BUS);
+  //dump_backpacks();
 }
 
 void loop(void) {
@@ -400,13 +439,30 @@ numvar backpackReport(void) {
 /****************************\
  *   SCOUT REPORT HANDLERS  *
 \****************************/
-numvar getScoutVersion(void){
+numvar getScoutVersion(void) {
   Serial.println("1.0");
 }
 
+numvar isLeadScout(void) {
+  return Scout.isLeadScout();
+}
 
-// Helper functions 
-static void pingScout(int address) {  
+numvar setHQToken(void) {
+  Pinoccio.setHQToken((const char *)getstringarg(1));
+}
+
+numvar getHQToken(void) {
+  char token[32];
+  Pinoccio.getHQToken((char *)token);
+  token[32] = 0;
+  Serial.println(token);
+}
+
+
+/****************************\
+ *     HELPER FUNCTIONS     *
+\****************************/
+static void pingScout(int address) {
   appDataReq.dstAddr = address;
 
   appDataReq.dstEndpoint = 1;
@@ -420,12 +476,12 @@ static void pingScout(int address) {
 
   Serial.print("PING ");
   Serial.print(address);
-  Serial.print(": "); 
+  Serial.print(": ");
 
   pingCounter++;
 }
 
-static void pingGroup(int address) {  
+static void pingGroup(int address) {
   appDataReq.dstAddr = address;
 
   appDataReq.dstEndpoint = 1;
@@ -438,7 +494,7 @@ static void pingGroup(int address) {
 
   Serial.print("PING ");
   Serial.print(address, HEX);
-  Serial.print(": "); 
+  Serial.print(": ");
 
   pingCounter++;
 }
@@ -456,7 +512,7 @@ static void pingConfirm(NWK_DataReq_t *req) {
   Serial.println(req->size);
   Serial.print("status: ");
   Serial.println(req->status, HEX);
-  
+
   if (req->status == NWK_SUCCESS_STATUS) {
     Serial.print("1 byte from ");
     Serial.print(req->dstAddr);
@@ -487,7 +543,7 @@ static void pingConfirm(NWK_DataReq_t *req) {
   }
 }
 
-static bool receiveMessage(NWK_DataInd_t *ind) {  
+static bool receiveMessage(NWK_DataInd_t *ind) {
   Serial.print("Received message - ");
   Serial.print("lqi: ");
   Serial.print(ind->lqi, DEC);
@@ -504,7 +560,7 @@ static bool receiveMessage(NWK_DataInd_t *ind) {
   }
   Serial.println("");
   NWK_SetAckControl(abs(ind->rssi));
-  
+
   // run the Bitlash callback function, if defined
   char *callback = "mesh.receive";
   if (findscript(callback)) {

@@ -191,7 +191,7 @@ uint16_t mqttClient::readPacket() {
   } while ((digit & 128) != 0);
 
   //D(Serial.println("DEBUG: mqttClient::readPacket - 3"));
-  
+
   for (uint16_t i = 0;i<length;i++) {
     //D(Serial.println("DEBUG: mqttClient::readPacket - 4"));
     if (len < MQTT_MAX_PACKET_SIZE) {
@@ -374,7 +374,7 @@ boolean mqttClient::write(uint8_t header, uint8_t* buf, uint16_t length) {
 
   rc = _client->write(buf+(4-llen),length+1+llen);
   lastOutActivity = millis();
-  
+
 /*
   if (rc == 1+llen+length)
     D(Serial.print("Wrote all "));

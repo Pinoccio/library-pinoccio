@@ -146,7 +146,7 @@ static void nwkRxDuplicateRejectionTimerHandler(SYS_Timer_t *timer)
 {
   bool restart = false;
   uint8_t i = 0;
-  
+
   for (i = 0; i < NWK_DUPLICATE_REJECTION_TABLE_SIZE; i++)
   {
     if (nwkRxDuplicateRejectionTable[i].ttl)
@@ -167,7 +167,7 @@ static bool nwkRxRejectDuplicate(NwkFrameHeader_t *header)
   NwkDuplicateRejectionEntry_t *entry;
   NwkDuplicateRejectionEntry_t *freeEntry = NULL;
   uint8_t i = 0;
-  
+
   for (i = 0; i < NWK_DUPLICATE_REJECTION_TABLE_SIZE; i++)
   {
     entry = &nwkRxDuplicateRejectionTable[i];
