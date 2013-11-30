@@ -13,7 +13,7 @@ WIFI_PROFILE wifiprofile = {
                   /* Gateway IP */ "", };
 
 
-//IPAddress server(192,168,0,2); // peer device IP address
+//IPAddress server(192,168,0,36); // peer device IP address
 IPAddress server(173,255,220,185); // peer device IP address
 int port = 22756;
 char token[] = "perin";
