@@ -12,16 +12,19 @@ static NWK_DataReq_t appDataReq;
 
 PBBP bp;
 
+// TEMPORARY, must change this for wifi, and also have run "scout.sethqtoken(TOKEN)" and "mesh.config(ID)" to provision
+WIFI_PROFILE wifis = {"Air Patrol","Jabber","","","",};
+
 // this stuff should prob all be in the Scout class or somesuch but putting it here to get started
 static bool fieldCommands(NWK_DataInd_t *ind);
 int leadAnswerID = 0;
 static bool leadAnswers(NWK_DataInd_t *ind);
 static bool leadAnnouncements(NWK_DataInd_t *ind);
 void leadAnnouncementSend(int chan, int from, char *message);
-WIFI_PROFILE wifis = {"Air Patrol","Jabber","","","",};
 IPAddress server(173,255,220,185);
 int HQport = 22756;
 int whoami;
+bool leadScout;
 PinoccioWifiClient leadClient;
 void leadHQ(void);
 void leadSignal(char *json);
@@ -63,6 +66,7 @@ void dump_backpacks() {
 }
 
 void setup(void) {
+  leadScout = Scout.isLeadScout(); // needs to be run before .setup() for the AT style check
   Scout.setup();
 
   addBitlashFunction("power.ischarging", (bitlash_function) isBatteryCharging);
@@ -128,8 +132,7 @@ void setup(void) {
   //dump_backpacks();
 
   whoami = Scout.getAddress();
-//  if(isLeadScout()) this breaks wifi :(
-  if(true)
+  if(leadScout)
   {
     Serial.println("Lead Scout, starting WiFi");
     Wifi.begin(&wifis);
@@ -139,7 +142,7 @@ void setup(void) {
     for(int i = 1; i < 10; i++) Scout.meshJoinGroup(i);
     Scout.meshJoinGroup(0xbeef); // our internal reporting channel
   }else{
-    HQport = 0;
+    Serial.println("Field Scout, waiting");
     Scout.meshListen(2, fieldCommands);
   }
   setOutputHandler(&bitlashFilter);
@@ -148,7 +151,7 @@ void setup(void) {
 
 void loop(void) {
   Scout.loop();
-  if(HQport) leadHQ();
+  if(leadScout) leadHQ();
 }
 
 ////////////////////
@@ -552,7 +555,7 @@ void fieldAnnounce(char *line)
   Serial.println(message);
 
   // when lead scout, shortcut
-  if(HQport) return leadAnnouncementSend(chan, whoami, message);
+  if(leadScout) return leadAnnouncementSend(chan, whoami, message);
 
   Scout.meshJoinGroup(chan); // must be joined to send
   fieldAnnounceReq.dstAddr = chan;
@@ -904,7 +907,7 @@ numvar getScoutVersion(void) {
 }
 
 numvar isLeadScout(void) {
-  return Scout.isLeadScout();
+  return leadScout;
 }
 
 numvar setHQToken(void) {
