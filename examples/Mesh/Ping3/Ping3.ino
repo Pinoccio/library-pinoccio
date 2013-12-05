@@ -1,3 +1,4 @@
+#include <SPI.h>
 #include <Arduino.h>
 #include <Wire.h>
 #include <Scout.h>
@@ -113,6 +114,8 @@ static void pingGroup(int address) {
   appDataReq.confirm = pingConfirm;
   NWK_DataReq(&appDataReq);
 
+  RgbLed.blinkCyan(200);
+
   Serial.print("PING ");
   Serial.print(address);
   Serial.print(": "); 
@@ -152,6 +155,8 @@ static void pingConfirm(NWK_DataReq_t *req) {
 }
 
 static bool receiveMessage(NWK_DataInd_t *ind) {  
+  RgbLed.blinkGreen(200);
+
   Serial.print("Received message - ");
   Serial.print("lqi: ");
   Serial.print(ind->lqi, DEC);
@@ -166,6 +171,23 @@ static bool receiveMessage(NWK_DataInd_t *ind) {
   for (int i=0; i<ind->size; i++) {
     Serial.print(ind->data[i], DEC);
   }
+  Serial.print("  ");
+
+  Serial.print("from: ");
+  Serial.print(ind->srcAddr, DEC);
+  Serial.print(":");
+  Serial.print(ind->srcEndpoint, DEC);
+  Serial.print("  ");
+
+  Serial.print("to: ");
+  Serial.print(ind->dstAddr, DEC);
+  Serial.print(":");
+  Serial.print(ind->dstEndpoint, DEC);
+  Serial.print("  ");
+
+  if(ind->options&NWK_IND_OPT_MULTICAST) Serial.print("MULTICAST");
+  else Serial.print("DIRECTED");
+
   Serial.println("");
   NWK_SetAckControl(abs(ind->rssi));
   return true;
