@@ -44,7 +44,7 @@ void setup(void) {
   addBitlashFunction("pin.report", (bitlash_function) pinReport);
 
   addBitlashFunction("backpack.report", (bitlash_function) backpackReport);
-  
+
   Scout.meshListen(1, receiveMessage);
 }
 
@@ -62,31 +62,31 @@ static bool receiveMessage(NWK_DataInd_t *ind) {
   Serial.print("rssi: ");
   Serial.print(ind->rssi, DEC);
   Serial.print("  ");
-  
+
   NWK_PayloadFragment_t fragment;
   memcpy((void *)fragment.correlationId, (const void *)ind->data[0], 1);
   memcpy((void *)fragment.size, (const void *)ind->data[1], 2);
   memcpy((void *)fragment.position, (const void *)ind->data[3], 2);
-  
+
   Serial.print("correlation id: ");
   Serial.println(fragment.correlationId, DEC);
   Serial.print("fragment size: ");
   Serial.println(fragment.size, DEC);
   Serial.print("fragment position: ");
   Serial.println(fragment.position, DEC);
-  
+
   Serial.print("payload: ");
   for (int i=5; i<ind->size; i++) {
     Serial.print(ind->data[i], DEC);
   }
   Serial.println("");
-  
+
   // run bitlash command sent in this message
-  
+
   // store output in a return message
-  
+
   // set correlation id/fragment info
-  
+
   // send message
   return true;
 }
@@ -110,12 +110,10 @@ numvar isBatteryCharging(void) {
 }
 
 numvar getBatteryPercentage(void) {
-  // TODO: broken, crashes board
   return Scout.getBatteryPercentage();
 }
 
 numvar getBatteryVoltage(void) {
-  // TODO: broken, crashes board
   return Scout.getBatteryVoltage();
 }
 
