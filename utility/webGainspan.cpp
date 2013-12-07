@@ -225,6 +225,9 @@ uint8_t webGainspan::parse_resp(uint8_t cmd)
     if (buf == "")
       continue;
 
+    D(Serial.print("DEBUG: response received: "));
+    D(Serial.println(buf));
+
     switch(cmd) {
     case CMD_AT:
     {
