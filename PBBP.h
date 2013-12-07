@@ -13,7 +13,14 @@ public:
   bool enumerate();
   bool sendReset();
   bool sendByte(uint8_t b);
+  bool sendBytes(const uint8_t *buf, uint8_t len);
   bool receiveByte(uint8_t *b);
+  bool receiveBytes(uint8_t *buf, uint8_t len);
+
+  // Sends a reset, addresses the slave and sends the given command. Any
+  // subsequent data transfers should just use sendByte(s) /
+  // receiveByte(s) directly
+  bool sendCommand(uint8_t slave_addr, uint8_t command);
 
   bool readEeprom(uint8_t slave_addr, uint8_t eeprom_addr, uint8_t *buf, uint8_t len);
   bool writeEeprom(uint8_t slave_addr, uint8_t eeprom_addr, const uint8_t *buf, uint8_t len);

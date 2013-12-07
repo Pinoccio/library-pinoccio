@@ -92,6 +92,14 @@ bool PBBP::sendByte(uint8_t b) {
   return sendBit(!parity_val) && receiveReady() && receiveAck();
 }
 
+bool PBBP::sendBytes(const uint8_t *buf, uint8_t len) {
+  while (len--) {
+    if (!sendByte(*buf++))
+      return false;
+  }
+  return true;
+}
+
 bool PBBP::receiveByte(uint8_t *b) {
   bool parity_val = 0;
   bool ok = true;
@@ -121,14 +129,7 @@ bool PBBP::receiveByte(uint8_t *b) {
   return receiveReady() && receiveAck();
 }
 
-
-bool PBBP::readEeprom(uint8_t slave_addr, uint8_t eeprom_addr, uint8_t *buf, uint8_t len) {
-  if (!sendReset() ||
-      !sendByte(slave_addr) ||
-      !sendByte(CMD_READ_EEPROM) ||
-      !sendByte(eeprom_addr))
-    return false;
-
+bool PBBP::receiveBytes(uint8_t *buf, uint8_t len) {
   while (len--) {
     if (!receiveByte(buf++))
       return false;
@@ -136,18 +137,22 @@ bool PBBP::readEeprom(uint8_t slave_addr, uint8_t eeprom_addr, uint8_t *buf, uin
   return true;
 }
 
-bool PBBP::writeEeprom(uint8_t slave_addr, uint8_t eeprom_addr, const uint8_t *buf, uint8_t len) {
-  if (!sendReset() ||
-      !sendByte(slave_addr) ||
-      !sendByte(CMD_READ_EEPROM) ||
-      !sendByte(eeprom_addr))
-    return false;
+bool PBBP::sendCommand(uint8_t slave_addr, uint8_t command) {
+  return sendReset() &&
+         sendByte(slave_addr) &&
+         sendByte(command);
+}
 
-  while (len--) {
-    if (!sendByte(*buf++))
-      return false;
-  }
-  return true;
+bool PBBP::readEeprom(uint8_t slave_addr, uint8_t eeprom_addr, uint8_t *buf, uint8_t len) {
+  return sendCommand(slave_addr, CMD_READ_EEPROM) &&
+         sendByte(eeprom_addr) &&
+         receiveBytes(buf, len);
+}
+
+bool PBBP::writeEeprom(uint8_t slave_addr, uint8_t eeprom_addr, const uint8_t *buf, uint8_t len) {
+  return sendCommand(slave_addr, CMD_WRITE_EEPROM) &&
+         sendByte(eeprom_addr) &&
+         sendBytes(buf, len);
 }
 
 bool PBBP::waitForFreeBus() {
