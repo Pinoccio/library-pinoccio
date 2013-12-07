@@ -48,6 +48,7 @@ public:
 #define CMD_SSLOPEN         19
 #define CMD_TCERTADD        20
 #define CMD_TCERTDEL        21
+#define CMD_NTIMESYNC       22
 
 #define CMD_INVALID         255
 
@@ -121,6 +122,10 @@ public:
    * happens! If you pass in a (commercial) CA certificate, _any_
    * certificate issued by that CA will be accepted, not just the ones
    * with a specific hostname inside.
+   *
+   * Also make sure that the current time is correctly set, otherwise
+   * the server certificate will likely be considered expired or not yet
+   * valid even when it isn't.
    */
   uint8_t enableTls(SOCKET s, String certname);
 
@@ -131,6 +136,13 @@ public:
    * certificate in (binary) DER format. */
   uint8_t addCert(String certname, bool to_flash, const uint8_t *buf, uint16_t len);
   uint8_t delCert(String certname);
+  /**
+   * Do an SNTP timesync to an NTP server.
+   * A one-shot sync is performed immediately and, if interval is
+   * non-zero, more syncs are performed every interval seconds.
+   * timeout is the number of seconds to wait for the server's response.
+   */
+  uint8_t timeSync(String ntp_server, uint8_t timeout, uint16_t interval);
 
   static const uint16_t SSIZE = 256; // Max Tx buffer siz
 
@@ -158,6 +170,8 @@ private:
   String certname;
   bool to_flash;
   uint16_t cert_size;
+  uint8_t timeout;
+  uint16_t interval;
   uint8_t connection_state;
   String dev_id;
   String appVersion;

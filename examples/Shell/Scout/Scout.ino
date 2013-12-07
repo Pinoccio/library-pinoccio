@@ -159,6 +159,8 @@ void loop(void) {
     IPAddress google(74,125,136,138);
     int c;
     Gainspan.addCert(String("geotrust"), /* to_flash */ false, cert, sizeof(cert));
+    // Timesync with one of 0.pool.ntp.org
+    Gainspan.timeSync("87.106.176.225" , 10, 0);
     if (leadClient.connect(google, 443) &&
         leadClient.enableTls("geotrust") &&
 	leadClient.print("GET / HTTP/1.0\r\n\r\n")) {

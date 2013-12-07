@@ -34,12 +34,14 @@ const char PROGMEM cmd_18[] = "AT+VER=?";
 const char PROGMEM cmd_19[] = "AT+SSLOPEN=";
 const char PROGMEM cmd_20[] = "AT+TCERTADD=";
 const char PROGMEM cmd_21[] = "AT+TCERTDEL=";
+const char PROGMEM cmd_22[] = "AT+NTIMESYNC=";
 
 const char* const PROGMEM cmd_tbl[] =
 {
   cmd_0, cmd_1, cmd_2, cmd_3, cmd_4, cmd_5, cmd_6, cmd_7,
   cmd_8, cmd_9, cmd_10, cmd_11, cmd_12, cmd_13, cmd_14,
   cmd_15, cmd_16, cmd_17, cmd_18, cmd_19, cmd_20, cmd_21,
+  cmd_22,
 };
 
 /* Make sure the cmd_buffer is large enough to hold
@@ -230,6 +232,16 @@ uint8_t webGainspan::send_cmd(uint8_t cmd)
       Serial1.println(cmd_buf);
     break;
   }
+  case CMD_NTIMESYNC:
+  {
+    String cmd_buf = cmd_str + "1," + ip + "," + timeout + ",";
+    if (interval)
+      cmd_buf += "1," + String(interval);
+    else
+      cmd_buf += "0";
+    Serial1.println(cmd_buf);
+    break;
+  }
   default:
     break;
   }
@@ -295,6 +307,7 @@ uint8_t webGainspan::parse_resp(uint8_t cmd)
     case CMD_SSLOPEN:
     case CMD_TCERTADD:
     case CMD_TCERTDEL:
+    case CMD_NTIMESYNC:
     {
       if (buf == "OK") {
         /* got OK */
@@ -946,6 +959,22 @@ uint8_t webGainspan::addCert(String certname, bool to_flash, const uint8_t *buf,
 uint8_t webGainspan::delCert(String certname) {
   this->certname = certname;
   return send_cmd_w_resp(CMD_TCERTDEL);
+}
+
+uint8_t webGainspan::timeSync(String ntp_server, uint8_t timeout, uint16_t interval) {
+  this->ip = ntp_server;
+  this->timeout = timeout;
+  // First, send the command without an interval, to force a sync now
+  this->interval = 0;
+  if (!send_cmd_w_resp(CMD_NTIMESYNC))
+    return 0;
+
+  // Then, schedule periodic syncs if requested
+  if (interval) {
+    this->interval = interval;
+    return send_cmd_w_resp(CMD_NTIMESYNC);
+  }
+  return 1;
 }
 
 String webGainspan::dns_lookup(String url)
