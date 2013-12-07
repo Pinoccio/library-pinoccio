@@ -45,6 +45,9 @@ public:
 #define CMD_NET_STATUS      16
 #define CMD_AT              17
 #define CMD_GET_VERSION     18
+#define CMD_SSLOPEN         19
+#define CMD_TCERTADD        20
+#define CMD_TCERTDEL        21
 
 #define CMD_INVALID         255
 
@@ -102,6 +105,33 @@ public:
   uint16_t readData(SOCKET s, uint8_t* buf, uint16_t len);
   uint16_t writeData(SOCKET s, const uint8_t*  buf, uint16_t  len);
 
+  /**
+   * Perform TLS handshaking. Should be called after a connection is
+   * opened, but before any data is sent. After this, all data sent will
+   * be encrypted.
+   *
+   * The certname is the name of a certificate previously set through
+   * addCert. The certificate should be a CA certificate. If the server
+   * supplies a certificate that is signed by this particular CA, then
+   * the TLS handshake succeeds. If the server certificate is not signed
+   * by this CA (or is invalid for other reasons, like expiry date), the
+   * connection is closed and 0 is returned.
+   *
+   * Note that no checking of the server certificate's commonName
+   * happens! If you pass in a (commercial) CA certificate, _any_
+   * certificate issued by that CA will be accepted, not just the ones
+   * with a specific hostname inside.
+   */
+  uint8_t enableTls(SOCKET s, String certname);
+
+  /**
+   * Save the given certificate to the wifi gainspan's flash or RAM
+   * (depending on to_flash). The name can be any string and should be
+   * passed to enableTls later. The buffer should contain the ca
+   * certificate in (binary) DER format. */
+  uint8_t addCert(String certname, bool to_flash, const uint8_t *buf, uint16_t len);
+  uint8_t delCert(String certname);
+
   static const uint16_t SSIZE = 256; // Max Tx buffer siz
 
 
@@ -125,6 +155,9 @@ private:
   uint8_t dev_mode;
   String ip;
   String port;
+  String certname;
+  bool to_flash;
+  uint16_t cert_size;
   uint8_t connection_state;
   String dev_id;
   String appVersion;

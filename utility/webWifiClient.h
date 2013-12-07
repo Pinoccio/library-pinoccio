@@ -29,6 +29,7 @@ class PinoccioWifiClient : public Client {
     virtual operator bool();
     void startDataTx();
     void stopDataTx();
+    virtual bool enableTls(String certname);
 
     friend class webWifiServer;
 

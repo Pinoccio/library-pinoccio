@@ -110,6 +110,14 @@ int PinoccioWifiClient::connect(IPAddress ip, uint16_t port) {
   return 1;
 }
 
+bool PinoccioWifiClient::enableTls(String certname) {
+  if (_sock == MAX_SOCK_NUM)
+    return false;
+  if (_protocol != IPPROTO::TCP)
+    return false;
+  return Gainspan.enableTls(_sock, certname);
+}
+
 uint8_t PinoccioWifiClient::status() {
   if (_sock == MAX_SOCK_NUM) {
     return SOCK_STATUS::CLOSED;

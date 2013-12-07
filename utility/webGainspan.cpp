@@ -31,12 +31,15 @@ const char PROGMEM cmd_15[] = "AT+NCUDP=";
 const char PROGMEM cmd_16[] = "AT+NSTAT=?";
 const char PROGMEM cmd_17[] = "AT";
 const char PROGMEM cmd_18[] = "AT+VER=?";
+const char PROGMEM cmd_19[] = "AT+SSLOPEN=";
+const char PROGMEM cmd_20[] = "AT+TCERTADD=";
+const char PROGMEM cmd_21[] = "AT+TCERTDEL=";
 
 const char* const PROGMEM cmd_tbl[] =
 {
   cmd_0, cmd_1, cmd_2, cmd_3, cmd_4, cmd_5, cmd_6, cmd_7,
   cmd_8, cmd_9, cmd_10, cmd_11, cmd_12, cmd_13, cmd_14,
-  cmd_15, cmd_16, cmd_17, cmd_18
+  cmd_15, cmd_16, cmd_17, cmd_18, cmd_19, cmd_20, cmd_21,
 };
 
 /* Make sure the cmd_buffer is large enough to hold
@@ -206,6 +209,27 @@ uint8_t webGainspan::send_cmd(uint8_t cmd)
     Serial1.println(cmd_buf);
     break;
   }
+  case CMD_SSLOPEN:
+    if (this->sock_table[socket_num].status != SOCK_STATUS::CLOSED) {
+      String cmd_buf = cmd_str + String((unsigned int)this->sock_table[socket_num].cid) + "," + certname;
+      Serial1.println(cmd_buf);
+    } else {
+      return 0;
+    }
+    break;
+  case CMD_TCERTADD:
+  {
+      String cmd_buf = cmd_str + certname + ",0," + String(cert_size) +
+                       "," + String(!to_flash);
+      Serial1.println(cmd_buf);
+    break;
+  }
+  case CMD_TCERTDEL:
+  {
+      String cmd_buf = cmd_str + certname;
+      Serial1.println(cmd_buf);
+    break;
+  }
   default:
     break;
   }
@@ -268,6 +292,9 @@ uint8_t webGainspan::parse_resp(uint8_t cmd)
       break;
     }
     case CMD_NET_STATUS:
+    case CMD_SSLOPEN:
+    case CMD_TCERTADD:
+    case CMD_TCERTDEL:
     {
       if (buf == "OK") {
         /* got OK */
@@ -896,6 +923,29 @@ uint8_t webGainspan::connectSocket(SOCKET s, String ip, String port)
   }
 
   return 1;
+}
+
+uint8_t webGainspan::enableTls(SOCKET s, String certname) {
+  this->certname = certname;
+  this->socket_num = s;
+  return send_cmd_w_resp(CMD_SSLOPEN);
+}
+
+uint8_t webGainspan::addCert(String certname, bool to_flash, const uint8_t *buf, uint16_t len) {
+  this->certname = certname;
+  this->to_flash = to_flash;
+  this->cert_size = len;
+  if (!send_cmd_w_resp(CMD_TCERTADD))
+    return 0;
+  Serial1.write((uint8_t)0x1b);    // data start
+  Serial1.write('W');
+  Serial1.write(buf, len);
+  return parse_resp(CMD_TCERTADD);
+}
+
+uint8_t webGainspan::delCert(String certname) {
+  this->certname = certname;
+  return send_cmd_w_resp(CMD_TCERTDEL);
 }
 
 String webGainspan::dns_lookup(String url)
