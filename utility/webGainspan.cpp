@@ -222,6 +222,8 @@ uint8_t webGainspan::parse_resp(uint8_t cmd)
   while (!resp_done) {
 
     buf = readline();
+    if (buf == "")
+      continue;
 
     switch(cmd) {
     case CMD_AT:
