@@ -14,6 +14,7 @@
 #include "utility/nwk.h"
 #include "utility/halFuelGauge.h"
 #include "utility/halRgbLed.h"
+#include "PBBP.h"
 
 class PinoccioScout : public PinoccioClass {
 
@@ -32,6 +33,8 @@ class PinoccioScout : public PinoccioClass {
     void disableBackpackVcc();
 
     bool isLeadScout();
+
+    PBBP bp;
 
   protected:
     void checkStateChange();

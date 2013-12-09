@@ -31,12 +31,20 @@ PinoccioScout::~PinoccioScout() { }
 
 
 void PinoccioScout::setup() {
+  enableBackpackVcc();
   PinoccioClass::setup();
+  bp.begin(BACKPACK_BUS);
   Wire.begin();
   delay(100);
   HAL_FuelGaugeConfig(20);   // Configure the MAX17048G's alert percentage to 20%
   HAL_FuelGaugeQuickStart(); // Restart fuel-gauge calculations
   stateSaved = false;
+
+  // Enumerate backpack bus
+  if (!bp.enumerate()) {
+    bp.printLastError(Serial);
+    Serial.println();
+  }
 
   // TODO - Find lead scouts in this network via ping and save locally
   // TODO - Enumerate attached backpacks, if any are attached
@@ -67,30 +75,14 @@ void PinoccioScout::disableBackpackVcc() {
 }
 
 bool PinoccioScout::isLeadScout() {
-  enableBackpackVcc();
-  delay(250);
-  // for now, we ping Serial1 directly. Later, use PBBP
-  Serial1.begin(115200);
-  Serial1.println("AT");
-  uint32_t time = millis();
-  char buffer[2] = {0};
-  uint8_t ctr;
-
-  while (millis() - time < 1000) {
-    if (Serial1.available()) {
-      buffer[0] = buffer[1];
-      buffer[1] = Serial1.read();
-      buffer[2] = 0;
-
-      if (strncmp((const char*)buffer, "AT", 2) == 0) {
-        return true;
-      }
-    }
+  // Check for attached wifi backpack (model id 0x0001)
+  for (uint8_t i = 0; i < bp.num_slaves; ++i) {
+    if (bp.slave_ids[i][1] == 0 &&
+        bp.slave_ids[i][2] == 1)
+      return true;
   }
-
   return false;
 }
-
 
 void PinoccioScout::checkStateChange() {
   if (!stateSaved) {
