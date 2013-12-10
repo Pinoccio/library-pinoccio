@@ -108,6 +108,7 @@ void setup(void) {
   addBitlashFunction("led.greenvalue", (bitlash_function) ledSetGreenValue);
   addBitlashFunction("led.bluevalue", (bitlash_function) ledSetBlueValue);
   addBitlashFunction("led.hexvalue", (bitlash_function) ledSetHexValue);
+  addBitlashFunction("led.setrgb", (bitlash_function) ledSetRgb);
   addBitlashFunction("led.report", (bitlash_function) ledReport);
 
   addBitlashFunction("pin.on", (bitlash_function) pinOn);
@@ -681,6 +682,12 @@ numvar ledSetHexValue(void) {
   } else {
     return false;
   }
+}
+
+numvar ledSetRgb(void) {
+  RgbLed.setRedValue(getarg(1));
+  RgbLed.setGreenValue(getarg(2));
+  RgbLed.setBlueValue(getarg(3));
 }
 
 numvar ledReport(void) {
