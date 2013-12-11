@@ -939,7 +939,8 @@ numvar getScoutVersion(void) {
 }
 
 numvar isLeadScout(void) {
-  return leadScout;
+  Serial.println("true");
+  //return leadScout;
 }
 
 numvar setHQToken(void) {
