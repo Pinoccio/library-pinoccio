@@ -13,13 +13,17 @@ static NWK_DataReq_t appDataReq;
 // TEMPORARY, must change this for wifi, and also have run "scout.sethqtoken(TOKEN)" and "mesh.config(ID)" to provision
 WIFI_PROFILE wifis = {"Air Patrol","Jabber","","","",};
 
+// use this if your lead scout doesn't have the backpack bus supporting firmware
+bool forceLeadScout = true;
+
 // this stuff should prob all be in the Scout class or somesuch but putting it here to get started
 static bool fieldCommands(NWK_DataInd_t *ind);
 int leadAnswerID = 0;
 static bool leadAnswers(NWK_DataInd_t *ind);
 static bool leadAnnouncements(NWK_DataInd_t *ind);
 void leadAnnouncementSend(int chan, int from, char *message);
-IPAddress server(173,255,220,185);
+//IPAddress server(173,255,220,185);
+IPAddress server(192,168,0,36);
 int HQport = 22756;
 int whoami;
 bool leadScout;
@@ -121,6 +125,7 @@ void setup(void) {
   addBitlashFunction("scout.gethqtoken", (bitlash_function) getHQToken);
 
   leadScout = Scout.isLeadScout();
+  if(forceLeadScout) leadScout = true;
 
 //  meshJoinGroup();
   Scout.meshListen(1, receiveMessage);
@@ -141,7 +146,7 @@ void setup(void) {
     Serial.println("Field Scout, waiting");
     Scout.meshListen(2, fieldCommands);
   }
-  //setOutputHandler(&bitlashFilter);
+  setOutputHandler(&bitlashFilter);
   Serial.println("setup done");
 }
 
@@ -264,7 +269,8 @@ void leadCommandChunk(void);
 void leadIncoming(char *packet, unsigned short *index)
 {
   char *type, *command;
-  int to, id, ret, len;
+  int to, ret, len;
+  unsigned long id;
 
   type = j0g_str("type", packet, index);
   Serial.println(type);
@@ -277,7 +283,7 @@ void leadIncoming(char *packet, unsigned short *index)
   if(strcmp(type, "command") == 0)
   {
     to = atoi(j0g_str("to", packet, index));
-    id = atoi(j0g_str("id", packet, index));
+    id = strtoul(j0g_str("id", packet, index), NULL, 10);
     command = j0g_str("command", packet, index);
     if(!to || !id || !command)
     {
@@ -290,7 +296,7 @@ void leadIncoming(char *packet, unsigned short *index)
     {
       // reusing same buffer for bitlash response
       bitlashOutput = (char*)malloc(100);
-      sprintf(bitlashOutput,"{\"type\":\"reply\",\"from\":%d,\"id\":%d,\"end\":true,\"reply\":\"",to,id);
+      sprintf(bitlashOutput,"{\"type\":\"reply\",\"from\":%d,\"id\":%lu,\"end\":true,\"reply\":\"",to,id);
       setOutputHandler(&bitlashBuffer);
       ret = (int)doCommand(command);
       setOutputHandler(&bitlashFilter);
