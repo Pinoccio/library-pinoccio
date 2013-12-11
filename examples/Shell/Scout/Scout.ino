@@ -367,7 +367,7 @@ static void leadCommandChunk()
   leadCommandReq.size = len;
   leadCommandReq.confirm = leadCommandChunkConfirm;
   NWK_DataReq(&leadCommandReq);
-  RgbLed.blinkCyan(200);
+  //RgbLed.blinkCyan(200);
   Serial.print(leadCommandTo, DEC);
   Serial.print(" len ");
   Serial.print(len, DEC);
@@ -394,14 +394,14 @@ static bool leadAnswers(NWK_DataInd_t *ind) {
 	bool end = false;
   int at;
   char sig[256];
-  RgbLed.blinkGreen(200);
+  //RgbLed.blinkGreen(200);
 
   if(ind->options&NWK_IND_OPT_MULTICAST)
   {
     Serial.println("MULTICAST on wrong endpoint");
     return true;
   }
-  
+
   Serial.println("Received answer");
   if(ind->data[ind->size-1] == 0)
   {
@@ -427,8 +427,8 @@ void leadAnnouncementSend(int chan, int from, char *message)
 
 // mesh callback whenever another scout announces something on a channel
 static bool leadAnnouncements(NWK_DataInd_t *ind) {
-  RgbLed.blinkBlue(200);
-  
+  //RgbLed.blinkBlue(200);
+
   // be safe
   if(!ind->options&NWK_IND_OPT_MULTICAST) return true;
 
@@ -489,7 +489,7 @@ static void fieldAnswerChunk()
   fieldAnswerReq.size = len;
   fieldAnswerReq.confirm = fieldAnswerChunkConfirm;
   NWK_DataReq(&fieldAnswerReq);
-  RgbLed.blinkCyan(200);
+  //RgbLed.blinkCyan(200);
   Serial.print(fieldAnswerTo, DEC);
   Serial.print(" len ");
   Serial.print(len, DEC);
@@ -503,8 +503,8 @@ int fieldCommandLen = 0;
 // mesh callback for handling incoming commands
 static bool fieldCommands(NWK_DataInd_t *ind) {
 	int total, ret;
-  RgbLed.blinkGreen(200);
-  
+  //RgbLed.blinkGreen(200);
+
   Serial.print("Received command");
   Serial.print("lqi: ");
   Serial.print(ind->lqi, DEC);
@@ -593,7 +593,7 @@ void fieldAnnounce(char *line)
   fieldAnnounceReq.confirm = fieldAnnounceConfirm;
   announcing = true;
   NWK_DataReq(&fieldAnnounceReq);
-  RgbLed.blinkGreen(200);
+  //RgbLed.blinkGreen(200);
 }
 
 
