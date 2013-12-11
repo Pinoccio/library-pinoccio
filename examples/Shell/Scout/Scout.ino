@@ -219,14 +219,14 @@ void leadHQ(void)
 
   // get all waiting data and look for packets
   while(rsize = leadClient.read(block, 256)){
-    len = strlen(buffer);  
+    len = strlen(buffer);
 
     // process chunk of incoming data
     buffer = (char*)realloc(buffer, len+rsize+1);
     if(!buffer) return; // TODO, realloc error, need to restart?
     memcpy(buffer+len, block, rsize);
     buffer[len+rsize] = 0; // null terminate
-  
+
     // look for a packet
     Serial.print("looking for packet in: ");
     Serial.println(buffer);
@@ -243,7 +243,7 @@ void leadHQ(void)
     nl++;
     len = strlen(nl);
     memmove(buffer, nl, len+1);
-    buffer = (char*)realloc(buffer, len+1); // shrink    
+    buffer = (char*)realloc(buffer, len+1); // shrink
   }
 }
 
@@ -303,17 +303,17 @@ void leadIncoming(char *packet, unsigned short *index)
       len = strlen(bitlashOutput);
       strcpy(bitlashOutput+len, "\"}\n");
       leadSignal(bitlashOutput);
-      free(bitlashOutput);      
+      free(bitlashOutput);
       return;
     }
-    
+
     // we can only send one command at a time
     if(leadCommandTo)
     {
       // TODO we could stop reading the HQ socket in this mode and then never get a busy?
       return leadCommandError(to,id,"busy");
     }
-    
+
     // send over mesh to recipient and cache id for any replies
     leadAnswerID = id;
     leadCommandTo = to;
@@ -335,7 +335,7 @@ static void leadCommandChunkConfirm(NWK_DataReq_t *req) {
         leadCommandChunksAt += 100;
         leadCommandChunk();
         return; // don't free yet
-      } 
+      }
   } else {
 		leadCommandRetries++;
 		if(leadCommandRetries > 3)
@@ -347,7 +347,7 @@ static void leadCommandChunkConfirm(NWK_DataReq_t *req) {
       Serial.println("RETRY");
 			NWK_DataReq(req);
 			return; // don't free yet
-		}		
+		}
   }
   leadCommandTo = 0;
 	free(leadCommandChunks);
@@ -458,7 +458,7 @@ static void fieldAnswerChunkConfirm(NWK_DataReq_t *req) {
         fieldAnswerChunksAt += 100;
         fieldAnswerChunk();
         return; // don't free yet
-      } 
+      }
   } else {
 		fieldAnswerRetries++;
 		if(fieldAnswerRetries > 3)
@@ -469,7 +469,7 @@ static void fieldAnswerChunkConfirm(NWK_DataReq_t *req) {
       Serial.println("RETRY");
 			NWK_DataReq(req);
 			return; // don't free yet
-		}		
+		}
   }
   fieldAnswerTo = 0;
 	free(fieldAnswerChunks);
@@ -512,7 +512,7 @@ static bool fieldCommands(NWK_DataInd_t *ind) {
   Serial.print("rssi: ");
   Serial.print(ind->rssi, DEC);
   Serial.println();
-  
+
   if(fieldAnswerTo)
   {
     Serial.println("can't receive command while sending answer");
@@ -527,10 +527,10 @@ static bool fieldCommands(NWK_DataInd_t *ind) {
   fieldCommandLen = total;
   // when null terminated, do the message
   if(fieldCommand[fieldCommandLen-1] != 0){
-    Serial.println("waiting for more");  
+    Serial.println("waiting for more");
     return true;
   }
-  
+
   // run the command and chunk back the results
   setOutputHandler(&bitlashBuffer);
   bitlashOutput = (char*)malloc(1);
@@ -1068,7 +1068,7 @@ static bool receiveMessage(NWK_DataInd_t *ind) {
 void bitlashFilter(byte b) {
   static char buf[101];
   static int offset = 0;
-  
+
   Serial.write(b); // cc to serial
   if(b == '\r') return; // skip CR
 
