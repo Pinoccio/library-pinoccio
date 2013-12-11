@@ -124,8 +124,7 @@ void setup(void) {
   addBitlashFunction("scout.sethqtoken", (bitlash_function) setHQToken);
   addBitlashFunction("scout.gethqtoken", (bitlash_function) getHQToken);
 
-  leadScout = Scout.isLeadScout();
-  if(forceLeadScout) leadScout = true;
+  leadScout = forceLeadScout ? true : Scout.isLeadScout();
 
 //  meshJoinGroup();
   Scout.meshListen(1, receiveMessage);
@@ -939,8 +938,8 @@ numvar getScoutVersion(void) {
 }
 
 numvar isLeadScout(void) {
-  Serial.println("true");
-  //return leadScout;
+  Serial.println(leadScout);
+  return leadScout;
 }
 
 numvar setHQToken(void) {
