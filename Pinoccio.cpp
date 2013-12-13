@@ -66,6 +66,22 @@ void PinoccioClass::getHQToken(char *token) {
   }
 }
 
+uint32_t PinoccioClass::getHwSerial() {
+  return eeprom_read_dword((uint32_t *)8184);
+}
+
+uint16_t PinoccioClass::getHwFamily() {
+  return eeprom_read_word((uint16_t *)8188);
+}
+
+uint8_t PinoccioClass::getHwVersion() {
+  return eeprom_read_byte((uint8_t *)8190);
+}
+
+uint8_t PinoccioClass::getEEPROMVersion() {
+  return eeprom_read_byte((uint8_t *)8191);
+}
+
 void PinoccioClass::sendStateToHQ() {
   // TODO - Send state to HQ, and set pin values and pinmodes from response
 }

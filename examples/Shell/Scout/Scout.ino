@@ -161,11 +161,11 @@ void loop(void) {
     Gainspan.timeSync("87.106.176.225" , 10, 0);
     if (leadClient.connect(google, 443) &&
         leadClient.enableTls("geotrust") &&
-	leadClient.print("GET / HTTP/1.0\r\n\r\n")) {
-	  Serial.println("TLS connected");
-	  while (leadClient.connected())
-	   if ((c = leadClient.read()) != -1)
-	     Serial.write(c);
+  leadClient.print("GET / HTTP/1.0\r\n\r\n")) {
+    Serial.println("TLS connected");
+    while (leadClient.connected())
+     if ((c = leadClient.read()) != -1)
+       Serial.write(c);
     } else {
       Serial.println("TLS connection failed");
     }
@@ -317,7 +317,7 @@ void leadIncoming(char *packet, unsigned short *index)
     leadAnswerID = id;
     leadCommandTo = to;
     leadCommandChunks = (char*)malloc(strlen(command)+1);
-  	strcpy(leadCommandChunks,command);
+    strcpy(leadCommandChunks,command);
     leadCommandChunksAt = 0;
     leadCommandRetries = 0;
     leadCommandChunk();
@@ -336,20 +336,20 @@ static void leadCommandChunkConfirm(NWK_DataReq_t *req) {
         return; // don't free yet
       }
   } else {
-		leadCommandRetries++;
-		if(leadCommandRetries > 3)
-		{
-	    Serial.print("error: ");
-	    Serial.println(req->status, HEX);
+    leadCommandRetries++;
+    if(leadCommandRetries > 3)
+    {
+      Serial.print("error: ");
+      Serial.println(req->status, HEX);
       leadCommandError(leadCommandTo, leadAnswerID, "no response");
-		}else{
+    }else{
       Serial.println("RETRY");
-			NWK_DataReq(req);
-			return; // don't free yet
-		}
+      NWK_DataReq(req);
+      return; // don't free yet
+    }
   }
   leadCommandTo = 0;
-	free(leadCommandChunks);
+  free(leadCommandChunks);
 }
 
 // called to send the first/next chunk of a command to another scout
@@ -390,7 +390,7 @@ void leadSignal(char *json)
 
 // called whenever another scout sends an answer back to us
 static bool leadAnswers(NWK_DataInd_t *ind) {
-	bool end = false;
+  bool end = false;
   int at;
   char sig[256];
   //RgbLed.blinkGreen(200);
@@ -413,7 +413,7 @@ static bool leadAnswers(NWK_DataInd_t *ind) {
   sprintf(sig+at+ind->size, "\",\"end\":%s}\n",end?"true":"false");
   leadSignal(sig);
 
-	return true;
+  return true;
 }
 
 // simple wrapper for the incoming channel announcements up to HQ
@@ -426,8 +426,7 @@ void leadAnnouncementSend(int chan, int from, char *message)
 
 // mesh callback whenever another scout announces something on a channel
 static bool leadAnnouncements(NWK_DataInd_t *ind) {
-  //RgbLed.blinkBlue(200);
-
+  RgbLed.blinkBlue(200);
   // be safe
   if(!ind->options&NWK_IND_OPT_MULTICAST) return true;
 
@@ -459,19 +458,19 @@ static void fieldAnswerChunkConfirm(NWK_DataReq_t *req) {
         return; // don't free yet
       }
   } else {
-		fieldAnswerRetries++;
-		if(fieldAnswerRetries > 3)
-		{
-	    Serial.print("error: ");
-	    Serial.println(req->status, HEX);
-		}else{
+    fieldAnswerRetries++;
+    if(fieldAnswerRetries > 3)
+    {
+      Serial.print("error: ");
+      Serial.println(req->status, HEX);
+    }else{
       Serial.println("RETRY");
-			NWK_DataReq(req);
-			return; // don't free yet
-		}
+      NWK_DataReq(req);
+      return; // don't free yet
+    }
   }
   fieldAnswerTo = 0;
-	free(fieldAnswerChunks);
+  free(fieldAnswerChunks);
 }
 
 // send the first/next chunk of the answer back
@@ -501,8 +500,8 @@ int fieldCommandLen = 0;
 
 // mesh callback for handling incoming commands
 static bool fieldCommands(NWK_DataInd_t *ind) {
-	int total, ret;
-  //RgbLed.blinkGreen(200);
+  int total, ret;
+  RgbLed.blinkGreen(200);
 
   Serial.print("Received command");
   Serial.print("lqi: ");
@@ -549,7 +548,7 @@ static bool fieldCommands(NWK_DataInd_t *ind) {
   fieldAnswerRetries = 0;
   fieldAnswerChunk();
 
-	return true;
+  return true;
 }
 
 // can only send one at a time, locks up!
@@ -934,7 +933,15 @@ numvar backpackReport(void) {
  *   SCOUT REPORT HANDLERS  *
 \****************************/
 numvar getScoutVersion(void) {
-  Serial.println("1.0");
+  Serial.println("-- Scout Information --");
+  Serial.print(" - EEPROM Version: 0x");
+  Serial.println(Scout.getEEPROMVersion(), HEX);
+  Serial.print(" - HW Version: 0x");
+  Serial.println(Scout.getHwVersion(), HEX);
+  Serial.print(" - HW Family: 0x");
+  Serial.println(Scout.getHwFamily(), HEX);
+  Serial.print(" - HW Serial ID: 0x");
+  Serial.println(Scout.getHwSerial(), HEX);
 }
 
 numvar isLeadScout(void) {

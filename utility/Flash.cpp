@@ -72,7 +72,6 @@ bool FlashClass::available(void) {
   uint8_t manufacturer;
   uint16_t device;
   this->info(&manufacturer, &device);
-
   return (FLASH_MFG == manufacturer) && (FLASH_ID == device);
 }
 
@@ -155,25 +154,27 @@ void FlashClass::write(uint32_t address, void *buffer, uint16_t length) {
 void FlashClass::subSectorErase(uint32_t address) {
   while (this->isBusy()) { }
 
+  writeEnable();
   digitalWrite(this->CS, LOW);
   this->SPI.transfer(FLASH_SSE);
   this->SPI.transfer(address >> 16);
   this->SPI.transfer(address >> 8);
   this->SPI.transfer(address);
   digitalWrite(this->CS, HIGH);
-  //delay(25);
+  writeDisable();
 }
 
 void FlashClass::sectorErase(uint32_t address) {
   while (this->isBusy()) { }
 
+  writeEnable();
   digitalWrite(this->CS, LOW);
   this->SPI.transfer(FLASH_SE);
   this->SPI.transfer(address >> 16);
   this->SPI.transfer(address >> 8);
   this->SPI.transfer(address);
   digitalWrite(this->CS, HIGH);
-  //delay(25);
+  writeDisable();
 }
 
 void FlashClass::bulkErase(void) {
