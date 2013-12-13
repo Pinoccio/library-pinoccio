@@ -14,7 +14,7 @@ static NWK_DataReq_t appDataReq;
 WIFI_PROFILE wifis = {"Air Patrol","Jabber","","","",};
 
 // use this if your lead scout doesn't have the backpack bus supporting firmware
-bool forceLeadScout = true;
+bool forceLeadScout = false;
 
 // this stuff should prob all be in the Scout class or somesuch but putting it here to get started
 static bool fieldCommands(NWK_DataInd_t *ind);
@@ -123,6 +123,9 @@ void setup(void) {
   addBitlashFunction("scout.isleadscout", (bitlash_function) isLeadScout);
   addBitlashFunction("scout.sethqtoken", (bitlash_function) setHQToken);
   addBitlashFunction("scout.gethqtoken", (bitlash_function) getHQToken);
+
+  addBitlashFunction("wifi.init", (bitlash_function) wifiInit);
+  addBitlashFunction("wifi.list", (bitlash_function) wifiList);
 
   leadScout = forceLeadScout ? true : Scout.isLeadScout();
 
@@ -960,6 +963,68 @@ numvar getHQToken(void) {
   Serial.println(token);
 }
 
+/****************************\
+ *       WIFI HANDLERS      *
+\****************************/
+numvar wifiInit(void) {
+    uint32_t timeout = millis();
+    char confirm[2];
+    confirm[2] = 0;
+    bool term = false;
+
+    // flush output from auto-connect
+    while (Serial1.available()) { Serial1.read(); }
+
+    Serial1.println("AT");
+    while (millis() - timeout < 15000) {
+      while (Serial1.available()) {
+        confirm[0] = confirm[1];
+        confirm[1] = Serial1.peek();
+        Serial.write(Serial1.read());
+        if (confirm[0] == 'O' && confirm[1] == 'K') {
+          term = true;
+          break;
+        }
+      }
+      if (term == true) {
+        break;
+      }
+    }
+    Serial.println();
+    if (term == false) {
+      Serial.println("Error: no response from Wi-Fi backpack");
+    }
+}
+
+numvar wifiList(void) {
+    uint32_t timeout = millis();
+    char confirm[2];
+    confirm[2] = 0;
+    bool term = false;
+
+    // flush output from auto-connect
+    while (Serial1.available()) { Serial1.read(); }
+
+    Serial1.println("AT+WS");
+    while (millis() - timeout < 15000) {
+      while (Serial1.available()) {
+        confirm[0] = confirm[1];
+        confirm[1] = Serial1.peek();
+        Serial.write(Serial1.read());
+        if (confirm[0] == 'O' && confirm[1] == 'K') {
+          term = true;
+          break;
+        }
+      }
+      if (term == true) {
+        break;
+      }
+    }
+    Serial.println();
+    if (term == false) {
+      Serial.println("Error: no response from Wi-Fi backpack");
+    }
+}
 
 /****************************\
  *     HELPER FUNCTIONS     *
