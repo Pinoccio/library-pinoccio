@@ -107,6 +107,7 @@ void setup(void) {
   addBitlashFunction("led.bluevalue", (bitlash_function) ledSetBlueValue);
   addBitlashFunction("led.hexvalue", (bitlash_function) ledSetHexValue);
   addBitlashFunction("led.setrgb", (bitlash_function) ledSetRgb);
+  addBitlashFunction("led.settorch", (bitlash_function) ledSetTorch);
   addBitlashFunction("led.report", (bitlash_function) ledReport);
 
   addBitlashFunction("pin.on", (bitlash_function) pinOn);
@@ -123,6 +124,7 @@ void setup(void) {
   addBitlashFunction("scout.isleadscout", (bitlash_function) isLeadScout);
   addBitlashFunction("scout.sethqtoken", (bitlash_function) setHQToken);
   addBitlashFunction("scout.gethqtoken", (bitlash_function) getHQToken);
+  addBitlashFunction("scout.otaboot", (bitlash_function) otaBoot);
 
   addBitlashFunction("wifi.init", (bitlash_function) wifiInit);
   addBitlashFunction("wifi.list", (bitlash_function) wifiList);
@@ -716,6 +718,10 @@ numvar ledSetRgb(void) {
   RgbLed.setBlueValue(getarg(3));
 }
 
+numvar ledSetTorch(void) {
+  RgbLed.setTorch(getarg(1), getarg(2), getarg(3));
+}
+
 numvar ledReport(void) {
   Serial.print("{\"r\":");
   Serial.print(RgbLed.getRedValue());
@@ -963,20 +969,26 @@ numvar getHQToken(void) {
   Serial.println(token);
 }
 
+numvar otaBoot(void) {
+  cli();
+  wdt_enable(WDTO_15MS);
+  while(1);
+}
+
 /****************************\
  *       WIFI HANDLERS      *
 \****************************/
 numvar wifiInit(void) {
     uint32_t timeout = millis();
     char confirm[2];
-    confirm[2] = 0;
     bool term = false;
+    Serial1.begin(115200);
 
     // flush output from auto-connect
     while (Serial1.available()) { Serial1.read(); }
 
     Serial1.println("AT");
-    while (millis() - timeout < 15000) {
+    while (millis() - timeout < 10000) {
       while (Serial1.available()) {
         confirm[0] = confirm[1];
         confirm[1] = Serial1.peek();
@@ -1006,7 +1018,7 @@ numvar wifiList(void) {
     while (Serial1.available()) { Serial1.read(); }
 
     Serial1.println("AT+WS");
-    while (millis() - timeout < 15000) {
+    while (millis() - timeout < 10000) {
       while (Serial1.available()) {
         confirm[0] = confirm[1];
         confirm[1] = Serial1.peek();

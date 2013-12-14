@@ -48,6 +48,7 @@ class HalRgbLed {
     int getBlueValue();
 
     void setHex(char* hex);
+    void setTorch(short red, short green, short blue);
 
   protected:
     bool enabled;

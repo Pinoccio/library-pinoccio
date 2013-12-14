@@ -9,6 +9,7 @@
 
 #include "halRgbLed.h"
 #include "Arduino.h"
+#include <avr/eeprom.h>
 
 HalRgbLed RgbLed;
 
@@ -262,4 +263,10 @@ void HalRgbLed::setHex(char* hex) {
   setRedValue(out[0]);
   setGreenValue(out[1]);
   setBlueValue(out[2]);
+}
+
+void HalRgbLed::setTorch(short red, short green, short blue) {
+  eeprom_update_byte((uint8_t *)8127, red);
+  eeprom_update_byte((uint8_t *)8128, green);
+  eeprom_update_byte((uint8_t *)8129, blue);
 }

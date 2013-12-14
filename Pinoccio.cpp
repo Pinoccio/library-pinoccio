@@ -87,6 +87,7 @@ void PinoccioClass::sendStateToHQ() {
 }
 
 void PinoccioClass::loadSettingsFromEeprom() {
+  // Address 8127 - 3 bytes  - Torch color (R,G,B)
   // Address 8130 - 32 bytes - HQ Token
   // Address 8162 - 16 bytes - Security Key
   // Address 8178 - 1 byte   - Transmitter Power
