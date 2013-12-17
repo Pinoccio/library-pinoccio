@@ -15,6 +15,7 @@ WIFI_PROFILE wifis = {"","","","","",};
 
 // use this if your lead scout doesn't have the backpack bus supporting firmware
 bool forceLeadScout = false;
+bool forceScoutVersion = true;
 
 // this stuff should prob all be in the Scout class or somesuch but putting it here to get started
 static bool fieldCommands(NWK_DataInd_t *ind);
@@ -967,15 +968,19 @@ numvar backpackReport(void) {
  *   SCOUT REPORT HANDLERS  *
 \****************************/
 numvar getScoutVersion(void) {
-  Serial.println("-- Scout Information --");
-  Serial.print(" - EEPROM Version: 0x");
-  Serial.println(Scout.getEEPROMVersion(), HEX);
-  Serial.print(" - HW Version: 0x");
-  Serial.println(Scout.getHwVersion(), HEX);
-  Serial.print(" - HW Family: 0x");
-  Serial.println(Scout.getHwFamily(), HEX);
-  Serial.print(" - HW Serial ID: 0x");
-  Serial.println(Scout.getHwSerial(), HEX);
+  if (forceScoutVersion) {
+    Serial.println("1.0");
+  } else {
+    Serial.println("-- Scout Information --");
+    Serial.print(" - EEPROM Version: 0x");
+    Serial.println(Scout.getEEPROMVersion(), HEX);
+    Serial.print(" - HW Version: 0x");
+    Serial.println(Scout.getHwVersion(), HEX);
+    Serial.print(" - HW Family: 0x");
+    Serial.println(Scout.getHwFamily(), HEX);
+    Serial.print(" - HW Serial ID: 0x");
+    Serial.println(Scout.getHwSerial(), HEX);
+  }
 }
 
 numvar isLeadScout(void) {
