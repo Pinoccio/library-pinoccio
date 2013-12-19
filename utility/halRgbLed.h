@@ -48,7 +48,12 @@ class HalRgbLed {
     int getBlueValue();
 
     void setHex(char* hex);
-    void setTorch(short red, short green, short blue);
+    void saveTorch(short red, short green, short blue);
+    void setTorch(void);
+
+    short getRedTorchValue(void);
+    short getGreenTorchValue(void);
+    short getBlueTorchValue(void);
 
   protected:
     bool enabled;

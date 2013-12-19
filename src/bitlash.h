@@ -1,36 +1,36 @@
 /***
-	bitlash.h
+  bitlash.h
 
-	Bitlash is a tiny language interpreter that provides a serial port shell environment
-	for bit banging and hardware hacking.
+  Bitlash is a tiny language interpreter that provides a serial port shell environment
+  for bit banging and hardware hacking.
 
-	See the file README for documentation.
+  See the file README for documentation.
 
-	Bitlash lives at: http://bitlash.net
-	The author can be reached at: bill@bitlash.net
+  Bitlash lives at: http://bitlash.net
+  The author can be reached at: bill@bitlash.net
 
-	Copyright (C) 2008-2013 Bill Roy
+  Copyright (C) 2008-2013 Bill Roy
 
-	Permission is hereby granted, free of charge, to any person
-	obtaining a copy of this software and associated documentation
-	files (the "Software"), to deal in the Software without
-	restriction, including without limitation the rights to use,
-	copy, modify, merge, publish, distribute, sublicense, and/or sell
-	copies of the Software, and to permit persons to whom the
-	Software is furnished to do so, subject to the following
-	conditions:
-	
-	The above copyright notice and this permission notice shall be
-	included in all copies or substantial portions of the Software.
-	
-	THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-	EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
-	OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-	NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
-	HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
-	WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-	FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
-	OTHER DEALINGS IN THE SOFTWARE.
+  Permission is hereby granted, free of charge, to any person
+  obtaining a copy of this software and associated documentation
+  files (the "Software"), to deal in the Software without
+  restriction, including without limitation the rights to use,
+  copy, modify, merge, publish, distribute, sublicense, and/or sell
+  copies of the Software, and to permit persons to whom the
+  Software is furnished to do so, subject to the following
+  conditions:
+
+  The above copyright notice and this permission notice shall be
+  included in all copies or substantial portions of the Software.
+
+  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+  EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+  OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+  NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+  HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+  WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+  OTHER DEALINGS IN THE SOFTWARE.
 
 ***/
 #ifndef _BITLASH_H
@@ -94,17 +94,17 @@
 
 ////////////////////////////////////////////////////
 //
-//	ARDUINO BUILD OPTIONS
+//  ARDUINO BUILD OPTIONS
 //
 ////////////////////////////////////////////////////
 //
-#if defined(HIGH) || defined(ARDUINO)		// this detects the Arduino build environment
+#if defined(HIGH) || defined(ARDUINO)    // this detects the Arduino build environment
 
 #define ARDUINO_BUILD 1
 
-//#define ARDUINO_VERSION 14	// working
-//#define ARDUINO_VERSION 15 	// working
-#define ARDUINO_VERSION 16		// working, released
+//#define ARDUINO_VERSION 14  // working
+//#define ARDUINO_VERSION 15   // working
+#define ARDUINO_VERSION 16    // working, released
 
 // the serial support, she is changing all the time
 #if ARDUINO_VERSION >= 15
@@ -113,9 +113,9 @@
 #define serialRead Serial.read
 
 #if defined(ARDUINO) && ARDUINO >= 100
-	#define serialWrite Serial.write
+  #define serialWrite Serial.write
 #else
-	#define serialWrite Serial.print
+  #define serialWrite Serial.print
 #endif
 
 #endif
@@ -125,12 +125,12 @@
 
 
 #if defined(ARDUINO) && ARDUINO >= 100
-	#include "Arduino.h"
-	#define prog_char char PROGMEM
-	#define prog_uchar char PROGMEM
+  #include "Arduino.h"
+  #define prog_char char PROGMEM
+  #define prog_uchar char PROGMEM
 #else
-	#include "WProgram.h"
-	#include "WConstants.h"
+  #include "WProgram.h"
+  #include "WConstants.h"
 #endif
 
 
@@ -146,7 +146,7 @@
 #else
 #define HIGH 1
 #define LOW 0
-#endif		// HIGH: arduino build
+#endif    // HIGH: arduino build
 
 
 ///////////////////////////////////////////////////////
@@ -159,28 +159,28 @@
 // WIZ-5100 Ethernet shield
 //#define WIZ_ETHERNET 1
 //
-// Enable AF_ETHERNET to build for telnet access to the Adafruit Ethernet shield 
+// Enable AF_ETHERNET to build for telnet access to the Adafruit Ethernet shield
 // configured per the pinout below
 //
 //#define AF_ETHERNET 1
 //
 
 ///////////////////////////////////////////////////////
-//	WIZNET ETHERNET CONFIGURATION
+//  WIZNET ETHERNET CONFIGURATION
 //
 #ifdef WIZ_ETHERNET
 
 //
 // You'll need these two lines in your sketch, as of Arduino-0022:
 //
-//	#include <SPI.h>
-//	#include <Ethernet.h>
+//  #include <SPI.h>
+//  #include <Ethernet.h>
 //
 
-byte mac[] 		= { 'b','i','t','l','s','h' };
-byte ip[]  		= { 192, 168, 1, 27 };
-byte gateway[] 	= { 192, 168, 1, 1 };
-byte subnet[] 	= {255,255,255,0};
+byte mac[]     = { 'b','i','t','l','s','h' };
+byte ip[]      = { 192, 168, 1, 27 };
+byte gateway[]   = { 192, 168, 1, 1 };
+byte subnet[]   = {255,255,255,0};
 #define PORT 8080
 Server server = Server(PORT);
 
@@ -189,10 +189,10 @@ Server server = Server(PORT);
 #define serialRead server.available().read
 #define serialWrite server.write
 void beginEthernet(unsigned long baud) {
-	Ethernet.begin(mac, ip, gateway, subnet);
-	server.begin();
+  Ethernet.begin(mac, ip, gateway, subnet);
+  server.begin();
 }
-#endif	// WIZ_ETHERNET
+#endif  // WIZ_ETHERNET
 
 
 ///////////////////////////////////////////////////////
@@ -203,10 +203,10 @@ void beginEthernet(unsigned long baud) {
 #define NET_RX 3
 #define SOFTWARE_SERIAL_RX 1
 #define RXPIN NET_RX
-#undef HARDWARE_SERIAL_TX		// sorry, no room for pin 0/1 hard uart
+#undef HARDWARE_SERIAL_TX    // sorry, no room for pin 0/1 hard uart
 #define DEFAULT_OUTPIN NET_TX
 #define BAUD_OVERRIDE 9600
-#endif	// AF_ETHERNET
+#endif  // AF_ETHERNET
 
 
 
@@ -244,14 +244,14 @@ void beginEthernet(unsigned long baud) {
 #define DEFAULT_OUTPIN SANGUINO_DEFAULT_SERIAL
 #define ALTERNATE_OUTPIN SANGUINO_ALTERNATE_SERIAL
 
-#endif	// defined (644)
+#endif  // defined (644)
 
 
 ///////////////////////////////////////////////////////
 //
 // MEGA BUILD
 //
-//	Note: These are speculative and untested.  Feedback welcome.
+//  Note: These are speculative and untested.  Feedback welcome.
 //
 ///////////////////////////////////////////////////////
 //
@@ -280,14 +280,14 @@ void beginEthernet(unsigned long baud) {
 #define DEFAULT_OUTPIN MEGA_DEFAULT_SERIAL
 #define ALTERNATE_OUTPIN MEGA_ALTERNATE_SERIAL
 
-#endif	// defined (1280)
+#endif  // defined (1280)
 
 
 
 
 ///////////////////////////////////////////////////////
 //
-//	TINY BUILD OPTIONS
+//  TINY BUILD OPTIONS
 //
 #if defined(__AVR_ATtiny85__) || defined(__AVR_ATtiny84__)
 #define TINY_BUILD 1
@@ -300,13 +300,13 @@ void beginEthernet(unsigned long baud) {
 
 //#include "usbdrv.h"
 
-#endif		// TINY_BUILD
+#endif    // TINY_BUILD
 
 
 
 ///////////////////////////////////////////////////////
 //
-//	AVROPENDOUS and TEENSY BUILD OPTIONS
+//  AVROPENDOUS and TEENSY BUILD OPTIONS
 //
 #if defined(__AVR_AT90USB162__)
 
@@ -321,18 +321,18 @@ void beginSerial(unsigned long baud) { ; }
 #define serialRead usbRead
 #define serialWrite usbWrite
 #include <util/delay.h>
-#endif	// defined AVRO
+#endif  // defined AVRO
 
 #define TEENSY
 #ifdef TEENSY
-#endif	// defined TEENSY
+#endif  // defined TEENSY
 
-#endif	// defined '162
+#endif  // defined '162
 
 
 ///////////////////////////////////////////////////////
 //
-//	ATMega32U4 BUILD OPTIONS
+//  ATMega32U4 BUILD OPTIONS
 //
 #if defined(__AVR_ATmega32U4__)
 
@@ -347,13 +347,13 @@ void beginSerial(unsigned long baud) { ; }
 #define serialRead usbRead
 #define serialWrite usbWrite
 #include <util/delay.h>
-#endif	// AVRO
+#endif  // AVRO
 
 #define TEENSY2
 #if defined(TEENSY2)
-#endif	// TEENSY2
+#endif  // TEENSY2
 
-#endif	// defined '32U4
+#endif  // defined '32U4
 
 
 ///////////////////////////////////////////////////////
@@ -365,10 +365,10 @@ void beginSerial(unsigned long baud) { ; }
 
 ///////////////////////////////////////////////////////
 //
-//	Unix build options
-//	(not working)
+//  Unix build options
+//  (not working)
 //
-//	> gcc bitlash.cpp -D UNIX_BUILD
+//  > gcc bitlash.cpp -D UNIX_BUILD
 //
 #ifdef UNIX_BUILD
 #define MINIMUM_FREE_RAM 200
@@ -395,12 +395,12 @@ void beginSerial(unsigned long baud) { ; }
 
 unsigned long millis(void);
 
-#endif	// defined unix_build
+#endif  // defined unix_build
 
 
 ////////////////////
 //
-//	ARM BUILD
+//  ARM BUILD
 #if defined(ARM_BUILD)
 #define prog_char char
 #define prog_uchar byte
@@ -422,7 +422,7 @@ typedef unsigned long int unumvar;
 #else
 typedef int numvar;
 typedef unsigned int unumvar;
-#endif		// arduino_build
+#endif    // arduino_build
 
 
 #ifdef AVROPENDOUS_BUILD
@@ -433,7 +433,7 @@ void usbWrite(uint8_t);
 void usbMouseOn(void);
 void usbMouseOff(void);
 void connectBitlash(void);
-#endif	// avropendous
+#endif  // avropendous
 
 
 // Function prototypes
@@ -442,10 +442,10 @@ void connectBitlash(void);
 /////////////////////////////////////////////
 // bitlash-api.c
 //
-void initBitlash(unsigned long baud);	// start up and set baud rate
-void runBitlash(void);					// call this in loop(), frequently
-numvar doCommand(char *);					// execute a command from your sketch
-void doCharacter(char);					// pass an input character to the line editor
+void initBitlash(unsigned long baud);  // start up and set baud rate
+void runBitlash(void);          // call this in loop(), frequently
+numvar doCommand(char *);          // execute a command from your sketch
+void doCharacter(char);          // pass an input character to the line editor
 
 //void flash(unsigned int, int);
 
@@ -489,8 +489,8 @@ extern char lbuf[LBUFLEN];
 /////////////////////////////////////////////
 // bitlash-eeprom.c
 //
-int findKey(char *key);				// return location of macro keyname in EEPROM or -1
-int getValue(char *key);			// return location of macro value in EEPROM or -1
+int findKey(char *key);        // return location of macro keyname in EEPROM or -1
+int getValue(char *key);      // return location of macro value in EEPROM or -1
 
 int findoccupied(int);
 int findend(int);
@@ -507,7 +507,7 @@ void eeputs(int);
 //
 // Use the predefined constant from the avr-gcc support file
 //
-#define PCONFIGLENGTH 64
+#define PCONFIGLENGTH 128
 #define ENDDB (E2END - PCONFIGLENGTH) // we want 64 bytes saved for Pinoccio-specific settings
 #define ENDEEPROM E2END
 
@@ -524,7 +524,7 @@ void expected(byte);
 void expectedchar(byte);
 void unexpected(byte);
 void missing(byte);
-//void oops(int);						// fatal exit
+//void oops(int);            // fatal exit
 
 
 /////////////////////////////////////////////
@@ -559,7 +559,7 @@ void spb(char c);
 void sp(const char *);
 void speol(void);
 
-numvar func_printf(void); 
+numvar func_printf(void);
 numvar func_printf_handler(byte,byte);
 
 #ifdef SOFTWARE_SERIAL_TX
@@ -624,22 +624,22 @@ void domacrocall(int);
 /////////////////////////////////////////////
 // bitlash-parser.c
 //
-void vinit(void);							// init the value stack
-void vpush(numvar);							// push a numvar on the stack
-numvar vpop(void);							// pop a numvar
+void vinit(void);              // init the value stack
+void vpush(numvar);              // push a numvar on the stack
+numvar vpop(void);              // pop a numvar
 extern byte vsptr;
 #define vsempty() vsptr==0
-extern numvar *arg;								// argument frame pointer
-numvar getVar(uint8_t id);					// return value of bitlash variable.  id is [0..25] for [a..z]
-void assignVar(uint8_t id, numvar value);	// assign value to variable.  id is [0..25] for [a..z]
-numvar incVar(uint8_t id);					// increment variable.  id is [0..25] for [a..z]
+extern numvar *arg;                // argument frame pointer
+numvar getVar(uint8_t id);          // return value of bitlash variable.  id is [0..25] for [a..z]
+void assignVar(uint8_t id, numvar value);  // assign value to variable.  id is [0..25] for [a..z]
+numvar incVar(uint8_t id);          // increment variable.  id is [0..25] for [a..z]
 
 // parse context types
-#define SCRIPT_NONE		0
-#define SCRIPT_RAM 		1
-#define SCRIPT_PROGMEM 	2
-#define SCRIPT_EEPROM 	3
-#define SCRIPT_FILE		4
+#define SCRIPT_NONE    0
+#define SCRIPT_RAM     1
+#define SCRIPT_PROGMEM   2
+#define SCRIPT_EEPROM   3
+#define SCRIPT_FILE    4
 
 byte findscript(char *);
 byte scriptfileexists(char *);
@@ -647,8 +647,8 @@ numvar execscript(byte, numvar, char *);
 void callscriptfunction(byte, numvar);
 
 typedef struct {
-	numvar fetchptr;
-	byte fetchtype;
+  numvar fetchptr;
+  byte fetchtype;
 } parsepoint;
 
 void markparsepoint(parsepoint *);
@@ -679,17 +679,17 @@ extern const prog_char reservedwords[];
 
 
 // Interpreter globals
-extern byte fetchtype;		// current script type
-extern numvar fetchptr;		// pointer to current char in input buffer
-extern numvar symval;		// value of current numeric expression
+extern byte fetchtype;    // current script type
+extern numvar fetchptr;    // pointer to current char in input buffer
+extern numvar symval;    // value of current numeric expression
 
 #define USE_GPIORS defined(AVR_BUILD)
 #if USE_GPIORS
 #define sym GPIOR0
 #define inchar GPIOR1
 #else
-extern byte sym;			// current input symbol
-extern byte inchar;		// Current parser character
+extern byte sym;      // current input symbol
+extern byte inchar;    // Current parser character
 #endif
 
 #ifdef PARSER_TRACE
@@ -699,8 +699,8 @@ void tb(void);
 
 
 // Expression result
-extern byte exptype;				// type of expression: s_nval [or s_sval]
-extern numvar expval;				// value of numeric expr or length of string
+extern byte exptype;        // type of expression: s_nval [or s_sval]
+extern numvar expval;        // value of numeric expr or length of string
 
 // Temporary buffer for ids
 #define IDLEN 18
@@ -709,113 +709,113 @@ extern char idbuf[IDLEN+1];
 
 // Strings live in PROGMEM to save ram
 //
-#define M_expected		0
-#define M_unexpected	1
-#define M_missing		2
-#define M_string		3
-#define M_underflow		4
-#define M_overflow		5
-#define M_ctrlc			6
-#define M_ctrlb			7
-#define M_ctrlu			8
-#define M_exp			9
-#define M_op			10
-#define M_pfmts			11
-#define M_eof			12
-#define M_var			13
-#define M_number		14
-#define M_rparen		15
-#define M_saved			16
-#define M_eeprom		17
-#define M_defmacro		18
-#define M_prompt		19
-#define M_char			20
-#define M_stack			21
-#define M_startup		22
-#define M_id			23
-#define M_promptid		24
-#define M_functions		25
-#define M_oops			26
-#define M_arg			27
-#define M_function		28
+#define M_expected    0
+#define M_unexpected  1
+#define M_missing    2
+#define M_string    3
+#define M_underflow    4
+#define M_overflow    5
+#define M_ctrlc      6
+#define M_ctrlb      7
+#define M_ctrlu      8
+#define M_exp      9
+#define M_op      10
+#define M_pfmts      11
+#define M_eof      12
+#define M_var      13
+#define M_number    14
+#define M_rparen    15
+#define M_saved      16
+#define M_eeprom    17
+#define M_defmacro    18
+#define M_prompt    19
+#define M_char      20
+#define M_stack      21
+#define M_startup    22
+#define M_id      23
+#define M_promptid    24
+#define M_functions    25
+#define M_oops      26
+#define M_arg      27
+#define M_function    28
 
 
-//	Names for symbols
+//  Names for symbols
 //
-//	Each symbol in the grammar is parsed to a unique symval enumerated here
+//  Each symbol in the grammar is parsed to a unique symval enumerated here
 //
-//	One character symbols take their ascii value as their symval
-//	Complex symbols have the high bit set so start at 128 (0x80)
+//  One character symbols take their ascii value as their symval
+//  Complex symbols have the high bit set so start at 128 (0x80)
 //
-#define s_eof			0
-#define s_undef			(0 | 0x80)
-#define s_nval			(1 | 0x80)
-#define s_sval			(2 | 0x80)
-#define s_nvar			(3 | 0x80)
-#define s_le			(4 | 0x80)
-#define s_ge			(5 | 0x80)
-#define s_logicaland	(6 | 0x80)
-#define s_logicalor		(7 | 0x80)
-#define s_logicaleq		(8 | 0x80)
-#define s_logicalne		(9 | 0x80)
-#define s_shiftleft		(10 | 0x80)
-#define s_shiftright	(11 | 0x80)
-#define s_incr			(12 | 0x80)
-#define s_decr			(13 | 0x80)
-#define s_nfunct		(14 | 0x80)
-#define s_if			(15 | 0x80)
-#define s_while			(16 | 0x80)
-#define s_apin			(17 | 0x80)
-#define s_dpin			(18 | 0x80)
-#define s_define		(19 | 0x80)
-#define s_function		(20 | 0x80)
-#define s_rm			(21 | 0x80)
-#define s_run			(22 | 0x80)
-#define s_ps			(23 | 0x80)
-#define s_stop			(24 | 0x80)
-#define s_boot			(25 | 0x80)
-#define s_peep			(26 | 0x80)
-#define s_help			(27 | 0x80)
-#define s_ls			(28 | 0x80)
-#define s_print			(29 | 0x80)
-#define s_switch		(30 | 0x80)
-#define s_return		(31 | 0x80)
-#define s_returning		(32 | 0x80)
-#define s_arg			(33 | 0x80)
-#define s_else			(34 | 0x80)
-#define s_script_eeprom	(35 | 0x80)
+#define s_eof      0
+#define s_undef      (0 | 0x80)
+#define s_nval      (1 | 0x80)
+#define s_sval      (2 | 0x80)
+#define s_nvar      (3 | 0x80)
+#define s_le      (4 | 0x80)
+#define s_ge      (5 | 0x80)
+#define s_logicaland  (6 | 0x80)
+#define s_logicalor    (7 | 0x80)
+#define s_logicaleq    (8 | 0x80)
+#define s_logicalne    (9 | 0x80)
+#define s_shiftleft    (10 | 0x80)
+#define s_shiftright  (11 | 0x80)
+#define s_incr      (12 | 0x80)
+#define s_decr      (13 | 0x80)
+#define s_nfunct    (14 | 0x80)
+#define s_if      (15 | 0x80)
+#define s_while      (16 | 0x80)
+#define s_apin      (17 | 0x80)
+#define s_dpin      (18 | 0x80)
+#define s_define    (19 | 0x80)
+#define s_function    (20 | 0x80)
+#define s_rm      (21 | 0x80)
+#define s_run      (22 | 0x80)
+#define s_ps      (23 | 0x80)
+#define s_stop      (24 | 0x80)
+#define s_boot      (25 | 0x80)
+#define s_peep      (26 | 0x80)
+#define s_help      (27 | 0x80)
+#define s_ls      (28 | 0x80)
+#define s_print      (29 | 0x80)
+#define s_switch    (30 | 0x80)
+#define s_return    (31 | 0x80)
+#define s_returning    (32 | 0x80)
+#define s_arg      (33 | 0x80)
+#define s_else      (34 | 0x80)
+#define s_script_eeprom  (35 | 0x80)
 #define s_script_progmem (36 | 0x80)
-#define s_script_file	(37 | 0x80)
-#define s_comment		(38 | 0x80)
+#define s_script_file  (37 | 0x80)
+#define s_comment    (38 | 0x80)
 
 
-// Names for literal symbols: these one-character symbols 
+// Names for literal symbols: these one-character symbols
 // are represented by their 7-bit ascii char code
-#define s_semi			';'
-#define s_add			'+'
-#define s_sub			'-'
-#define s_mul			'*'
-#define s_div			'/'
-#define s_mod			'%'
-#define s_lparen		'('
-#define s_rparen		')'
-#define s_dot			'.'
-#define s_lt			'<'
-#define s_gt			'>'
-#define s_equals		'='
-#define s_bitand		'&'
-#define s_bitor			'|'
-#define s_comma			','
-#define s_bitnot		'~'
-#define s_logicalnot	'!'
-#define s_xor			'^'
-#define s_colon			':'
-#define s_pound			'#'
-#define s_quote			'"'
-#define s_dollars		'$'
-#define s_lcurly		'{'
-#define s_rcurly		'}'
+#define s_semi      ';'
+#define s_add      '+'
+#define s_sub      '-'
+#define s_mul      '*'
+#define s_div      '/'
+#define s_mod      '%'
+#define s_lparen    '('
+#define s_rparen    ')'
+#define s_dot      '.'
+#define s_lt      '<'
+#define s_gt      '>'
+#define s_equals    '='
+#define s_bitand    '&'
+#define s_bitor      '|'
+#define s_comma      ','
+#define s_bitnot    '~'
+#define s_logicalnot  '!'
+#define s_xor      '^'
+#define s_colon      ':'
+#define s_pound      '#'
+#define s_quote      '"'
+#define s_dollars    '$'
+#define s_lcurly    '{'
+#define s_rcurly    '}'
 
 
-#endif	// defined _BITLASH_H
+#endif  // defined _BITLASH_H
 

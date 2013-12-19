@@ -29,7 +29,7 @@ as reported by the MAX17048G's VCELL register.
 This does not return a voltage value. To convert this to a voltage,
 multiply by 5 and divide by 4096.
 */
-float HAL_FuelGaugeVoltage();
+int HAL_FuelGaugeVoltage();
 
 /*
 percentMAX17048G() returns an int value of the battery percentage

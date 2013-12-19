@@ -12,7 +12,7 @@
 #include <Wire.h>
 #include <Arduino.h>
 
-float HAL_FuelGaugeVoltage() {
+int HAL_FuelGaugeVoltage() {
   unsigned int vcell;
 
   vcell = HAL_FuelGaugei2cRead16(0x02);

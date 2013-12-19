@@ -171,6 +171,11 @@ void PinoccioClass::meshSetSecurityKey(const char *key) {
   }
 }
 
+void PinoccioClass::meshResetSecurityKey(void) {
+  const char buf[16] = {0xFF, 0xFF, 0xFF, 0xFF,0xFF, 0xFF, 0xFF, 0xFF,0xFF, 0xFF, 0xFF, 0xFF,0xFF, 0xFF, 0xFF, 0xFF};
+  meshSetSecurityKey(buf);
+}
+
 void PinoccioClass::meshSendMessage(MeshRequest request) {
   NWK_DataReq_t* req = request.getRequest();
   Serial.print("sending message to: ");

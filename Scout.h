@@ -31,6 +31,7 @@ class PinoccioScout : public PinoccioClass {
 
     void enableBackpackVcc();
     void disableBackpackVcc();
+    bool isBackpackVccEnabled();
 
     bool isLeadScout();
 
@@ -43,6 +44,7 @@ class PinoccioScout : public PinoccioClass {
     Backpack* backpacks[P_MAX_BACKPACKS];
 
     uint8_t batteryPercent;
+    bool vccEnabled;
 
     bool stateSaved;
     uint8_t digitalPinState[13];

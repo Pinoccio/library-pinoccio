@@ -11,7 +11,7 @@ static byte pingCounter = 0;
 static NWK_DataReq_t appDataReq;
 
 // TEMPORARY, must change this for wifi, and also have run "scout.sethqtoken(TOKEN)" and "mesh.config(ID)" to provision
-WIFI_PROFILE wifis = {"Air Patrol","Jabber","","","",};
+WIFI_PROFILE wifis = {"","","","","",};
 
 // use this if your lead scout doesn't have the backpack bus supporting firmware
 bool forceLeadScout = false;
@@ -78,6 +78,7 @@ void setup(void) {
   addBitlashFunction("mesh.config", (bitlash_function) meshConfig);
   addBitlashFunction("mesh.setpower", (bitlash_function) meshSetPower);
   addBitlashFunction("mesh.key", (bitlash_function) meshSetKey);
+  addBitlashFunction("mesh.resetkey", (bitlash_function) meshResetKey);
   addBitlashFunction("mesh.joingroup", (bitlash_function) meshJoinGroup);
   addBitlashFunction("mesh.leavegroup", (bitlash_function) meshLeaveGroup);
   addBitlashFunction("mesh.ingroup", (bitlash_function) meshIsInGroup);
@@ -107,6 +108,7 @@ void setup(void) {
   addBitlashFunction("led.bluevalue", (bitlash_function) ledSetBlueValue);
   addBitlashFunction("led.hexvalue", (bitlash_function) ledSetHexValue);
   addBitlashFunction("led.setrgb", (bitlash_function) ledSetRgb);
+  addBitlashFunction("led.savetorch", (bitlash_function) ledSaveTorch);
   addBitlashFunction("led.settorch", (bitlash_function) ledSetTorch);
   addBitlashFunction("led.report", (bitlash_function) ledReport);
 
@@ -644,6 +646,15 @@ numvar goToSleep(void) {
 numvar powerReport(void) {
   // TODO: return JSON formmated report of power details
   // ie: {pct:85,vlt:4.1,chg:false,vcc:true}
+  Serial.print("{p:");
+  Serial.print(Scout.getBatteryPercentage());
+  Serial.print(",v:");
+  Serial.print((int)Scout.getBatteryVoltage());
+  Serial.print(",c:");
+  Serial.print(Scout.isBatteryCharging());
+  Serial.print(",v:");
+  Serial.print(Scout.isBackpackVccEnabled());
+  Serial.println("}");
   return true;
 }
 
@@ -718,18 +729,28 @@ numvar ledSetRgb(void) {
   RgbLed.setBlueValue(getarg(3));
 }
 
+numvar ledSaveTorch(void) {
+  RgbLed.saveTorch(getarg(1), getarg(2), getarg(3));
+}
+
 numvar ledSetTorch(void) {
-  RgbLed.setTorch(getarg(1), getarg(2), getarg(3));
+  RgbLed.setTorch();
 }
 
 numvar ledReport(void) {
-  Serial.print("{\"r\":");
+  Serial.print("{\"c\": {\"r\":");
   Serial.print(RgbLed.getRedValue());
   Serial.print(",\"g\":");
   Serial.print(RgbLed.getGreenValue());
   Serial.print(",\"b\":");
   Serial.print(RgbLed.getBlueValue());
-  Serial.println("}");
+  Serial.print("}, \"t\": {\"r\":");
+  Serial.print(RgbLed.getRedTorchValue());
+  Serial.print(",\"g\":");
+  Serial.print(RgbLed.getGreenTorchValue());
+  Serial.print(",\"b\":");
+  Serial.print(RgbLed.getBlueTorchValue());
+  Serial.println("}}");
 }
 
 /****************************\
@@ -751,6 +772,10 @@ numvar meshSetPower(void) {
 
 numvar meshSetKey(void) {
   Pinoccio.meshSetSecurityKey((const char *)getstringarg(1));
+}
+
+numvar meshResetKey(void) {
+  Pinoccio.meshResetSecurityKey();
 }
 
 numvar meshJoinGroup(void) {

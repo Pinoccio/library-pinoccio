@@ -16,7 +16,7 @@ PinoccioScout::PinoccioScout() {
   pinMode(BATT_ALERT, INPUT);
 
   pinMode(VCC_ENABLE, OUTPUT);
-  digitalWrite(VCC_ENABLE, HIGH);
+  enableBackpackVcc();
 
   digitalWrite(SS, HIGH);
   pinMode(SS, OUTPUT);
@@ -67,11 +67,17 @@ float PinoccioScout::getBatteryVoltage() {
 }
 
 void PinoccioScout::enableBackpackVcc() {
+  vccEnabled = true;
   digitalWrite(VCC_ENABLE, HIGH);
 }
 
 void PinoccioScout::disableBackpackVcc() {
+  vccEnabled = false;
   digitalWrite(VCC_ENABLE, LOW);
+}
+
+bool PinoccioScout::isBackpackVccEnabled() {
+  return vccEnabled;
 }
 
 bool PinoccioScout::isLeadScout() {

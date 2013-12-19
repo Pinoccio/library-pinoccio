@@ -265,8 +265,26 @@ void HalRgbLed::setHex(char* hex) {
   setBlueValue(out[2]);
 }
 
-void HalRgbLed::setTorch(short red, short green, short blue) {
+void HalRgbLed::saveTorch(short red, short green, short blue) {
   eeprom_update_byte((uint8_t *)8127, red);
   eeprom_update_byte((uint8_t *)8128, green);
   eeprom_update_byte((uint8_t *)8129, blue);
+}
+
+void HalRgbLed::setTorch(void) {
+  setRedValue(eeprom_read_byte((uint8_t *)8127));
+  setGreenValue(eeprom_read_byte((uint8_t *)8128));
+  setBlueValue(eeprom_read_byte((uint8_t *)8129));
+}
+
+short HalRgbLed::getRedTorchValue(void) {
+  return eeprom_read_byte((uint8_t *)8127);
+}
+
+short HalRgbLed::getGreenTorchValue(void) {
+  return eeprom_read_byte((uint8_t *)8128);
+}
+
+short HalRgbLed::getBlueTorchValue(void) {
+  return eeprom_read_byte((uint8_t *)8129);
 }
