@@ -15,6 +15,7 @@ WIFI_PROFILE wifis = {"","","","","",};
 
 // use this if your lead scout doesn't have the backpack bus supporting firmware
 bool forceLeadScout = false;
+bool skipLeadScoutCode = false;
 bool forceScoutVersion = true;
 
 // this stuff should prob all be in the Scout class or somesuch but putting it here to get started
@@ -140,7 +141,7 @@ void setup(void) {
   //dump_backpacks();
 
   whoami = Scout.getAddress();
-  if(leadScout)
+  if(leadScout && !skipLeadScoutCode)
   {
     Serial.println("Lead Scout, starting WiFi");
     Wifi.begin(&wifis);
@@ -160,7 +161,7 @@ void setup(void) {
 void loop(void) {
 #if 0
   // SSL example code
-  if(leadScout)
+  if(leadScout && !skipLeadScoutCode)
   {
     IPAddress google(74,125,136,138);
     int c;
@@ -183,7 +184,7 @@ void loop(void) {
   }
 #endif
   Scout.loop();
-  if(leadScout) leadHQ();
+  if(leadScout && !skipLeadScoutCode) leadHQ();
 }
 
 ////////////////////
