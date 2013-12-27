@@ -60,8 +60,14 @@ class HalRgbLed {
     int redValue;
     int greenValue;
     int blueValue;
+
+    int blinkRedValue;
+    int blinkGreenValue;
+    int blinkBlueValue;
 };
 
 extern HalRgbLed RgbLed;
+extern SYS_Timer_t blinkTimer;
+static void halRgbLedBlinkTimerHandler(SYS_Timer_t *timer);
 
 #endif // _PINOCCIO_HAL_RGB_LED_H

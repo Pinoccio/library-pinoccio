@@ -10,13 +10,18 @@
 #include "halRgbLed.h"
 #include "Arduino.h"
 #include <avr/eeprom.h>
+#include "utility/sysTimer.h"
 
 HalRgbLed RgbLed;
+static SYS_Timer_t blinkTimer;
 
 HalRgbLed::HalRgbLed() {
   turnOff();
   enable();
   redValue = greenValue = blueValue = 0;
+  blinkTimer.interval = 500;
+  blinkTimer.mode = SYS_TIMER_INTERVAL_MODE;
+  blinkTimer.handler = halRgbLedBlinkTimerHandler;
 }
 
 void HalRgbLed::enable() {
@@ -122,10 +127,9 @@ void HalRgbLed::blinkRed(unsigned int ms) {
     return;
   }
   turnOff();
-  red();
-  delay(ms);
-  turnOff();
-  delay(ms);
+  blinkTimer.interval = ms;
+  setRedValue(255);
+  SYS_TimerStart(&blinkTimer);
 }
 
 void HalRgbLed::blinkGreen(unsigned int ms) {
@@ -287,4 +291,8 @@ short HalRgbLed::getGreenTorchValue(void) {
 
 short HalRgbLed::getBlueTorchValue(void) {
   return eeprom_read_byte((uint8_t *)8129);
+}
+
+static void halRgbLedBlinkTimerHandler(SYS_Timer_t *timer) {
+  turnOff();
 }
