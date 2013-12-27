@@ -38,9 +38,6 @@ class webWifi {
     uint8_t connected();
     uint8_t socketOpen(String url, String port);
 
-    void sendDeviceID();
-    void sendResponse(String data);
-
     friend class WifiClient;
     friend class WifiServer;
 };

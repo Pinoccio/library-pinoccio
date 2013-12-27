@@ -17,6 +17,11 @@ PinoccioClass::PinoccioClass() {
 
 PinoccioClass::~PinoccioClass() { }
 
+void PinoccioClass::startShell() {
+  shellEnabled = true;
+  initBitlash(115200);
+}
+
 void PinoccioClass::disableShell() {
   shellEnabled = false;
 }
@@ -24,6 +29,8 @@ void PinoccioClass::disableShell() {
 void PinoccioClass::setup() {
   if (shellEnabled) {
     initBitlash(115200);
+  } else {
+    Serial.begin(115200);
   }
 
   SYS_Init();

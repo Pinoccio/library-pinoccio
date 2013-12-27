@@ -49,6 +49,18 @@ public:
 #define CMD_TCERTADD        20
 #define CMD_TCERTDEL        21
 #define CMD_NTIMESYNC       22
+#define CMD_WAUTO           23
+#define CMD_ACENABLE        24
+#define CMD_PROFILESAVE     25
+#define CMD_PROFILEDEFAULT  26
+#define CMD_PROFILEGET      27
+#define CMD_CURCID          28
+#define CMD_PSDPSLEEP       29
+#define CMD_STORENWCONN     30
+#define CMD_RESTORENWCONN   31
+#define CMD_ATA             32
+#define CMD_LIST_SSIDS      33
+#define CMD_RESET           34
 
 #define CMD_INVALID         255
 
@@ -83,9 +95,12 @@ typedef struct _SOCK_TABLE {
 class webGainspan {
 public:
   uint8_t mode;
-  uint8_t init(uint32_t baud=115200);
+  uint8_t setup(uint32_t baud=115200);
+  uint8_t init();
   void configure(GS_PROFILE* prof);
+  bool autoConfigure(const char *ssid, const char *passphrase);
   uint8_t connect();
+  uint8_t autoConnect();
   uint8_t connected();
   void process();
   uint8_t connectSocket(SOCKET s, String ip, String port);
@@ -146,11 +161,13 @@ public:
 
   static const uint16_t SSIZE = 256; // Max Tx buffer siz
 
-
   String readline(void);
   uint8_t send_cmd(uint8_t cmd);
+  uint8_t send_raw_cmd(const char *cmd);
   uint8_t parse_resp(uint8_t cmd);
+  uint8_t parse_raw_resp();
   uint8_t send_cmd_w_resp(uint8_t cmd);
+  uint8_t send_raw_cmd_w_resp(const char *cmd);
   void parse_cmd(String buf);
   void parse_data(String buf);
 

@@ -17,7 +17,6 @@
 #include "utility/webWifiServer.h"
 #include "utility/webWifiClient.h"
 #include "utility/Flash.h"
-#include "utility/mqttClient.h"
 
 class PinoccioLeadScout : public PinoccioScout {
 
@@ -27,16 +26,14 @@ class PinoccioLeadScout : public PinoccioScout {
 
     void setup();
     void loop();
-    
+
     bool publishScoutToServer(uint16_t scoutAddress, char* topic, char* payload, int size);
     bool subscribeScoutToServer(uint16_t scoutAddress, char* topic);
-    
+
     bool publishTroopMetadataToServer(char* topic, char* payload, int size);
 
   protected:
     PinoccioWifiClient netClient;
-    mqttClient mqtt;
-  
     PinoccioScout* scouts[NWK_ROUTE_TABLE_SIZE];
 };
 

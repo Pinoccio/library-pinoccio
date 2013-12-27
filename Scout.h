@@ -5,7 +5,7 @@
 #define P_MAX_LEAD_SCOUTS 3
 
 #include <Pinoccio.h>
-#include <backpacks/Backpack.h>
+#include <utility/Backpack.h>
 #include <Wire.h>
 
 #include "utility/phy.h"

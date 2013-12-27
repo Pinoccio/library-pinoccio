@@ -2,7 +2,6 @@
 #define LIB_PINOCCIO_H_
 
 //#define PINOCCIO_DEBUG
-
 #ifdef PINOCCIO_DEBUG
 #  define D(x) x
 #else
@@ -53,6 +52,7 @@ class PinoccioClass {
     PinoccioClass();
     ~PinoccioClass();
 
+    void startShell();
     void disableShell();
     void setup();
     void loop();

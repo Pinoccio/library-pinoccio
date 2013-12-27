@@ -35,18 +35,31 @@ const char PROGMEM cmd_19[] = "AT+SSLOPEN=";
 const char PROGMEM cmd_20[] = "AT+TCERTADD=";
 const char PROGMEM cmd_21[] = "AT+TCERTDEL=";
 const char PROGMEM cmd_22[] = "AT+NTIMESYNC=";
+const char PROGMEM cmd_23[] = "AT+WAUTO=";
+const char PROGMEM cmd_24[] = "ATC1";
+const char PROGMEM cmd_25[] = "AT&W0";
+const char PROGMEM cmd_26[] = "AT&Y0";
+const char PROGMEM cmd_27[] = "AT&V";
+const char PROGMEM cmd_28[] = "AT+CID=?";
+const char PROGMEM cmd_29[] = "AT+PSDPSLEEP";
+const char PROGMEM cmd_30[] = "AT+STORENWCONN";
+const char PROGMEM cmd_31[] = "AT+RESTORENWCONN";
+const char PROGMEM cmd_32[] = "ATA";
+const char PROGMEM cmd_33[] = "AT+WS";
+const char PROGMEM cmd_34[] = "AT+RESET";
 
 const char* const PROGMEM cmd_tbl[] =
 {
   cmd_0, cmd_1, cmd_2, cmd_3, cmd_4, cmd_5, cmd_6, cmd_7,
   cmd_8, cmd_9, cmd_10, cmd_11, cmd_12, cmd_13, cmd_14,
   cmd_15, cmd_16, cmd_17, cmd_18, cmd_19, cmd_20, cmd_21,
-  cmd_22,
+  cmd_22, cmd_23, cmd_24, cmd_25, cmd_26, cmd_27, cmd_28,
+  cmd_29, cmd_30, cmd_31, cmd_32, cmd_33, cmd_34
 };
 
 /* Make sure the cmd_buffer is large enough to hold
  * the largest command in the above table */
-char cmd_buffer[30];
+char cmd_buffer[64];
 
 
 uint8_t hex_to_int(char c)
@@ -80,46 +93,59 @@ char int_to_hex(uint8_t c)
   return val;
 }
 
-uint8_t webGainspan::init(uint32_t baud)
+uint8_t webGainspan::setup(uint32_t baud)
+{
+  D(Serial.println("DEBUG: Gainspan::setup 1"));
+  Serial1.begin(baud);
+  D(Serial.println("DEBUG: Gainspan::setup 2"));
+
+  uint32_t timeout = millis();
+  uint8_t respDone = 0;
+  String buf;
+
+  D(Serial.println("DEBUG: Gainspan::setup 3"));
+
+  while (millis() - timeout < 10000 && !respDone) {
+    buf = readline();
+    if (buf.startsWith("    IP")) {
+      D(Serial.println("DEBUG: Gainspan::setup 4"));
+      D(Serial.println(buf));
+      respDone = 1;
+      flush();
+      return 1;
+    }
+    delay(100);
+  }
+
+  D(Serial.println("DEBUG: Gainspan::setup 5"));
+  return 0;
+}
+
+uint8_t webGainspan::init()
 {
   D(Serial.println("DEBUG: Gainspan::init 1"));
-  Serial1.begin(baud);
+  //flush();
+
   D(Serial.println("DEBUG: Gainspan::init 2"));
   if (!send_cmd_w_resp(CMD_AT)) {
     D(Serial.println("DEBUG: Gainspan::init 2.1"));
     return 0;
   }
-  D(Serial.println("DEBUG: Gainspan::init 3"));
-  dev_mode = DEV_OP_MODE_COMMAND;
-  connection_state = DEV_CONN_ST_DISCONNECTED;
-  dataOnSock = 255;
-  D(Serial.println("DEBUG: Gainspan::init 4"));
-  for (int i = 0; i < 4; i++) {
-    this->sock_table[i].cid = 0;
-    this->sock_table[i].port = 0;
-    this->sock_table[i].protocol = 0;
-    this->sock_table[i].status = 0;
-  }
-  D(Serial.println("DEBUG: Gainspan::init 5"));
-  // disable echo
-  if (!send_cmd_w_resp(CMD_DISABLE_ECHO)) {
-    //D(Serial.println("DEBUG: Gainspan::init 5.1"));
-    //return 0;
-  }
-  D(Serial.println("DEBUG: Gainspan::init 6"));
 
   // get device ID
+  D(Serial.println("DEBUG: Gainspan::init 4"));
   if (!send_cmd_w_resp(CMD_GET_MAC_ADDR)) {
-    D(Serial.println("DEBUG: Gainspan::init 6.1"));
+    D(Serial.println("DEBUG: Gainspan::init 4.1"));
     return 0;
   }
 
   // get version numbers
+  D(Serial.println("DEBUG: Gainspan::init 5"));
   if (!send_cmd_w_resp(CMD_GET_VERSION)) {
-    D(Serial.println("DEBUG: Gainspan::init 6.1"));
+    D(Serial.println("DEBUG: Gainspan::init 5.1"));
     return 0;
   }
-  D(Serial.println("DEBUG: Gainspan::init 7"));
+  D(Serial.println("DEBUG: Gainspan::init 6"));
   return 1;
 }
 
@@ -127,7 +153,7 @@ uint8_t webGainspan::send_cmd(uint8_t cmd)
 {
   flush();
 
-  memset(cmd_buffer, 16, 0);
+  memset(cmd_buffer, 64, 0);
   strcpy_P(cmd_buffer, (char*)pgm_read_word(&(cmd_tbl[cmd])));
   String cmd_str = String(cmd_buffer);
 
@@ -145,6 +171,17 @@ uint8_t webGainspan::send_cmd(uint8_t cmd)
   case CMD_NET_STATUS:
   case CMD_AT:
   case CMD_GET_VERSION:
+  case CMD_ACENABLE:
+  case CMD_PROFILESAVE:
+  case CMD_PROFILEDEFAULT:
+  case CMD_PROFILEGET:
+  case CMD_CURCID:
+  case CMD_PSDPSLEEP:
+  case CMD_STORENWCONN:
+  case CMD_RESTORENWCONN:
+  case CMD_ATA:
+  case CMD_LIST_SSIDS:
+  case CMD_RESET:
   {
     Serial1.println(cmd_str);
     break;
@@ -158,10 +195,18 @@ uint8_t webGainspan::send_cmd(uint8_t cmd)
   case CMD_SET_SSID:
   {
     String cmd_buf;
-    if (mode == 0)
+    if (mode == 0) {
       cmd_buf = cmd_str + '"' + this->ssid + '"';
-    else if (mode == 2)
+    } else if (mode == 2) {
       cmd_buf = cmd_str + this->ssid + ",,11";
+    }
+    Serial1.println(cmd_buf);
+    break;
+  }
+  case CMD_WAUTO:
+  {
+    String cmd_buf;
+    cmd_buf = cmd_str + mode + "," + '"' + this->ssid + '"';
     Serial1.println(cmd_buf);
     break;
   }
@@ -249,6 +294,21 @@ uint8_t webGainspan::send_cmd(uint8_t cmd)
   return 1;
 }
 
+uint8_t webGainspan::send_raw_cmd(const char *cmd)
+{
+  flush();
+
+  memset(cmd_buffer, 64, 0);
+  strncpy(cmd_buffer, cmd, 64);
+  String cmd_str = String(cmd_buffer);
+
+  D(Serial.print("DEBUG: command sent: "));
+  D(Serial.println(cmd_str));
+
+  Serial1.println(cmd_str);
+  return 1;
+}
+
 uint8_t webGainspan::parse_resp(uint8_t cmd)
 {
   uint8_t resp_done = 0;
@@ -258,8 +318,9 @@ uint8_t webGainspan::parse_resp(uint8_t cmd)
   while (!resp_done) {
 
     buf = readline();
-    if (buf == "")
+    if (buf == "") {
       continue;
+    }
 
     D(Serial.print("DEBUG: response received: "));
     D(Serial.println(buf));
@@ -267,14 +328,18 @@ uint8_t webGainspan::parse_resp(uint8_t cmd)
     switch(cmd) {
     case CMD_AT:
     {
+      bool doubleCheck = false;
       if (buf == "OK" || buf == "AT") {
         /* got OK */
         ret = 1;
         resp_done = 1;
       } else if (buf.startsWith("ERROR")) {
         /* got ERROR */
+        if (doubleCheck) {
+          resp_done = 1;
+        }
+        doubleCheck = true;
         ret = 0;
-        resp_done = 1;
       } else {
         /* got unknown response */
         ret = 0;
@@ -291,6 +356,13 @@ uint8_t webGainspan::parse_resp(uint8_t cmd)
     case CMD_NETWORK_SET:
     case CMD_WIRELESS_MODE:
     case CMD_ENABLE_DHCPSVR:
+    case CMD_ACENABLE:
+    case CMD_WAUTO:
+    case CMD_PROFILESAVE:
+    case CMD_PROFILEDEFAULT:
+    case CMD_STORENWCONN:
+    case CMD_RESTORENWCONN:
+    case CMD_ATA:
     {
       if (buf == "OK") {
         /* got OK */
@@ -303,7 +375,6 @@ uint8_t webGainspan::parse_resp(uint8_t cmd)
       }
       break;
     }
-    case CMD_NET_STATUS:
     case CMD_SSLOPEN:
     case CMD_TCERTADD:
     case CMD_TCERTDEL:
@@ -319,6 +390,24 @@ uint8_t webGainspan::parse_resp(uint8_t cmd)
         resp_done = 1;
       } else {
         D(Serial.println(buf));
+      }
+      break;
+    }
+    case CMD_PROFILEGET:
+    case CMD_NET_STATUS:
+    case CMD_CURCID:
+    case CMD_LIST_SSIDS:
+    {
+      if (buf == "OK") {
+        /* got OK */
+        ret = 1;
+        resp_done = 1;
+      } else if (buf.startsWith("ERROR")) {
+        /* got ERROR */
+        ret = 0;
+        resp_done = 1;
+      } else {
+        Serial.println(buf);
       }
       break;
     }
@@ -474,8 +563,16 @@ uint8_t webGainspan::parse_resp(uint8_t cmd)
           resp_done = 1;
         }
         break;
-      }
-      default:
+    }
+    case CMD_PSDPSLEEP:
+    case CMD_RESET:
+    {
+      /* these commands never return anything, so just return */
+      ret = 1;
+      resp_done = 1;
+      break;
+    }
+    default:
       break;
     }
   }
@@ -483,10 +580,47 @@ uint8_t webGainspan::parse_resp(uint8_t cmd)
   return ret;
 }
 
+uint8_t webGainspan::parse_raw_resp()
+{
+  uint8_t resp_done = 0;
+  uint8_t ret = 0;
+  String buf;
+
+  while (!resp_done) {
+
+    buf = readline();
+    if (buf == "") {
+      continue;
+    }
+
+    if (buf == "OK") {
+      /* got OK */
+      ret = 1;
+      resp_done = 1;
+    } else if (buf.startsWith("ERROR")) {
+      /* got ERROR */
+      ret = 0;
+      resp_done = 1;
+    } else {
+      Serial.println(buf);
+    }
+  }
+  return ret;
+}
+
 uint8_t webGainspan::send_cmd_w_resp(uint8_t cmd)
 {
   if (send_cmd(cmd)) {
     return parse_resp(cmd);
+  } else {
+    return 0;
+  }
+}
+
+uint8_t webGainspan::send_raw_cmd_w_resp(const char *cmd)
+{
+  if (send_raw_cmd(cmd)) {
+    return parse_raw_resp();
   } else {
     return 0;
   }
@@ -500,6 +634,47 @@ void webGainspan::configure(GS_PROFILE *prof)
   this->local_ip     = prof->ip;
   this->subnet       = prof->subnet;
   this->gateway      = prof->gateway;
+}
+
+bool webGainspan::autoConfigure(const char *ssid, const char *passphrase)
+{
+  this->ssid = String(ssid);
+  this->security_key = String(passphrase);
+
+  if (mode == 0) {
+    if (this->security_key != NULL) {
+      if (!send_cmd_w_resp(CMD_SET_WPA_PSK)) {
+        return 0;
+      }
+    }
+
+    if (this->local_ip == NULL) {
+      if (!send_cmd_w_resp(CMD_ENABLE_DHCP)) {
+        return 0;
+      }
+    } else {
+      if (!send_cmd_w_resp(CMD_NETWORK_SET)) {
+        return 0;
+      }
+    }
+
+    if (!send_cmd_w_resp(CMD_WAUTO)) {
+      return 0;
+    }
+
+    if (!send_cmd_w_resp(CMD_ACENABLE)) {
+      return 0;
+    }
+
+    if (!send_cmd_w_resp(CMD_PROFILESAVE)) {
+      return 0;
+    }
+
+    if (!send_cmd_w_resp(CMD_PROFILEDEFAULT)) {
+      return 0;
+    }
+  }
+  return 1;
 }
 
 uint8_t webGainspan::connect()
@@ -547,7 +722,21 @@ uint8_t webGainspan::connect()
     if (!send_cmd_w_resp(CMD_ENABLE_DHCPSVR)) {
       return 0;
     }
+  }
 
+  connection_state = DEV_CONN_ST_CONNECTED;
+
+  return 1;
+}
+
+uint8_t webGainspan::autoConnect()
+{
+  if (connection_state == DEV_CONN_ST_CONNECTED && !send_cmd_w_resp(CMD_DISCONNECT)) {
+    return 0;
+  }
+
+  if (!send_cmd_w_resp(CMD_ATA)) {
+    return 0;
   }
 
   connection_state = DEV_CONN_ST_CONNECTED;
@@ -719,8 +908,9 @@ void webGainspan::process()
   char inByte;
   uint8_t processDone = 0;
 
-  if (!Serial1.available())
+  if (!Serial1.available()) {
     return;
+  }
 
   while (!processDone) {
     if (dev_mode == DEV_OP_MODE_COMMAND) {
