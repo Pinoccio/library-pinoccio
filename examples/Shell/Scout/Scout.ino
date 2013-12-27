@@ -2,7 +2,7 @@
 #include <Wire.h>
 #include <Scout.h>
 #include <PBBP.h>
-#include <utility/WifiBackpack.h>
+#include <utility/WiFiBackpack.h>
 extern "C" {
 #include <j0g.h>
 #include "utility/sysTimer.h"
