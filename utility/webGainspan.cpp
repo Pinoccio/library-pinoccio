@@ -49,6 +49,7 @@ const char PROGMEM cmd_33[] = "AT+WS";
 const char PROGMEM cmd_34[] = "AT+RESET";
 const char PROGMEM cmd_35[] = "AT+NCMAUTO=0,0";
 const char PROGMEM cmd_36[] = "AT&F";
+const char PROGMEM cmd_37[] = "ATS7=65535";
 
 const char* const PROGMEM cmd_tbl[] =
 {
@@ -57,7 +58,7 @@ const char* const PROGMEM cmd_tbl[] =
   cmd_15, cmd_16, cmd_17, cmd_18, cmd_19, cmd_20, cmd_21,
   cmd_22, cmd_23, cmd_24, cmd_25, cmd_26, cmd_27, cmd_28,
   cmd_29, cmd_30, cmd_31, cmd_32, cmd_33, cmd_34, cmd_35,
-  cmd_36
+  cmd_36, cmd_37
 };
 
 /* Make sure the cmd_buffer is large enough to hold
@@ -184,6 +185,7 @@ uint8_t webGainspan::send_cmd(uint8_t cmd)
   case CMD_PROFILEERASE:
   case CMD_NCMAUTO_START:
   case CMD_NCMAUTO_STOP:
+  case CMD_L4RETRY_COUNT:
   {
     Serial1.println(cmd_str);
     break;
@@ -374,6 +376,7 @@ uint8_t webGainspan::parse_resp(uint8_t cmd)
     case CMD_RESTORENWCONN:
     case CMD_PROFILEERASE:
     case CMD_NCMAUTO_STOP:
+    case CMD_L4RETRY_COUNT:
     {
       if (buf == "OK") {
         /* got OK */
@@ -407,7 +410,6 @@ uint8_t webGainspan::parse_resp(uint8_t cmd)
     case CMD_PROFILEGET:
     case CMD_NET_STATUS:
     case CMD_CURCID:
-    case CMD_LIST_SSIDS:
     {
       if (buf == "OK") {
         /* got OK */
@@ -416,6 +418,17 @@ uint8_t webGainspan::parse_resp(uint8_t cmd)
       } else if (buf.startsWith("ERROR")) {
         /* got ERROR */
         ret = 0;
+        resp_done = 1;
+      } else {
+        Serial.println(buf);
+      }
+      break;
+    }
+    case CMD_LIST_SSIDS:
+    {
+      if (buf == "OK") {
+        /* got OK */
+        ret = 1;
         resp_done = 1;
       } else {
         Serial.println(buf);
@@ -695,6 +708,10 @@ bool webGainspan::autoConfigure(const char *ssid, const char *passphrase, String
       }
     }
 
+    if (!send_cmd_w_resp(CMD_L4RETRY_COUNT)) {
+      return 0;
+    }
+
     if (!send_cmd_w_resp(CMD_WAUTO)) {
       return 0;
     }
@@ -810,7 +827,7 @@ String webGainspan::readline(void)
 
   while (!endDetected)
   {
-    if (millis() - start > 30) {
+    if (millis() - start > 1000) {
       timedOut = true;
       strBuf = "";
       break;
@@ -1122,6 +1139,12 @@ void webGainspan::parse_cmd(String buf)
               this->sock_table[new_sock].port = this->sock_table[sock].port;
               this->sock_table[new_sock].protocol = this->sock_table[sock].protocol;
               this->sock_table[new_sock].status = SOCK_STATUS::ESTABLISHED;
+              if (debugAutoConnect) {
+                Serial.print("Established socket ");
+                Serial.print(new_sock);
+                Serial.print(" for CID: ");
+                Serial.println(this->sock_table[new_sock].cid);
+              }
               break;
             }
           }
@@ -1169,7 +1192,9 @@ void webGainspan::parse_cmd(String buf)
       }
     }
   } else if (buf == "ERROR") {
-    // generic error
+    if (debugAutoConnect) {
+      Serial.println("Error received on Wi-Fi module:");
+    }
   }
 }
 

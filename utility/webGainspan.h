@@ -63,6 +63,7 @@ public:
 #define CMD_RESET           34
 #define CMD_NCMAUTO_STOP    35
 #define CMD_PROFILEERASE    36
+#define CMD_L4RETRY_COUNT   37
 
 #define CMD_INVALID         255
 
