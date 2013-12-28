@@ -376,9 +376,21 @@ uint8_t webGainspan::parse_resp(uint8_t cmd)
     case CMD_RESTORENWCONN:
     case CMD_PROFILEERASE:
     case CMD_NCMAUTO_STOP:
-    case CMD_L4RETRY_COUNT:
     {
       if (buf == "OK") {
+        /* got OK */
+        ret = 1;
+        resp_done = 1;
+      } else if (buf.startsWith("ERROR")) {
+        /* got ERROR */
+        ret = 0;
+        resp_done = 1;
+      }
+      break;
+    }
+    case CMD_L4RETRY_COUNT:
+    {
+      if (buf == "ATS7=65535") {
         /* got OK */
         ret = 1;
         resp_done = 1;

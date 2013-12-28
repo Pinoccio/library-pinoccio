@@ -1,7 +1,7 @@
 #include <Arduino.h>
 #include <utility/WiFiBackpack.h>
 
-#define P_BACKPACK_WIFI_DEBUG
+//#define P_BACKPACK_WIFI_DEBUG
 #ifdef P_BACKPACK_WIFI_DEBUG
 #  define WD(x) x
 #else
