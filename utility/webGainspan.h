@@ -64,6 +64,8 @@ public:
 #define CMD_NCMAUTO_STOP    35
 #define CMD_PROFILEERASE    36
 #define CMD_L4RETRY_COUNT   37
+#define CMD_CLOSEALL        38
+#define CMD_AUTOCONFIGSET   39
 
 #define CMD_INVALID         255
 
@@ -205,6 +207,7 @@ private:
   String wlanVersion;
   String dns_url_ip;
   uint8_t tx_done;
+  bool isAutoConfigSet;
 
   SOCK_TABLE sock_table[4];
   uint8_t socket_num;

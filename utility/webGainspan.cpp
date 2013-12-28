@@ -50,6 +50,8 @@ const char PROGMEM cmd_34[] = "AT+RESET";
 const char PROGMEM cmd_35[] = "AT+NCMAUTO=0,0";
 const char PROGMEM cmd_36[] = "AT&F";
 const char PROGMEM cmd_37[] = "ATS7=65535";
+const char PROGMEM cmd_38[] = "AT+NCLOSEALL";
+const char PROGMEM cmd_39[] = "ATS7=?";
 
 const char* const PROGMEM cmd_tbl[] =
 {
@@ -58,7 +60,7 @@ const char* const PROGMEM cmd_tbl[] =
   cmd_15, cmd_16, cmd_17, cmd_18, cmd_19, cmd_20, cmd_21,
   cmd_22, cmd_23, cmd_24, cmd_25, cmd_26, cmd_27, cmd_28,
   cmd_29, cmd_30, cmd_31, cmd_32, cmd_33, cmd_34, cmd_35,
-  cmd_36, cmd_37
+  cmd_36, cmd_37, cmd_38, cmd_39
 };
 
 /* Make sure the cmd_buffer is large enough to hold
@@ -100,6 +102,7 @@ char int_to_hex(uint8_t c)
 webGainspan::webGainspan() {
   dataOnSock = 255;
   debugAutoConnect = false;
+  isAutoConfigSet = true;
 }
 
 uint8_t webGainspan::setup(uint32_t baud)
@@ -114,7 +117,12 @@ uint8_t webGainspan::setup(uint32_t baud)
 
   D(Serial.println("DEBUG: Gainspan::setup 3"));
 
-  while (millis() - timeout < 10000 && !respDone) {
+  if (!send_cmd_w_resp(CMD_AUTOCONFIGSET)) {
+    D(Serial.println("DEBUG: Gainspan::init 3.1"));
+    return 0;
+  }
+
+  while (isAutoConfigSet && millis() - timeout < 10000 && !respDone) {
     buf = readline();
     buf.trim();
     if (buf.startsWith("NWCONN-SUCCESS")) {
@@ -123,9 +131,9 @@ uint8_t webGainspan::setup(uint32_t baud)
       respDone = 1;
       return 1;
     }
-    delay(100);
   }
 
+  delay(100);
   D(Serial.println("DEBUG: Gainspan::setup 5"));
   return 0;
 }
@@ -186,6 +194,8 @@ uint8_t webGainspan::send_cmd(uint8_t cmd)
   case CMD_NCMAUTO_START:
   case CMD_NCMAUTO_STOP:
   case CMD_L4RETRY_COUNT:
+  case CMD_CLOSEALL:
+  case CMD_AUTOCONFIGSET:
   {
     Serial1.println(cmd_str);
     break;
@@ -376,9 +386,27 @@ uint8_t webGainspan::parse_resp(uint8_t cmd)
     case CMD_RESTORENWCONN:
     case CMD_PROFILEERASE:
     case CMD_NCMAUTO_STOP:
+    case CMD_CLOSEALL:
     {
       if (buf == "OK") {
         /* got OK */
+        ret = 1;
+        resp_done = 1;
+      } else if (buf.startsWith("ERROR")) {
+        /* got ERROR */
+        ret = 0;
+        resp_done = 1;
+      }
+      break;
+    }
+    case CMD_AUTOCONFIGSET:
+    {
+      if (buf == "OK") {
+        /* got OK */
+        ret = 1;
+        resp_done = 1;
+      } else if (buf == "20") {
+        isAutoConfigSet = false;
         ret = 1;
         resp_done = 1;
       } else if (buf.startsWith("ERROR")) {
@@ -691,14 +719,11 @@ bool webGainspan::autoConfigure(const char *ssid, const char *passphrase, String
   this->security_key = String(passphrase);
 
   if (mode == 0) {
-
-    if (!send_cmd_w_resp(CMD_CLOSE_CONN)) {
+    if (!send_cmd_w_resp(CMD_CLOSEALL)) {
       return 0;
     }
 
-    if (!send_cmd_w_resp(CMD_DISCONNECT)) {
-      return 0;
-    }
+    if (!send_cmd_w_resp(CMD_DISCONNECT)) { }
 
     if (!send_cmd_w_resp(CMD_PROFILEERASE)) {
       return 0;
