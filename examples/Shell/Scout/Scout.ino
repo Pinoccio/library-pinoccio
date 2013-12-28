@@ -19,6 +19,8 @@ WiFiBackpack wifi = WiFiBackpack();
 
 // use this if your lead scout doesn't have the backpack bus supporting firmware
 bool forceLeadScout = true;
+// connect to hq on startup.
+bool forceHqConnect = false;
 bool forceScoutVersion = true;
 
 // this stuff should prob all be in the Scout class or somesuch but putting it here to get started
@@ -91,6 +93,7 @@ void setup(void) {
     Serial.print("Wi-Fi backpack connecting...");
     wifi.setup();
     wifi.init();
+    if(forceHqConnect) hqConnect();
     Serial.println("Done");
   }
 
