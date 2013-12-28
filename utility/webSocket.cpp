@@ -79,11 +79,11 @@ uint16_t send(SOCKET s, const uint8_t * buf, uint16_t len)
   uint16_t ret=0;
   uint16_t freesize=0;
 
-  if (len > Gainspan.SSIZE)
+  if (len > Gainspan.SSIZE) {
     ret = Gainspan.SSIZE; // check size not to exceed MAX size.
-  else
+  } else {
     ret = len;
-
+  }
   ret = Gainspan.writeData(s, buf, len);
 
   return ret;

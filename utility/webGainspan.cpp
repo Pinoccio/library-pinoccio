@@ -36,7 +36,7 @@ const char PROGMEM cmd_20[] = "AT+TCERTADD=";
 const char PROGMEM cmd_21[] = "AT+TCERTDEL=";
 const char PROGMEM cmd_22[] = "AT+NTIMESYNC=";
 const char PROGMEM cmd_23[] = "AT+WAUTO=";
-const char PROGMEM cmd_24[] = "ATC1";
+const char PROGMEM cmd_24[] = "AT+NAUTO=";
 const char PROGMEM cmd_25[] = "AT&W0";
 const char PROGMEM cmd_26[] = "AT&Y0";
 const char PROGMEM cmd_27[] = "AT&V";
@@ -44,9 +44,11 @@ const char PROGMEM cmd_28[] = "AT+CID=?";
 const char PROGMEM cmd_29[] = "AT+PSDPSLEEP";
 const char PROGMEM cmd_30[] = "AT+STORENWCONN";
 const char PROGMEM cmd_31[] = "AT+RESTORENWCONN";
-const char PROGMEM cmd_32[] = "ATA";
+const char PROGMEM cmd_32[] = "AT+NCMAUTO=0,1,1,0";
 const char PROGMEM cmd_33[] = "AT+WS";
 const char PROGMEM cmd_34[] = "AT+RESET";
+const char PROGMEM cmd_35[] = "AT+NCMAUTO=0,0";
+const char PROGMEM cmd_36[] = "AT&F";
 
 const char* const PROGMEM cmd_tbl[] =
 {
@@ -54,7 +56,8 @@ const char* const PROGMEM cmd_tbl[] =
   cmd_8, cmd_9, cmd_10, cmd_11, cmd_12, cmd_13, cmd_14,
   cmd_15, cmd_16, cmd_17, cmd_18, cmd_19, cmd_20, cmd_21,
   cmd_22, cmd_23, cmd_24, cmd_25, cmd_26, cmd_27, cmd_28,
-  cmd_29, cmd_30, cmd_31, cmd_32, cmd_33, cmd_34
+  cmd_29, cmd_30, cmd_31, cmd_32, cmd_33, cmd_34, cmd_35,
+  cmd_36
 };
 
 /* Make sure the cmd_buffer is large enough to hold
@@ -93,6 +96,11 @@ char int_to_hex(uint8_t c)
   return val;
 }
 
+webGainspan::webGainspan() {
+  dataOnSock = 255;
+  debugAutoConnect = false;
+}
+
 uint8_t webGainspan::setup(uint32_t baud)
 {
   D(Serial.println("DEBUG: Gainspan::setup 1"));
@@ -107,11 +115,11 @@ uint8_t webGainspan::setup(uint32_t baud)
 
   while (millis() - timeout < 10000 && !respDone) {
     buf = readline();
-    if (buf.startsWith("    IP")) {
+    buf.trim();
+    if (buf.startsWith("NWCONN-SUCCESS")) {
       D(Serial.println("DEBUG: Gainspan::setup 4"));
       D(Serial.println(buf));
       respDone = 1;
-      flush();
       return 1;
     }
     delay(100);
@@ -124,28 +132,21 @@ uint8_t webGainspan::setup(uint32_t baud)
 uint8_t webGainspan::init()
 {
   D(Serial.println("DEBUG: Gainspan::init 1"));
-  //flush();
-
-  D(Serial.println("DEBUG: Gainspan::init 2"));
-  if (!send_cmd_w_resp(CMD_AT)) {
-    D(Serial.println("DEBUG: Gainspan::init 2.1"));
-    return 0;
-  }
 
   // get device ID
-  D(Serial.println("DEBUG: Gainspan::init 4"));
+  D(Serial.println("DEBUG: Gainspan::init 3"));
   if (!send_cmd_w_resp(CMD_GET_MAC_ADDR)) {
-    D(Serial.println("DEBUG: Gainspan::init 4.1"));
+    D(Serial.println("DEBUG: Gainspan::init 3.1"));
     return 0;
   }
 
   // get version numbers
+  D(Serial.println("DEBUG: Gainspan::init 4"));
+    if (!send_cmd_w_resp(CMD_GET_VERSION)) {
+      D(Serial.println("DEBUG: Gainspan::init 4.1"));
+      return 0;
+    }
   D(Serial.println("DEBUG: Gainspan::init 5"));
-  if (!send_cmd_w_resp(CMD_GET_VERSION)) {
-    D(Serial.println("DEBUG: Gainspan::init 5.1"));
-    return 0;
-  }
-  D(Serial.println("DEBUG: Gainspan::init 6"));
   return 1;
 }
 
@@ -171,7 +172,6 @@ uint8_t webGainspan::send_cmd(uint8_t cmd)
   case CMD_NET_STATUS:
   case CMD_AT:
   case CMD_GET_VERSION:
-  case CMD_ACENABLE:
   case CMD_PROFILESAVE:
   case CMD_PROFILEDEFAULT:
   case CMD_PROFILEGET:
@@ -179,9 +179,11 @@ uint8_t webGainspan::send_cmd(uint8_t cmd)
   case CMD_PSDPSLEEP:
   case CMD_STORENWCONN:
   case CMD_RESTORENWCONN:
-  case CMD_ATA:
   case CMD_LIST_SSIDS:
   case CMD_RESET:
+  case CMD_PROFILEERASE:
+  case CMD_NCMAUTO_START:
+  case CMD_NCMAUTO_STOP:
   {
     Serial1.println(cmd_str);
     break;
@@ -207,6 +209,13 @@ uint8_t webGainspan::send_cmd(uint8_t cmd)
   {
     String cmd_buf;
     cmd_buf = cmd_str + mode + "," + '"' + this->ssid + '"';
+    Serial1.println(cmd_buf);
+    break;
+  }
+  case CMD_NAUTO:
+  {
+    String cmd_buf;
+    cmd_buf = cmd_str +  "0,1," + this->ip + ',' + this->port;
     Serial1.println(cmd_buf);
     break;
   }
@@ -314,6 +323,7 @@ uint8_t webGainspan::parse_resp(uint8_t cmd)
   uint8_t resp_done = 0;
   uint8_t ret = 0;
   String buf;
+  uint32_t timeout = millis();
 
   while (!resp_done) {
 
@@ -356,13 +366,14 @@ uint8_t webGainspan::parse_resp(uint8_t cmd)
     case CMD_NETWORK_SET:
     case CMD_WIRELESS_MODE:
     case CMD_ENABLE_DHCPSVR:
-    case CMD_ACENABLE:
     case CMD_WAUTO:
+    case CMD_NAUTO:
     case CMD_PROFILESAVE:
     case CMD_PROFILEDEFAULT:
     case CMD_STORENWCONN:
     case CMD_RESTORENWCONN:
-    case CMD_ATA:
+    case CMD_PROFILEERASE:
+    case CMD_NCMAUTO_STOP:
     {
       if (buf == "OK") {
         /* got OK */
@@ -465,6 +476,19 @@ uint8_t webGainspan::parse_resp(uint8_t cmd)
         client_cid = INVALID_CID;
         this->sock_table[socket_num].cid = 0;
         this->sock_table[socket_num].status = SOCK_STATUS::CLOSED;
+        ret = 0;
+        resp_done = 1;
+      }
+      break;
+    }
+    case CMD_NCMAUTO_START:
+    {
+      if (buf.startsWith("NWCONN-SUCCESS")) {
+        connection_state = DEV_CONN_ST_CONNECTED;
+        ret = 1;
+        resp_done = 1;
+      } else if (millis() - timeout > 10000) {
+        /* got timeout */
         ret = 0;
         resp_done = 1;
       }
@@ -636,12 +660,25 @@ void webGainspan::configure(GS_PROFILE *prof)
   this->gateway      = prof->gateway;
 }
 
-bool webGainspan::autoConfigure(const char *ssid, const char *passphrase)
+bool webGainspan::autoConfigure(const char *ssid, const char *passphrase, String ip, String port)
 {
   this->ssid = String(ssid);
   this->security_key = String(passphrase);
 
   if (mode == 0) {
+
+    if (!send_cmd_w_resp(CMD_CLOSE_CONN)) {
+      return 0;
+    }
+
+    if (!send_cmd_w_resp(CMD_DISCONNECT)) {
+      return 0;
+    }
+
+    if (!send_cmd_w_resp(CMD_PROFILEERASE)) {
+      return 0;
+    }
+
     if (this->security_key != NULL) {
       if (!send_cmd_w_resp(CMD_SET_WPA_PSK)) {
         return 0;
@@ -662,7 +699,10 @@ bool webGainspan::autoConfigure(const char *ssid, const char *passphrase)
       return 0;
     }
 
-    if (!send_cmd_w_resp(CMD_ACENABLE)) {
+    this->ip = ip;
+    this->port = port;
+
+    if (!send_cmd_w_resp(CMD_NAUTO)) {
       return 0;
     }
 
@@ -731,17 +771,27 @@ uint8_t webGainspan::connect()
 
 uint8_t webGainspan::autoConnect()
 {
-  if (connection_state == DEV_CONN_ST_CONNECTED && !send_cmd_w_resp(CMD_DISCONNECT)) {
+  int ret = 1;
+
+  if (!send_cmd_w_resp(CMD_NCMAUTO_STOP)) {
     return 0;
   }
 
-  if (!send_cmd_w_resp(CMD_ATA)) {
+  if (!send_cmd_w_resp(CMD_NCMAUTO_START)) {
+    ret = 0;
+  }
+
+  if (!send_cmd_w_resp(CMD_PROFILESAVE)) {
+    return 0;
+  }
+
+  if (!send_cmd_w_resp(CMD_PROFILEDEFAULT)) {
     return 0;
   }
 
   connection_state = DEV_CONN_ST_CONNECTED;
 
-  return 1;
+  return ret;
 }
 
 uint8_t webGainspan::connected()
@@ -842,32 +892,26 @@ uint16_t webGainspan::readData(SOCKET s, uint8_t* buf, uint16_t len)
   return dataLen;
 }
 
-uint16_t webGainspan::writeData(SOCKET s, const uint8_t*  buf, uint16_t len)
-{
-  if ((len == 0) || (buf[0] == '\r')){
+uint16_t webGainspan::writeData(SOCKET s, const uint8_t*  buf, uint16_t len) {
+  if ((len == 0) || (buf[0] == '\r')) {
   } else {
     if ((this->sock_table[s].protocol == IPPROTO::TCP) ||
         (this->sock_table[s].protocol == IPPROTO::UDP_CLIENT)) {
-      // D(Serial.println("DEBUG: webGainspan::writeData 1"));
-      // D(Serial.print("DEBUG: webGainspan::writeData length: "));
-      // D(Serial.println(len));
-      // D(Serial.print("DEBUG: webGainspan::writeData socket: "));
-      // D(Serial.println(s));
+      // (Serial.println("DEBUG: webGainspan::writeData 1"));
+      // (Serial.print("DEBUG: webGainspan::writeData length: "));
+      // (Serial.println(len));
+      // (Serial.print("DEBUG: webGainspan::writeData socket: "));
+      // (Serial.println(s));
       Serial1.write((uint8_t)0x1b);    // data start
       Serial1.write((uint8_t)0x53);
       Serial1.write((uint8_t)int_to_hex(this->client_cid));  // connection ID
-      if (len == 1){
-        if (buf[0] != '\r' && buf[0] != '\n'){
+      if (len == 1) {
+        if (buf[0] != '\r' && buf[0] != '\n') {
           Serial1.write(buf[0]);           // data to send
         } else if (buf[0] == '\n') {
           Serial1.print("\n\r");           // new line
         }
       } else {
-        /*
-        String buffer;
-        buffer = (const char *)buf;
-        Serial1.print(buffer);
-        */
         for (uint16_t i=0; i<len; i++) {
           Serial1.write(buf[i]);
         }
@@ -882,42 +926,46 @@ uint16_t webGainspan::writeData(SOCKET s, const uint8_t*  buf, uint16_t len)
       Serial1.print(":");
       Serial1.print(srcPortUDP);
       Serial1.print(":");
-      if (len == 1){
-        if (buf[0] != '\r' && buf[0] != '\n'){
+      if (len == 1) {
+        if (buf[0] != '\r' && buf[0] != '\n') {
           Serial1.write(buf[0]);           // data to send
-          } else if (buf[0] == '\n') {
-            Serial1.print("\n\r");           // new line
-          }
-        } else {
-          String buffer;
-          buffer = (const char *)buf;
-          Serial1.print(buffer);
+        } else if (buf[0] == '\n') {
+          Serial1.print("\n\r");           // new line
         }
-        Serial1.write((uint8_t)0x1b);    // data end
-        Serial1.write((uint8_t)0x45);
+      } else {
+        for (uint16_t i=0; i<len; i++) {
+          Serial1.write(buf[i]);
+        }
       }
+      Serial1.write((uint8_t)0x1b);    // data end
+      Serial1.write((uint8_t)0x45);
     }
-    delay(10);
+  }
+  delay(10);
 
-    return len;
+  return len;
 }
 
 void webGainspan::process()
 {
+  if (!Serial1.available() || dataOnSock != 255) {
+    return;
+  }
+
+  //Serial.println("DEBUG: webGainspan::process: serial1 available");
+
   String strBuf;
   char inByte;
   uint8_t processDone = 0;
 
-  if (!Serial1.available()) {
-    return;
-  }
-
   while (!processDone) {
     if (dev_mode == DEV_OP_MODE_COMMAND) {
+      //Serial.println("DEBUG: webGainspan::process: in DEV_OP_MODE_COMMAND mode");
       while (1) {
+
         if (Serial1.available()) {
           inByte = Serial1.read();
-
+          //showHex(inByte, true, true);
           if (inByte == 0x1b) {
             // escape seq
             // switch mode
@@ -925,27 +973,27 @@ void webGainspan::process()
             break;
           } else {
             // command string
-            if ((inByte == '\r') || (inByte == '\n')) {
-              // throw away
-              if ((strBuf.length() > 0) && (inByte == '\n'))
-              {
+            if (inByte == '\n') {
+              strBuf.trim();
+              if (strBuf.length() > 0) {
                 // parse command
+                // Serial.print("Parsing command: ");
+                // Serial.println(strBuf);
                 parse_cmd(strBuf);
-                processDone = 1;
-                break;
+                flush();
               }
-            }
-            else
-            {
+              processDone = 1;
+              break;
+            } else {
               strBuf += inByte;
             }
           }
         }
       }
     } else if (dev_mode == DEV_OP_MODE_DATA) {
+      //Serial.println("DEBUG: webGainspan::process: in DEV_OP_MODE_DATA mode");
       /* data mode */
-      while(1) {
-        //digitalWrite(5, LOW);
+      while (1) {
         if (Serial1.available()) {
           inByte = Serial1.read();
 
@@ -1048,7 +1096,7 @@ void webGainspan::process()
         }
       }
     } else if (dev_mode ==  DEV_OP_MODE_DATA_RX) {
-      //digitalWrite(6, LOW);
+      //Serial.println("DEBUG: webGainspan::process: in DEV_OP_MODE_DATA_RX mode");
       processDone = 1;
     }
   }
@@ -1058,14 +1106,13 @@ void webGainspan::parse_cmd(String buf)
 {
   if (buf.startsWith("CONNECT")) {
     /* got CONNECT */
-
     for (int sock = 0; sock < 4; sock++) {
+      // server received a client connection
       if ((this->sock_table[sock].status == SOCK_STATUS::LISTEN) &&
-        (this->sock_table[sock].cid == hex_to_int(buf[8])))
-      {
+        (this->sock_table[sock].cid == hex_to_int(buf[8]))) {
         if (this->sock_table[sock].protocol == IPPROTO::TCP) {
           if (serv_cid == hex_to_int(buf[8])) {
-                  /* client connected */
+            /* client connected */
             client_cid = hex_to_int(buf[10]);
           }
 
@@ -1079,36 +1126,58 @@ void webGainspan::parse_cmd(String buf)
             }
           }
         }
+      // client connected to remote server
+      } else {
+        if (this->sock_table[sock].status == SOCK_STATUS::CLOSED) {
+          client_cid = hex_to_int(buf[8]);
+          this->sock_table[sock].cid = hex_to_int(buf[8]);
+          this->sock_table[sock].protocol = IPPROTO::TCP;
+          this->sock_table[sock].status = SOCK_STATUS::ESTABLISHED;
+          this->autoConnectSocket = sock;
+          if (debugAutoConnect) {
+            Serial.print("Established socket ");
+            Serial.print(sock);
+            Serial.print(" for CID: ");
+            Serial.println(this->sock_table[sock].cid);
+          }
+          break;
+        }
       }
     }
-
-  } else if (buf.startsWith("DISCONNECT")) {
+  } else if (buf.startsWith("DISCONNECT") ||
+             buf.startsWith("ERROR: SOCKET FAILURE")) {
   /* got disconnect */
-    digitalWrite(6, LOW);
+    int connectionId;
+    if (buf.startsWith("DISCONNECT")) {
+      connectionId = hex_to_int(buf[11]);
+    } else {
+      connectionId = hex_to_int(buf[22]);
+    }
     for (int sock = 0; sock < 4; sock++) {
-      if ((this->sock_table[sock].status == SOCK_STATUS::ESTABLISHED) &&
-        (this->sock_table[sock].cid == hex_to_int(buf[11]))) {
+      if (this->sock_table[sock].cid == connectionId) {
         this->sock_table[sock].cid = 0;
         this->sock_table[sock].port = 0;
         this->sock_table[sock].protocol = 0;
         this->sock_table[sock].status = SOCK_STATUS::CLOSED;
+        if (debugAutoConnect) {
+          Serial.print("Closed socket ");
+          Serial.print(sock);
+          Serial.print(" for CID: ");
+          Serial.println(connectionId);
+        }
         break;
       }
     }
-  // FIXME : need to handle socket disconnection
-  } else if (buf == "Disassociation Event") {
-  /* disconnected from AP */
-    connection_state = DEV_CONN_ST_DISCONNECTED;
+  } else if (buf == "ERROR") {
+    // generic error
   }
 }
 
-void webGainspan::parse_data(String buf)
-{
+void webGainspan::parse_data(String buf) {
   this->rx_data_handler(buf);
 }
 
-uint8_t webGainspan::connectSocket(SOCKET s, String ip, String port)
-{
+uint8_t webGainspan::connectSocket(SOCKET s, String ip, String port) {
   uint8_t cmd = CMD_INVALID;
 
   this->ip = ip;
@@ -1167,7 +1236,7 @@ uint8_t webGainspan::timeSync(String ntp_server, uint8_t timeout, uint16_t inter
   return 1;
 }
 
-String webGainspan::dns_lookup(String url)
+String webGainspan::dnsLookup(String url)
 {
   this->dns_url_ip = url;
 
@@ -1179,55 +1248,66 @@ String webGainspan::dns_lookup(String url)
 }
 
 String webGainspan::getAppVersion() {
-  return appVersion;
+  return this->appVersion;
 }
 
 String webGainspan::getGepsVersion() {
-  return gepsVersion;
+  return this->gepsVersion;
 }
 
 String webGainspan::getWlanVersion() {
-  return wlanVersion;
+  return this->wlanVersion;
 }
 
+uint8_t webGainspan::getAutoConnectSocket() {
+  return this->autoConnectSocket;
+}
 
-void webGainspan::configSocket(SOCKET s, uint8_t protocol, uint16_t port)
-{
+void webGainspan::configSocket(SOCKET s, uint8_t protocol, uint16_t port) {
   this->sock_table[s].protocol = protocol;
   this->sock_table[s].port = port;
   this->sock_table[s].status = SOCK_STATUS::INIT;
 }
 
-void webGainspan::execSocketCmd(SOCKET s, uint8_t cmd)
-{
+void webGainspan::execSocketCmd(SOCKET s, uint8_t cmd) {
   this->socket_num = s;
 
   if (!send_cmd_w_resp(cmd)) {}
 }
 
-uint8_t webGainspan::readSocketStatus(SOCKET s)
-{
+uint8_t webGainspan::readSocketStatus(SOCKET s) {
   return this->sock_table[s].status;
 }
 
-uint8_t webGainspan::getSocketProtocol(SOCKET s)
-{
+uint8_t webGainspan::getSocketProtocol(SOCKET s) {
   return this->sock_table[s].protocol;
 }
 
-uint8_t webGainspan::isDataOnSock(SOCKET s)
-{
+uint8_t webGainspan::isDataOnSock(SOCKET s) {
   return (s == dataOnSock);
 }
 
-void webGainspan::flush()
-{
-  // arduino-1.0 repurposed the Serial1.flush() command
-  // to wait for outgoing data to be transmitted, not to
-  // clear the buffer
-  // since we need to clear the buffer, need to create this
-  // workaround
+void webGainspan::flush() {
   while (Serial1.available()) {
     Serial1.read();
+  }
+}
+
+void webGainspan::showHex(const char b, const bool newline, const bool show0x) {
+  if (show0x) {
+    Serial.print("0x");
+  }
+  // try to avoid using sprintf
+  char buf[4] = {
+    ((b >> 4) & 0x0F) | '0', (b & 0x0F) | '0', ' ' , 0     };
+  if (buf[0] > '9') {
+    buf[0] += 7;
+  }
+  if (buf[1] > '9') {
+    buf[1] += 7;
+  }
+  Serial.print(buf);
+  if (newline) {
+    Serial.println();
   }
 }

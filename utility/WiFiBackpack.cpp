@@ -16,7 +16,7 @@ bool WiFiBackpack::setup() {
   Backpack::setup();
 
   if (!Gainspan.setup()) {
-     D(Serial.println("FAIL: Setup failed"));
+     WD(Serial.println("FAIL: Setup failed"));
      return 0;
   }
 }
@@ -27,17 +27,22 @@ bool WiFiBackpack::init() {
     WD(Serial.println("Error: no response from Wi-Fi backpack"));
     return 0;
   }
+  client.autoConnect();
 
   return 1;
 }
 
 void WiFiBackpack::loop() {
   Backpack::loop();
-  // TODO if AP or HQ connection is gone, reconnect here
+  Gainspan.process();
 }
 
-bool WiFiBackpack::apConfig(const char *ssid, const char *passphrase) {
-  Gainspan.autoConfigure(ssid, passphrase);
+bool WiFiBackpack::apConfig(const char *ssid, const char *passphrase, String ip, String port) {
+  Gainspan.autoConfigure(ssid, passphrase, ip, port);
+}
+
+bool WiFiBackpack::apConnect() {
+  Gainspan.autoConnect();
 }
 
 void WiFiBackpack::printAPs() {
@@ -50,25 +55,7 @@ void WiFiBackpack::printProfiles() {
 
 void WiFiBackpack::printCurrentNetworkStatus() {
   Gainspan.send_cmd_w_resp(CMD_NET_STATUS);
-}
-
-bool WiFiBackpack::connectToAP() {
-  return Gainspan.autoConnect();
-}
-
-bool WiFiBackpack::connectToHQ(IPAddress server, uint16_t port) {
-  // TODO
-  // if you get a connection, report back via serial:
-  if (client.connect(server, port)) {
-    Serial.println("connected");
-
-    // Send message over UDP socket to peer device
-    client.println("Hello server!");
-  }
-  else {
-    // if connection setup failed:
-    Serial.println("failed");
-  }
+  Gainspan.send_cmd_w_resp(CMD_CURCID);
 }
 
 void WiFiBackpack::dnsLookup(const char *host) {

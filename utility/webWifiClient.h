@@ -15,6 +15,7 @@ class PinoccioWifiClient : public Client {
     virtual int connect(IPAddress ip, uint16_t port);
     virtual int connect(IPAddress ip, uint16_t port, uint8_t protocol);
     virtual int connect(const char *host, uint16_t port);
+    virtual int autoConnect();
 
     virtual size_t write(uint8_t);
     virtual size_t write(const char *str);

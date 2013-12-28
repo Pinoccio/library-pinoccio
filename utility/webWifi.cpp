@@ -57,7 +57,7 @@ uint8_t webWifi::socketOpen(String url, String port)
   String ip;
 
   // get IP address from URL
-  if ((ip = Gainspan.dns_lookup(url)) == "0.0.0.0") {
+  if ((ip = Gainspan.dnsLookup(url)) == "0.0.0.0") {
     return 0;
   }
 

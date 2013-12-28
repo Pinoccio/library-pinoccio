@@ -110,6 +110,11 @@ int PinoccioWifiClient::connect(IPAddress ip, uint16_t port) {
   return 1;
 }
 
+int PinoccioWifiClient::autoConnect() {
+  _sock = Gainspan.getAutoConnectSocket();
+  return 1;
+}
+
 bool PinoccioWifiClient::enableTls(String certname) {
   if (_sock == MAX_SOCK_NUM)
     return false;
@@ -126,36 +131,31 @@ uint8_t PinoccioWifiClient::status() {
 }
 
 size_t PinoccioWifiClient::write(uint8_t b) {
-  if (_sock != MAX_SOCK_NUM)
+  if (_sock != MAX_SOCK_NUM) {
     send(_sock, &b, 1);
-
+  }
 }
 
 size_t PinoccioWifiClient::write(const char *str) {
-  if (_sock != MAX_SOCK_NUM)
+  if (_sock != MAX_SOCK_NUM) {
     send(_sock, (const uint8_t *)str, strlen(str));
+  }
 }
 
 size_t PinoccioWifiClient::write(const uint8_t *buf, size_t size) {
-  if (_sock != MAX_SOCK_NUM)
+  if (_sock != MAX_SOCK_NUM) {
     send(_sock, buf, size);
+  }
 }
 
 int PinoccioWifiClient::available() {
-  //D(Serial.println("DEBUG: PinoccioWifiClient::available 1"));
-  if (_sock != MAX_SOCK_NUM) {
-    //D(Serial.println("DEBUG: PinoccioWifiClient::available 2"));
-    if (Gainspan.isDataOnSock(_sock)) {
-      //D(Serial.println("DEBUG: PinoccioWifiClient::available 2.1"));
-      return 1;
-    } else {
-      //D(Serial.println("DEBUG: PinoccioWifiClient::available 2.2"));
-      Gainspan.process();
-      //D(Serial.println("DEBUG: PinoccioWifiClient::available 2.3"));
-      return 0;
-    }
+  //Serial.println("DEBUG: PinoccioWifiClient::available 1");
+
+  if (_sock != MAX_SOCK_NUM && Gainspan.isDataOnSock(_sock)) {
+    //Serial.println("DEBUG: PinoccioWifiClient::available 2");
+    return 1;
   }
-  //D(Serial.println("DEBUG: PinoccioWifiClient::available 3"));
+  //Serial.println("DEBUG: PinoccioWifiClient::available 3");
   return 0;
 }
 
@@ -176,8 +176,9 @@ int PinoccioWifiClient::peek() {
 }
 
 void PinoccioWifiClient::flush() {
-  while (available())
+  while (available()) {
     read();
+  }
 }
 
 PinoccioWifiClient::operator bool() {
