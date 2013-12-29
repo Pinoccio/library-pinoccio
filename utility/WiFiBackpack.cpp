@@ -80,12 +80,12 @@ bool WiFiBackpack::wakeUp() {
 
 
 /* commands for auto-config
-AT+WWPA=coworking775
-AT+WAUTO=0,"Reno Collective"
+AT+WWPA=password
+AT+WAUTO=0,"SSID"
 ATC1
 AT&W0
 AT&Y0
-AT+WA="Reno Collective"
+AT+WA="SSID"
 
 AT+NCTCP=192.168.1.83,80
 AT+STORENWCONN
