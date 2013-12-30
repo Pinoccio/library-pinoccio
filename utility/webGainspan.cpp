@@ -760,6 +760,8 @@ bool webGainspan::autoConfigure(const char *ssid, const char *passphrase, String
       return 0;
     }
 
+    if (!Gainspan.timeSync("87.106.176.225", 10, 43200)) { }
+
     if (!send_cmd_w_resp(CMD_PROFILESAVE)) {
       return 0;
     }

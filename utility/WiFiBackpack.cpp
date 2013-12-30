@@ -58,12 +58,14 @@ void WiFiBackpack::printCurrentNetworkStatus() {
   Gainspan.send_cmd_w_resp(CMD_CURCID);
 }
 
-void WiFiBackpack::dnsLookup(const char *host) {
+bool WiFiBackpack::dnsLookup(const char *host) {
   // TODO
+  return true;
 }
 
-void WiFiBackpack::ping(const char *host) {
-  // TODO
+bool WiFiBackpack::ping(const char *host) {
+  //return Gainspan.send_cmd(CMD_PING);
+  return true;
 }
 
 bool WiFiBackpack::runDirectCommand(const char *command) {
@@ -71,11 +73,11 @@ bool WiFiBackpack::runDirectCommand(const char *command) {
 }
 
 bool WiFiBackpack::goToSleep() {
-  // TODO
+  return Gainspan.send_cmd(CMD_PSDPSLEEP);
 }
 
 bool WiFiBackpack::wakeUp() {
-  // TODO
+  return Gainspan.send_cmd_w_resp(CMD_AT);
 }
 
 
