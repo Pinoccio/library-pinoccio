@@ -34,6 +34,8 @@ class WiFiBackpack : public Backpack {
     bool goToSleep();
     bool wakeUp();
 
+    bool getTime();
+
     PinoccioWifiClient client;
 
   protected:

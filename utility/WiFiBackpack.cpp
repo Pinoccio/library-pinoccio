@@ -37,7 +37,8 @@ void WiFiBackpack::loop() {
   Gainspan.process();
 }
 
-bool WiFiBackpack::apConfig(const char *ssid, const char *passphrase, String ip, String port) {
+bool WiFiBackpack::apConfig(const char *ssid, const char *passphrase, String host, String port) {
+  String ip = Gainspan.dnsLookup(host);
   Gainspan.autoConfigure(ssid, passphrase, ip, port);
 }
 
@@ -59,25 +60,27 @@ void WiFiBackpack::printCurrentNetworkStatus() {
 }
 
 bool WiFiBackpack::dnsLookup(const char *host) {
-  // TODO
-  return true;
+  Serial.println(Gainspan.dnsLookup(host));
 }
 
 bool WiFiBackpack::ping(const char *host) {
-  //return Gainspan.send_cmd(CMD_PING);
-  return true;
+  Gainspan.ping(host);
 }
 
 bool WiFiBackpack::runDirectCommand(const char *command) {
-  return Gainspan.send_raw_cmd_w_resp(command);
+  Gainspan.send_raw_cmd_w_resp(command);
 }
 
 bool WiFiBackpack::goToSleep() {
-  return Gainspan.send_cmd(CMD_PSDPSLEEP);
+  Gainspan.send_cmd(CMD_PSDPSLEEP);
 }
 
 bool WiFiBackpack::wakeUp() {
-  return Gainspan.send_cmd_w_resp(CMD_AT);
+  Gainspan.send_cmd_w_resp(CMD_AT);
+}
+
+bool WiFiBackpack::getTime() {
+  Gainspan.send_cmd_w_resp(CMD_GETTIME);
 }
 
 

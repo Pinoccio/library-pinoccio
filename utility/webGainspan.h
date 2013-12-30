@@ -66,6 +66,8 @@ public:
 #define CMD_L4RETRY_COUNT   37
 #define CMD_CLOSEALL        38
 #define CMD_AUTOCONFIGSET   39
+#define CMD_PING            40
+#define CMD_GETTIME         41
 
 #define CMD_INVALID         255
 
@@ -168,6 +170,7 @@ public:
    * timeout is the number of seconds to wait for the server's response.
    */
   uint8_t timeSync(String ntp_server, uint8_t timeout, uint16_t interval);
+  uint8_t ping(String ip);
 
   static const uint16_t SSIZE = 256; // Max Tx buffer siz
 
