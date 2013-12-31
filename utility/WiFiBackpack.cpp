@@ -37,7 +37,8 @@ void WiFiBackpack::loop() {
   Gainspan.process();
 }
 
-bool WiFiBackpack::apConfig(const char *ssid, const char *passphrase, String ip, String port) {
+bool WiFiBackpack::apConfig(const char *ssid, const char *passphrase, String host, String port) {
+  String ip = Gainspan.dnsLookup(host);
   Gainspan.autoConfigure(ssid, passphrase, ip, port);
 }
 
@@ -58,34 +59,38 @@ void WiFiBackpack::printCurrentNetworkStatus() {
   Gainspan.send_cmd_w_resp(CMD_CURCID);
 }
 
-void WiFiBackpack::dnsLookup(const char *host) {
-  // TODO
+bool WiFiBackpack::dnsLookup(const char *host) {
+  Serial.println(Gainspan.dnsLookup(host));
 }
 
-void WiFiBackpack::ping(const char *host) {
-  // TODO
+bool WiFiBackpack::ping(const char *host) {
+  Gainspan.ping(host);
 }
 
 bool WiFiBackpack::runDirectCommand(const char *command) {
-  return Gainspan.send_raw_cmd_w_resp(command);
+  Gainspan.send_raw_cmd_w_resp(command);
 }
 
 bool WiFiBackpack::goToSleep() {
-  // TODO
+  Gainspan.send_cmd(CMD_PSDPSLEEP);
 }
 
 bool WiFiBackpack::wakeUp() {
-  // TODO
+  Gainspan.send_cmd_w_resp(CMD_AT);
+}
+
+bool WiFiBackpack::getTime() {
+  Gainspan.send_cmd_w_resp(CMD_GETTIME);
 }
 
 
 /* commands for auto-config
-AT+WWPA=coworking775
-AT+WAUTO=0,"Reno Collective"
+AT+WWPA=password
+AT+WAUTO=0,"SSID"
 ATC1
 AT&W0
 AT&Y0
-AT+WA="Reno Collective"
+AT+WA="SSID"
 
 AT+NCTCP=192.168.1.83,80
 AT+STORENWCONN

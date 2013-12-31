@@ -52,6 +52,8 @@ const char PROGMEM cmd_36[] = "AT&F";
 const char PROGMEM cmd_37[] = "ATS7=65535";
 const char PROGMEM cmd_38[] = "AT+NCLOSEALL";
 const char PROGMEM cmd_39[] = "ATS7=?";
+const char PROGMEM cmd_40[] = "AT+PING=";
+const char PROGMEM cmd_41[] = "AT+GETTIME=?";
 
 const char* const PROGMEM cmd_tbl[] =
 {
@@ -60,7 +62,7 @@ const char* const PROGMEM cmd_tbl[] =
   cmd_15, cmd_16, cmd_17, cmd_18, cmd_19, cmd_20, cmd_21,
   cmd_22, cmd_23, cmd_24, cmd_25, cmd_26, cmd_27, cmd_28,
   cmd_29, cmd_30, cmd_31, cmd_32, cmd_33, cmd_34, cmd_35,
-  cmd_36, cmd_37, cmd_38, cmd_39
+  cmd_36, cmd_37, cmd_38, cmd_39, cmd_40, cmd_41
 };
 
 /* Make sure the cmd_buffer is large enough to hold
@@ -196,6 +198,7 @@ uint8_t webGainspan::send_cmd(uint8_t cmd)
   case CMD_L4RETRY_COUNT:
   case CMD_CLOSEALL:
   case CMD_AUTOCONFIGSET:
+  case CMD_GETTIME:
   {
     Serial1.println(cmd_str);
     break;
@@ -214,6 +217,13 @@ uint8_t webGainspan::send_cmd(uint8_t cmd)
     } else if (mode == 2) {
       cmd_buf = cmd_str + this->ssid + ",,11";
     }
+    Serial1.println(cmd_buf);
+    break;
+  }
+  case CMD_PING:
+  {
+    String cmd_buf;
+    cmd_buf = cmd_str + this->ip + ",1";
     Serial1.println(cmd_buf);
     break;
   }
@@ -424,6 +434,42 @@ uint8_t webGainspan::parse_resp(uint8_t cmd)
         resp_done = 1;
       } else if (buf.startsWith("ERROR")) {
         /* got ERROR */
+        ret = 0;
+        resp_done = 1;
+      }
+      break;
+    }
+    case CMD_PING:
+    {
+      buf.trim();
+      if (buf.startsWith("Reply from")) {
+        /* got valid ping back */
+        ret = 1;
+        resp_done = 0;
+      } else if (buf.startsWith("Request timed out")) {
+        ret = 0;
+        resp_done = 0;
+      } else if (buf.startsWith("Minimum")) {
+        resp_done = 1;
+        Serial.println(buf);
+      } else if (buf.startsWith("ERROR")) {
+        /* got ERROR */
+        ret = 0;
+        resp_done = 1;
+      } else if (buf != "OK" && buf != "") {
+        Serial.println(buf);
+      }
+      break;
+    }
+    case CMD_GETTIME:
+    {
+      buf.trim();
+      if (buf.startsWith("AT+GETTIME=?")) {
+        ret = 1;
+      } else if (ret == 1) {
+        resp_done = 1;
+        Serial.println(buf);
+      } else {
         ret = 0;
         resp_done = 1;
       }
@@ -759,6 +805,9 @@ bool webGainspan::autoConfigure(const char *ssid, const char *passphrase, String
     if (!send_cmd_w_resp(CMD_NAUTO)) {
       return 0;
     }
+
+    // set up NTP time sync to refresh every 12 hours
+    if (!Gainspan.timeSync("87.106.176.225", 10, 43200)) { }
 
     if (!send_cmd_w_resp(CMD_PROFILESAVE)) {
       return 0;
@@ -1294,6 +1343,14 @@ uint8_t webGainspan::timeSync(String ntp_server, uint8_t timeout, uint16_t inter
   if (interval) {
     this->interval = interval;
     return send_cmd_w_resp(CMD_NTIMESYNC);
+  }
+  return 1;
+}
+
+uint8_t webGainspan::ping(String ip) {
+  this->ip = ip;
+  if (!send_cmd_w_resp(CMD_PING)) {
+    return 0;
   }
   return 1;
 }

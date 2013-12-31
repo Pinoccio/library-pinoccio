@@ -184,6 +184,11 @@ void setup(void) {
   addBitlashFunction("wifi.config", (bitlash_function) wifiConfig);
   addBitlashFunction("wifi.connect", (bitlash_function) wifiConnect);
   addBitlashFunction("wifi.command", (bitlash_function) wifiCommand);
+  addBitlashFunction("wifi.ping", (bitlash_function) wifiPing);
+  addBitlashFunction("wifi.dnslookup", (bitlash_function) wifiDNSLookup);
+  addBitlashFunction("wifi.gettime", (bitlash_function) wifiGetTime);
+  addBitlashFunction("wifi.sleep", (bitlash_function) wifiSleep);
+  addBitlashFunction("wifi.wakeup", (bitlash_function) wifiWakeup);
   addBitlashFunction("hq.connect", (bitlash_function) hqConnect);
   addBitlashFunction("hq.disconnect", (bitlash_function) hqDisconnect);
 }
@@ -1080,6 +1085,24 @@ numvar wifiConnect(void) {
 numvar wifiCommand(void) {
   if (!wifi.runDirectCommand((const char *)getstringarg(1))) {
      Serial.println("Error: Wi-Fi direct command failed");
+  }
+}
+
+numvar wifiPing(void) {
+  if (!wifi.ping((const char *)getstringarg(1))) {
+     Serial.println("Error: Wi-Fi ping command failed");
+  }
+}
+
+numvar wifiDNSLookup(void) {
+  if (!wifi.dnsLookup((const char *)getstringarg(1))) {
+     Serial.println("Error: Wi-Fi DNS lookup command failed");
+  }
+}
+
+numvar wifiGetTime(void) {
+  if (!wifi.getTime()) {
+     Serial.println("Error: Wi-Fi NTP time lookup command failed");
   }
 }
 

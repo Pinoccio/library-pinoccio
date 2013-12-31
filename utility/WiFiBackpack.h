@@ -26,13 +26,15 @@ class WiFiBackpack : public Backpack {
     void printProfiles();
     void printCurrentNetworkStatus();
 
-    void dnsLookup(const char *host);
-    void ping(const char *host);
+    bool dnsLookup(const char *host);
+    bool ping(const char *host);
 
     bool runDirectCommand(const char *command);
 
     bool goToSleep();
     bool wakeUp();
+
+    bool getTime();
 
     PinoccioWifiClient client;
 
