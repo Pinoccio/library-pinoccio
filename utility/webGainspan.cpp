@@ -353,10 +353,13 @@ uint8_t webGainspan::parse_resp(uint8_t cmd)
       // timeout, return error
       ret = 0;
       resp_done = 1;
+      Serial.println("Timeout while waiting for parse_resp");
       break;
     }
 
     buf = readline();
+    timeout = millis();
+
     if (buf == "") {
       continue;
     }

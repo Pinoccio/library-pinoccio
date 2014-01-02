@@ -186,6 +186,7 @@ void setup(void) {
   addBitlashFunction("wifi.gettime", (bitlash_function) wifiGetTime);
   addBitlashFunction("wifi.sleep", (bitlash_function) wifiSleep);
   addBitlashFunction("wifi.wakeup", (bitlash_function) wifiWakeup);
+  addBitlashFunction("wifi.verbose", (bitlash_function) wifiVerbose);
   addBitlashFunction("hq.connect", (bitlash_function) hqConnect);
   addBitlashFunction("hq.disconnect", (bitlash_function) hqDisconnect);
 }
@@ -1113,6 +1114,10 @@ numvar wifiWakeup(void) {
   if (!wifi.wakeUp()) {
      Serial.println("Error: Wi-Fi wakeup command failed");
   }
+}
+
+numvar wifiVerbose(void) {
+  Gainspan.debugAutoConnect = getarg(1);
 }
 
 /****************************\
