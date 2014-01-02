@@ -2,20 +2,20 @@
 
 int main(void)
 {
-	init();
+  init();
 
 #if defined(USBCON)
-	USB.attach();
+  USB.attach();
 #endif
 
-	setup();
+  setup();
 
-	for (;;) {
-		loop();
-		if (serialEventRun) serialEventRun();
-	}
+  for (;;) {
+    loop();
+    if (serialEventRun) serialEventRun();
+  }
 
-	return 0;
+  return 0;
 }
 
 #line 1 "build/Default.ino"
@@ -235,15 +235,6 @@ numvar meshSetKey(void) {
 
 // Run a function that's defined on another scout.  ie: meshRemoteRun(scoutId, "remoteFunctionName");
 numvar meshRemoteRun(void) {
-  MeshRequest request;
-  request.setDstAddress(getarg(1));
-  request.setDstEndpoint(1);
-  request.setSrcEndpoint(1);
-  if (!request.setPayload((byte *)getstringarg(2), sizeof(getstringarg(2)))) {
-    Serial.println("Size of payload cannot exceed 100 bytes");
-    return false;
-  }
-  Pinoccio.meshSendMessage(request);
   return true;
 }
 

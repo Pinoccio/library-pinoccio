@@ -50,7 +50,7 @@ public:
 #define CMD_TCERTDEL        21
 #define CMD_NTIMESYNC       22
 #define CMD_WAUTO           23
-#define CMD_ACENABLE        24
+#define CMD_NAUTO           24
 #define CMD_PROFILESAVE     25
 #define CMD_PROFILEDEFAULT  26
 #define CMD_PROFILEGET      27
@@ -58,9 +58,16 @@ public:
 #define CMD_PSDPSLEEP       29
 #define CMD_STORENWCONN     30
 #define CMD_RESTORENWCONN   31
-#define CMD_ATA             32
+#define CMD_NCMAUTO_START   32
 #define CMD_LIST_SSIDS      33
 #define CMD_RESET           34
+#define CMD_NCMAUTO_STOP    35
+#define CMD_PROFILEERASE    36
+#define CMD_L4RETRY_COUNT   37
+#define CMD_CLOSEALL        38
+#define CMD_AUTOCONFIGSET   39
+#define CMD_PING            40
+#define CMD_GETTIME         41
 
 #define CMD_INVALID         255
 
@@ -92,19 +99,31 @@ typedef struct _SOCK_TABLE {
   uint8_t cid;
 } SOCK_TABLE;
 
+typedef enum _GS_EVENT {
+  CID_CONNECT,
+  CID_DISCONNECT,
+} GS_EVENT;
+
 class webGainspan {
 public:
+  webGainspan();
   uint8_t mode;
+  bool debugAutoConnect;
+
+  void (*connectEventHandler)(uint8_t cid);
+  void (*disconnectEventHandler)(uint8_t cid);
+
   uint8_t setup(uint32_t baud=115200);
   uint8_t init();
   void configure(GS_PROFILE* prof);
-  bool autoConfigure(const char *ssid, const char *passphrase);
+  bool autoConfigure(const char *ssid, const char *passphrase, String ip, String port);
   uint8_t connect();
   uint8_t autoConnect();
   uint8_t connected();
   void process();
   uint8_t connectSocket(SOCKET s, String ip, String port);
-  String dns_lookup(String url);
+  uint8_t connectToExistingCID(SOCKET s, int cid);
+  String dnsLookup(String url);
   void send_data(String data);
   void esc_seq_start();
   void esc_seq_stop();
@@ -112,6 +131,7 @@ public:
   String getAppVersion();
   String getGepsVersion();
   String getWlanVersion();
+  uint8_t getAutoConnectSocket();
 
   void configSocket(SOCKET s, uint8_t protocol, uint16_t port);
   void execSocketCmd(SOCKET s, uint8_t cmd);
@@ -158,6 +178,7 @@ public:
    * timeout is the number of seconds to wait for the server's response.
    */
   uint8_t timeSync(String ntp_server, uint8_t timeout, uint16_t interval);
+  uint8_t ping(String ip);
 
   static const uint16_t SSIZE = 256; // Max Tx buffer siz
 
@@ -171,6 +192,7 @@ public:
   void parse_cmd(String buf);
   void parse_data(String buf);
 
+  void showHex(const char b, const bool newline, const bool show0x);
   void flush();
 
 private:
@@ -196,9 +218,11 @@ private:
   String wlanVersion;
   String dns_url_ip;
   uint8_t tx_done;
+  bool isAutoConfigSet;
 
   SOCK_TABLE sock_table[4];
   uint8_t socket_num;
+  uint8_t autoConnectSocket;
   SOCKET dataOnSock;
   String srcIPUDP;
   String srcPortUDP;

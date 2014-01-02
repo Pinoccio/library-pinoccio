@@ -1,7 +1,7 @@
 #include <Arduino.h>
 #include <utility/WiFiBackpack.h>
 
-#define P_BACKPACK_WIFI_DEBUG
+//#define P_BACKPACK_WIFI_DEBUG
 #ifdef P_BACKPACK_WIFI_DEBUG
 #  define WD(x) x
 #else
@@ -15,29 +15,50 @@ WiFiBackpack::~WiFiBackpack() { }
 bool WiFiBackpack::setup() {
   Backpack::setup();
 
+  WD(Serial.println("WiFiBackpack::setup 1"));
+
   if (!Gainspan.setup()) {
-     D(Serial.println("FAIL: Setup failed"));
+     WD(Serial.println("FAIL: Setup failed"));
      return 0;
   }
+
+  WD(Serial.println("WiFiBackpack::setup 2"));
+  return 1;
 }
 
 bool WiFiBackpack::init() {
+
+  WD(Serial.println("WiFiBackpack::init 1"));
 
   if (!Gainspan.init()) {
     WD(Serial.println("Error: no response from Wi-Fi backpack"));
     return 0;
   }
+  WD(Serial.println("WiFiBackpack::init 2"));
+  client.autoConnect();
+  WD(Serial.println("WiFiBackpack::init 3"));
 
   return 1;
 }
 
 void WiFiBackpack::loop() {
   Backpack::loop();
-  // TODO if AP or HQ connection is gone, reconnect here
+  Gainspan.process();
 }
 
-bool WiFiBackpack::apConfig(const char *ssid, const char *passphrase) {
-  Gainspan.autoConfigure(ssid, passphrase);
+bool WiFiBackpack::apConfig(const char *ssid, const char *passphrase, String host, String port) {
+  String ip;
+  if (client.connected()) {
+    ip = Gainspan.dnsLookup(host);
+  } else {
+    ip = host;
+  }
+
+  Gainspan.autoConfigure(ssid, passphrase, ip, port);
+}
+
+bool WiFiBackpack::apConnect() {
+  Gainspan.autoConnect();
 }
 
 void WiFiBackpack::printAPs() {
@@ -50,55 +71,41 @@ void WiFiBackpack::printProfiles() {
 
 void WiFiBackpack::printCurrentNetworkStatus() {
   Gainspan.send_cmd_w_resp(CMD_NET_STATUS);
+  Gainspan.send_cmd_w_resp(CMD_CURCID);
 }
 
-bool WiFiBackpack::connectToAP() {
-  return Gainspan.autoConnect();
+bool WiFiBackpack::dnsLookup(const char *host) {
+  Serial.println(Gainspan.dnsLookup(host));
 }
 
-bool WiFiBackpack::connectToHQ(IPAddress server, uint16_t port) {
-  // TODO
-  // if you get a connection, report back via serial:
-  if (client.connect(server, port)) {
-    Serial.println("connected");
-
-    // Send message over UDP socket to peer device
-    client.println("Hello server!");
-  }
-  else {
-    // if connection setup failed:
-    Serial.println("failed");
-  }
-}
-
-void WiFiBackpack::dnsLookup(const char *host) {
-  // TODO
-}
-
-void WiFiBackpack::ping(const char *host) {
-  // TODO
+bool WiFiBackpack::ping(const char *host) {
+  Gainspan.ping(host);
 }
 
 bool WiFiBackpack::runDirectCommand(const char *command) {
-  return Gainspan.send_raw_cmd_w_resp(command);
+  Gainspan.send_raw_cmd_w_resp(command);
 }
 
 bool WiFiBackpack::goToSleep() {
-  // TODO
+  Gainspan.send_cmd(CMD_PSDPSLEEP);
 }
 
 bool WiFiBackpack::wakeUp() {
-  // TODO
+  Gainspan.send_cmd_w_resp(CMD_AT);
+}
+
+bool WiFiBackpack::getTime() {
+  Gainspan.send_cmd_w_resp(CMD_GETTIME);
 }
 
 
 /* commands for auto-config
-AT+WWPA=coworking775
-AT+WAUTO=0,"Reno Collective"
+AT+WWPA=password
+AT+WAUTO=0,"SSID"
 ATC1
 AT&W0
 AT&Y0
-AT+WA="Reno Collective"
+AT+WA="SSID"
 
 AT+NCTCP=192.168.1.83,80
 AT+STORENWCONN

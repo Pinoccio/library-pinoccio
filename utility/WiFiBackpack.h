@@ -20,20 +20,21 @@ class WiFiBackpack : public Backpack {
     bool init();
     void loop();
 
-    bool apConfig(const char *ssid, const char *passphrase);
+    bool apConfig(const char *ssid, const char *passphrase, String ip, String port);
+    bool apConnect();
     void printAPs();
     void printProfiles();
     void printCurrentNetworkStatus();
-    bool connectToAP();
-    bool connectToHQ(IPAddress server, uint16_t port);
 
-    void dnsLookup(const char *host);
-    void ping(const char *host);
+    bool dnsLookup(const char *host);
+    bool ping(const char *host);
 
     bool runDirectCommand(const char *command);
 
     bool goToSleep();
     bool wakeUp();
+
+    bool getTime();
 
     PinoccioWifiClient client;
 
