@@ -38,7 +38,12 @@ void WiFiBackpack::loop() {
 }
 
 bool WiFiBackpack::apConfig(const char *ssid, const char *passphrase, String host, String port) {
-  String ip = Gainspan.dnsLookup(host);
+  if (client.connected()) {
+    String ip = Gainspan.dnsLookup(host);
+  } else {
+    String ip = host;
+  }
+
   Gainspan.autoConfigure(ssid, passphrase, ip, port);
 }
 
