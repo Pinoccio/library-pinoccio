@@ -174,9 +174,6 @@ uint8_t webGainspan::send_cmd(uint8_t cmd)
   D(Serial.print("DEBUG: command sent: "));
   D(Serial.println(cmd_str));
 
-  Serial.print("DEBUG: command sent: ");
-  Serial.println(cmd_str);
-
 
   switch(cmd) {
   case CMD_DISABLE_ECHO:
@@ -355,7 +352,7 @@ uint8_t webGainspan::parse_resp(uint8_t cmd)
 
   while (!resp_done) {
 
-    if (millis() - timeout > 10000) {
+    if (millis() - timeout > 15000) {
       // timeout, return error
       ret = 0;
       resp_done = 1;
@@ -726,12 +723,24 @@ uint8_t webGainspan::parse_raw_resp()
   uint8_t ret = 0;
   String buf;
 
+  uint32_t timeout = millis();
+
   while (!resp_done) {
+
+    if (millis() - timeout > 15000) {
+      // timeout, return error
+      ret = 0;
+      resp_done = 1;
+      Serial.println("Timeout while waiting for response");
+      break;
+    }
 
     buf = readline();
     if (buf == "") {
       continue;
     }
+
+    timeout = millis();
 
     if (buf == "OK") {
       /* got OK */

@@ -13,12 +13,10 @@ WiFiBackpack::WiFiBackpack() { }
 WiFiBackpack::~WiFiBackpack() { }
 
 bool WiFiBackpack::setup() {
-  Serial.println(" WiFiBackpack::setup");
   Backpack::setup();
 
   if (!Gainspan.setup()) {
      WD(Serial.println("FAIL: Setup failed"));
-     Serial.println("FAIL: Setup failed");
      return 0;
   }
   return 1; 
@@ -26,11 +24,8 @@ bool WiFiBackpack::setup() {
 
 bool WiFiBackpack::init() {
 
-  Serial.println(" WiFiBackpack::init");
   if (!Gainspan.init()) {
-    //WD(Serial.println("Error: no response from Wi-Fi backpack"));
-
-    Serial.println("Error: no response from Wi-Fi backpack");
+    WD(Serial.println("Error: no response from Wi-Fi backpack"));
     return 0;
   }
   client.autoConnect();
