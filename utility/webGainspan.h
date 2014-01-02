@@ -99,11 +99,19 @@ typedef struct _SOCK_TABLE {
   uint8_t cid;
 } SOCK_TABLE;
 
+typedef enum _GS_EVENT {
+  CID_CONNECT,
+  CID_DISCONNECT,
+} GS_EVENT;
+
 class webGainspan {
 public:
   webGainspan();
   uint8_t mode;
   bool debugAutoConnect;
+
+  void (*connectEventHandler)(uint8_t cid);
+  void (*disconnectEventHandler)(uint8_t cid);
 
   uint8_t setup(uint32_t baud=115200);
   uint8_t init();

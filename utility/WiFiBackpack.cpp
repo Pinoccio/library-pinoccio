@@ -15,20 +15,28 @@ WiFiBackpack::~WiFiBackpack() { }
 bool WiFiBackpack::setup() {
   Backpack::setup();
 
+  WD(Serial.println("WiFiBackpack::setup 1"));
+
   if (!Gainspan.setup()) {
      WD(Serial.println("FAIL: Setup failed"));
      return 0;
   }
-  return 1; 
+
+  WD(Serial.println("WiFiBackpack::setup 2"));
+  return 1;
 }
 
 bool WiFiBackpack::init() {
+
+  WD(Serial.println("WiFiBackpack::init 1"));
 
   if (!Gainspan.init()) {
     WD(Serial.println("Error: no response from Wi-Fi backpack"));
     return 0;
   }
+  WD(Serial.println("WiFiBackpack::init 2"));
   client.autoConnect();
+  WD(Serial.println("WiFiBackpack::init 3"));
 
   return 1;
 }

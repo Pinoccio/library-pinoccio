@@ -105,61 +105,64 @@ webGainspan::webGainspan() {
   dataOnSock = 255;
   debugAutoConnect = false;
   isAutoConfigSet = true;
+
+  connectEventHandler = 0;
+  disconnectEventHandler = 0;
 }
 
-uint8_t webGainspan::setup(uint32_t baud)
-{
-
-  D(Serial.println("DEBUG: Gainspan::setup 1"));
-
+uint8_t webGainspan::setup(uint32_t baud) {
+  //(Serial.println("DEBUG: Gainspan::setup 1"));
   Serial1.begin(baud);
-  D(Serial.println("DEBUG: Gainspan::setup 2"));
+  //(Serial.println("DEBUG: Gainspan::setup 2"));
+
+  dataOnSock = 255;
 
   uint32_t timeout = millis();
   uint8_t respDone = 0;
   String buf;
 
-  D(Serial.println("DEBUG: Gainspan::setup 3"));
+  //(Serial.println("DEBUG: Gainspan::setup 3"));
 
   if (!send_cmd_w_resp(CMD_AUTOCONFIGSET)) {
-    D(Serial.println("DEBUG: Gainspan::init 3.1"));
+    //(Serial.println("DEBUG: Gainspan::init 3.1"));
     return 0;
   }
+
+  //(Serial.println("DEBUG: Gainspan::setup 4"));
 
   while (isAutoConfigSet && millis() - timeout < 10000 && !respDone) {
     buf = readline();
     buf.trim();
     if (buf.startsWith("NWCONN-SUCCESS")) {
-      D(Serial.println("DEBUG: Gainspan::setup 4"));
-      D(Serial.println(buf));
+      //(Serial.println("DEBUG: Gainspan::setup 4.1"));
+      //(Serial.println(buf));
       respDone = 1;
       return 1;
     }
   }
 
   delay(100);
-  D(Serial.println("DEBUG: Gainspan::setup 5"));
+  //(Serial.println("DEBUG: Gainspan::setup 5"));
   return 0;
 }
 
-uint8_t webGainspan::init()
-{
-  D(Serial.println("DEBUG: Gainspan::init 1"));
+uint8_t webGainspan::init() {
+  //(Serial.println("DEBUG: Gainspan::init 1"));
 
   // get device ID
-  D(Serial.println("DEBUG: Gainspan::init 3"));
+  //(Serial.println("DEBUG: Gainspan::init 3"));
   if (!send_cmd_w_resp(CMD_GET_MAC_ADDR)) {
-    D(Serial.println("DEBUG: Gainspan::init 3.1"));
+    //(Serial.println("DEBUG: Gainspan::init 3.1"));
     return 0;
   }
 
   // get version numbers
-  D(Serial.println("DEBUG: Gainspan::init 4"));
+  //(Serial.println("DEBUG: Gainspan::init 4"));
   if (!send_cmd_w_resp(CMD_GET_VERSION)) {
-    D(Serial.println("DEBUG: Gainspan::init 4.1"));
+    //(Serial.println("DEBUG: Gainspan::init 4.1"));
     return 0;
   }
-  D(Serial.println("DEBUG: Gainspan::init 5"));
+  //(Serial.println("DEBUG: Gainspan::init 5"));
   return 1;
 }
 
@@ -1246,6 +1249,9 @@ void webGainspan::parse_cmd(String buf)
               this->sock_table[new_sock].port = this->sock_table[sock].port;
               this->sock_table[new_sock].protocol = this->sock_table[sock].protocol;
               this->sock_table[new_sock].status = SOCK_STATUS::ESTABLISHED;
+              if (this->connectEventHandler != 0) {
+                this->connectEventHandler(this->sock_table[new_sock].cid);
+              }
               if (debugAutoConnect) {
                 Serial.print("Established socket ");
                 Serial.print(new_sock);
@@ -1264,6 +1270,9 @@ void webGainspan::parse_cmd(String buf)
           this->sock_table[sock].protocol = IPPROTO::TCP;
           this->sock_table[sock].status = SOCK_STATUS::ESTABLISHED;
           this->autoConnectSocket = sock;
+          if (this->connectEventHandler != 0) {
+            this->connectEventHandler(this->sock_table[sock].cid);
+          }
           if (debugAutoConnect) {
             Serial.print("Established socket ");
             Serial.print(sock);
@@ -1289,6 +1298,9 @@ void webGainspan::parse_cmd(String buf)
         this->sock_table[sock].port = 0;
         this->sock_table[sock].protocol = 0;
         this->sock_table[sock].status = SOCK_STATUS::CLOSED;
+        if (this->disconnectEventHandler != 0) {
+          this->disconnectEventHandler(connectionId);
+        }
         if (debugAutoConnect) {
           Serial.print("Closed socket ");
           Serial.print(sock);
