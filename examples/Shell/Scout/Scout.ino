@@ -90,10 +90,33 @@ void setup(void) {
   isLeadScout = forceLeadScout ? true : Scout.isLeadScout();
 
   if (isLeadScout) {
-    Serial.print("Wi-Fi backpack connecting...");
-    wifi.setup();
+    Serial.print("START: Wi-Fi backpack connecting...");
+    if(!wifi.setup()){
+      // cut the power to the backpack
+      //Scout.disableBackpackVcc();
+      //delay(1000);
+      //Scout.enableBackpackVcc();
+      //Serial1.end();
+      //delay(1000);
+      //Serial1.begin();
+
+      // flip the switch!
+      //otaBoot();
+      //Scout.disableBackpackVcc
+
+      Serial.print("wifi setup failed.");
+
+      // try it again
+      //if(!wifi.setup()){
+      //  Serial.print("ERROR(2000): ");
+      //  Serial.println("Wi-Fi backpack failed to connect after cycling poer on the backpack. please flip the switch");
+      //}
+    }
+
     wifi.init();
+    // if i have an hq token i should connect now.
     if(forceHqConnect) hqConnect();
+
     Serial.println("Done");
   }
 

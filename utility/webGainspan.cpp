@@ -109,7 +109,9 @@ webGainspan::webGainspan() {
 
 uint8_t webGainspan::setup(uint32_t baud)
 {
+
   D(Serial.println("DEBUG: Gainspan::setup 1"));
+
   Serial1.begin(baud);
   D(Serial.println("DEBUG: Gainspan::setup 2"));
 
@@ -171,6 +173,10 @@ uint8_t webGainspan::send_cmd(uint8_t cmd)
 
   D(Serial.print("DEBUG: command sent: "));
   D(Serial.println(cmd_str));
+
+  Serial.print("DEBUG: command sent: ");
+  Serial.println(cmd_str);
+
 
   switch(cmd) {
   case CMD_DISABLE_ECHO:
@@ -348,6 +354,18 @@ uint8_t webGainspan::parse_resp(uint8_t cmd)
   uint32_t timeout = millis();
 
   while (!resp_done) {
+
+
+   if (millis() - timeout > 30000) {
+     // timeout, return error
+
+     Serial.println("webGainspan::parse_resp timeout reading result of command");
+     Serial.println(buf);
+
+     ret = 0;
+     resp_done = 1;
+     break;
+   }
 
     buf = readline();
     if (buf == "") {
@@ -911,32 +929,27 @@ String webGainspan::readline(void)
 
   bool endDetected = false;
 
-  while (!endDetected)
-  {
+  while (!endDetected) {
+
     if (millis() - start > 1000) {
       timedOut = true;
       strBuf = "";
       break;
     }
 
-    if (Serial1.available())
-    {
+    if (Serial1.available()) {
       // valid data in HW UART buffer, so check if it's \r or \n
       // if so, throw away
       // if strBuf length greater than 0, then this is a true end of line,
       // so break out
       inByte = Serial1.read();
 
-      if ((inByte == '\r') || (inByte == '\n'))
-      {
+      if ((inByte == '\r') || (inByte == '\n')) {
         // throw away
-        if ((strBuf.length() > 0) && (inByte == '\n'))
-        {
+        if ((strBuf.length() > 0) && (inByte == '\n')) {
           endDetected = true;
         }
-      }
-      else
-      {
+      } else {
         strBuf += inByte;
       }
     }
