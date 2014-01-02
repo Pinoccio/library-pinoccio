@@ -15,7 +15,7 @@ static NWK_DataReq_t appDataReq;
 WiFiBackpack wifi = WiFiBackpack();
 
 // use this if your lead scout doesn't have the backpack bus supporting firmware
-bool forceLeadScout = true;
+bool forceLeadScout = false;
 bool forceScoutVersion = true;
 
 // this stuff should prob all be in the Scout class or somesuch but putting it here to get started
@@ -98,7 +98,7 @@ void setup(void) {
     Scout.meshListen(3, leadAnswers);
     Scout.meshListen(4, leadAnnouncements);
     // join all the "channels" to listen for announcements
-    for(int i = 1; i < 10; i++) Scout.meshJoinGroup(i);
+    for (int i = 1; i < 10; i++) Scout.meshJoinGroup(i);
     Scout.meshJoinGroup(0xbeef); // our internal reporting channel
     Serial.println("Lead Scout ready!");
   } else {
@@ -166,17 +166,19 @@ void setup(void) {
   addBitlashFunction("scout.gethqtoken", (bitlash_function) getHQToken);
   addBitlashFunction("scout.otaboot", (bitlash_function) otaBoot);
 
-  addBitlashFunction("wifi.report", (bitlash_function) wifiReport);
-  addBitlashFunction("wifi.list", (bitlash_function) wifiList);
-  addBitlashFunction("wifi.config", (bitlash_function) wifiConfig);
-  addBitlashFunction("wifi.connect", (bitlash_function) wifiConnect);
-  addBitlashFunction("wifi.command", (bitlash_function) wifiCommand);
-  addBitlashFunction("wifi.ping", (bitlash_function) wifiPing);
-  addBitlashFunction("wifi.dnslookup", (bitlash_function) wifiDNSLookup);
-  addBitlashFunction("wifi.gettime", (bitlash_function) wifiGetTime);
-  addBitlashFunction("wifi.sleep", (bitlash_function) wifiSleep);
-  addBitlashFunction("wifi.wakeup", (bitlash_function) wifiWakeup);
-  addBitlashFunction("wifi.verbose", (bitlash_function) wifiVerbose);
+  if (isLeadScout) {
+    addBitlashFunction("wifi.report", (bitlash_function) wifiReport);
+    addBitlashFunction("wifi.list", (bitlash_function) wifiList);
+    addBitlashFunction("wifi.config", (bitlash_function) wifiConfig);
+    addBitlashFunction("wifi.connect", (bitlash_function) wifiConnect);
+    addBitlashFunction("wifi.command", (bitlash_function) wifiCommand);
+    addBitlashFunction("wifi.ping", (bitlash_function) wifiPing);
+    addBitlashFunction("wifi.dnslookup", (bitlash_function) wifiDNSLookup);
+    addBitlashFunction("wifi.gettime", (bitlash_function) wifiGetTime);
+    addBitlashFunction("wifi.sleep", (bitlash_function) wifiSleep);
+    addBitlashFunction("wifi.wakeup", (bitlash_function) wifiWakeup);
+    addBitlashFunction("wifi.verbose", (bitlash_function) wifiVerbose);
+  }
 }
 
 void loop(void) {
@@ -610,7 +612,7 @@ void fieldAnnounce(char *line)
   Serial.println(message);
 
   // when lead scout, shortcut
-  if(isLeadScout) {
+  if (isLeadScout) {
     return leadAnnouncementSend(chan, whoami, message);
   }
 
@@ -1169,7 +1171,7 @@ void bitlashFilter(byte b) {
     offset=0;
     return;
   }
-  if(b == '"')
+  if (b == '"')
   {
     buf[offset++] = '\\';
     b = '"';
