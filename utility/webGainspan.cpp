@@ -153,10 +153,10 @@ uint8_t webGainspan::init()
 
   // get version numbers
   D(Serial.println("DEBUG: Gainspan::init 4"));
-    if (!send_cmd_w_resp(CMD_GET_VERSION)) {
-      D(Serial.println("DEBUG: Gainspan::init 4.1"));
-      return 0;
-    }
+  if (!send_cmd_w_resp(CMD_GET_VERSION)) {
+    D(Serial.println("DEBUG: Gainspan::init 4.1"));
+    return 0;
+  }
   D(Serial.println("DEBUG: Gainspan::init 5"));
   return 1;
 }
@@ -348,6 +348,13 @@ uint8_t webGainspan::parse_resp(uint8_t cmd)
   uint32_t timeout = millis();
 
   while (!resp_done) {
+
+    if (millis() - timeout > 5000) {
+      // timeout, return error
+      ret = 0;
+      resp_done = 1;
+      break;
+    }
 
     buf = readline();
     if (buf == "") {
