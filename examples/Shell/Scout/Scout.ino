@@ -131,6 +131,9 @@ void setup(void) {
   addBitlashFunction("temperature", (bitlash_function) getTemperature);
   addBitlashFunction("randomnumber", (bitlash_function) getRandomNumber);
 
+  addBitlashFunction("led.blink", (bitlash_function) ledBlink);
+  addBitlashFunction("led.enableblink", (bitlash_function) ledEnableContinuousBlink);
+  addBitlashFunction("led.disableblink", (bitlash_function) ledDisableContinuousBlink);
   addBitlashFunction("led.off", (bitlash_function) ledOff);
   addBitlashFunction("led.red", (bitlash_function) ledRed);
   addBitlashFunction("led.green", (bitlash_function) ledGreen);
@@ -689,6 +692,22 @@ numvar powerReport(void) {
 /****************************\
 *      RGB LED HANDLERS     *
 \****************************/
+numvar ledEnableContinuousBlink(void) {
+  RgbLed.enableContinuousBlink();
+}
+
+numvar ledDisableContinuousBlink(void) {
+  RgbLed.disableContinuousBlink();
+}
+
+numvar ledBlink(void) {
+  if (getarg(0) == 4) {
+    RgbLed.blinkColor(getarg(1), getarg(2), getarg(3), getarg(4));
+  } else {
+    RgbLed.blinkColor(getarg(1), getarg(2), getarg(3));
+  }
+}
+
 numvar ledOff(void) {
   RgbLed.turnOff();
 }
@@ -752,9 +771,7 @@ numvar ledSetHexValue(void) {
 }
 
 numvar ledSetRgb(void) {
-  RgbLed.setRedValue(getarg(1));
-  RgbLed.setGreenValue(getarg(2));
-  RgbLed.setBlueValue(getarg(3));
+  RgbLed.setColor(getarg(1), getarg(2), getarg(3));
 }
 
 numvar ledSaveTorch(void) {
