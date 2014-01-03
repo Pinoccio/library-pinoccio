@@ -10,6 +10,8 @@
 #ifndef _PINOCCIO_HAL_RGB_LED_H
 #define _PINOCCIO_HAL_RGB_LED_H
 
+#include "utility/sysTimer.h"
+
 class HalRgbLed {
   public:
     HalRgbLed();
@@ -17,6 +19,8 @@ class HalRgbLed {
     void enable();
     void disable();
     bool isEnabled();
+    void enableContinuousBlink();
+    void disableContinuousBlink();
     void turnOff();
 
     void red();
@@ -38,6 +42,7 @@ class HalRgbLed {
     void blinkYellow(unsigned int ms=500);
     void blinkOrange(unsigned int ms=500);
     void blinkWhite(unsigned int ms=500);
+    void blinkColor(short red, short green, short blue, int ms=500);
 
     void setRedValue(int value);
     void setGreenValue(int value);
@@ -47,6 +52,10 @@ class HalRgbLed {
     int getGreenValue();
     int getBlueValue();
 
+    void setBlinkValues(short red, short green, short blue);
+    void setLEDToBlinkValue();
+    void setColor(short red, short green, short blue);
+    void setRGBLED(short red, short green, short blue);
     void setHex(char* hex);
     void saveTorch(short red, short green, short blue);
     void setTorch(void);
@@ -55,8 +64,11 @@ class HalRgbLed {
     short getGreenTorchValue(void);
     short getBlueTorchValue(void);
 
+    bool blinkState;
+
   protected:
     bool enabled;
+
     int redValue;
     int greenValue;
     int blueValue;
@@ -64,10 +76,11 @@ class HalRgbLed {
     int blinkRedValue;
     int blinkGreenValue;
     int blinkBlueValue;
+
+    SYS_Timer_t blinkTimer;
 };
 
 extern HalRgbLed RgbLed;
-extern SYS_Timer_t blinkTimer;
 static void halRgbLedBlinkTimerHandler(SYS_Timer_t *timer);
 
 #endif // _PINOCCIO_HAL_RGB_LED_H
