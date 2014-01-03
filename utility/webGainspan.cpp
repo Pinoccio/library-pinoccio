@@ -166,8 +166,7 @@ uint8_t webGainspan::init() {
   return 1;
 }
 
-uint8_t webGainspan::send_cmd(uint8_t cmd)
-{
+uint8_t webGainspan::send_cmd(uint8_t cmd) {
   flush();
 
   memset(cmd_buffer, 64, 0);
@@ -331,8 +330,7 @@ uint8_t webGainspan::send_cmd(uint8_t cmd)
   return 1;
 }
 
-uint8_t webGainspan::send_raw_cmd(const char *cmd)
-{
+uint8_t webGainspan::send_raw_cmd(const char *cmd) {
   flush();
 
   memset(cmd_buffer, 64, 0);
@@ -346,8 +344,7 @@ uint8_t webGainspan::send_raw_cmd(const char *cmd)
   return 1;
 }
 
-uint8_t webGainspan::parse_resp(uint8_t cmd)
-{
+uint8_t webGainspan::parse_resp(uint8_t cmd) {
   uint8_t resp_done = 0;
   uint8_t ret = 0;
   String buf;
@@ -720,8 +717,7 @@ uint8_t webGainspan::parse_resp(uint8_t cmd)
   return ret;
 }
 
-uint8_t webGainspan::parse_raw_resp()
-{
+uint8_t webGainspan::parse_raw_resp() {
   uint8_t resp_done = 0;
   uint8_t ret = 0;
   String buf;
@@ -760,8 +756,7 @@ uint8_t webGainspan::parse_raw_resp()
   return ret;
 }
 
-uint8_t webGainspan::send_cmd_w_resp(uint8_t cmd)
-{
+uint8_t webGainspan::send_cmd_w_resp(uint8_t cmd) {
   if (send_cmd(cmd)) {
     return parse_resp(cmd);
   } else {
@@ -769,8 +764,7 @@ uint8_t webGainspan::send_cmd_w_resp(uint8_t cmd)
   }
 }
 
-uint8_t webGainspan::send_raw_cmd_w_resp(const char *cmd)
-{
+uint8_t webGainspan::send_raw_cmd_w_resp(const char *cmd) {
   if (send_raw_cmd(cmd)) {
     return parse_raw_resp();
   } else {
@@ -778,8 +772,7 @@ uint8_t webGainspan::send_raw_cmd_w_resp(const char *cmd)
   }
 }
 
-void webGainspan::configure(GS_PROFILE *prof)
-{
+void webGainspan::configure(GS_PROFILE *prof) {
   // configure params
   this->ssid         = prof->ssid;
   this->security_key = prof->security_key;
@@ -788,8 +781,7 @@ void webGainspan::configure(GS_PROFILE *prof)
   this->gateway      = prof->gateway;
 }
 
-bool webGainspan::autoConfigure(const char *ssid, const char *passphrase, String ip, String port)
-{
+bool webGainspan::autoConfigure(const char *ssid, const char *passphrase, String ip, String port) {
   this->ssid = String(ssid);
   this->security_key = String(passphrase);
 
@@ -849,8 +841,7 @@ bool webGainspan::autoConfigure(const char *ssid, const char *passphrase, String
   return 1;
 }
 
-uint8_t webGainspan::connect()
-{
+uint8_t webGainspan::connect() {
 
   if (!send_cmd_w_resp(CMD_DISCONNECT)) {
     return 0;
@@ -926,13 +917,11 @@ uint8_t webGainspan::autoConnect()
   return ret;
 }
 
-uint8_t webGainspan::connected()
-{
+uint8_t webGainspan::connected() {
   return connection_state;
 }
 
-String webGainspan::readline(void)
-{
+String webGainspan::readline(void) {
   String strBuf;
   char inByte;
   uint32_t start = millis();
@@ -969,8 +958,7 @@ String webGainspan::readline(void)
   return strBuf;
 }
 
-uint16_t webGainspan::readData(SOCKET s, uint8_t* buf, uint16_t len)
-{
+uint16_t webGainspan::readData(SOCKET s, uint8_t* buf, uint16_t len) {
   uint16_t dataLen = 0;
   uint8_t tmp1, tmp2;
 
@@ -1073,8 +1061,7 @@ uint16_t webGainspan::writeData(SOCKET s, const uint8_t*  buf, uint16_t len) {
   return len;
 }
 
-void webGainspan::process()
-{
+void webGainspan::process() {
   if (!Serial1.available() || dataOnSock != 255) {
     return;
   }
@@ -1229,8 +1216,7 @@ void webGainspan::process()
   }
 }
 
-void webGainspan::parse_cmd(String buf)
-{
+void webGainspan::parse_cmd(String buf) {
   if (buf.startsWith("CONNECT")) {
     /* got CONNECT */
     for (int sock = 0; sock < 4; sock++) {
@@ -1388,8 +1374,7 @@ uint8_t webGainspan::ping(String ip) {
   return 1;
 }
 
-String webGainspan::dnsLookup(String url)
-{
+String webGainspan::dnsLookup(String url) {
   this->dns_url_ip = url;
 
   if (!send_cmd_w_resp(CMD_DNS_LOOKUP)) {
