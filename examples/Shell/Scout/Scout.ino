@@ -939,7 +939,9 @@ numvar pinMakeOutput(void) {
 }
 
 numvar pinRead(void) {
-  return digitalRead(getarg(1));
+  int i = digitalRead(getarg(1));
+  blPrint(i);
+  return i;
 }
 
 numvar pinWrite(void) {
@@ -962,7 +964,7 @@ numvar pinReport(void) {
 *     BACKPACK HANDLERS     *
 \****************************/
 numvar backpackReport(void) {
-  Serial.println("[{\"name\":\"wifi\",\"version\":\"1.0\"},{\"name\":\"environment\",\"version\":\"2.0\"}]");
+  blPrint("[{\"name\":\"wifi\",\"version\":\"1.0\"},{\"name\":\"environment\",\"version\":\"2.0\"}]");
 }
 
 /****************************\
@@ -970,7 +972,7 @@ numvar backpackReport(void) {
 \****************************/
 numvar scoutReport(void) {
   if (forceScoutVersion) {
-    Serial.println("1.0");
+    blPrint("1.0");
   } else {
     Serial.println("-- Scout Information --");
     Serial.print(" - EEPROM Version: 0x");
@@ -985,7 +987,7 @@ numvar scoutReport(void) {
 }
 
 numvar isScoutLeadScout(void) {
-  Serial.println(isLeadScout);
+  blPrint(isLeadScout?1:0);
   return isLeadScout;
 }
 
@@ -997,7 +999,7 @@ numvar getHQToken(void) {
   char token[33];
   Pinoccio.getHQToken((char *)token);
   token[32] = 0;
-  Serial.println(token);
+  blPrint(token);
 }
 
 numvar otaBoot(void) {
