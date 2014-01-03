@@ -38,12 +38,9 @@ void bitlashFilter(byte b);
 char *bitlashOutput; // used by bitlashBuffer
 void bitlashBuffer(byte b);
 
-char *jsonEscBuffer;
-char *teeOutput;
-
 bool isTeeing = false;
-void teePrint(char *out);
-void teePrint(int out);
+void blPrint(char *out);
+void blPrint(int out);
 
 // Example code to dump backpack EEPROM contents:
 void print_hex(const uint8_t *buf, uint8_t len) {
@@ -336,45 +333,23 @@ void leadIncoming(char *packet, unsigned short *index)
     if(to == whoami)
     {
 
-
-      // reusing same buffer for tee output
-      teeOutput = (char*)malloc(255);
-      // resusing same buffer to handle json esc of bitlash response.
-      jsonEscBuffer = (char*)malloc(255);
-
-      // reusing same buffer for bitlash response
-      //bitlashOutput = (char*)malloc(strlen(jsonEscBuffer)+255+3);
       bitlashOutput = (char*)malloc(255);
 
+      sprintf(bitlashOutput,"{\"type\":\"reply\",\"from\":%d,\"id\":%lu,\"end\":true,\"reply\":\"",to,id);
+
       setOutputHandler(&bitlashBuffer);
-//-------------------
 
       isTeeing = true;
       ret = (int)doCommand(command);
       isTeeing = false;
 
-      Serial.println("TTTT-----------");
-      Serial.print(teeOutput);
-      Serial.println("TTTT-----------");
-      //jsonEsc(teeOutput);
-
-
-      sprintf(bitlashOutput,"{\"type\":\"reply\",\"from\":%d,\"id\":%lu,\"end\":true,\"reply\":\"",to,id);
-      strcpy(bitlashOutput+strlen(bitlashOutput),teeOutput);
-      strcpy(bitlashOutput+len, "\"}\n");
+      strcpy(bitlashOutput+strlen(bitlashOutput), "\"}\n");
 
       setOutputHandler(&bitlashFilter);
-
-      Serial.println("-----------");
-      Serial.println(bitlashOutput);
-      Serial.println(strlen(bitlashOutput));
-      Serial.println("-----------");
 
       leadSignal(bitlashOutput);
 
       free(bitlashOutput);
-      free(teeOutput);
-      free(jsonEscBuffer);
 
       return;
     }
@@ -674,26 +649,36 @@ void fieldAnnounce(char *line)
 *      BUILT-IN HANDLERS    *
 \****************************/
 numvar getTemperature(void) {
-  return Scout.getTemperature();
+  int i = Scout.getTemperature();
+  blPrint(i);
+  return i;
 }
 
 numvar getRandomNumber(void) {
-  return random();
+  int i = random();
+  blPrint(i);
+  return i;
 }
 
 /****************************\
 *      POWER HANDLERS       *
 \****************************/
 numvar isBatteryCharging(void) {
-  return Scout.isBatteryCharging();
+  int i = Scout.isBatteryCharging();
+  blPrint(i);
+  return i;
 }
 
 numvar getBatteryPercentage(void) {
-  return Scout.getBatteryPercentage();
+  int i = Scout.getBatteryPercentage();
+  blPrint(i);
+  return i;
 }
 
 numvar getBatteryVoltage(void) {
-  return Scout.getBatteryVoltage();
+  int i = Scout.getBatteryVoltage();
+  blPrint(i);
+  return i;
 }
 
 numvar enableBackpackVcc(void) {
@@ -712,17 +697,16 @@ numvar goToSleep(void) {
 }
 
 numvar powerReport(void) {
-  // TODO: return JSON formmated report of power details
   // ie: {pct:85,vlt:4.1,chg:false,vcc:true}
-  Serial.print("{p:");
-  Serial.print(Scout.getBatteryPercentage());
-  Serial.print(",v:");
-  Serial.print((int)Scout.getBatteryVoltage());
-  Serial.print(",c:");
-  Serial.print(Scout.isBatteryCharging());
-  Serial.print(",v:");
-  Serial.print(Scout.isBackpackVccEnabled());
-  Serial.println("}");
+  blPrint("{p:");
+  blPrint(Scout.getBatteryPercentage());
+  blPrint(",v:");
+  blPrint((int)Scout.getBatteryVoltage());
+  blPrint(",c:");
+  blPrint(Scout.isBatteryCharging());
+  blPrint(",v:");
+  blPrint(Scout.isBackpackVccEnabled());
+  blPrint("}\n");
   return true;
 }
 
@@ -820,19 +804,19 @@ numvar ledSetTorch(void) {
 }
 
 numvar ledReport(void) {
-  teePrint("{\"c\": {\"r\":");
-  teePrint(RgbLed.getRedValue());
-  teePrint(",\"g\":");
-  teePrint(RgbLed.getGreenValue());
-  teePrint(",\"b\":");
-  teePrint(RgbLed.getBlueValue());
-  teePrint("}, \"t\": {\"r\":");
-  teePrint(RgbLed.getRedTorchValue());
-  teePrint(",\"g\":");
-  teePrint(RgbLed.getGreenTorchValue());
-  teePrint(",\"b\":");
-  teePrint(RgbLed.getBlueTorchValue());
-  teePrint("}}");
+  blPrint("{\"c\": {\"r\":");
+  blPrint(RgbLed.getRedValue());
+  blPrint(",\"g\":");
+  blPrint(RgbLed.getGreenValue());
+  blPrint(",\"b\":");
+  blPrint(RgbLed.getBlueValue());
+  blPrint("}, \"t\": {\"r\":");
+  blPrint(RgbLed.getRedTorchValue());
+  blPrint(",\"g\":");
+  blPrint(RgbLed.getGreenTorchValue());
+  blPrint(",\"b\":");
+  blPrint(RgbLed.getBlueTorchValue());
+  blPrint("}}\n");
 }
 
 /****************************\
@@ -1244,7 +1228,7 @@ void bitlashBuffer(byte b) {
   len = strlen(bitlashOutput);
   bitlashOutput = (char*)realloc(bitlashOutput, len+3); // up to 2 bytes w/ escaping, and the null term
 
-  // escape newlines and quotes
+  // escape newlines, quotes, and slashes
   if(b == '\n')
   {
     bitlashOutput[len++] = '\\';
@@ -1255,50 +1239,33 @@ void bitlashBuffer(byte b) {
     bitlashOutput[len++] = '\\';
     b = '"';
   }
+  if(b == '\\')
+  {
+    bitlashOutput[len++] = '\\';
+    b = '\\';
+  }
   bitlashOutput[len] = b;
   bitlashOutput[len+1] = 0;
 }
 
 
-
-void teePrint(char *out){
+// hacks because the callback for setOutputHandler is not called on serial write.
+void blPrint(char *out){
   int len;
   // add out to buffer and also serial.write
-  Serial.write(out);
   if(isTeeing) {
-
-    for(int i=0;i<len;++i) {
-      bitlashBuffer(out[i])
+    len = strlen(out);
+    for(int i=0;i<len;++i) { 
+      bitlashBuffer(out[i]);
     }
+  } else {
+    Serial.print(out);
   }
 }
 
-void teePrint(int out){
-  
+void blPrint(int out){
   char str[10];
-
   sprintf(str,"%d",out);
-  // add out to buffer and also serial.write
-
-  teePrint(str);
+  blPrint(str);
 }
 
-
-
-char * jsonEsc(char * str){
-  char *quote = "\"";
-  char *slash = "\\";
-  int len = strlen(jsonEscBuffer);
-
-  for(char* c = str; *c; ++c) {
-      if(c == quote) { 
-        strcpy(jsonEscBuffer+len,slash);
-        len++;
-      } else if (c == slash) {
-        strcpy(jsonEscBuffer+len,slash);
-        len++;
-      }
-      strcpy(jsonEscBuffer+len,c);
-      len++;
-  }
-}
