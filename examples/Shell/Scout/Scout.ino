@@ -15,7 +15,7 @@ static NWK_DataReq_t appDataReq;
 WiFiBackpack wifi = WiFiBackpack();
 
 // use this if your lead scout doesn't have the backpack bus supporting firmware
-bool forceLeadScout = false;
+bool forceLeadScout = true;
 bool forceScoutVersion = true;
 
 // this stuff should prob all be in the Scout class or somesuch but putting it here to get started
@@ -38,6 +38,12 @@ void bitlashFilter(byte b);
 char *bitlashOutput; // used by bitlashBuffer
 void bitlashBuffer(byte b);
 
+char *jsonEscBuffer;
+char *teeOutput;
+
+bool isTeeing = false;
+void teePrint(char *out);
+void teePrint(int out);
 
 // Example code to dump backpack EEPROM contents:
 void print_hex(const uint8_t *buf, uint8_t len) {
@@ -329,16 +335,47 @@ void leadIncoming(char *packet, unsigned short *index)
     // handle internal ones first
     if(to == whoami)
     {
+
+
+      // reusing same buffer for tee output
+      teeOutput = (char*)malloc(255);
+      // resusing same buffer to handle json esc of bitlash response.
+      jsonEscBuffer = (char*)malloc(255);
+
       // reusing same buffer for bitlash response
-      bitlashOutput = (char*)malloc(100);
-      sprintf(bitlashOutput,"{\"type\":\"reply\",\"from\":%d,\"id\":%lu,\"end\":true,\"reply\":\"",to,id);
+      //bitlashOutput = (char*)malloc(strlen(jsonEscBuffer)+255+3);
+      bitlashOutput = (char*)malloc(255);
+
       setOutputHandler(&bitlashBuffer);
+//-------------------
+
+      isTeeing = true;
       ret = (int)doCommand(command);
-      setOutputHandler(&bitlashFilter);
-      len = strlen(bitlashOutput);
+      isTeeing = false;
+
+      Serial.println("TTTT-----------");
+      Serial.print(teeOutput);
+      Serial.println("TTTT-----------");
+      //jsonEsc(teeOutput);
+
+
+      sprintf(bitlashOutput,"{\"type\":\"reply\",\"from\":%d,\"id\":%lu,\"end\":true,\"reply\":\"",to,id);
+      strcpy(bitlashOutput+strlen(bitlashOutput),teeOutput);
       strcpy(bitlashOutput+len, "\"}\n");
+
+      setOutputHandler(&bitlashFilter);
+
+      Serial.println("-----------");
+      Serial.println(bitlashOutput);
+      Serial.println(strlen(bitlashOutput));
+      Serial.println("-----------");
+
       leadSignal(bitlashOutput);
+
       free(bitlashOutput);
+      free(teeOutput);
+      free(jsonEscBuffer);
+
       return;
     }
 
@@ -783,19 +820,19 @@ numvar ledSetTorch(void) {
 }
 
 numvar ledReport(void) {
-  Serial.print("{\"c\": {\"r\":");
-  Serial.print(RgbLed.getRedValue());
-  Serial.print(",\"g\":");
-  Serial.print(RgbLed.getGreenValue());
-  Serial.print(",\"b\":");
-  Serial.print(RgbLed.getBlueValue());
-  Serial.print("}, \"t\": {\"r\":");
-  Serial.print(RgbLed.getRedTorchValue());
-  Serial.print(",\"g\":");
-  Serial.print(RgbLed.getGreenTorchValue());
-  Serial.print(",\"b\":");
-  Serial.print(RgbLed.getBlueTorchValue());
-  Serial.println("}}");
+  teePrint("{\"c\": {\"r\":");
+  teePrint(RgbLed.getRedValue());
+  teePrint(",\"g\":");
+  teePrint(RgbLed.getGreenValue());
+  teePrint(",\"b\":");
+  teePrint(RgbLed.getBlueValue());
+  teePrint("}, \"t\": {\"r\":");
+  teePrint(RgbLed.getRedTorchValue());
+  teePrint(",\"g\":");
+  teePrint(RgbLed.getGreenTorchValue());
+  teePrint(",\"b\":");
+  teePrint(RgbLed.getBlueTorchValue());
+  teePrint("}}");
 }
 
 /****************************\
@@ -1220,4 +1257,48 @@ void bitlashBuffer(byte b) {
   }
   bitlashOutput[len] = b;
   bitlashOutput[len+1] = 0;
+}
+
+
+
+void teePrint(char *out){
+  int len;
+  // add out to buffer and also serial.write
+  Serial.write(out);
+  if(isTeeing) {
+
+    for(int i=0;i<len;++i) {
+      bitlashBuffer(out[i])
+    }
+  }
+}
+
+void teePrint(int out){
+  
+  char str[10];
+
+  sprintf(str,"%d",out);
+  // add out to buffer and also serial.write
+
+  teePrint(str);
+}
+
+
+
+char * jsonEsc(char * str){
+  char *quote = "\"";
+  char *slash = "\\";
+  int len = strlen(jsonEscBuffer);
+
+  for(char* c = str; *c; ++c) {
+      if(c == quote) { 
+        strcpy(jsonEscBuffer+len,slash);
+        len++;
+      } else if (c == slash) {
+        strcpy(jsonEscBuffer+len,slash);
+        len++;
+      }
+      strcpy(jsonEscBuffer+len,c);
+      len++;
+  }
 }
