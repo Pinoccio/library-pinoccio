@@ -79,6 +79,11 @@ static void hqDisconnectHandler(uint8_t cid) {
 void setup(void) {
   // set up event handlers
   Scout.digitalPinEventHandler = digitalPinEventHandler;
+  Scout.analogPinEventHandler = analogPinEventHandler;
+  Scout.batteryPercentageEventHandler = batteryPercentageEventHandler;
+  Scout.batteryVoltageEventHandler = batteryVoltageEventHandler;
+  Scout.batteryChargingEventHandler = batteryChargingEventHandler;
+  Scout.temperatureEventHandler = temperatureEventHandler;
 
   Scout.disableShell();
   Scout.setup();
@@ -175,7 +180,11 @@ void setup(void) {
   addBitlashFunction("scout.sethqtoken", (bitlash_function) setHQToken);
   addBitlashFunction("scout.gethqtoken", (bitlash_function) getHQToken);
   addBitlashFunction("scout.otaboot", (bitlash_function) otaBoot);
-  addBitlashFunction("scout.seteventms", (bitlash_function) setEventPeriod);
+
+  addBitlashFunction("events.start", (bitlash_function) startStateChangeEvents);
+  addBitlashFunction("events.stop", (bitlash_function) stopStateChangeEvents);
+  addBitlashFunction("events.setperiod", (bitlash_function) setEventPeriod);
+  addBitlashFunction("events.verbose", (bitlash_function) setEventVerbose);
 
   if (isLeadScout) {
     addBitlashFunction("wifi.report", (bitlash_function) wifiReport);
@@ -964,7 +973,14 @@ numvar pinThreshold(void) {
 
 numvar pinReport(void) {
   // TODO: return JSON formmated report of all IO pins and their values
-  String report = "{\"d2\": " + String(Scout.digitalPinState[0]) + ", \"d3\": " + String(Scout.digitalPinState[1]) + ", \"d4\": " + String(Scout.digitalPinState[2]) + ", \"d5\": " + String(Scout.digitalPinState[3]) + ", \"d6\": " + String(Scout.digitalPinState[4]) + ", \"d7\": " + String(Scout.digitalPinState[5]) + ", \"d8\": " + String(Scout.digitalPinState[6]) + ", \"a0\": " + String(Scout.analogPinState[0]) + ", \"a1\": " + String(Scout.analogPinState[1]) + ", \"a2\": " + String(Scout.analogPinState[2]) + ", \"a3\": " + String(Scout.analogPinState[3]) + ", \"a4\": " + String(Scout.analogPinState[4]) + ", \"a5\": " + String(Scout.analogPinState[5]) + ", \"a6\": " + String(Scout.analogPinState[6]) + ", \"a7\": " + String(Scout.analogPinState[7]) + "}";
+  String report = "{\"d2\": " + String(Scout.digitalPinState[0]) + ", \"d3\": " + String(Scout.digitalPinState[1]) +
+                 ", \"d4\": " + String(Scout.digitalPinState[2]) + ", \"d5\": " + String(Scout.digitalPinState[3]) +
+                 ", \"d6\": " + String(Scout.digitalPinState[4]) + ", \"d7\": " + String(Scout.digitalPinState[5]) +
+                 ", \"d8\": " + String(Scout.digitalPinState[6]) + ", \"a0\": " + String(Scout.analogPinState[0]) +
+                 ", \"a1\": " + String(Scout.analogPinState[1]) + ", \"a2\": " + String(Scout.analogPinState[2]) +
+                 ", \"a3\": " + String(Scout.analogPinState[3]) + ", \"a4\": " + String(Scout.analogPinState[4]) +
+                 ", \"a5\": " + String(Scout.analogPinState[5]) + ", \"a6\": " + String(Scout.analogPinState[6]) +
+                 ", \"a7\": " + String(Scout.analogPinState[7]) + "}";
   blPrint(report);
   return true;
 }
@@ -1017,8 +1033,24 @@ numvar otaBoot(void) {
   while(1);
 }
 
+/****************************\
+ *      EVENT HANDLERS      *
+\****************************/
+
+numvar startStateChangeEvents(void) {
+  Scout.startStateChangeEvents();
+}
+
+numvar stopStateChangeEvents(void) {
+  Scout.stopStateChangeEvents();
+}
+
 numvar setEventPeriod(void) {
   Scout.setStateChangeEventPeriod(getarg(1));
+}
+
+numvar setEventVerbose(void) {
+  Scout.eventVerboseOutput = getarg(1);
 }
 
 /****************************\
@@ -1208,22 +1240,76 @@ static bool receiveMessage(NWK_DataInd_t *ind) {
   return true;
 }
 
+/****************************\
+ *      EVENT HANDLERS      *
+\****************************/
 void digitalPinEventHandler(uint8_t pin, uint8_t value) {
-  //Serial.print("digitalPinEventHandler(");
-  //Serial.print(pin);
-  //Serial.print(",");
-  //Serial.print(value);
-  //Serial.println(")");
-
   String callback = "event.digital";
-  char buf[20];
+  char buf[24];
   callback.toCharArray(buf, callback.length()+1);
-  //Serial.print("buf: ");
-  //Serial.println(buf);
 
   if (findscript(buf)) {
-    //Serial.println("Found callback");
     callback += "(" + String(pin) + "," + String(value) + ")";
+    callback.toCharArray(buf, callback.length()+1);
+    doCommand(buf);
+  }
+}
+
+void analogPinEventHandler(uint8_t pin, uint16_t value) {
+  String callback = "event.analog";
+  char buf[24];
+  callback.toCharArray(buf, callback.length()+1);
+
+  if (findscript(buf)) {
+    callback += "(" + String(pin) + "," + String(value) + ")";
+    callback.toCharArray(buf, callback.length()+1);
+    doCommand(buf);
+  }
+}
+
+void batteryPercentageEventHandler(uint8_t value) {
+  String callback = "event.percent";
+  char buf[24];
+  callback.toCharArray(buf, callback.length()+1);
+
+  if (findscript(buf)) {
+    callback += "(" + String(value) + ")";
+    callback.toCharArray(buf, callback.length()+1);
+    doCommand(buf);
+  }
+}
+
+void batteryVoltageEventHandler(uint8_t value) {
+  String callback = "event.voltage";
+  char buf[24];
+  callback.toCharArray(buf, callback.length()+1);
+
+  if (findscript(buf)) {
+    callback += "(" + String(value) + ")";
+    callback.toCharArray(buf, callback.length()+1);
+    doCommand(buf);
+  }
+}
+
+void batteryChargingEventHandler(uint8_t value) {
+  String callback = "event.charging";
+  char buf[24];
+  callback.toCharArray(buf, callback.length()+1);
+
+  if (findscript(buf)) {
+    callback += "(" + String(value) + ")";
+    callback.toCharArray(buf, callback.length()+1);
+    doCommand(buf);
+  }
+}
+
+void temperatureEventHandler(uint8_t value) {
+  String callback = "event.temperature";
+  char buf[24];
+  callback.toCharArray(buf, callback.length()+1);
+
+  if (findscript(buf)) {
+    callback += "(" + String(value) + ")";
     callback.toCharArray(buf, callback.length()+1);
     doCommand(buf);
   }

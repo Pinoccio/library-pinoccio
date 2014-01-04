@@ -28,14 +28,16 @@ PinoccioScout::PinoccioScout() {
 
   digitalPinEventHandler = 0;
   analogPinEventHandler = 0;
-  batteryPercentEventHandler = 0;
+  batteryPercentageEventHandler = 0;
   batteryVoltageEventHandler = 0;
   batteryChargingEventHandler = 0;
   temperatureEventHandler = 0;
 
-  stateChangeTimer.interval = 100;
+  stateChangeTimer.interval = 1000;
   stateChangeTimer.mode = SYS_TIMER_PERIODIC_MODE;
   stateChangeTimer.handler = scoutStateChangeTimerHandler;
+
+  eventVerboseOutput = false;
 }
 
 PinoccioScout::~PinoccioScout() { }
@@ -147,6 +149,13 @@ static void scoutStateChangeTimerHandler(SYS_Timer_t *timer) {
     for (uint8_t i=0; i<7; i++) {
       val = digitalRead(i+2);
       if (Scout.digitalPinState[i] != val) {
+        if (Scout.eventVerboseOutput == true) {
+          Serial.print("Running: digitalPinEventHandler(");
+          Serial.print(i+2);
+          Serial.print(",");
+          Serial.print(val);
+          Serial.println(")");
+        }
         Scout.digitalPinEventHandler(i+2, val);
         Scout.digitalPinState[i] = val;
       }
@@ -157,16 +166,28 @@ static void scoutStateChangeTimerHandler(SYS_Timer_t *timer) {
     for (uint8_t i=0; i<8; i++) {
       val = analogRead(i+24);
       if (abs(Scout.analogPinState[i] - val) > analogThreshold) {
+        if (Scout.eventVerboseOutput == true) {
+          Serial.print("Running: analogPinEventHandler(");
+          Serial.print(i+24);
+          Serial.print(",");
+          Serial.print(val);
+          Serial.println(")");
+        }
         Scout.analogPinEventHandler(i+24, val);
         Scout.analogPinState[i] = val;
       }
     }
   }
 
-  if (Scout.batteryPercentEventHandler != 0) {
+  if (Scout.batteryPercentageEventHandler != 0) {
     val = constrain(HAL_FuelGaugePercent(), 0, 100);
     if (Scout.batteryPercentage != val) {
-      Scout.batteryPercentEventHandler(val);
+      if (Scout.eventVerboseOutput == true) {
+        Serial.print("Running: batteryPercentageEventHandler(");
+        Serial.print(val);
+        Serial.println(")");
+      }
+      Scout.batteryPercentageEventHandler(val);
       Scout.batteryPercentage = val;
     }
   }
@@ -174,6 +195,11 @@ static void scoutStateChangeTimerHandler(SYS_Timer_t *timer) {
   if (Scout.batteryVoltageEventHandler != 0) {
     val = HAL_FuelGaugeVoltage();
     if (Scout.batteryVoltage != val) {
+      if (Scout.eventVerboseOutput == true) {
+        Serial.print("Running: batteryVoltageEventHandler(");
+        Serial.print(val);
+        Serial.println(")");
+      }
       Scout.batteryVoltageEventHandler(val);
       Scout.batteryVoltage = val;
     }
@@ -182,6 +208,11 @@ static void scoutStateChangeTimerHandler(SYS_Timer_t *timer) {
   if (Scout.batteryChargingEventHandler != 0) {
     val = (digitalRead(CHG_STATUS) == LOW);
     if (Scout.isBattCharging != val) {
+      if (Scout.eventVerboseOutput == true) {
+        Serial.print("Running: batteryChargingEventHandler(");
+        Serial.print(val);
+        Serial.println(")");
+      }
       Scout.batteryChargingEventHandler(val);
       Scout.isBattCharging = val;
     }
@@ -190,6 +221,11 @@ static void scoutStateChangeTimerHandler(SYS_Timer_t *timer) {
   if (Scout.temperatureEventHandler != 0) {
     val = HAL_MeasureTemperature();
     if (Scout.temperature != val) {
+      if (Scout.eventVerboseOutput == true) {
+        Serial.print("Running: temperatureEventHandler(");
+        Serial.print(val);
+        Serial.println(")");
+      }
       Scout.temperatureEventHandler(val);
       Scout.temperature = val;
     }
