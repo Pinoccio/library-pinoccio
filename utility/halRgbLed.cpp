@@ -20,6 +20,7 @@ HalRgbLed::HalRgbLed() {
   blinkState = false;
 
   redValue = greenValue = blueValue = 0;
+
   blinkTimer.interval = 500;
   blinkTimer.mode = SYS_TIMER_INTERVAL_MODE;
   blinkTimer.handler = halRgbLedBlinkTimerHandler;

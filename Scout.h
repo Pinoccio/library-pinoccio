@@ -27,7 +27,7 @@ class PinoccioScout : public PinoccioClass {
 
     bool isBatteryCharging();
     int getBatteryPercentage();
-    float getBatteryVoltage();
+    int getBatteryVoltage();
 
     void enableBackpackVcc();
     void disableBackpackVcc();
@@ -35,7 +35,26 @@ class PinoccioScout : public PinoccioClass {
 
     bool isLeadScout();
 
+    void startStateChangeEvents();
+    void stopStateChangeEvents();
+    void setStateChangeEventPeriod(uint32_t interval);
+    void saveState();
+
     PBBP bp;
+
+    void (*digitalPinEventHandler)(uint8_t pin, uint8_t value);
+    void (*analogPinEventHandler)(uint8_t pin, uint16_t value);
+    void (*batteryPercentEventHandler)(uint8_t value);
+    void (*batteryVoltageEventHandler)(uint8_t value);
+    void (*batteryChargingEventHandler)(uint8_t value);
+    void (*temperatureEventHandler)(uint8_t value);
+
+    uint8_t digitalPinState[7];
+    uint16_t analogPinState[8];
+    uint8_t batteryPercentage;
+    uint16_t batteryVoltage;
+    bool isBattCharging;
+    uint8_t temperature;
 
   protected:
     void checkStateChange();
@@ -43,14 +62,13 @@ class PinoccioScout : public PinoccioClass {
     uint16_t leadScoutAddresses[P_MAX_LEAD_SCOUTS];
     Backpack* backpacks[P_MAX_BACKPACKS];
 
-    uint8_t batteryPercent;
-    bool vccEnabled;
+    bool isVccEnabled;
+    bool isStateSaved;
 
-    bool stateSaved;
-    uint8_t digitalPinState[13];
-    uint8_t analogPinState[8];
+    SYS_Timer_t stateChangeTimer;
 };
 
 extern PinoccioScout Scout;
+static void scoutStateChangeTimerHandler(SYS_Timer_t *timer);
 
 #endif

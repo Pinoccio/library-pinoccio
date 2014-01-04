@@ -15,7 +15,7 @@ static NWK_DataReq_t appDataReq;
 WiFiBackpack wifi = WiFiBackpack();
 
 // use this if your lead scout doesn't have the backpack bus supporting firmware
-bool forceLeadScout = true;
+bool forceLeadScout = false;
 bool forceScoutVersion = true;
 
 // this stuff should prob all be in the Scout class or somesuch but putting it here to get started
@@ -77,6 +77,9 @@ static void hqDisconnectHandler(uint8_t cid) {
 }
 
 void setup(void) {
+  // set up event handlers
+  Scout.digitalPinEventHandler = digitalPinEventHandler;
+
   Scout.disableShell();
   Scout.setup();
 
@@ -89,6 +92,7 @@ void setup(void) {
     wifi.setup();
     wifi.init();
     Serial.println("Done");
+    RgbLed.blinkGreen();
   }
 
 //  meshJoinGroup();
@@ -171,6 +175,7 @@ void setup(void) {
   addBitlashFunction("scout.sethqtoken", (bitlash_function) setHQToken);
   addBitlashFunction("scout.gethqtoken", (bitlash_function) getHQToken);
   addBitlashFunction("scout.otaboot", (bitlash_function) otaBoot);
+  addBitlashFunction("scout.seteventms", (bitlash_function) setEventPeriod);
 
   if (isLeadScout) {
     addBitlashFunction("wifi.report", (bitlash_function) wifiReport);
@@ -323,9 +328,15 @@ void leadIncoming(char *packet, unsigned short *index)
     to = atoi(j0g_str("to", packet, index));
     id = strtoul(j0g_str("id", packet, index), NULL, 10);
     command = j0g_str("command", packet, index);
-    if(!to || !id || !command)
+    if(strlen(j0g_str("to", packet, index)) == 0 || !id || !command)
     {
       Serial.println("invalid command, requires to, id, command");
+      Serial.print("to: ");
+      Serial.println(to);
+      Serial.print("id: ");
+      Serial.println(id);
+      Serial.print("command: ");
+      Serial.println(command);
       return;
     }
 
@@ -919,28 +930,24 @@ numvar meshReport(void) {
 numvar pinOn(void) {
   pinMode(getarg(1), OUTPUT);
   digitalWrite(getarg(1), HIGH);
-  return true;
 }
 
 numvar pinOff(void) {
   pinMode(getarg(1), OUTPUT);
   digitalWrite(getarg(1), LOW);
-  return true;
 }
 
 numvar pinMakeInput(void) {
   pinMode(getarg(1), INPUT);
-  return true;
 }
 
 numvar pinMakeOutput(void) {
   pinMode(getarg(1), OUTPUT);
-  return true;
 }
 
 numvar pinRead(void) {
   int i = digitalRead(getarg(1));
-  blPrint(i);
+  //blPrint(i);
   return i;
 }
 
@@ -957,6 +964,8 @@ numvar pinThreshold(void) {
 
 numvar pinReport(void) {
   // TODO: return JSON formmated report of all IO pins and their values
+  String report = "{\"d2\": " + String(Scout.digitalPinState[0]) + ", \"d3\": " + String(Scout.digitalPinState[1]) + ", \"d4\": " + String(Scout.digitalPinState[2]) + ", \"d5\": " + String(Scout.digitalPinState[3]) + ", \"d6\": " + String(Scout.digitalPinState[4]) + ", \"d7\": " + String(Scout.digitalPinState[5]) + ", \"d8\": " + String(Scout.digitalPinState[6]) + ", \"a0\": " + String(Scout.analogPinState[0]) + ", \"a1\": " + String(Scout.analogPinState[1]) + ", \"a2\": " + String(Scout.analogPinState[2]) + ", \"a3\": " + String(Scout.analogPinState[3]) + ", \"a4\": " + String(Scout.analogPinState[4]) + ", \"a5\": " + String(Scout.analogPinState[5]) + ", \"a6\": " + String(Scout.analogPinState[6]) + ", \"a7\": " + String(Scout.analogPinState[7]) + "}";
+  blPrint(report);
   return true;
 }
 
@@ -1006,6 +1015,10 @@ numvar otaBoot(void) {
   cli();
   wdt_enable(WDTO_15MS);
   while(1);
+}
+
+numvar setEventPeriod(void) {
+  Scout.setStateChangeEventPeriod(getarg(1));
 }
 
 /****************************\
@@ -1195,6 +1208,27 @@ static bool receiveMessage(NWK_DataInd_t *ind) {
   return true;
 }
 
+void digitalPinEventHandler(uint8_t pin, uint8_t value) {
+  //Serial.print("digitalPinEventHandler(");
+  //Serial.print(pin);
+  //Serial.print(",");
+  //Serial.print(value);
+  //Serial.println(")");
+
+  String callback = "event.digital";
+  char buf[20];
+  callback.toCharArray(buf, callback.length()+1);
+  //Serial.print("buf: ");
+  //Serial.println(buf);
+
+  if (findscript(buf)) {
+    //Serial.println("Found callback");
+    callback += "(" + String(pin) + "," + String(value) + ")";
+    callback.toCharArray(buf, callback.length()+1);
+    doCommand(buf);
+  }
+}
+
 // watches bitlash output for channel announcements
 void bitlashFilter(byte b) {
   static char buf[101];
@@ -1257,7 +1291,7 @@ void blPrint(char *out){
   // add out to buffer and also serial.write
   if(isTeeing) {
     len = strlen(out);
-    for(int i=0;i<len;++i) { 
+    for(int i=0;i<len;++i) {
       bitlashBuffer(out[i]);
     }
   } else {
@@ -1271,3 +1305,8 @@ void blPrint(int out){
   blPrint(str);
 }
 
+void blPrint(String out) {
+  char str[out.length() + 1];
+  out.toCharArray(str, out.length() + 1);
+  blPrint(str);
+}
