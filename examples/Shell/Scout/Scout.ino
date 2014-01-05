@@ -118,9 +118,6 @@ void setup(void) {
     Serial.println("Field Scout ready!");
   }
 
-  Scout.startShell();
-  setOutputHandler(&bitlashFilter);
-
   addBitlashFunction("power.ischarging", (bitlash_function) isBatteryCharging);
   addBitlashFunction("power.percent", (bitlash_function) getBatteryPercentage);
   addBitlashFunction("power.voltage", (bitlash_function) getBatteryVoltage);
@@ -199,6 +196,9 @@ void setup(void) {
     addBitlashFunction("wifi.wakeup", (bitlash_function) wifiWakeup);
     addBitlashFunction("wifi.verbose", (bitlash_function) wifiVerbose);
   }
+
+  Scout.startShell();
+  setOutputHandler(&bitlashFilter);
 }
 
 void loop(void) {
@@ -1244,72 +1244,54 @@ static bool receiveMessage(NWK_DataInd_t *ind) {
  *      EVENT HANDLERS      *
 \****************************/
 void digitalPinEventHandler(uint8_t pin, uint8_t value) {
-  String callback = "event.digital";
-  char buf[24];
-  callback.toCharArray(buf, callback.length()+1);
-
-  if (findscript(buf)) {
-    callback += "(" + String(pin) + "," + String(value) + ")";
+  if (findscript("event.digital")) {
+    String callback = "event.digital(" + String(pin) + "," + String(value) + ")";
+    char buf[24];
     callback.toCharArray(buf, callback.length()+1);
     doCommand(buf);
   }
 }
 
 void analogPinEventHandler(uint8_t pin, uint16_t value) {
-  String callback = "event.analog";
-  char buf[24];
-  callback.toCharArray(buf, callback.length()+1);
-
-  if (findscript(buf)) {
-    callback += "(" + String(pin) + "," + String(value) + ")";
+  if (findscript("event.analog")) {
+    String callback = "event.analog(" + String(pin) + "," + String(value) + ")";
+    char buf[24];
     callback.toCharArray(buf, callback.length()+1);
     doCommand(buf);
   }
 }
 
 void batteryPercentageEventHandler(uint8_t value) {
-  String callback = "event.percent";
-  char buf[24];
-  callback.toCharArray(buf, callback.length()+1);
-
-  if (findscript(buf)) {
-    callback += "(" + String(value) + ")";
+  if (findscript("event.percent")) {
+    String callback = "event.percent(" + String(value) + ")";
+    char buf[24];
     callback.toCharArray(buf, callback.length()+1);
     doCommand(buf);
   }
 }
 
 void batteryVoltageEventHandler(uint8_t value) {
-  String callback = "event.voltage";
-  char buf[24];
-  callback.toCharArray(buf, callback.length()+1);
-
-  if (findscript(buf)) {
-    callback += "(" + String(value) + ")";
+  if (findscript("event.voltage")) {
+    String callback = "event.voltage(" + String(value) + ")";
+    char buf[24];
     callback.toCharArray(buf, callback.length()+1);
     doCommand(buf);
   }
 }
 
 void batteryChargingEventHandler(uint8_t value) {
-  String callback = "event.charging";
-  char buf[24];
-  callback.toCharArray(buf, callback.length()+1);
-
-  if (findscript(buf)) {
-    callback += "(" + String(value) + ")";
+  if (findscript("event.charging")) {
+    String callback = "event.charging(" + String(value) + ")";
+    char buf[24];
     callback.toCharArray(buf, callback.length()+1);
     doCommand(buf);
   }
 }
 
 void temperatureEventHandler(uint8_t value) {
-  String callback = "event.temperature";
-  char buf[24];
-  callback.toCharArray(buf, callback.length()+1);
-
-  if (findscript(buf)) {
-    callback += "(" + String(value) + ")";
+  if (findscript("event.temperature")) {
+    String callback = "event.temperature(" + String(value) + ")";
+    char buf[24];
     callback.toCharArray(buf, callback.length()+1);
     doCommand(buf);
   }

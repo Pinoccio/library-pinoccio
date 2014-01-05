@@ -142,6 +142,8 @@ void PinoccioScout::saveState() {
 static void scoutStateChangeTimerHandler(SYS_Timer_t *timer) {
   const uint8_t analogThreshold = 10;
   uint16_t val;
+  uint32_t time;
+  time = millis();
 
   // TODO: This can likely be optimized by hitting the pin registers directly
   // Also, this should probably be moved to interrupts
@@ -156,8 +158,8 @@ static void scoutStateChangeTimerHandler(SYS_Timer_t *timer) {
           Serial.print(val);
           Serial.println(")");
         }
-        Scout.digitalPinEventHandler(i+2, val);
         Scout.digitalPinState[i] = val;
+        Scout.digitalPinEventHandler(i+2, val);
       }
     }
   }
@@ -173,8 +175,8 @@ static void scoutStateChangeTimerHandler(SYS_Timer_t *timer) {
           Serial.print(val);
           Serial.println(")");
         }
-        Scout.analogPinEventHandler(i+24, val);
         Scout.analogPinState[i] = val;
+        Scout.analogPinEventHandler(i+24, val);
       }
     }
   }
@@ -187,8 +189,8 @@ static void scoutStateChangeTimerHandler(SYS_Timer_t *timer) {
         Serial.print(val);
         Serial.println(")");
       }
-      Scout.batteryPercentageEventHandler(val);
       Scout.batteryPercentage = val;
+      Scout.batteryPercentageEventHandler(val);
     }
   }
 
@@ -200,8 +202,8 @@ static void scoutStateChangeTimerHandler(SYS_Timer_t *timer) {
         Serial.print(val);
         Serial.println(")");
       }
-      Scout.batteryVoltageEventHandler(val);
       Scout.batteryVoltage = val;
+      Scout.batteryVoltageEventHandler(val);
     }
   }
 
@@ -213,8 +215,8 @@ static void scoutStateChangeTimerHandler(SYS_Timer_t *timer) {
         Serial.print(val);
         Serial.println(")");
       }
-      Scout.batteryChargingEventHandler(val);
       Scout.isBattCharging = val;
+      Scout.batteryChargingEventHandler(val);
     }
   }
 
@@ -226,8 +228,11 @@ static void scoutStateChangeTimerHandler(SYS_Timer_t *timer) {
         Serial.print(val);
         Serial.println(")");
       }
-      Scout.temperatureEventHandler(val);
       Scout.temperature = val;
+      Scout.temperatureEventHandler(val);
     }
   }
+
+  Serial.print("Event handler took this long: ");
+  Serial.println(millis() - time);
 }
