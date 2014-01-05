@@ -35,9 +35,11 @@ class PinoccioScout : public PinoccioClass {
 
     bool isLeadScout();
 
-    void startStateChangeEvents();
-    void stopStateChangeEvents();
-    void setStateChangeEventPeriod(uint32_t interval);
+    void startDigitalStateChangeEvents();
+    void stopDigitalStateChangeEvents();
+    void startAnalogStateChangeEvents();
+    void stopAnalogStateChangeEvents();
+    void setStateChangeEventPeriods(uint32_t digitalInterval, uint32_t analogInterval);
     void saveState();
 
     PBBP bp;
@@ -67,10 +69,12 @@ class PinoccioScout : public PinoccioClass {
     bool isVccEnabled;
     bool isStateSaved;
 
-    SYS_Timer_t stateChangeTimer;
+    SYS_Timer_t digitalStateChangeTimer;
+    SYS_Timer_t analogStateChangeTimer;
 };
 
 extern PinoccioScout Scout;
-static void scoutStateChangeTimerHandler(SYS_Timer_t *timer);
+static void scoutDigitalStateChangeTimerHandler(SYS_Timer_t *timer);
+static void scoutAnalogStateChangeTimerHandler(SYS_Timer_t *timer);
 
 #endif

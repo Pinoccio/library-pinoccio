@@ -33,9 +33,13 @@ PinoccioScout::PinoccioScout() {
   batteryChargingEventHandler = 0;
   temperatureEventHandler = 0;
 
-  stateChangeTimer.interval = 1000;
-  stateChangeTimer.mode = SYS_TIMER_PERIODIC_MODE;
-  stateChangeTimer.handler = scoutStateChangeTimerHandler;
+  digitalStateChangeTimer.interval = 100;
+  digitalStateChangeTimer.mode = SYS_TIMER_PERIODIC_MODE;
+  digitalStateChangeTimer.handler = scoutDigitalStateChangeTimerHandler;
+
+  analogStateChangeTimer.interval = 5000;
+  analogStateChangeTimer.mode = SYS_TIMER_PERIODIC_MODE;
+  analogStateChangeTimer.handler = scoutAnalogStateChangeTimerHandler;
 
   eventVerboseOutput = false;
 }
@@ -59,7 +63,8 @@ void PinoccioScout::setup() {
   }
 
   saveState();
-  startStateChangeEvents();
+  startDigitalStateChangeEvents();
+  startAnalogStateChangeEvents();
 }
 
 void PinoccioScout::loop() {
@@ -102,18 +107,30 @@ bool PinoccioScout::isLeadScout() {
   return false;
 }
 
-void PinoccioScout::startStateChangeEvents() {
-  SYS_TimerStart(&stateChangeTimer);
+void PinoccioScout::startDigitalStateChangeEvents() {
+  SYS_TimerStart(&digitalStateChangeTimer);
 }
 
-void PinoccioScout::stopStateChangeEvents() {
-  SYS_TimerStop(&stateChangeTimer);
+void PinoccioScout::stopDigitalStateChangeEvents() {
+  SYS_TimerStop(&digitalStateChangeTimer);
 }
 
-void PinoccioScout::setStateChangeEventPeriod(uint32_t interval) {
-  stopStateChangeEvents();
-  stateChangeTimer.interval = interval;
-  startStateChangeEvents();
+void PinoccioScout::startAnalogStateChangeEvents() {
+  SYS_TimerStart(&analogStateChangeTimer);
+}
+
+void PinoccioScout::stopAnalogStateChangeEvents() {
+  SYS_TimerStop(&analogStateChangeTimer);
+}
+
+void PinoccioScout::setStateChangeEventPeriods(uint32_t digitalInterval, uint32_t analogInterval) {
+  stopDigitalStateChangeEvents();
+  digitalStateChangeTimer.interval = digitalInterval;
+  startDigitalStateChangeEvents();
+
+  stopAnalogStateChangeEvents();
+  analogStateChangeTimer.interval = analogInterval;
+  startAnalogStateChangeEvents();
 }
 
 void PinoccioScout::saveState() {
@@ -139,11 +156,9 @@ void PinoccioScout::saveState() {
   temperature = HAL_MeasureTemperature();
 }
 
-static void scoutStateChangeTimerHandler(SYS_Timer_t *timer) {
+static void scoutDigitalStateChangeTimerHandler(SYS_Timer_t *timer) {
   const uint8_t analogThreshold = 10;
   uint16_t val;
-  uint32_t time;
-  time = millis();
 
   // TODO: This can likely be optimized by hitting the pin registers directly
   // Also, this should probably be moved to interrupts
@@ -163,6 +178,11 @@ static void scoutStateChangeTimerHandler(SYS_Timer_t *timer) {
       }
     }
   }
+}
+
+static void scoutAnalogStateChangeTimerHandler(SYS_Timer_t *timer) {
+  const uint8_t analogThreshold = 10;
+  uint16_t val;
 
   if (Scout.analogPinEventHandler != 0) {
     for (uint8_t i=0; i<8; i++) {
@@ -232,7 +252,4 @@ static void scoutStateChangeTimerHandler(SYS_Timer_t *timer) {
       Scout.temperatureEventHandler(val);
     }
   }
-
-  Serial.print("Event handler took this long: ");
-  Serial.println(millis() - time);
 }

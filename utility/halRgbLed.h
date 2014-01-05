@@ -42,6 +42,7 @@ class HalRgbLed {
     void blinkYellow(unsigned int ms=500);
     void blinkOrange(unsigned int ms=500);
     void blinkWhite(unsigned int ms=500);
+    void blinkTorchColor(unsigned int ms=500);
     void blinkColor(short red, short green, short blue, int ms=500);
 
     void setRedValue(int value);
@@ -69,13 +70,17 @@ class HalRgbLed {
   protected:
     bool enabled;
 
-    int redValue;
-    int greenValue;
-    int blueValue;
+    short redValue;
+    short greenValue;
+    short blueValue;
 
-    int blinkRedValue;
-    int blinkGreenValue;
-    int blinkBlueValue;
+    short blinkRedValue;
+    short blinkGreenValue;
+    short blinkBlueValue;
+
+    short torchRedValue;
+    short torchGreenValue;
+    short torchBlueValue;
 
     SYS_Timer_t blinkTimer;
 };

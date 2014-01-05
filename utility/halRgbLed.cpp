@@ -21,6 +21,10 @@ HalRgbLed::HalRgbLed() {
 
   redValue = greenValue = blueValue = 0;
 
+  torchRedValue = eeprom_read_byte((uint8_t *)8127);
+  torchGreenValue = eeprom_read_byte((uint8_t *)8128);
+  torchBlueValue = eeprom_read_byte((uint8_t *)8129);
+
   blinkTimer.interval = 500;
   blinkTimer.mode = SYS_TIMER_INTERVAL_MODE;
   blinkTimer.handler = halRgbLedBlinkTimerHandler;
@@ -127,6 +131,10 @@ void HalRgbLed::blinkWhite(unsigned int ms) {
   blinkColor(255, 255, 255);
 }
 
+void HalRgbLed::blinkTorchColor(unsigned int ms) {
+  blinkColor(torchRedValue, torchGreenValue, torchBlueValue, ms);
+}
+
 void HalRgbLed::blinkColor(short red, short green, short blue, int ms) {
   if (!isEnabled()) {
     return;
@@ -217,24 +225,28 @@ void HalRgbLed::saveTorch(short red, short green, short blue) {
   eeprom_update_byte((uint8_t *)8127, red);
   eeprom_update_byte((uint8_t *)8128, green);
   eeprom_update_byte((uint8_t *)8129, blue);
+
+  torchRedValue = red;
+  torchGreenValue = green;
+  torchBlueValue = blue;
 }
 
 void HalRgbLed::setTorch(void) {
-  setRedValue(eeprom_read_byte((uint8_t *)8127));
-  setGreenValue(eeprom_read_byte((uint8_t *)8128));
-  setBlueValue(eeprom_read_byte((uint8_t *)8129));
+  setRedValue(torchRedValue);
+  setGreenValue(torchGreenValue);
+  setBlueValue(torchBlueValue);
 }
 
 short HalRgbLed::getRedTorchValue(void) {
-  return eeprom_read_byte((uint8_t *)8127);
+  return torchRedValue;
 }
 
 short HalRgbLed::getGreenTorchValue(void) {
-  return eeprom_read_byte((uint8_t *)8128);
+  return torchGreenValue;
 }
 
 short HalRgbLed::getBlueTorchValue(void) {
-  return eeprom_read_byte((uint8_t *)8129);
+  return torchBlueValue;
 }
 
 static void halRgbLedBlinkTimerHandler(SYS_Timer_t *timer) {

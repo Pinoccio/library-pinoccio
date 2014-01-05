@@ -141,6 +141,7 @@ void setup(void) {
   addBitlashFunction("randomnumber", (bitlash_function) getRandomNumber);
 
   addBitlashFunction("led.blink", (bitlash_function) ledBlink);
+  addBitlashFunction("led.blinktorch", (bitlash_function) ledBlinkTorch);
   addBitlashFunction("led.enableblink", (bitlash_function) ledEnableContinuousBlink);
   addBitlashFunction("led.disableblink", (bitlash_function) ledDisableContinuousBlink);
   addBitlashFunction("led.off", (bitlash_function) ledOff);
@@ -180,7 +181,7 @@ void setup(void) {
 
   addBitlashFunction("events.start", (bitlash_function) startStateChangeEvents);
   addBitlashFunction("events.stop", (bitlash_function) stopStateChangeEvents);
-  addBitlashFunction("events.setperiod", (bitlash_function) setEventPeriod);
+  addBitlashFunction("events.setfreqs", (bitlash_function) setEventPeriods);
   addBitlashFunction("events.verbose", (bitlash_function) setEventVerbose);
 
   if (isLeadScout) {
@@ -227,8 +228,8 @@ void loop(void) {
   }
 #endif
   Scout.loop();
-  wifi.loop();
   if (isLeadScout) {
+    wifi.loop();
     leadHQ();
   }
 }
@@ -749,6 +750,14 @@ numvar ledBlink(void) {
   }
 }
 
+numvar ledBlinkTorch(void) {
+  if (getarg(0) == 1) {
+    RgbLed.blinkTorchColor(getarg(1));
+  } else {
+    RgbLed.blinkTorchColor();
+  }
+}
+
 numvar ledOff(void) {
   RgbLed.turnOff();
 }
@@ -1038,15 +1047,17 @@ numvar otaBoot(void) {
 \****************************/
 
 numvar startStateChangeEvents(void) {
-  Scout.startStateChangeEvents();
+  Scout.startDigitalStateChangeEvents();
+  Scout.startAnalogStateChangeEvents();
 }
 
 numvar stopStateChangeEvents(void) {
-  Scout.stopStateChangeEvents();
+  Scout.stopDigitalStateChangeEvents();
+  Scout.stopAnalogStateChangeEvents();
 }
 
-numvar setEventPeriod(void) {
-  Scout.setStateChangeEventPeriod(getarg(1));
+numvar setEventPeriods(void) {
+  Scout.setStateChangeEventPeriods(getarg(1), getarg(2));
 }
 
 numvar setEventVerbose(void) {
@@ -1244,11 +1255,20 @@ static bool receiveMessage(NWK_DataInd_t *ind) {
  *      EVENT HANDLERS      *
 \****************************/
 void digitalPinEventHandler(uint8_t pin, uint8_t value) {
+  uint32_t time = millis();
+
   if (findscript("event.digital")) {
     String callback = "event.digital(" + String(pin) + "," + String(value) + ")";
     char buf[24];
     callback.toCharArray(buf, callback.length()+1);
     doCommand(buf);
+  }
+
+  if (Scout.eventVerboseOutput) {
+    Serial.print("Digital pin event handler took ");
+    Serial.print(millis() - time);
+    Serial.println("ms");
+    Serial.println();
   }
 }
 
