@@ -28,6 +28,7 @@ class PinoccioScout : public PinoccioClass {
     bool isBatteryCharging();
     int getBatteryPercentage();
     int getBatteryVoltage();
+    bool isBatteryAlarmTriggered();
 
     void enableBackpackVcc();
     void disableBackpackVcc();
@@ -49,6 +50,7 @@ class PinoccioScout : public PinoccioClass {
     void (*batteryPercentageEventHandler)(uint8_t value);
     void (*batteryVoltageEventHandler)(uint8_t value);
     void (*batteryChargingEventHandler)(uint8_t value);
+    void (*batteryAlarmTriggeredEventHandler)(uint8_t value);
     void (*temperatureEventHandler)(uint8_t value);
 
     uint8_t digitalPinState[7];
@@ -56,6 +58,7 @@ class PinoccioScout : public PinoccioClass {
     uint8_t batteryPercentage;
     uint16_t batteryVoltage;
     bool isBattCharging;
+    bool isBattAlarmTriggered;
     uint8_t temperature;
 
     bool eventVerboseOutput;

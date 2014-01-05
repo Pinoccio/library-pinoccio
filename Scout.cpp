@@ -12,8 +12,8 @@ PinoccioScout::PinoccioScout() {
   digitalWrite(CHG_STATUS, HIGH);
   pinMode(CHG_STATUS, INPUT);
 
-  digitalWrite(BATT_ALERT, HIGH);
-  pinMode(BATT_ALERT, INPUT);
+  digitalWrite(BATT_ALARM, HIGH);
+  pinMode(BATT_ALARM, INPUT);
 
   pinMode(VCC_ENABLE, OUTPUT);
   enableBackpackVcc();
@@ -31,9 +31,10 @@ PinoccioScout::PinoccioScout() {
   batteryPercentageEventHandler = 0;
   batteryVoltageEventHandler = 0;
   batteryChargingEventHandler = 0;
+  batteryAlarmTriggeredEventHandler = 0;
   temperatureEventHandler = 0;
 
-  digitalStateChangeTimer.interval = 100;
+  digitalStateChangeTimer.interval = 50;
   digitalStateChangeTimer.mode = SYS_TIMER_PERIODIC_MODE;
   digitalStateChangeTimer.handler = scoutDigitalStateChangeTimerHandler;
 
@@ -81,6 +82,10 @@ int PinoccioScout::getBatteryPercentage() {
 
 int PinoccioScout::getBatteryVoltage() {
   return batteryVoltage;
+}
+
+bool PinoccioScout::isBatteryAlarmTriggered() {
+  return isBattAlarmTriggered;
 }
 
 void PinoccioScout::enableBackpackVcc() {
@@ -153,6 +158,7 @@ void PinoccioScout::saveState() {
   batteryPercentage = constrain(HAL_FuelGaugePercent(), 0, 100);
   batteryVoltage = HAL_FuelGaugeVoltage();
   isBattCharging = (digitalRead(CHG_STATUS) == LOW);
+  isBattAlarmTriggered = (digitalRead(BATT_ALARM) == HIGH);
   temperature = HAL_MeasureTemperature();
 }
 
@@ -237,6 +243,19 @@ static void scoutAnalogStateChangeTimerHandler(SYS_Timer_t *timer) {
       }
       Scout.isBattCharging = val;
       Scout.batteryChargingEventHandler(val);
+    }
+  }
+
+  if (Scout.batteryAlarmTriggeredEventHandler != 0) {
+    val = (digitalRead(BATT_ALARM) == HIGH);
+    if (Scout.isBattAlarmTriggered != val) {
+      if (Scout.eventVerboseOutput == true) {
+        Serial.print("Running: batteryAlarmTriggeredEventHandler(");
+        Serial.print(val);
+        Serial.println(")");
+      }
+      Scout.isBattAlarmTriggered = val;
+      Scout.batteryAlarmTriggeredEventHandler(val);
     }
   }
 
