@@ -83,6 +83,7 @@ void setup(void) {
   Scout.batteryPercentageEventHandler = batteryPercentageEventHandler;
   Scout.batteryVoltageEventHandler = batteryVoltageEventHandler;
   Scout.batteryChargingEventHandler = batteryChargingEventHandler;
+  Scout.batteryAlarmTriggeredEventHandler = batteryAlarmTriggeredEventHandler;
   Scout.temperatureEventHandler = temperatureEventHandler;
 
   Scout.disableShell();
@@ -166,6 +167,7 @@ void setup(void) {
   addBitlashFunction("pin.on", (bitlash_function) pinOn);
   addBitlashFunction("pin.off", (bitlash_function) pinOff);
   addBitlashFunction("pin.makeinput", (bitlash_function) pinMakeInput);
+  addBitlashFunction("pin.makeinputup", (bitlash_function) pinMakeInputPullup);
   addBitlashFunction("pin.makeoutput", (bitlash_function) pinMakeOutput);
   addBitlashFunction("pin.read", (bitlash_function) pinRead);
   addBitlashFunction("pin.write", (bitlash_function) pinWrite);
@@ -727,6 +729,8 @@ numvar powerReport(void) {
   blPrint(Scout.isBatteryCharging());
   blPrint(",v:");
   blPrint(Scout.isBackpackVccEnabled());
+  blPrint(",a:");
+  blPrint(Scout.isBatteryAlarmTriggered());
   blPrint("}\n");
   return true;
 }
@@ -957,6 +961,10 @@ numvar pinOff(void) {
 
 numvar pinMakeInput(void) {
   pinMode(getarg(1), INPUT);
+}
+
+numvar pinMakeInputPullup(void) {
+  pinMode(getarg(1), INPUT_PULLUP);
 }
 
 numvar pinMakeOutput(void) {
@@ -1244,7 +1252,7 @@ static bool receiveMessage(NWK_DataInd_t *ind) {
   NWK_SetAckControl(abs(ind->rssi));
 
   // run the Bitlash callback function, if defined
-  char *callback = "mesh.receive";
+  char *callback = "event.message";
   if (findscript(callback)) {
     doCommand(callback);
   }
@@ -1302,6 +1310,15 @@ void batteryVoltageEventHandler(uint8_t value) {
 void batteryChargingEventHandler(uint8_t value) {
   if (findscript("event.charging")) {
     String callback = "event.charging(" + String(value) + ")";
+    char buf[24];
+    callback.toCharArray(buf, callback.length()+1);
+    doCommand(buf);
+  }
+}
+
+void batteryAlarmTriggeredEventHandler(uint8_t value) {
+  if (findscript("event.batteryalarm")) {
+    String callback = "event.batteryalarm(" + String(value) + ")";
     char buf[24];
     callback.toCharArray(buf, callback.length()+1);
     doCommand(buf);
