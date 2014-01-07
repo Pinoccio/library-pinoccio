@@ -10,10 +10,7 @@ extern "C" {
 
 const uint16_t groupId = 0x1234;
 static byte pingCounter = 0;
-static NWK_DataReq_t pingDataReq;
-static NWK_DataReq_t sendDataReq;
-static bool sendDataReqBusy = false;
-bool isMeshVerbose = false;
+static NWK_DataReq_t appDataReq;
 
 WiFiBackpack wifi = WiFiBackpack();
 
@@ -40,6 +37,10 @@ void fieldAnnounce(int chan, char *message);
 void bitlashFilter(byte b);
 char *bitlashOutput; // used by bitlashBuffer
 void bitlashBuffer(byte b);
+
+bool isTeeing = false;
+void blPrint(char *out);
+void blPrint(int out);
 
 // Example code to dump backpack EEPROM contents:
 void print_hex(const uint8_t *buf, uint8_t len) {
@@ -135,8 +136,6 @@ void setup(void) {
   addBitlashFunction("mesh.ingroup", (bitlash_function) meshIsInGroup);
   addBitlashFunction("mesh.ping", (bitlash_function) meshPing);
   addBitlashFunction("mesh.pinggroup", (bitlash_function) meshPingGroup);
-  addBitlashFunction("mesh.send", (bitlash_function) meshSend);
-  addBitlashFunction("mesh.verbose", (bitlash_function) meshVerbose);
   addBitlashFunction("mesh.report", (bitlash_function) meshReport);
   addBitlashFunction("mesh.announce", (bitlash_function) meshAnnounce);
 
@@ -364,7 +363,9 @@ void leadIncoming(char *packet, unsigned short *index)
 
       setOutputHandler(&bitlashBuffer);
 
+      isTeeing = true;
       ret = (int)doCommand(command);
+      isTeeing = false;
 
       strcpy(bitlashOutput+strlen(bitlashOutput), "\"}\n");
 
@@ -668,15 +669,13 @@ static bool fieldAnnouncements(NWK_DataInd_t *ind) {
 \****************************/
 numvar getTemperature(void) {
   int i = Scout.getTemperature();
-  sp(i);
-  speol();
+  blPrint(i);
   return i;
 }
 
 numvar getRandomNumber(void) {
   int i = random();
-  sp(i);
-  speol();
+  blPrint(i);
   return i;
 }
 
@@ -685,22 +684,19 @@ numvar getRandomNumber(void) {
 \****************************/
 numvar isBatteryCharging(void) {
   int i = Scout.isBatteryCharging();
-  sp(i);
-  speol();
+  blPrint(i);
   return i;
 }
 
 numvar getBatteryPercentage(void) {
   int i = Scout.getBatteryPercentage();
-  sp(i);
-  speol();
+  blPrint(i);
   return i;
 }
 
 numvar getBatteryVoltage(void) {
   int i = Scout.getBatteryVoltage();
-  sp(i);
-  speol();
+  blPrint(i);
   return i;
 }
 
@@ -720,18 +716,18 @@ numvar goToSleep(void) {
 }
 
 numvar powerReport(void) {
-  // ie: {p:85,v:4.1,c:0,v:1,a:0}
-  sp("{p:");
-  sp(Scout.getBatteryPercentage());
-  sp(",v:");
-  sp((int)Scout.getBatteryVoltage());
-  sp(",c:");
-  sp(Scout.isBatteryCharging());
-  sp(",v:");
-  sp(Scout.isBackpackVccEnabled());
-  sp(",a:");
-  sp(Scout.isBatteryAlarmTriggered());
-  sp("}\n");
+  // ie: {pct:85,vlt:4.1,chg:false,vcc:true}
+  blPrint("{p:");
+  blPrint(Scout.getBatteryPercentage());
+  blPrint(",v:");
+  blPrint((int)Scout.getBatteryVoltage());
+  blPrint(",c:");
+  blPrint(Scout.isBatteryCharging());
+  blPrint(",v:");
+  blPrint(Scout.isBackpackVccEnabled());
+  blPrint(",a:");
+  blPrint(Scout.isBatteryAlarmTriggered());
+  blPrint("}\n");
   return true;
 }
 
@@ -837,19 +833,19 @@ numvar ledSetTorch(void) {
 }
 
 numvar ledReport(void) {
-  sp("{\"c\": {\"r\":");
-  sp(RgbLed.getRedValue());
-  sp(",\"g\":");
-  sp(RgbLed.getGreenValue());
-  sp(",\"b\":");
-  sp(RgbLed.getBlueValue());
-  sp("}, \"t\": {\"r\":");
-  sp(RgbLed.getRedTorchValue());
-  sp(",\"g\":");
-  sp(RgbLed.getGreenTorchValue());
-  sp(",\"b\":");
-  sp(RgbLed.getBlueTorchValue());
-  sp("}}\n");
+  blPrint("{\"c\": {\"r\":");
+  blPrint(RgbLed.getRedValue());
+  blPrint(",\"g\":");
+  blPrint(RgbLed.getGreenValue());
+  blPrint(",\"b\":");
+  blPrint(RgbLed.getBlueValue());
+  blPrint("}, \"t\": {\"r\":");
+  blPrint(RgbLed.getRedTorchValue());
+  blPrint(",\"g\":");
+  blPrint(RgbLed.getGreenTorchValue());
+  blPrint(",\"b\":");
+  blPrint(RgbLed.getBlueTorchValue());
+  blPrint("}}\n");
 }
 
 /****************************\
@@ -895,14 +891,6 @@ numvar meshPing(void) {
 
 numvar meshPingGroup(void) {
   pingGroup(groupId);
-}
-
-numvar meshSend(void) {
-  sendMessage(getarg(1), (char *)getstringarg(2), true);
-}
-
-numvar meshVerbose(void) {
-  isMeshVerbose = getarg(1);
 }
 
 numvar meshReport(void) {
@@ -986,7 +974,7 @@ numvar pinMakeOutput(void) {
 
 numvar pinRead(void) {
   int i = digitalRead(getarg(1));
-  //sp(i);
+  //blPrint(i);
   return i;
 }
 
@@ -1003,37 +991,15 @@ numvar pinThreshold(void) {
 
 numvar pinReport(void) {
   // TODO: return JSON formmated report of all IO pins and their values
-  sp("{\"d2\": ");
-  sp(Scout.digitalPinState[0]);
-  sp(", \"d3\": ");
-  sp(Scout.digitalPinState[1]);
-  sp(", \"d4\": ");
-  sp(Scout.digitalPinState[2]);
-  sp(", \"d5\": ");
-  sp(Scout.digitalPinState[3]);
-  sp(", \"d6\": ");
-  sp(Scout.digitalPinState[4]);
-  sp(", \"d7\": ");
-  sp(Scout.digitalPinState[5]);
-  sp(", \"d8\": ");
-  sp(Scout.digitalPinState[6]);
-  sp(", \"a0\": ");
-  sp(Scout.analogPinState[0]);
-  sp(", \"a1\": ");
-  sp(Scout.analogPinState[1]);
-  sp(", \"a2\": ");
-  sp(Scout.analogPinState[2]);
-  sp(", \"a3\": ");
-  sp(Scout.analogPinState[3]);
-  sp(", \"a4\": ");
-  sp(Scout.analogPinState[4]);
-  sp(", \"a5\": ");
-  sp(Scout.analogPinState[5]);
-  sp(", \"a6\": ");
-  sp(Scout.analogPinState[6]);
-  sp(", \"a7\": ");
-  sp(Scout.analogPinState[7]);
-  sp("}");
+  String report = "{\"d2\": " + String(Scout.digitalPinState[0]) + ", \"d3\": " + String(Scout.digitalPinState[1]) +
+                 ", \"d4\": " + String(Scout.digitalPinState[2]) + ", \"d5\": " + String(Scout.digitalPinState[3]) +
+                 ", \"d6\": " + String(Scout.digitalPinState[4]) + ", \"d7\": " + String(Scout.digitalPinState[5]) +
+                 ", \"d8\": " + String(Scout.digitalPinState[6]) + ", \"a0\": " + String(Scout.analogPinState[0]) +
+                 ", \"a1\": " + String(Scout.analogPinState[1]) + ", \"a2\": " + String(Scout.analogPinState[2]) +
+                 ", \"a3\": " + String(Scout.analogPinState[3]) + ", \"a4\": " + String(Scout.analogPinState[4]) +
+                 ", \"a5\": " + String(Scout.analogPinState[5]) + ", \"a6\": " + String(Scout.analogPinState[6]) +
+                 ", \"a7\": " + String(Scout.analogPinState[7]) + "}";
+  blPrint(report);
   return true;
 }
 
@@ -1041,7 +1007,7 @@ numvar pinReport(void) {
 *     BACKPACK HANDLERS     *
 \****************************/
 numvar backpackReport(void) {
-  sp("[{\"name\":\"wifi\",\"version\":\"1.0\"},{\"name\":\"environment\",\"version\":\"2.0\"}]");
+  blPrint("[{\"name\":\"wifi\",\"version\":\"1.0\"},{\"name\":\"environment\",\"version\":\"2.0\"}]");
 }
 
 /****************************\
@@ -1049,8 +1015,7 @@ numvar backpackReport(void) {
 \****************************/
 numvar scoutReport(void) {
   if (forceScoutVersion) {
-    sp("1.0");
-    speol();
+    blPrint("1.0");
   } else {
     Serial.println("-- Scout Information --");
     Serial.print(" - EEPROM Version: 0x");
@@ -1065,8 +1030,7 @@ numvar scoutReport(void) {
 }
 
 numvar isScoutLeadScout(void) {
-  sp(isLeadScout?1:0);
-  speol();
+  blPrint(isLeadScout?1:0);
   return isLeadScout;
 }
 
@@ -1078,8 +1042,7 @@ numvar getHQToken(void) {
   char token[33];
   Pinoccio.getHQToken((char *)token);
   token[32] = 0;
-  sp(token);
-  speol();
+  blPrint(token);
 }
 
 numvar otaBoot(void) {
@@ -1191,16 +1154,15 @@ numvar wifiVerbose(void) {
  *     HELPER FUNCTIONS     *
 \****************************/
 static void pingScout(int address) {
-  pingDataReq.dstAddr = address;
-  char *ping = "ping";
+  appDataReq.dstAddr = address;
 
-  pingDataReq.dstEndpoint = 1;
-  pingDataReq.srcEndpoint = 1;
-  pingDataReq.options = NWK_OPT_ACK_REQUEST|NWK_OPT_ENABLE_SECURITY;
-  pingDataReq.data = (byte *)ping;
-  pingDataReq.size = strlen(ping);
-  pingDataReq.confirm = pingConfirm;
-  NWK_DataReq(&pingDataReq);
+  appDataReq.dstEndpoint = 1;
+  appDataReq.srcEndpoint = 1;
+  appDataReq.options = NWK_OPT_ACK_REQUEST|NWK_OPT_ENABLE_SECURITY;
+  appDataReq.data = &pingCounter;
+  appDataReq.size = sizeof(pingCounter);
+  appDataReq.confirm = pingConfirm;
+  NWK_DataReq(&appDataReq);
   //RgbLed.blinkCyan(200);
 
   Serial.print("PING ");
@@ -1211,15 +1173,15 @@ static void pingScout(int address) {
 }
 
 static void pingGroup(int address) {
-  pingDataReq.dstAddr = address;
+  appDataReq.dstAddr = address;
 
-  pingDataReq.dstEndpoint = 1;
-  pingDataReq.srcEndpoint = 1;
-  pingDataReq.options = NWK_OPT_MULTICAST|NWK_OPT_ENABLE_SECURITY;
-  pingDataReq.data = &pingCounter;
-  pingDataReq.size = sizeof(pingCounter);
-  pingDataReq.confirm = pingConfirm;
-  NWK_DataReq(&pingDataReq);
+  appDataReq.dstEndpoint = 1;
+  appDataReq.srcEndpoint = 1;
+  appDataReq.options = NWK_OPT_MULTICAST|NWK_OPT_ENABLE_SECURITY;
+  appDataReq.data = &pingCounter;
+  appDataReq.size = sizeof(pingCounter);
+  appDataReq.confirm = pingConfirm;
+  NWK_DataReq(&appDataReq);
 
   Serial.print("PING ");
   Serial.print(address, HEX);
@@ -1273,24 +1235,21 @@ static void pingConfirm(NWK_DataReq_t *req) {
 }
 
 static bool receiveMessage(NWK_DataInd_t *ind) {
-  if (isMeshVerbose) {
-    Serial.print("Received message - ");
-    Serial.print("lqi: ");
-    Serial.print(ind->lqi, DEC);
+  Serial.print("Received message - ");
+  Serial.print("lqi: ");
+  Serial.print(ind->lqi, DEC);
 
-    Serial.print("  ");
+  Serial.print("  ");
 
-    Serial.print("rssi: ");
-    Serial.print(abs(ind->rssi), DEC);
-    Serial.print("  ");
+  Serial.print("rssi: ");
+  Serial.print(abs(ind->rssi), DEC);
+  Serial.print("  ");
 
-    Serial.print("data: ");
-    for (int i=0; i<ind->size; i++) {
-      Serial.print(ind->data[i], DEC);
-    }
-    Serial.println("");
+  Serial.print("data: ");
+  for (int i=0; i<ind->size; i++) {
+    Serial.print(ind->data[i], DEC);
   }
-
+  Serial.println("");
   NWK_SetAckControl(abs(ind->rssi));
 
   // run the Bitlash callback function, if defined
@@ -1299,76 +1258,6 @@ static bool receiveMessage(NWK_DataInd_t *ind) {
     doCommand(callback);
   }
   return true;
-}
-
-static void sendMessage(int address, char *data, bool getAck) {
-  if (sendDataReqBusy) {
-    return;
-  }
-
-  if (options == 0) {
-    options = NWK_OPT_ACK_REQUEST|NWK_OPT_ENABLE_SECURITY;
-  }
-
-  sendDataReq.dstAddr = address;
-
-  sendDataReq.dstEndpoint = 1;
-  sendDataReq.srcEndpoint = 1;
-  if (getAck == true) {
-    sendDataReq.options = NWK_OPT_ACK_REQUEST|NWK_OPT_ENABLE_SECURITY;
-  } else {
-    sendDataReq.options = NWK_OPT_ENABLE_SECURITY;
-  }
-  sendDataReq.data = (byte *)data;
-  sendDataReq.size = strlen(data);
-  sendDataReq.confirm = sendConfirm;
-  NWK_DataReq(&sendDataReq);
-
-  sendDataReqBusy = true;
-
-  if (isMeshVerbose) {
-    Serial.print("Sent message to Scout ");
-    Serial.println(address);
-  }
-}
-
-static void sendConfirm(NWK_DataReq_t *req) {
-   sendDataReqBusy = false;
-
-   if (isMeshVerbose) {
-    if (req->status == NWK_SUCCESS_STATUS) {
-      Serial.print("-  Confirmed message delivery to Scout ");
-      Serial.print(req->dstAddr);
-      if (req->control) {
-        Serial.print(" (control byte: ");
-        Serial.print(req->control);
-        Serial.print(")");
-      }
-      Serial.println();
-    } else {
-      Serial.print("Error: ");
-      switch (req->status) {
-        case NWK_OUT_OF_MEMORY_STATUS:
-          Serial.print("Out of memory: ");
-          break;
-        case NWK_NO_ACK_STATUS:
-        case NWK_PHY_NO_ACK_STATUS:
-          Serial.print("No acknowledgement received: ");
-          break;
-        case NWK_NO_ROUTE_STATUS:
-          Serial.print("No route to destination: ");
-          break;
-        case NWK_PHY_CHANNEL_ACCESS_FAILURE_STATUS:
-          Serial.print("Physical channel access failure: ");
-          break;
-        default:
-          Serial.print("unknown failure: ");
-      }
-      Serial.print("(");
-      Serial.print(req->status, HEX);
-      Serial.println(")");
-    }
-  }
 }
 
 /****************************\
@@ -1509,4 +1398,31 @@ void bitlashBuffer(byte b) {
   }
   bitlashOutput[len] = b;
   bitlashOutput[len+1] = 0;
+}
+
+
+// hacks because the callback for setOutputHandler is not called on serial write.
+void blPrint(char *out){
+  int len;
+  // add out to buffer and also serial.write
+  if(isTeeing) {
+    len = strlen(out);
+    for(int i=0;i<len;++i) {
+      bitlashBuffer(out[i]);
+    }
+  } else {
+    Serial.print(out);
+  }
+}
+
+void blPrint(int out){
+  char str[10];
+  sprintf(str,"%d",out);
+  blPrint(str);
+}
+
+void blPrint(String out) {
+  char str[out.length() + 1];
+  out.toCharArray(str, out.length() + 1);
+  blPrint(str);
 }
