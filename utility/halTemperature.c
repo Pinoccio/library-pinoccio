@@ -20,8 +20,7 @@ static int8_t halAdcOffset;
 
 /*****************************************************************************
 *****************************************************************************/
-static inline int16_t HAL_AdcMeasure(void)
-{
+static inline int16_t HAL_AdcMeasure(void) {
   set_sleep_mode(SLEEP_MODE_ADC);
   /* dummy cycle */
   halAdcFinished = false;
@@ -32,21 +31,21 @@ static inline int16_t HAL_AdcMeasure(void)
     /* check here for ADC IRQ because sleep mode could wake up from * another source too */
   }
   while (false == halAdcFinished);
+  //while (ADCSRA & (1 << ADSC));
   /* set by ISR */
   return ADC;
 }
 
 /*****************************************************************************
 *****************************************************************************/
-int8_t HAL_MeasureTemperature(void)
-{
-  int32_t val = 0;
+int8_t HAL_MeasureTemperature(void) {
+  int32_t val;
+  uint8_t ref = ADMUX;
 
-  ADCSRA = (1 << ADEN) | (1 << ADPS2) | (1 << ADPS1); /* PS 64 */
+  ADCSRC = 10 << ADSUT0;
   ADCSRB = (1 << MUX5);
   ADMUX = (1 << REFS1) | (1 << REFS0) | (1 << MUX3) | (1 << MUX0); /* reference: 1.6V, input Temp Sensor */
-
-  _delay_us(HAL_TEMPERATURE_READING_DELAY); /* some time to settle */
+  ADCSRA = (1 << ADEN) | (1 << ADSC) | (1 << ADPS2) | (1 << ADPS1); /* PS 64 */
 
   ADCSRA |= (1 << ADIF); /* clear flag */
   ADCSRA |= (1 << ADIE);
@@ -54,46 +53,15 @@ int8_t HAL_MeasureTemperature(void)
   /* dummy cycle after REF change (suggested by datasheet) */
   HAL_AdcMeasure();
 
-  _delay_us(HAL_TEMPERATURE_READING_DELAY / 2); /* some time to settle */
+  val = HAL_AdcMeasure();
 
-  val = HAL_AdcMeasure() - halAdcOffset;
-
-  ADCSRA &= ~((1 << ADEN) | (1 << ADIE));
-
+  ADCSRA = 0;
+  ADMUX = ref;
   return (int)((1.13 * val - 272.8)) + HAL_TEMPERATURE_CALIBRATION_OFFSET - 3;
 }
 
 /*****************************************************************************
 *****************************************************************************/
-int8_t HAL_MeasureAdcOffset(void)
-{
-  uint16_t val;
-
-  ADCSRA = (1 << ADEN) | (1 << ADPS2) | (1 << ADPS1); /* PS 64 */
-  ADCSRB = 0;
-  ADMUX = (1 << REFS1) | (1 << REFS0) | (1 << MUX3); /* reference: 1.6V, differential ADC0-ADC0 10x */
-
-  _delay_us(HAL_TEMPERATURE_READING_DELAY); /* some time to settle */
-
-  ADCSRA |= (1 << ADIF); /* clear flag */
-  ADCSRA |= (1 << ADIE);
-
-  /* dummy cycle after REF change (suggested by datasheet) */
-  HAL_AdcMeasure();
-
-  _delay_us(HAL_TEMPERATURE_READING_DELAY / 2); /* some time to settle */
-
-  val = HAL_AdcMeasure();
-
-  ADCSRA &= ~((1 << ADEN) | (1 << ADIE));
-
-  halAdcOffset = val;
-  return (val);
-}
-
-/*****************************************************************************
-*****************************************************************************/
-ISR(ADC_vect, ISR_BLOCK)
-{
+ISR(ADC_vect, ISR_BLOCK) {
   halAdcFinished = true;
 }
