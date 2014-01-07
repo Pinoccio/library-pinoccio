@@ -88,7 +88,7 @@
 //
 // Enable PARSER_TRACE to make ^T toggle a parser trace debug print stream
 // cost: ~400 bytes flash
-//#define PARSER_TRACE 1
+#define PARSER_TRACE 1
 
 
 
@@ -478,7 +478,7 @@ void initlbuf(void);
 #endif
 
 // String value buffer size
-#define STRVALSIZE 120
+#define STRVALSIZE 512
 #define STRVALLEN (STRVALSIZE-1)
 #define LBUFLEN STRVALSIZE
 
@@ -557,6 +557,13 @@ void printHex(unumvar);
 void printBinary(unumvar);
 void spb(char c);
 void sp(const char *);
+void sp(const String &);
+void sp(char);
+void sp(unsigned char);
+void sp(int);
+void sp(unsigned int);
+void sp(long);
+void sp(unsigned long);
 void speol(void);
 
 numvar func_printf(void);
@@ -703,7 +710,7 @@ extern byte exptype;        // type of expression: s_nval [or s_sval]
 extern numvar expval;        // value of numeric expr or length of string
 
 // Temporary buffer for ids
-#define IDLEN 18
+#define IDLEN 24
 extern char idbuf[IDLEN+1];
 
 
