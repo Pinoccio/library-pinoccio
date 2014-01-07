@@ -22,7 +22,7 @@ bool forceScoutVersion = true;
 static bool fieldCommands(NWK_DataInd_t *ind);
 int leadAnswerID = 0;
 static bool leadAnswers(NWK_DataInd_t *ind);
-static bool leadAnnouncements(NWK_DataInd_t *ind);
+static bool fieldAnnouncements(NWK_DataInd_t *ind);
 void leadAnnouncementSend(int chan, int from, char *message);
 
 int whoami;
@@ -33,7 +33,7 @@ void leadHQ(void);
 void leadSignal(char *json);
 void leadIncoming(char *packet, unsigned short *index);
 NWK_DataReq_t fieldAnnounceReq;
-void fieldAnnounce(char *line); // called by bitlashFilter
+void fieldAnnounce(int chan, char *message);
 void bitlashFilter(byte b);
 char *bitlashOutput; // used by bitlashBuffer
 void bitlashBuffer(byte b);
@@ -103,15 +103,15 @@ void setup(void) {
 
 //  meshJoinGroup();
   Scout.meshListen(1, receiveMessage);
+  Scout.meshListen(4, fieldAnnouncements);
+  // join all the "channels" to listen for announcements
+  for (int i = 1; i < 10; i++) Scout.meshJoinGroup(i);
 
   //dump_backpacks();
 
   whoami = Scout.getAddress();
   if (isLeadScout) {
     Scout.meshListen(3, leadAnswers);
-    Scout.meshListen(4, leadAnnouncements);
-    // join all the "channels" to listen for announcements
-    for (int i = 1; i < 10; i++) Scout.meshJoinGroup(i);
     Scout.meshJoinGroup(0xbeef); // our internal reporting channel
     Serial.println("Lead Scout ready!");
   } else {
@@ -137,6 +137,7 @@ void setup(void) {
   addBitlashFunction("mesh.ping", (bitlash_function) meshPing);
   addBitlashFunction("mesh.pinggroup", (bitlash_function) meshPingGroup);
   addBitlashFunction("mesh.report", (bitlash_function) meshReport);
+  addBitlashFunction("mesh.announce", (bitlash_function) meshAnnounce);
 
   addBitlashFunction("temperature", (bitlash_function) getTemperature);
   addBitlashFunction("randomnumber", (bitlash_function) getRandomNumber);
@@ -495,17 +496,6 @@ void leadAnnouncementSend(int chan, int from, char *message)
   leadSignal(sig);
 }
 
-// mesh callback whenever another scout announces something on a channel
-static bool leadAnnouncements(NWK_DataInd_t *ind) {
-  RgbLed.blinkBlue(200);
-  // be safe
-  if(!ind->options&NWK_IND_OPT_MULTICAST) return true;
-
-  Serial.print("MULTICAST");
-  leadAnnouncementSend(ind->dstAddr, ind->srcAddr, (char*)ind->data);
-  return true;
-}
-
 /////////////////////
 // field scout stuff
 
@@ -628,31 +618,20 @@ static void fieldAnnounceConfirm(NWK_DataReq_t *req) {
   announcing = false;
 }
 
-// check a line of bitlash output for any announcements and send them
-void fieldAnnounce(char *line)
+// send out any announcement messages on a multicast channel
+void fieldAnnounce(int chan, char *message)
 {
-  char *message;
-  int chan, len;
+  int len = strlen(message);
 
-  // any lines looking like "CHAN:4 message" will send "message" to channel 4
-  if(strncmp("CH4N:",line,5) != 0) return;
-  message = strchr(line,' ');
-  if(!message) return;
-  *message = 0;
-  message++;
-  chan = atoi(line+5);
-  if(!chan || announcing) return;
+  if(announcing) return;
 
-  len = strlen(message);
   Serial.print("announcing to ");
   Serial.print(chan, DEC);
   Serial.print(" ");
   Serial.println(message);
 
   // when lead scout, shortcut
-  if (isLeadScout) {
-    return leadAnnouncementSend(chan, whoami, message);
-  }
+  if (isLeadScout) leadAnnouncementSend(chan, whoami, message);
 
   Scout.meshJoinGroup(chan); // must be joined to send
   fieldAnnounceReq.dstAddr = chan;
@@ -665,6 +644,23 @@ void fieldAnnounce(char *line)
   announcing = true;
   NWK_DataReq(&fieldAnnounceReq);
   //RgbLed.blinkGreen(200);
+}
+
+// mesh callback whenever another scout announces something on a channel
+static bool fieldAnnouncements(NWK_DataInd_t *ind) {
+  char callback[32];
+  RgbLed.blinkBlue(200);
+  // be safe
+  if(!ind->options&NWK_IND_OPT_MULTICAST) return true;
+
+  Serial.print("MULTICAST");
+  if(isLeadScout) leadAnnouncementSend(ind->dstAddr, ind->srcAddr, (char*)ind->data);
+
+  // run the Bitlash callback function, if defined
+  sprintf(callback,"event.channel%d",ind->dstAddr);
+  if(findscript(callback)) doCommand(callback);
+  
+  return true;
 }
 
 
@@ -945,6 +941,11 @@ numvar meshReport(void) {
     Serial.println("    |");
   }
 }
+
+numvar meshAnnounce(void) {
+  fieldAnnounce(getarg(1), (char*)getstringarg(2));
+}
+
 
 /****************************\
 *        I/O HANDLERS       *
@@ -1345,8 +1346,18 @@ void bitlashFilter(byte b) {
   // newline or max len announces and resets
   if(b == '\n' || offset == 100)
   {
+    char *message;
+    int chan;
     buf[offset] = 0;
-    fieldAnnounce(buf);
+    message = strchr(buf,' ');
+    // any lines looking like "CHAN:4 message" will send "message" to channel 4
+    if(strncmp("CH4N:",buf,5) == 0 && message)
+    {
+      *message = 0;
+      message++;
+      chan = atoi(buf+5);
+      if(chan) fieldAnnounce(chan,message);      
+    }
     offset=0;
     return;
   }
