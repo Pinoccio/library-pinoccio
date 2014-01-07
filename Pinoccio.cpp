@@ -34,7 +34,6 @@ void PinoccioClass::setup() {
   }
 
   SYS_Init();
-  HAL_MeasureAdcOffset();
   PHY_RandomReq();
 
   loadSettingsFromEeprom();

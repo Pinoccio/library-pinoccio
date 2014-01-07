@@ -2,7 +2,6 @@
 #define LIB_PINOCCIO_SCOUT_H_
 
 #define P_MAX_BACKPACKS 3
-#define P_MAX_LEAD_SCOUTS 3
 
 #include <Pinoccio.h>
 #include <utility/Backpack.h>
@@ -66,7 +65,6 @@ class PinoccioScout : public PinoccioClass {
   protected:
     void checkStateChange();
 
-    uint16_t leadScoutAddresses[P_MAX_LEAD_SCOUTS];
     Backpack* backpacks[P_MAX_BACKPACKS];
 
     bool isVccEnabled;

@@ -9,21 +9,15 @@ PinoccioScout Scout;
 PinoccioScout::PinoccioScout() {
   RgbLed.turnOff();
 
-  digitalWrite(CHG_STATUS, HIGH);
-  pinMode(CHG_STATUS, INPUT);
-
-  digitalWrite(BATT_ALARM, HIGH);
-  pinMode(BATT_ALARM, INPUT);
-
+  pinMode(CHG_STATUS, INPUT_PULLUP);
+  pinMode(BATT_ALARM, INPUT_PULLUP);
   pinMode(VCC_ENABLE, OUTPUT);
+  pinMode(BACKPACK_BUS, INPUT);
   enableBackpackVcc();
 
   digitalWrite(SS, HIGH);
   pinMode(SS, OUTPUT);
 
-  pinMode(BACKPACK_BUS, INPUT);
-
-  leadScoutAddresses[0] = NULL;
   backpacks[0] = NULL;
 
   digitalPinEventHandler = 0;
@@ -48,14 +42,13 @@ PinoccioScout::PinoccioScout() {
 PinoccioScout::~PinoccioScout() { }
 
 void PinoccioScout::setup() {
-  enableBackpackVcc();
   PinoccioClass::setup();
+
   bp.begin(BACKPACK_BUS);
   Wire.begin();
   delay(100);
   HAL_FuelGaugeConfig(20);   // Configure the MAX17048G's alert percentage to 20%
   HAL_FuelGaugeQuickStart(); // Restart fuel-gauge calculations
-
 
   // Enumerate backpack bus
   if (!bp.enumerate()) {
@@ -146,14 +139,14 @@ void PinoccioScout::saveState() {
   digitalPinState[4] = digitalRead(6);
   digitalPinState[5] = digitalRead(7);
   digitalPinState[6] = digitalRead(8);
-  analogPinState[0] = analogRead(A0); // pin 24
-  analogPinState[1] = analogRead(A1); // pin 25
-  analogPinState[2] = analogRead(A2); // pin 26
-  analogPinState[3] = analogRead(A3); // pin 27
-  analogPinState[4] = analogRead(A4); // pin 28
-  analogPinState[5] = analogRead(A5); // pin 29
-  analogPinState[6] = analogRead(A6); // pin 30
-  analogPinState[7] = analogRead(A7); // pin 31
+  analogPinState[0] = analogRead(0); // pin 24
+  analogPinState[1] = analogRead(1); // pin 25
+  analogPinState[2] = analogRead(2); // pin 26
+  analogPinState[3] = analogRead(3); // pin 27
+  analogPinState[4] = analogRead(4); // pin 28
+  analogPinState[5] = analogRead(5); // pin 29
+  analogPinState[6] = analogRead(6); // pin 30
+  analogPinState[7] = analogRead(7); // pin 31
 
   batteryPercentage = constrain(HAL_FuelGaugePercent(), 0, 100);
   batteryVoltage = HAL_FuelGaugeVoltage();
@@ -167,7 +160,6 @@ static void scoutDigitalStateChangeTimerHandler(SYS_Timer_t *timer) {
   uint16_t val;
 
   // TODO: This can likely be optimized by hitting the pin registers directly
-  // Also, this should probably be moved to interrupts
   if (Scout.digitalPinEventHandler != 0) {
     for (uint8_t i=0; i<7; i++) {
       val = digitalRead(i+2);
@@ -192,17 +184,17 @@ static void scoutAnalogStateChangeTimerHandler(SYS_Timer_t *timer) {
 
   if (Scout.analogPinEventHandler != 0) {
     for (uint8_t i=0; i<8; i++) {
-      val = analogRead(i+24);
+      val = analogRead(i); // explicit digital pins until we can update core
       if (abs(Scout.analogPinState[i] - val) > analogThreshold) {
         if (Scout.eventVerboseOutput == true) {
           Serial.print("Running: analogPinEventHandler(");
-          Serial.print(i+24);
+          Serial.print(i);
           Serial.print(",");
           Serial.print(val);
           Serial.println(")");
         }
         Scout.analogPinState[i] = val;
-        Scout.analogPinEventHandler(i+24, val);
+        Scout.analogPinEventHandler(i, val);
       }
     }
   }
@@ -260,15 +252,15 @@ static void scoutAnalogStateChangeTimerHandler(SYS_Timer_t *timer) {
   }
 
   if (Scout.temperatureEventHandler != 0) {
-    val = HAL_MeasureTemperature();
-    if (Scout.temperature != val) {
-      if (Scout.eventVerboseOutput == true) {
-        Serial.print("Running: temperatureEventHandler(");
-        Serial.print(val);
-        Serial.println(")");
-      }
-      Scout.temperature = val;
-      Scout.temperatureEventHandler(val);
-    }
-  }
+     val = HAL_MeasureTemperature();
+     if (Scout.temperature != val) {
+       if (Scout.eventVerboseOutput == true) {
+         Serial.print("Running: temperatureEventHandler(");
+         Serial.print(val);
+         Serial.println(")");
+       }
+       Scout.temperature = val;
+       Scout.temperatureEventHandler(val);
+     }
+   }
 }
