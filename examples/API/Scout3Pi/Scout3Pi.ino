@@ -1,5 +1,6 @@
-#include "config.h"
-#include <Pinoccio.h>
+#include <Scout.h>
+#include <Wire.h>
+#include <SPI.h>
 
 // http://www.pololu.com/docs/0J21/10.a
 enum {
@@ -26,7 +27,7 @@ enum {
 
 int leftMotor = 0;
 int rightMotor = 0;
-int safetyTimer = 50000; // start in a disabled state
+int safetyTimer = 1100; // start in a disabled state
 
 void initialize3Pi() {
   Serial1.begin(115200);
@@ -34,40 +35,47 @@ void initialize3Pi() {
   RgbLed.blinkRed();
   RgbLed.blinkRed();
   RgbLed.blinkRed();
-  Serial1.write(PI_CLEAR_LCD);
-  Serial1.write(PI_PRINT);
+  Serial1.print((byte)PI_CLEAR_LCD);
+  Serial1.write((byte)PI_PRINT);
   Serial1.write(8);
   Serial1.print("Pinoccio");
-  Serial1.write(PI_LCD_GOTO_XY);
-  Serial1.write(0);
+  Serial1.write((byte)PI_LCD_GOTO_XY);
+  Serial1.write((byte)0);
   Serial1.write(1);
-  Serial1.write(PI_PRINT);
+  Serial1.write((byte)PI_PRINT);
   Serial1.write(8);
   Serial1.print("Lets go!");
 }
 
-void getMotorPayload(byte* payload, unsigned int length) {
-  int i=0, j=0;
-  char buf[10];
-  int forward = 0;
-  int turn = 0;
-  
-  while (payload[i] != ':') {
-    buf[j++] = payload[i++];
-  }
-  buf[i++] = '\0';
-  leftMotor = atoi(buf);
-  j = 0;
-  
-  while (i < length) {
-    buf[j++] = payload[i++];
-  }
-  buf[j++] = '\0';
-  rightMotor = atoi(buf);
+void setup() {
+  Scout.setup();
+  initialize3Pi();
+
+  RgbLed.blinkRed(200);
+  RgbLed.blinkGreen(200);
+  RgbLed.blinkBlue(200);
+  Serial.println("3pi Scout ready for duty");
+
+  Scout.meshListen(1, receiveMessage);
 }
 
-static bool appDataInd(NWK_DataInd_t *ind) {
+void loop() {
+  Scout.loop();
+
+  if (safetyTimer > 1000) {
+    RgbLed.red();
+    leftMotor = rightMotor = 0;
+    Serial1.write((byte)PI_STOP_PID); // stop all motors
+  } else {
+    safetyTimer++;
+    RgbLed.green();
+  }
+}
+
+static bool receiveMessage(NWK_DataInd_t *ind) {
+
   Serial.println("Received control message");
+  NWK_SetAckControl(abs(ind->rssi));
   safetyTimer = 0;
 
   getMotorPayload(ind->data, ind->size);
@@ -77,45 +85,37 @@ static bool appDataInd(NWK_DataInd_t *ind) {
   Serial.println(rightMotor);
 
   if (leftMotor >= 0) {
-    Serial1.write(PI_M1_FORWARD);
+    Serial1.write((byte)PI_M1_FORWARD);
   } else {
-    Serial1.write(PI_M1_BACKWARD);
+    Serial1.write((byte)PI_M1_BACKWARD);
   }
   Serial1.write(abs(leftMotor));
   if (rightMotor >= 0) {
-    Serial1.write(PI_M2_FORWARD);
+    Serial1.write((byte)PI_M2_FORWARD);
   } else {
-    Serial1.write(PI_M2_BACKWARD);
+    Serial1.write((byte)PI_M2_BACKWARD);
   }
   Serial1.write(abs(rightMotor));
+
+  return true;
 }
 
-void setup() {
-  Pinoccio.init();
-  initialize3Pi();
-  
-  RgbLed.blinkRed(200);
-  RgbLed.blinkGreen(200);
-  RgbLed.blinkBlue(200);
-  Serial.println("3pi Scout ready for duty");
+void getMotorPayload(byte* payload, unsigned int length) {
+  int i=0, j=0;
+  char buf[10];
+  int forward = 0;
+  int turn = 0;
 
-  NWK_SetAddr(APP_MESH_ADDR);
-  NWK_SetPanId(APP_MESH_PANID);
-  PHY_SetChannel(APP_MESH_CHANNEL);
-  PHY_SetRxState(true);
-  
-  NWK_OpenEndpoint(1, appDataInd);
-}
-
-void loop() {
-  Pinoccio.loop();
-  
-  if (safetyTimer > 30000) {
-    RgbLed.red();
-    leftMotor = rightMotor = 0;
-    Serial1.write(PI_STOP_PID); // stop all motors
-  } else {
-    safetyTimer++;
-    RgbLed.green();
+  while (payload[i] != ':') {
+    buf[j++] = payload[i++];
   }
+  buf[i++] = '\0';
+  leftMotor = atoi(buf);
+  j = 0;
+
+  while (i < length) {
+    buf[j++] = payload[i++];
+  }
+  buf[j++] = '\0';
+  rightMotor = atoi(buf);
 }
