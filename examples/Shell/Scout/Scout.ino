@@ -8,6 +8,8 @@ extern "C" {
 #include "utility/sysTimer.h"
 }
 
+// Accel Raw Ranges: X: 408-622, Y: 407-618, Z: 435-645
+
 const uint16_t groupId = 0x1234;
 static byte pingCounter = 0;
 static NWK_DataReq_t pingDataReq;
@@ -87,6 +89,7 @@ void setup(void) {
 
   Scout.disableShell();
   Scout.setup();
+  analogReference(EXTERNAL);
 
   isLeadScout = forceLeadScout ? true : Scout.isLeadScout();
 
@@ -985,7 +988,12 @@ numvar pinMakeOutput(void) {
 }
 
 numvar pinRead(void) {
-  int i = digitalRead(getarg(1));
+  int i;
+  if (getarg(0) == 2) {
+    i = analogRead(getarg(1));
+  } else {
+    i = digitalRead(getarg(1));
+  }
   //sp(i);
   return i;
 }
@@ -1306,15 +1314,11 @@ static void sendMessage(int address, char *data, bool getAck) {
     return;
   }
 
-  if (options == 0) {
-    options = NWK_OPT_ACK_REQUEST|NWK_OPT_ENABLE_SECURITY;
-  }
-
   sendDataReq.dstAddr = address;
 
   sendDataReq.dstEndpoint = 1;
   sendDataReq.srcEndpoint = 1;
-  if (getAck == true) {
+  if (getAck) {
     sendDataReq.options = NWK_OPT_ACK_REQUEST|NWK_OPT_ENABLE_SECURITY;
   } else {
     sendDataReq.options = NWK_OPT_ENABLE_SECURITY;
@@ -1323,7 +1327,7 @@ static void sendMessage(int address, char *data, bool getAck) {
   sendDataReq.size = strlen(data);
   sendDataReq.confirm = sendConfirm;
   NWK_DataReq(&sendDataReq);
-
+  //RgbLed.blinkCyan(200);
   sendDataReqBusy = true;
 
   if (isMeshVerbose) {
@@ -1337,10 +1341,10 @@ static void sendConfirm(NWK_DataReq_t *req) {
 
    if (isMeshVerbose) {
     if (req->status == NWK_SUCCESS_STATUS) {
-      Serial.print("-  Confirmed message delivery to Scout ");
+      Serial.print("-  Message successfully sent to Scout ");
       Serial.print(req->dstAddr);
       if (req->control) {
-        Serial.print(" (control byte: ");
+        Serial.print(" (Confirmed with control byte: ");
         Serial.print(req->control);
         Serial.print(")");
       }
