@@ -25,25 +25,25 @@ enum {
   PI_M2_BACKWARD         = 0xC6
 };
 
-int leftMotor = 0;
-int rightMotor = 0;
+int8_t leftMotor = 0;
+int8_t rightMotor = 0;
 int safetyTimer = 1100; // start in a disabled state
+int stopped = true;
 
 void initialize3Pi() {
   Serial1.begin(115200);
+  delay(100);
+  RgbLed.blinkRed();
   Serial1.write(PI_SIGNATURE);
-  RgbLed.blinkRed();
-  RgbLed.blinkRed();
-  RgbLed.blinkRed();
-  Serial1.print((byte)PI_CLEAR_LCD);
-  Serial1.write((byte)PI_PRINT);
-  Serial1.write(8);
+  Serial1.write(PI_CLEAR_LCD);
+  Serial1.write(PI_PRINT);
+  Serial1.write(0x08);
   Serial1.print("Pinoccio");
-  Serial1.write((byte)PI_LCD_GOTO_XY);
-  Serial1.write((byte)0);
-  Serial1.write(1);
-  Serial1.write((byte)PI_PRINT);
-  Serial1.write(8);
+  Serial1.write(PI_LCD_GOTO_XY);
+  Serial1.write((byte)0x00);
+  Serial1.write(0x01);
+  Serial1.write(PI_PRINT);
+  Serial1.print(8);
   Serial1.print("Lets go!");
 }
 
@@ -65,7 +65,10 @@ void loop() {
   if (safetyTimer > 1000) {
     RgbLed.red();
     leftMotor = rightMotor = 0;
-    Serial1.write((byte)PI_STOP_PID); // stop all motors
+    if (!stopped) {
+      Serial1.write(PI_STOP_PID); // stop all motors
+      stopped = true;
+    }
   } else {
     safetyTimer++;
     RgbLed.green();
@@ -73,29 +76,32 @@ void loop() {
 }
 
 static bool receiveMessage(NWK_DataInd_t *ind) {
-
   Serial.println("Received control message");
-  NWK_SetAckControl(abs(ind->rssi));
   safetyTimer = 0;
+  stopped = false;
 
   getMotorPayload(ind->data, ind->size);
-  Serial.print("leftMotor: ");
-  Serial.println(leftMotor);
-  Serial.print("rightMotor: ");
-  Serial.println(rightMotor);
+  Serial.print(abs(leftMotor));
+  Serial.print(":");
+  Serial.println(abs(rightMotor));
 
   if (leftMotor >= 0) {
-    Serial1.write((byte)PI_M1_FORWARD);
+    Serial1.write(PI_M1_FORWARD);
   } else {
-    Serial1.write((byte)PI_M1_BACKWARD);
+    Serial1.write(PI_M1_BACKWARD);
   }
-  Serial1.write(abs(leftMotor));
-  if (rightMotor >= 0) {
-    Serial1.write((byte)PI_M2_FORWARD);
+  Serial1.write((byte)abs(leftMotor));
+
+  if (rightMotor > 0) {
+    Serial1.write(PI_M2_FORWARD);
+    Serial1.write(abs(rightMotor));
+  } else if (rightMotor < 0) {
+    Serial1.write(PI_M2_BACKWARD);
+    Serial1.write(abs(rightMotor));
   } else {
-    Serial1.write((byte)PI_M2_BACKWARD);
+    Serial1.write(PI_M2_FORWARD);
+    Serial1.write((byte)0x00);
   }
-  Serial1.write(abs(rightMotor));
 
   return true;
 }
@@ -103,14 +109,15 @@ static bool receiveMessage(NWK_DataInd_t *ind) {
 void getMotorPayload(byte* payload, unsigned int length) {
   int i=0, j=0;
   char buf[10];
-  int forward = 0;
-  int turn = 0;
 
   while (payload[i] != ':') {
     buf[j++] = payload[i++];
   }
   buf[i++] = '\0';
   leftMotor = atoi(buf);
+  if (leftMotor < -127 || leftMotor > 127) {
+    leftMotor = 0;
+  }
   j = 0;
 
   while (i < length) {
@@ -118,4 +125,7 @@ void getMotorPayload(byte* payload, unsigned int length) {
   }
   buf[j++] = '\0';
   rightMotor = atoi(buf);
+  if (rightMotor < -127 || rightMotor > 127) {
+    rightMotor = 0;
+  }
 }
