@@ -252,15 +252,15 @@ static void scoutAnalogStateChangeTimerHandler(SYS_Timer_t *timer) {
   }
 
   if (Scout.temperatureEventHandler != 0) {
-     val = HAL_MeasureTemperature();
-     if (Scout.temperature != val) {
-       if (Scout.eventVerboseOutput == true) {
-         Serial.print("Running: temperatureEventHandler(");
-         Serial.print(val);
-         Serial.println(")");
+       val = HAL_MeasureTemperature();
+       if (Scout.temperature != val) {
+         if (Scout.eventVerboseOutput == true) {
+           Serial.print("Running: temperatureEventHandler(");
+           Serial.print(val);
+           Serial.println(")");
+         }
+         Scout.temperature = val;
+         Scout.temperatureEventHandler(val);
        }
-       Scout.temperature = val;
-       Scout.temperatureEventHandler(val);
      }
-   }
 }
