@@ -33,6 +33,7 @@ void PinoccioClass::setup() {
     Serial.begin(115200);
   }
 
+  analogReference(EXTERNAL);
   SYS_Init();
   PHY_RandomReq();
 
