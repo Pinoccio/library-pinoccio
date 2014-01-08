@@ -11,7 +11,9 @@ class PinoccioBackpack {
 
     void setup();
     void loop();
-    
+
+    void dumpBackpacks();
+
   protected:
     uint16_t family;
     uint32_t id;
