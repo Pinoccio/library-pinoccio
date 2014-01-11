@@ -8,6 +8,8 @@ extern "C" {
 #include "utility/sysTimer.h"
 }
 
+// Accel Raw Ranges: X: 408-622, Y: 407-618, Z: 435-645
+
 const uint16_t groupId = 0x1234;
 
 WiFiBackpack wifi = WiFiBackpack();
@@ -20,7 +22,7 @@ bool forceScoutVersion = true;
 static bool fieldCommands(NWK_DataInd_t *ind);
 int leadAnswerID = 0;
 static bool leadAnswers(NWK_DataInd_t *ind);
-static bool leadAnnouncements(NWK_DataInd_t *ind);
+static bool fieldAnnouncements(NWK_DataInd_t *ind);
 void leadAnnouncementSend(int chan, int from, char *message);
 
 int whoami;
@@ -31,7 +33,7 @@ void leadHQ(void);
 void leadSignal(char *json);
 void leadIncoming(char *packet, unsigned short *index);
 NWK_DataReq_t fieldAnnounceReq;
-void fieldAnnounce(char *line); // called by bitlashFilter
+void fieldAnnounce(int chan, char *message);
 void bitlashFilter(byte b);
 char *bitlashOutput; // used by bitlashBuffer
 void bitlashBuffer(byte b);
@@ -81,6 +83,7 @@ void setup(void) {
   Scout.temperatureEventHandler = temperatureEventHandler;
 
   Scout.setup();
+  analogReference(EXTERNAL);
 
   isLeadScout = forceLeadScout ? true : Scout.isLeadScout();
 
@@ -95,15 +98,15 @@ void setup(void) {
   }
 
   Scout.meshListen(1, receiveMessage);
+  Scout.meshListen(4, fieldAnnouncements);
+  // join all the "channels" to listen for announcements
+  for (int i = 1; i < 10; i++) Scout.meshJoinGroup(i);
 
   //dump_backpacks();
 
   whoami = Scout.getAddress();
   if (isLeadScout) {
     Scout.meshListen(3, leadAnswers);
-    Scout.meshListen(4, leadAnnouncements);
-    // join all the "channels" to listen for announcements
-    for (int i = 1; i < 10; i++) Scout.meshJoinGroup(i);
     Scout.meshJoinGroup(0xbeef); // our internal reporting channel
     Serial.println("Lead Scout ready!");
   } else {
@@ -111,6 +114,91 @@ void setup(void) {
     Serial.println("Field Scout ready!");
   }
 
+  addBitlashFunction("power.ischarging", (bitlash_function) isBatteryCharging);
+  addBitlashFunction("power.percent", (bitlash_function) getBatteryPercentage);
+  addBitlashFunction("power.voltage", (bitlash_function) getBatteryVoltage);
+  addBitlashFunction("power.enablevcc", (bitlash_function) enableBackpackVcc);
+  addBitlashFunction("power.disablevcc", (bitlash_function) disableBackpackVcc);
+  addBitlashFunction("power.sleep", (bitlash_function) goToSleep);
+  addBitlashFunction("power.report", (bitlash_function) powerReport);
+
+  addBitlashFunction("mesh.config", (bitlash_function) meshConfig);
+  addBitlashFunction("mesh.setpower", (bitlash_function) meshSetPower);
+  addBitlashFunction("mesh.key", (bitlash_function) meshSetKey);
+  addBitlashFunction("mesh.resetkey", (bitlash_function) meshResetKey);
+  addBitlashFunction("mesh.joingroup", (bitlash_function) meshJoinGroup);
+  addBitlashFunction("mesh.leavegroup", (bitlash_function) meshLeaveGroup);
+  addBitlashFunction("mesh.ingroup", (bitlash_function) meshIsInGroup);
+  addBitlashFunction("mesh.ping", (bitlash_function) meshPing);
+  addBitlashFunction("mesh.pinggroup", (bitlash_function) meshPingGroup);
+  addBitlashFunction("mesh.send", (bitlash_function) meshSend);
+  addBitlashFunction("mesh.verbose", (bitlash_function) meshVerbose);
+  addBitlashFunction("mesh.report", (bitlash_function) meshReport);
+  addBitlashFunction("mesh.announce", (bitlash_function) meshAnnounce);
+
+  addBitlashFunction("temperature", (bitlash_function) getTemperature);
+  addBitlashFunction("randomnumber", (bitlash_function) getRandomNumber);
+
+  addBitlashFunction("led.blink", (bitlash_function) ledBlink);
+  addBitlashFunction("led.blinktorch", (bitlash_function) ledBlinkTorch);
+  addBitlashFunction("led.enableblink", (bitlash_function) ledEnableContinuousBlink);
+  addBitlashFunction("led.disableblink", (bitlash_function) ledDisableContinuousBlink);
+  addBitlashFunction("led.off", (bitlash_function) ledOff);
+  addBitlashFunction("led.red", (bitlash_function) ledRed);
+  addBitlashFunction("led.green", (bitlash_function) ledGreen);
+  addBitlashFunction("led.blue", (bitlash_function) ledBlue);
+  addBitlashFunction("led.cyan", (bitlash_function) ledCyan);
+  addBitlashFunction("led.purple", (bitlash_function) ledPurple);
+  addBitlashFunction("led.magenta", (bitlash_function) ledMagenta);
+  addBitlashFunction("led.yellow", (bitlash_function) ledYellow);
+  addBitlashFunction("led.orange", (bitlash_function) ledOrange);
+  addBitlashFunction("led.white", (bitlash_function) ledWhite);
+  addBitlashFunction("led.redvalue", (bitlash_function) ledSetRedValue);
+  addBitlashFunction("led.greenvalue", (bitlash_function) ledSetGreenValue);
+  addBitlashFunction("led.bluevalue", (bitlash_function) ledSetBlueValue);
+  addBitlashFunction("led.hexvalue", (bitlash_function) ledSetHexValue);
+  addBitlashFunction("led.setrgb", (bitlash_function) ledSetRgb);
+  addBitlashFunction("led.savetorch", (bitlash_function) ledSaveTorch);
+  addBitlashFunction("led.settorch", (bitlash_function) ledSetTorch);
+  addBitlashFunction("led.report", (bitlash_function) ledReport);
+
+  addBitlashFunction("pin.on", (bitlash_function) pinOn);
+  addBitlashFunction("pin.off", (bitlash_function) pinOff);
+  addBitlashFunction("pin.makeinput", (bitlash_function) pinMakeInput);
+  addBitlashFunction("pin.makeinputup", (bitlash_function) pinMakeInputPullup);
+  addBitlashFunction("pin.makeoutput", (bitlash_function) pinMakeOutput);
+  addBitlashFunction("pin.read", (bitlash_function) pinRead);
+  addBitlashFunction("pin.write", (bitlash_function) pinWrite);
+  addBitlashFunction("pin.report", (bitlash_function) pinReport);
+
+  addBitlashFunction("backpack.report", (bitlash_function) backpackReport);
+
+  addBitlashFunction("scout.report", (bitlash_function) scoutReport);
+  addBitlashFunction("scout.isleadscout", (bitlash_function) isScoutLeadScout);
+  addBitlashFunction("scout.sethqtoken", (bitlash_function) setHQToken);
+  addBitlashFunction("scout.gethqtoken", (bitlash_function) getHQToken);
+  addBitlashFunction("scout.otaboot", (bitlash_function) otaBoot);
+
+  addBitlashFunction("events.start", (bitlash_function) startStateChangeEvents);
+  addBitlashFunction("events.stop", (bitlash_function) stopStateChangeEvents);
+  addBitlashFunction("events.setfreqs", (bitlash_function) setEventPeriods);
+  addBitlashFunction("events.verbose", (bitlash_function) setEventVerbose);
+
+  if (isLeadScout) {
+    addBitlashFunction("wifi.report", (bitlash_function) wifiReport);
+    addBitlashFunction("wifi.list", (bitlash_function) wifiList);
+    addBitlashFunction("wifi.config", (bitlash_function) wifiConfig);
+    addBitlashFunction("wifi.connect", (bitlash_function) wifiConnect);
+    addBitlashFunction("wifi.command", (bitlash_function) wifiCommand);
+    addBitlashFunction("wifi.ping", (bitlash_function) wifiPing);
+    addBitlashFunction("wifi.dnslookup", (bitlash_function) wifiDNSLookup);
+    addBitlashFunction("wifi.gettime", (bitlash_function) wifiGetTime);
+    addBitlashFunction("wifi.sleep", (bitlash_function) wifiSleep);
+    addBitlashFunction("wifi.wakeup", (bitlash_function) wifiWakeup);
+    addBitlashFunction("wifi.verbose", (bitlash_function) wifiVerbose);
+  }
+
+  Scout.startShell();
   setOutputHandler(&bitlashFilter);
 }
 
@@ -379,17 +467,6 @@ void leadAnnouncementSend(int chan, int from, char *message)
   leadSignal(sig);
 }
 
-// mesh callback whenever another scout announces something on a channel
-static bool leadAnnouncements(NWK_DataInd_t *ind) {
-  RgbLed.blinkBlue(200);
-  // be safe
-  if(!ind->options&NWK_IND_OPT_MULTICAST) return true;
-
-  Serial.print("MULTICAST");
-  leadAnnouncementSend(ind->dstAddr, ind->srcAddr, (char*)ind->data);
-  return true;
-}
-
 /////////////////////
 // field scout stuff
 
@@ -512,31 +589,20 @@ static void fieldAnnounceConfirm(NWK_DataReq_t *req) {
   announcing = false;
 }
 
-// check a line of bitlash output for any announcements and send them
-void fieldAnnounce(char *line)
+// send out any announcement messages on a multicast channel
+void fieldAnnounce(int chan, char *message)
 {
-  char *message;
-  int chan, len;
+  int len = strlen(message);
 
-  // any lines looking like "CHAN:4 message" will send "message" to channel 4
-  if(strncmp("CH4N:",line,5) != 0) return;
-  message = strchr(line,' ');
-  if(!message) return;
-  *message = 0;
-  message++;
-  chan = atoi(line+5);
-  if(!chan || announcing) return;
+  if(announcing) return;
 
-  len = strlen(message);
   Serial.print("announcing to ");
   Serial.print(chan, DEC);
   Serial.print(" ");
   Serial.println(message);
 
   // when lead scout, shortcut
-  if (isLeadScout) {
-    return leadAnnouncementSend(chan, whoami, message);
-  }
+  if (isLeadScout) leadAnnouncementSend(chan, whoami, message);
 
   Scout.meshJoinGroup(chan); // must be joined to send
   fieldAnnounceReq.dstAddr = chan;
@@ -551,6 +617,732 @@ void fieldAnnounce(char *line)
   //RgbLed.blinkGreen(200);
 }
 
+// mesh callback whenever another scout announces something on a channel
+static bool fieldAnnouncements(NWK_DataInd_t *ind) {
+  char callback[32];
+  RgbLed.blinkBlue(200);
+  // be safe
+  if(!ind->options&NWK_IND_OPT_MULTICAST) return true;
+
+  Serial.print("MULTICAST");
+  if(isLeadScout) leadAnnouncementSend(ind->dstAddr, ind->srcAddr, (char*)ind->data);
+
+  // run the Bitlash callback function, if defined
+  sprintf(callback,"event.channel%d",ind->dstAddr);
+  if(findscript(callback)) doCommand(callback);
+
+  return true;
+}
+
+
+/****************************\
+*      BUILT-IN HANDLERS    *
+\****************************/
+numvar getTemperature(void) {
+  int i = Scout.getTemperature();
+  sp(i);
+  speol();
+  return i;
+}
+
+numvar getRandomNumber(void) {
+  int i = random();
+  sp(i);
+  speol();
+  return i;
+}
+
+/****************************\
+*      POWER HANDLERS       *
+\****************************/
+numvar isBatteryCharging(void) {
+  int i = Scout.isBatteryCharging();
+  sp(i);
+  speol();
+  return i;
+}
+
+numvar getBatteryPercentage(void) {
+  int i = Scout.getBatteryPercentage();
+  sp(i);
+  speol();
+  return i;
+}
+
+numvar getBatteryVoltage(void) {
+  int i = Scout.getBatteryVoltage();
+  sp(i);
+  speol();
+  return i;
+}
+
+numvar enableBackpackVcc(void) {
+  Scout.enableBackpackVcc();
+  return true;
+}
+
+numvar disableBackpackVcc(void) {
+  Scout.disableBackpackVcc();
+  return true;
+}
+
+numvar goToSleep(void) {
+  // TODO: not implemented yet
+  //Pinoccio.goToSleep(getarg(1));
+}
+
+numvar powerReport(void) {
+  // ie: {p:85,v:4.1,c:0,v:1,a:0}
+  sp("{p:");
+  sp(Scout.getBatteryPercentage());
+  sp(",v:");
+  sp((int)Scout.getBatteryVoltage());
+  sp(",c:");
+  sp(Scout.isBatteryCharging());
+  sp(",v:");
+  sp(Scout.isBackpackVccEnabled());
+  sp(",a:");
+  sp(Scout.isBatteryAlarmTriggered());
+  sp("}\n");
+  return true;
+}
+
+/****************************\
+*      RGB LED HANDLERS     *
+\****************************/
+numvar ledEnableContinuousBlink(void) {
+  RgbLed.enableContinuousBlink();
+}
+
+numvar ledDisableContinuousBlink(void) {
+  RgbLed.disableContinuousBlink();
+}
+
+numvar ledBlink(void) {
+  if (getarg(0) == 4) {
+    RgbLed.blinkColor(getarg(1), getarg(2), getarg(3), getarg(4));
+  } else {
+    RgbLed.blinkColor(getarg(1), getarg(2), getarg(3));
+  }
+}
+
+numvar ledBlinkTorch(void) {
+  if (getarg(0) == 1) {
+    RgbLed.blinkTorchColor(getarg(1));
+  } else {
+    RgbLed.blinkTorchColor();
+  }
+}
+
+numvar ledOff(void) {
+  RgbLed.turnOff();
+}
+
+numvar ledRed(void) {
+  RgbLed.red();
+}
+
+numvar ledGreen(void) {
+  RgbLed.green();
+}
+
+numvar ledBlue(void) {
+  RgbLed.blue();
+}
+
+numvar ledCyan(void) {
+  RgbLed.cyan();
+}
+
+numvar ledPurple(void) {
+  RgbLed.purple();
+}
+
+numvar ledMagenta(void) {
+  RgbLed.magenta();
+}
+
+numvar ledYellow(void) {
+  RgbLed.yellow();
+}
+
+numvar ledOrange(void) {
+  RgbLed.orange();
+}
+
+numvar ledWhite(void) {
+  RgbLed.white();
+}
+
+numvar ledSetRedValue(void) {
+  RgbLed.setRedValue(getarg(1));
+}
+
+numvar ledSetGreenValue(void) {
+  RgbLed.setGreenValue(getarg(1));
+}
+
+numvar ledSetBlueValue(void) {
+  RgbLed.setBlueValue(getarg(1));
+}
+
+numvar ledSetHexValue(void) {
+  Serial.println((char *)getstringarg(1));
+  if (isstringarg(1)) {
+    RgbLed.setHex((char *)getstringarg(1));
+    return true;
+  } else {
+    return false;
+  }
+}
+
+numvar ledSetRgb(void) {
+  RgbLed.setColor(getarg(1), getarg(2), getarg(3));
+}
+
+numvar ledSaveTorch(void) {
+  RgbLed.saveTorch(getarg(1), getarg(2), getarg(3));
+}
+
+numvar ledSetTorch(void) {
+  RgbLed.setTorch();
+}
+
+numvar ledReport(void) {
+  sp("{\"c\": {\"r\":");
+  sp(RgbLed.getRedValue());
+  sp(",\"g\":");
+  sp(RgbLed.getGreenValue());
+  sp(",\"b\":");
+  sp(RgbLed.getBlueValue());
+  sp("}, \"t\": {\"r\":");
+  sp(RgbLed.getRedTorchValue());
+  sp(",\"g\":");
+  sp(RgbLed.getGreenTorchValue());
+  sp(",\"b\":");
+  sp(RgbLed.getBlueTorchValue());
+  sp("}}\n");
+}
+
+/****************************\
+*    MESH RADIO HANDLERS    *
+\****************************/
+numvar meshConfig(void) {
+  uint16_t panId = 0x4567;
+  uint8_t channel = 0x1a;
+  if (getarg(0) == 2) {
+    panId = getarg(2);
+    channel = getarg(3);
+  }
+  Scout.meshSetRadio(getarg(1), panId, channel);
+}
+
+numvar meshSetPower(void) {
+  Scout.meshSetPower(getarg(1));
+}
+
+numvar meshSetKey(void) {
+  Pinoccio.meshSetSecurityKey((const char *)getstringarg(1));
+}
+
+numvar meshResetKey(void) {
+  Pinoccio.meshResetSecurityKey();
+}
+
+numvar meshJoinGroup(void) {
+  Scout.meshJoinGroup(groupId);
+}
+
+numvar meshLeaveGroup(void) {
+  Scout.meshLeaveGroup(groupId);
+}
+
+numvar meshIsInGroup(void) {
+  return Scout.meshIsInGroup(groupId);
+}
+
+numvar meshPing(void) {
+  pingScout(getarg(1));
+}
+
+numvar meshPingGroup(void) {
+  pingGroup(groupId);
+}
+
+numvar meshSend(void) {
+  sendMessage(getarg(1), (char *)getstringarg(2), true);
+}
+
+numvar meshVerbose(void) {
+  isMeshVerbose = getarg(1);
+}
+
+numvar meshReport(void) {
+  // TODO: return JSON formatted report of radio details
+  // ie: {"id":34,"pid":1,"ch":26,"sec":true}
+  Serial.println("-- Mesh Radio Settings --");
+  Serial.print(" - Address: ");
+  Serial.println(Scout.getAddress());
+  Serial.print(" - Pan ID: 0x");
+  Serial.println(Scout.getPanId(), HEX);
+  Serial.print(" - Channel: ");
+  Serial.println(Scout.getChannel());
+  Serial.print(" - Tx Power: ");
+  // gotta read these from program memory (for SRAM savings)
+  char c;
+  const char *dbString = Scout.getTxPowerDb();
+  while((c = pgm_read_byte(dbString++))) {
+     Serial.write(c);
+  }
+  Serial.println();
+  Serial.print(" - In group: ");
+  if (Scout.meshIsInGroup(groupId)) {
+    Serial.println("Yes");
+  } else {
+    Serial.println("No");
+  }
+  Serial.println(" - Routing: ");
+  Serial.println("|    Fixed    |  Multicast  |    Score    |    DstAdd   | NextHopAddr |    Rank     |     LQI    |");
+  NWK_RouteTableEntry_t *table = NWK_RouteTable();
+  for (int i=0; i < NWK_ROUTE_TABLE_SIZE; i++) {
+    if (table[i].dstAddr == NWK_ROUTE_UNKNOWN) {
+      continue;
+    }
+    Serial.print("|      ");
+    Serial.print(table[i].fixed);
+    Serial.print("      |      ");
+    Serial.print(table[i].multicast);
+    Serial.print("      |      ");
+    Serial.print(table[i].score);
+    Serial.print("      |     0x");
+    Serial.print(table[i].dstAddr, HEX);
+    Serial.print("     |     0x");
+    Serial.print(table[i].nextHopAddr, HEX);
+    Serial.print("     |     ");
+    Serial.print(table[i].rank);
+    Serial.print("     |     ");
+    Serial.print(table[i].lqi);
+    Serial.println("    |");
+  }
+}
+
+numvar meshAnnounce(void) {
+  fieldAnnounce(getarg(1), (char*)getstringarg(2));
+}
+
+
+/****************************\
+*        I/O HANDLERS       *
+\****************************/
+numvar pinOn(void) {
+  pinMode(getarg(1), OUTPUT);
+  digitalWrite(getarg(1), HIGH);
+}
+
+numvar pinOff(void) {
+  pinMode(getarg(1), OUTPUT);
+  digitalWrite(getarg(1), LOW);
+}
+
+numvar pinMakeInput(void) {
+  pinMode(getarg(1), INPUT);
+}
+
+numvar pinMakeInputPullup(void) {
+  pinMode(getarg(1), INPUT_PULLUP);
+}
+
+numvar pinMakeOutput(void) {
+  pinMode(getarg(1), OUTPUT);
+}
+
+numvar pinRead(void) {
+  int i;
+  if (getarg(0) == 2) {
+    i = analogRead(getarg(1));
+  } else {
+    i = digitalRead(getarg(1));
+  }
+  //sp(i);
+  return i;
+}
+
+numvar pinWrite(void) {
+  // TODO: set a PWM pin's value from 0 - 255
+  return true;
+}
+
+numvar pinThreshold(void) {
+  // TODO: create a threshold function with the following format:
+  // threshold(pin, value, fnToCallIfValueLessThan, fnToCallIfValueEqual, fnToCallIfValueGreaterThan)
+  return true;
+}
+
+numvar pinReport(void) {
+  // TODO: return JSON formmated report of all IO pins and their values
+  sp("{\"d2\": ");
+  sp(Scout.digitalPinState[0]);
+  sp(", \"d3\": ");
+  sp(Scout.digitalPinState[1]);
+  sp(", \"d4\": ");
+  sp(Scout.digitalPinState[2]);
+  sp(", \"d5\": ");
+  sp(Scout.digitalPinState[3]);
+  sp(", \"d6\": ");
+  sp(Scout.digitalPinState[4]);
+  sp(", \"d7\": ");
+  sp(Scout.digitalPinState[5]);
+  sp(", \"d8\": ");
+  sp(Scout.digitalPinState[6]);
+  sp(", \"a0\": ");
+  sp(Scout.analogPinState[0]);
+  sp(", \"a1\": ");
+  sp(Scout.analogPinState[1]);
+  sp(", \"a2\": ");
+  sp(Scout.analogPinState[2]);
+  sp(", \"a3\": ");
+  sp(Scout.analogPinState[3]);
+  sp(", \"a4\": ");
+  sp(Scout.analogPinState[4]);
+  sp(", \"a5\": ");
+  sp(Scout.analogPinState[5]);
+  sp(", \"a6\": ");
+  sp(Scout.analogPinState[6]);
+  sp(", \"a7\": ");
+  sp(Scout.analogPinState[7]);
+  sp("}");
+  return true;
+}
+
+/****************************\
+*     BACKPACK HANDLERS     *
+\****************************/
+numvar backpackReport(void) {
+  sp("[{\"name\":\"wifi\",\"version\":\"1.0\"},{\"name\":\"environment\",\"version\":\"2.0\"}]");
+}
+
+/****************************\
+ *   SCOUT REPORT HANDLERS  *
+\****************************/
+numvar scoutReport(void) {
+  if (forceScoutVersion) {
+    sp("1.0");
+    speol();
+  } else {
+    Serial.println("-- Scout Information --");
+    Serial.print(" - EEPROM Version: 0x");
+    Serial.println(Scout.getEEPROMVersion(), HEX);
+    Serial.print(" - HW Version: 0x");
+    Serial.println(Scout.getHwVersion(), HEX);
+    Serial.print(" - HW Family: 0x");
+    Serial.println(Scout.getHwFamily(), HEX);
+    Serial.print(" - HW Serial ID: 0x");
+    Serial.println(Scout.getHwSerial(), HEX);
+  }
+}
+
+numvar isScoutLeadScout(void) {
+  sp(isLeadScout?1:0);
+  speol();
+  return isLeadScout;
+}
+
+numvar setHQToken(void) {
+  Pinoccio.setHQToken((const char *)getstringarg(1));
+}
+
+numvar getHQToken(void) {
+  char token[33];
+  Pinoccio.getHQToken((char *)token);
+  token[32] = 0;
+  sp(token);
+  speol();
+}
+
+numvar otaBoot(void) {
+  cli();
+  wdt_enable(WDTO_15MS);
+  while(1);
+}
+
+/****************************\
+ *      EVENT HANDLERS      *
+\****************************/
+
+numvar startStateChangeEvents(void) {
+  Scout.startDigitalStateChangeEvents();
+  Scout.startAnalogStateChangeEvents();
+}
+
+numvar stopStateChangeEvents(void) {
+  Scout.stopDigitalStateChangeEvents();
+  Scout.stopAnalogStateChangeEvents();
+}
+
+numvar setEventPeriods(void) {
+  Scout.setStateChangeEventPeriods(getarg(1), getarg(2));
+}
+
+numvar setEventVerbose(void) {
+  Scout.eventVerboseOutput = getarg(1);
+}
+
+/****************************\
+ *       WIFI HANDLERS      *
+\****************************/
+numvar wifiReport(void) {
+  if (getarg(0) > 0 && getarg(1) == 1) {
+    wifi.printProfiles();
+  } else {
+    Serial.print("Wi-Fi App Version: ");
+    Serial.println(Gainspan.getAppVersion());
+    Serial.print("Wi-Fi GEPS Version: ");
+    Serial.println(Gainspan.getGepsVersion());
+    Serial.print("Wi-Fi Wlan Version: ");
+    Serial.println(Gainspan.getWlanVersion());
+    wifi.printCurrentNetworkStatus();
+  }
+}
+
+numvar wifiList(void) {
+    wifi.printAPs();
+}
+
+numvar wifiConfig(void) {
+  String port = String(getarg(4));
+  if (!wifi.apConfig((const char *)getstringarg(1), (const char *)getstringarg(2), (const char *)getstringarg(3), port)) {
+    Serial.println("Error: saving wifi configuration data failed");
+  }
+}
+
+numvar wifiConnect(void) {
+  Serial.print("Wi-Fi backpack connecting...");
+  if (!wifi.apConnect()) {
+    Serial.println("Error: unable to connect");
+  } else {
+    Serial.println("Done");
+  }
+}
+
+numvar wifiCommand(void) {
+  if (!wifi.runDirectCommand((const char *)getstringarg(1))) {
+     Serial.println("Error: Wi-Fi direct command failed");
+  }
+}
+
+numvar wifiPing(void) {
+  if (!wifi.ping((const char *)getstringarg(1))) {
+     Serial.println("Error: Wi-Fi ping command failed");
+  }
+}
+
+numvar wifiDNSLookup(void) {
+  if (!wifi.dnsLookup((const char *)getstringarg(1))) {
+     Serial.println("Error: Wi-Fi DNS lookup command failed");
+  }
+}
+
+numvar wifiGetTime(void) {
+  if (!wifi.getTime()) {
+     Serial.println("Error: Wi-Fi NTP time lookup command failed");
+  }
+}
+
+numvar wifiSleep(void) {
+  if (!wifi.goToSleep()) {
+     Serial.println("Error: Wi-Fi sleep command failed");
+  }
+}
+
+numvar wifiWakeup(void) {
+  if (!wifi.wakeUp()) {
+     Serial.println("Error: Wi-Fi wakeup command failed");
+  }
+}
+
+numvar wifiVerbose(void) {
+  Gainspan.debugAutoConnect = getarg(1);
+}
+
+/****************************\
+ *     HELPER FUNCTIONS     *
+\****************************/
+static void pingScout(int address) {
+  pingDataReq.dstAddr = address;
+  char *ping = "ping";
+
+  pingDataReq.dstEndpoint = 1;
+  pingDataReq.srcEndpoint = 1;
+  pingDataReq.options = NWK_OPT_ACK_REQUEST|NWK_OPT_ENABLE_SECURITY;
+  pingDataReq.data = (byte *)ping;
+  pingDataReq.size = strlen(ping);
+  pingDataReq.confirm = pingConfirm;
+  NWK_DataReq(&pingDataReq);
+  //RgbLed.blinkCyan(200);
+
+  Serial.print("PING ");
+  Serial.print(address);
+  Serial.print(": ");
+
+  pingCounter++;
+}
+
+static void pingGroup(int address) {
+  pingDataReq.dstAddr = address;
+
+  pingDataReq.dstEndpoint = 1;
+  pingDataReq.srcEndpoint = 1;
+  pingDataReq.options = NWK_OPT_MULTICAST|NWK_OPT_ENABLE_SECURITY;
+  pingDataReq.data = &pingCounter;
+  pingDataReq.size = sizeof(pingCounter);
+  pingDataReq.confirm = pingConfirm;
+  NWK_DataReq(&pingDataReq);
+
+  Serial.print("PING ");
+  Serial.print(address, HEX);
+  Serial.print(": ");
+
+  pingCounter++;
+}
+
+static void pingConfirm(NWK_DataReq_t *req) {
+  Serial.print("dstAddr: ");
+  Serial.println(req->dstAddr, HEX);
+  Serial.print("dstEndpoint: ");
+  Serial.println(req->dstEndpoint);
+  Serial.print("srcEndpoint: ");
+  Serial.println(req->srcEndpoint);
+  Serial.print("options: ");
+  Serial.println(req->options, BIN);
+  Serial.print("size: ");
+  Serial.println(req->size);
+  Serial.print("status: ");
+  Serial.println(req->status, HEX);
+
+  if (req->status == NWK_SUCCESS_STATUS) {
+    Serial.print("1 byte from ");
+    Serial.print(req->dstAddr);
+    Serial.print(" RSSI=-");
+    Serial.println(req->control);
+  } else {
+    Serial.print("Error: ");
+    switch (req->status) {
+      case NWK_OUT_OF_MEMORY_STATUS:
+        Serial.print("Out of memory: ");
+        break;
+      case NWK_NO_ACK_STATUS:
+      case NWK_PHY_NO_ACK_STATUS:
+        Serial.print("No acknowledgement received: ");
+        break;
+      case NWK_NO_ROUTE_STATUS:
+        Serial.print("No route to destination: ");
+        break;
+      case NWK_PHY_CHANNEL_ACCESS_FAILURE_STATUS:
+        Serial.print("Physical channel access failure: ");
+        break;
+      default:
+        Serial.print("unknown failure: ");
+    }
+    Serial.print("(");
+    Serial.print(req->status, HEX);
+    Serial.println(")");
+  }
+}
+
+static bool receiveMessage(NWK_DataInd_t *ind) {
+  if (isMeshVerbose) {
+    Serial.print("Received message - ");
+    Serial.print("lqi: ");
+    Serial.print(ind->lqi, DEC);
+
+    Serial.print("  ");
+
+    Serial.print("rssi: ");
+    Serial.print(abs(ind->rssi), DEC);
+    Serial.print("  ");
+
+    Serial.print("data: ");
+    for (int i=0; i<ind->size; i++) {
+      Serial.print(ind->data[i], DEC);
+    }
+    Serial.println("");
+  }
+
+  NWK_SetAckControl(abs(ind->rssi));
+
+  // run the Bitlash callback function, if defined
+  char *callback = "event.message";
+  if (findscript(callback)) {
+    doCommand(callback);
+  }
+  return true;
+}
+
+static void sendMessage(int address, char *data, bool getAck) {
+  if (sendDataReqBusy) {
+    return;
+  }
+
+  sendDataReq.dstAddr = address;
+
+  sendDataReq.dstEndpoint = 1;
+  sendDataReq.srcEndpoint = 1;
+  if (getAck) {
+    sendDataReq.options = NWK_OPT_ACK_REQUEST|NWK_OPT_ENABLE_SECURITY;
+  } else {
+    sendDataReq.options = NWK_OPT_ENABLE_SECURITY;
+  }
+  sendDataReq.data = (byte *)data;
+  sendDataReq.size = strlen(data);
+  sendDataReq.confirm = sendConfirm;
+  NWK_DataReq(&sendDataReq);
+  //RgbLed.blinkCyan(200);
+  sendDataReqBusy = true;
+
+  if (isMeshVerbose) {
+    Serial.print("Sent message to Scout ");
+    Serial.println(address);
+  }
+}
+
+static void sendConfirm(NWK_DataReq_t *req) {
+   sendDataReqBusy = false;
+
+   if (isMeshVerbose) {
+    if (req->status == NWK_SUCCESS_STATUS) {
+      Serial.print("-  Message successfully sent to Scout ");
+      Serial.print(req->dstAddr);
+      if (req->control) {
+        Serial.print(" (Confirmed with control byte: ");
+        Serial.print(req->control);
+        Serial.print(")");
+      }
+      Serial.println();
+    } else {
+      Serial.print("Error: ");
+      switch (req->status) {
+        case NWK_OUT_OF_MEMORY_STATUS:
+          Serial.print("Out of memory: ");
+          break;
+        case NWK_NO_ACK_STATUS:
+        case NWK_PHY_NO_ACK_STATUS:
+          Serial.print("No acknowledgement received: ");
+          break;
+        case NWK_NO_ROUTE_STATUS:
+          Serial.print("No route to destination: ");
+          break;
+        case NWK_PHY_CHANNEL_ACCESS_FAILURE_STATUS:
+          Serial.print("Physical channel access failure: ");
+          break;
+        default:
+          Serial.print("unknown failure: ");
+      }
+      Serial.print("(");
+      Serial.print(req->status, HEX);
+      Serial.println(")");
+    }
+  }
+}
 
 /****************************\
  *      EVENT HANDLERS      *
@@ -638,8 +1430,18 @@ void bitlashFilter(byte b) {
   // newline or max len announces and resets
   if(b == '\n' || offset == 100)
   {
+    char *message;
+    int chan;
     buf[offset] = 0;
-    fieldAnnounce(buf);
+    message = strchr(buf,' ');
+    // any lines looking like "CHAN:4 message" will send "message" to channel 4
+    if(strncmp("CH4N:",buf,5) == 0 && message)
+    {
+      *message = 0;
+      message++;
+      chan = atoi(buf+5);
+      if(chan) fieldAnnounce(chan,message);
+    }
     offset=0;
     return;
   }
