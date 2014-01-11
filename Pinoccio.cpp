@@ -12,28 +12,27 @@
 PinoccioClass Pinoccio;
 
 PinoccioClass::PinoccioClass() {
-  shellEnabled = true;
+  isShellEnabled = true;
 }
 
 PinoccioClass::~PinoccioClass() { }
 
 void PinoccioClass::startShell() {
-  shellEnabled = true;
+  isShellEnabled = true;
   initBitlash(115200);
 }
 
 void PinoccioClass::disableShell() {
-  shellEnabled = false;
+  isShellEnabled = false;
 }
 
 void PinoccioClass::setup() {
-  if (shellEnabled) {
+  if (isShellEnabled) {
     initBitlash(115200);
   } else {
     Serial.begin(115200);
   }
 
-  analogReference(EXTERNAL);
   SYS_Init();
   PHY_RandomReq();
 
@@ -43,7 +42,7 @@ void PinoccioClass::setup() {
 void PinoccioClass::loop() {
   SYS_TaskHandler();
 
-  if (shellEnabled) {
+  if (isShellEnabled) {
     runBitlash();
   }
 }
@@ -57,8 +56,26 @@ void PinoccioClass::goToSleep(uint32_t sleepForMs) {
   // - put MCU to sleep
 }
 
+void PinoccioClass::enableExternalAref() {
+  isExternalAref = true;
+  analogReference(EXTERNAL);
+}
+
+void PinoccioClass::disableExternalAref() {
+  isExternalAref = false;
+  ADMUX = (1 << REFS1) | (1 << REFS0); // 1.6V internal voltage ref.
+}
+
+bool PinoccioClass::getExternalAref() {
+  return isExternalAref;
+}
+
 int8_t PinoccioClass::getTemperature() {
-  return HAL_MeasureTemperature();
+  if (isExternalAref == false) {
+    return HAL_MeasureTemperature();
+  } else {
+    return -127;
+  }
 }
 
 void PinoccioClass::setHQToken(const char *token) {
