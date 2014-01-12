@@ -1,4 +1,5 @@
 #include "Shell.h"
+#include "Scout.h"
 #include "bitlash.h"
 
 PinoccioShell::PinoccioShell() { }
@@ -73,17 +74,17 @@ void PinoccioShell::setup() {
   addBitlashFunction("events.verbose", (bitlash_function) setEventVerbose);
 
   if (Scout.isLeadScout()) {
-    addBitlashFunction("wifi.report", (bitlash_function) wifiReport);
-    addBitlashFunction("wifi.list", (bitlash_function) wifiList);
-    addBitlashFunction("wifi.config", (bitlash_function) wifiConfig);
-    addBitlashFunction("wifi.connect", (bitlash_function) wifiConnect);
-    addBitlashFunction("wifi.command", (bitlash_function) wifiCommand);
-    addBitlashFunction("wifi.ping", (bitlash_function) wifiPing);
-    addBitlashFunction("wifi.dnslookup", (bitlash_function) wifiDNSLookup);
-    addBitlashFunction("wifi.gettime", (bitlash_function) wifiGetTime);
-    addBitlashFunction("wifi.sleep", (bitlash_function) wifiSleep);
-    addBitlashFunction("wifi.wakeup", (bitlash_function) wifiWakeup);
-    addBitlashFunction("wifi.verbose", (bitlash_function) wifiVerbose);
+    addBitlashFunction("Scout.wifi.report", (bitlash_function) wifiReport);
+    addBitlashFunction("Scout.wifi.list", (bitlash_function) wifiList);
+    addBitlashFunction("Scout.wifi.config", (bitlash_function) wifiConfig);
+    addBitlashFunction("Scout.wifi.connect", (bitlash_function) wifiConnect);
+    addBitlashFunction("Scout.wifi.command", (bitlash_function) wifiCommand);
+    addBitlashFunction("Scout.wifi.ping", (bitlash_function) wifiPing);
+    addBitlashFunction("Scout.wifi.dnslookup", (bitlash_function) wifiDNSLookup);
+    addBitlashFunction("Scout.wifi.gettime", (bitlash_function) wifiGetTime);
+    addBitlashFunction("Scout.wifi.sleep", (bitlash_function) wifiSleep);
+    addBitlashFunction("Scout.wifi.wakeup", (bitlash_function) wifiWakeup);
+    addBitlashFunction("Scout.wifi.verbose", (bitlash_function) wifiVerbose);
   }
 
   Scout.meshListen(1, receiveMessage);
@@ -103,17 +104,22 @@ void PinoccioShell::disableShell() {
 }
 
 
+static NWK_DataReq_t pingDataReq;
+static NWK_DataReq_t sendDataReq;
+static bool sendDataReqBusy;
+static bool isMeshVerbose;
+
 /****************************\
 *      BUILT-IN HANDLERS    *
 \****************************/
-numvar getTemperature(void) {
+static numvar getTemperature(void) {
   int i = Scout.getTemperature();
   sp(i);
   speol();
   return i;
 }
 
-numvar getRandomNumber(void) {
+static numvar getRandomNumber(void) {
   int i = random();
   sp(i);
   speol();
@@ -123,43 +129,43 @@ numvar getRandomNumber(void) {
 /****************************\
 *      POWER HANDLERS       *
 \****************************/
-numvar isBatteryCharging(void) {
+static numvar isBatteryCharging(void) {
   int i = Scout.isBatteryCharging();
   sp(i);
   speol();
   return i;
 }
 
-numvar getBatteryPercentage(void) {
+static numvar getBatteryPercentage(void) {
   int i = Scout.getBatteryPercentage();
   sp(i);
   speol();
   return i;
 }
 
-numvar getBatteryVoltage(void) {
+static numvar getBatteryVoltage(void) {
   int i = Scout.getBatteryVoltage();
   sp(i);
   speol();
   return i;
 }
 
-numvar enableBackpackVcc(void) {
+static numvar enableBackpackVcc(void) {
   Scout.enableBackpackVcc();
   return true;
 }
 
-numvar disableBackpackVcc(void) {
+static numvar disableBackpackVcc(void) {
   Scout.disableBackpackVcc();
   return true;
 }
 
-numvar goToSleep(void) {
+static numvar goToSleep(void) {
   // TODO: not implemented yet
   //Pinoccio.goToSleep(getarg(1));
 }
 
-numvar powerReport(void) {
+static numvar powerReport(void) {
   // ie: {p:85,v:4.1,c:0,v:1,a:0}
   sp("{p:");
   sp(Scout.getBatteryPercentage());
@@ -178,15 +184,15 @@ numvar powerReport(void) {
 /****************************\
 *      RGB LED HANDLERS     *
 \****************************/
-numvar ledEnableContinuousBlink(void) {
+static numvar ledEnableContinuousBlink(void) {
   RgbLed.enableContinuousBlink();
 }
 
-numvar ledDisableContinuousBlink(void) {
+static numvar ledDisableContinuousBlink(void) {
   RgbLed.disableContinuousBlink();
 }
 
-numvar ledBlink(void) {
+static numvar ledBlink(void) {
   if (getarg(0) == 4) {
     RgbLed.blinkColor(getarg(1), getarg(2), getarg(3), getarg(4));
   } else {
@@ -194,7 +200,7 @@ numvar ledBlink(void) {
   }
 }
 
-numvar ledBlinkTorch(void) {
+static numvar ledBlinkTorch(void) {
   if (getarg(0) == 1) {
     RgbLed.blinkTorchColor(getarg(1));
   } else {
@@ -202,47 +208,47 @@ numvar ledBlinkTorch(void) {
   }
 }
 
-numvar ledOff(void) {
+static numvar ledOff(void) {
   RgbLed.turnOff();
 }
 
-numvar ledRed(void) {
+static numvar ledRed(void) {
   RgbLed.red();
 }
 
-numvar ledGreen(void) {
+static numvar ledGreen(void) {
   RgbLed.green();
 }
 
-numvar ledBlue(void) {
+static numvar ledBlue(void) {
   RgbLed.blue();
 }
 
-numvar ledCyan(void) {
+static numvar ledCyan(void) {
   RgbLed.cyan();
 }
 
-numvar ledPurple(void) {
+static numvar ledPurple(void) {
   RgbLed.purple();
 }
 
-numvar ledMagenta(void) {
+static numvar ledMagenta(void) {
   RgbLed.magenta();
 }
 
-numvar ledYellow(void) {
+static numvar ledYellow(void) {
   RgbLed.yellow();
 }
 
-numvar ledOrange(void) {
+static numvar ledOrange(void) {
   RgbLed.orange();
 }
 
-numvar ledWhite(void) {
+static numvar ledWhite(void) {
   RgbLed.white();
 }
 
-numvar ledSetHexValue(void) {
+static numvar ledSetHexValue(void) {
   Serial.println((char *)getstringarg(1));
   if (isstringarg(1)) {
     RgbLed.setHex((char *)getstringarg(1));
@@ -252,19 +258,19 @@ numvar ledSetHexValue(void) {
   }
 }
 
-numvar ledSetRgb(void) {
+static numvar ledSetRgb(void) {
   RgbLed.setColor(getarg(1), getarg(2), getarg(3));
 }
 
-numvar ledSaveTorch(void) {
+static numvar ledSaveTorch(void) {
   RgbLed.saveTorch(getarg(1), getarg(2), getarg(3));
 }
 
-numvar ledSetTorch(void) {
+static numvar ledTorch(void) {
   RgbLed.setTorch();
 }
 
-numvar ledReport(void) {
+static numvar ledReport(void) {
   sp("{\"c\": {\"r\":");
   sp(RgbLed.getRedValue());
   sp(",\"g\":");
@@ -283,7 +289,7 @@ numvar ledReport(void) {
 /****************************\
 *    MESH RADIO HANDLERS    *
 \****************************/
-numvar meshConfig(void) {
+static numvar meshConfig(void) {
   uint16_t panId = 0x4567;
   uint8_t channel = 0x1a;
   if (getarg(0) == 2) {
@@ -293,47 +299,47 @@ numvar meshConfig(void) {
   Scout.meshSetRadio(getarg(1), panId, channel);
 }
 
-numvar meshSetPower(void) {
+static numvar meshSetPower(void) {
   Scout.meshSetPower(getarg(1));
 }
 
-numvar meshSetKey(void) {
+static numvar meshSetKey(void) {
   Pinoccio.meshSetSecurityKey((const char *)getstringarg(1));
 }
 
-numvar meshResetKey(void) {
+static numvar meshResetKey(void) {
   Pinoccio.meshResetSecurityKey();
 }
 
-numvar meshJoinGroup(void) {
-  Scout.meshJoinGroup(groupId);
+static numvar meshJoinGroup(void) {
+  Scout.meshJoinGroup(getarg(1));
 }
 
-numvar meshLeaveGroup(void) {
-  Scout.meshLeaveGroup(groupId);
+static numvar meshLeaveGroup(void) {
+  Scout.meshLeaveGroup(getarg(1));
 }
 
-numvar meshIsInGroup(void) {
-  return Scout.meshIsInGroup(groupId);
+static numvar meshIsInGroup(void) {
+  return Scout.meshIsInGroup(getarg(1));
 }
 
-numvar meshPing(void) {
+static numvar meshPing(void) {
   pingScout(getarg(1));
 }
 
-numvar meshPingGroup(void) {
-  pingGroup(groupId);
+static numvar meshPingGroup(void) {
+  pingGroup(getarg(1));
 }
 
-numvar meshSend(void) {
+static numvar meshSend(void) {
   sendMessage(getarg(1), (char *)getstringarg(2), true);
 }
 
-numvar meshVerbose(void) {
+static numvar meshVerbose(void) {
   isMeshVerbose = getarg(1);
 }
 
-numvar meshReport(void) {
+static numvar meshReport(void) {
   // TODO: return JSON formatted report of radio details
   // ie: {"id":34,"pid":1,"ch":26,"sec":true}
   Serial.println("-- Mesh Radio Settings --");
@@ -351,12 +357,13 @@ numvar meshReport(void) {
      Serial.write(c);
   }
   Serial.println();
-  Serial.print(" - In group: ");
-  if (Scout.meshIsInGroup(groupId)) {
-    Serial.println("Yes");
-  } else {
-    Serial.println("No");
-  }
+  // TODO: loop through all NWK_GetGroups() output and print
+  // Serial.print(" - In groups: ");
+  //   if (Scout.meshGetGroups()) {
+  //     Serial.println("Yes");
+  //   } else {
+  //     Serial.println("No");
+  //   }
   Serial.println(" - Routing: ");
   Serial.println("|    Fixed    |  Multicast  |    Score    |    DstAdd   | NextHopAddr |    Rank     |     LQI    |");
   NWK_RouteTableEntry_t *table = NWK_RouteTable();
@@ -385,29 +392,29 @@ numvar meshReport(void) {
 /****************************\
 *        I/O HANDLERS       *
 \****************************/
-numvar pinOn(void) {
+static numvar pinOn(void) {
   pinMode(getarg(1), OUTPUT);
   digitalWrite(getarg(1), HIGH);
 }
 
-numvar pinOff(void) {
+static numvar pinOff(void) {
   pinMode(getarg(1), OUTPUT);
   digitalWrite(getarg(1), LOW);
 }
 
-numvar pinMakeInput(void) {
+static numvar pinMakeInput(void) {
   pinMode(getarg(1), INPUT);
 }
 
-numvar pinMakeInputPullup(void) {
+static numvar pinMakeInputPullup(void) {
   pinMode(getarg(1), INPUT_PULLUP);
 }
 
-numvar pinMakeOutput(void) {
+static numvar pinMakeOutput(void) {
   pinMode(getarg(1), OUTPUT);
 }
 
-numvar pinRead(void) {
+static numvar pinRead(void) {
   int i;
   if (getarg(0) == 2) {
     i = analogRead(getarg(1));
@@ -418,18 +425,18 @@ numvar pinRead(void) {
   return i;
 }
 
-numvar pinWrite(void) {
+static numvar pinWrite(void) {
   // TODO: set a PWM pin's value from 0 - 255
   return true;
 }
 
-numvar pinThreshold(void) {
+static numvar pinThreshold(void) {
   // TODO: create a threshold function with the following format:
   // threshold(pin, value, fnToCallIfValueLessThan, fnToCallIfValueEqual, fnToCallIfValueGreaterThan)
   return true;
 }
 
-numvar pinReport(void) {
+static numvar pinReport(void) {
   // TODO: return JSON formmated report of all IO pins and their values
   sp("{\"d2\": ");
   sp(Scout.digitalPinState[0]);
@@ -468,41 +475,36 @@ numvar pinReport(void) {
 /****************************\
 *     BACKPACK HANDLERS     *
 \****************************/
-numvar backpackReport(void) {
+static numvar backpackReport(void) {
   sp("[{\"name\":\"wifi\",\"version\":\"1.0\"},{\"name\":\"environment\",\"version\":\"2.0\"}]");
 }
 
 /****************************\
  *   SCOUT REPORT HANDLERS  *
 \****************************/
-numvar scoutReport(void) {
-  if (forceScoutVersion) {
-    sp("1.0");
-    speol();
-  } else {
-    Serial.println("-- Scout Information --");
-    Serial.print(" - EEPROM Version: 0x");
-    Serial.println(Scout.getEEPROMVersion(), HEX);
-    Serial.print(" - HW Version: 0x");
-    Serial.println(Scout.getHwVersion(), HEX);
-    Serial.print(" - HW Family: 0x");
-    Serial.println(Scout.getHwFamily(), HEX);
-    Serial.print(" - HW Serial ID: 0x");
-    Serial.println(Scout.getHwSerial(), HEX);
-  }
+static numvar scoutReport(void) {
+  Serial.println("-- Scout Information --");
+  Serial.print(" - EEPROM Version: 0x");
+  Serial.println(Scout.getEEPROMVersion(), HEX);
+  Serial.print(" - HW Version: 0x");
+  Serial.println(Scout.getHwVersion(), HEX);
+  Serial.print(" - HW Family: 0x");
+  Serial.println(Scout.getHwFamily(), HEX);
+  Serial.print(" - HW Serial ID: 0x");
+  Serial.println(Scout.getHwSerial(), HEX);
 }
 
-numvar isScoutLeadScout(void) {
-  sp(isLeadScout?1:0);
+static numvar isScoutLeadScout(void) {
+  sp(Scout.isLeadScout() ? 1 : 0);
   speol();
-  return isLeadScout;
+  return Scout.isLeadScout();
 }
 
-numvar setHQToken(void) {
+static numvar setHQToken(void) {
   Pinoccio.setHQToken((const char *)getstringarg(1));
 }
 
-numvar getHQToken(void) {
+static numvar getHQToken(void) {
   char token[33];
   Pinoccio.getHQToken((char *)token);
   token[32] = 0;
@@ -510,7 +512,7 @@ numvar getHQToken(void) {
   speol();
 }
 
-numvar otaBoot(void) {
+static numvar otaBoot(void) {
   cli();
   wdt_enable(WDTO_15MS);
   while(1);
@@ -520,30 +522,30 @@ numvar otaBoot(void) {
  *      EVENT HANDLERS      *
 \****************************/
 
-numvar startStateChangeEvents(void) {
+static numvar startStateChangeEvents(void) {
   Scout.startDigitalStateChangeEvents();
   Scout.startAnalogStateChangeEvents();
 }
 
-numvar stopStateChangeEvents(void) {
+static numvar stopStateChangeEvents(void) {
   Scout.stopDigitalStateChangeEvents();
   Scout.stopAnalogStateChangeEvents();
 }
 
-numvar setEventPeriods(void) {
+static numvar setEventPeriods(void) {
   Scout.setStateChangeEventPeriods(getarg(1), getarg(2));
 }
 
-numvar setEventVerbose(void) {
+static numvar setEventVerbose(void) {
   Scout.eventVerboseOutput = getarg(1);
 }
 
 /****************************\
- *       WIFI HANDLERS      *
+ *       Scout.wifi.HANDLERS      *
 \****************************/
-numvar wifiReport(void) {
+static numvar wifiReport(void) {
   if (getarg(0) > 0 && getarg(1) == 1) {
-    wifi.printProfiles();
+    Scout.wifi.printProfiles();
   } else {
     Serial.print("Wi-Fi App Version: ");
     Serial.println(Gainspan.getAppVersion());
@@ -551,67 +553,67 @@ numvar wifiReport(void) {
     Serial.println(Gainspan.getGepsVersion());
     Serial.print("Wi-Fi Wlan Version: ");
     Serial.println(Gainspan.getWlanVersion());
-    wifi.printCurrentNetworkStatus();
+    Scout.wifi.printCurrentNetworkStatus();
   }
 }
 
-numvar wifiList(void) {
-    wifi.printAPs();
+static numvar wifiList(void) {
+    Scout.wifi.printAPs();
 }
 
-numvar wifiConfig(void) {
+static numvar wifiConfig(void) {
   String port = String(getarg(4));
-  if (!wifi.apConfig((const char *)getstringarg(1), (const char *)getstringarg(2), (const char *)getstringarg(3), port)) {
-    Serial.println("Error: saving wifi configuration data failed");
+  if (!Scout.wifi.apConfig((const char *)getstringarg(1), (const char *)getstringarg(2), (const char *)getstringarg(3), port)) {
+    Serial.println("Error: saving Scout.wifi.configuration data failed");
   }
 }
 
-numvar wifiConnect(void) {
+static numvar wifiConnect(void) {
   Serial.print("Wi-Fi backpack connecting...");
-  if (!wifi.apConnect()) {
+  if (!Scout.wifi.apConnect()) {
     Serial.println("Error: unable to connect");
   } else {
     Serial.println("Done");
   }
 }
 
-numvar wifiCommand(void) {
-  if (!wifi.runDirectCommand((const char *)getstringarg(1))) {
+static numvar wifiCommand(void) {
+  if (!Scout.wifi.runDirectCommand((const char *)getstringarg(1))) {
      Serial.println("Error: Wi-Fi direct command failed");
   }
 }
 
-numvar wifiPing(void) {
-  if (!wifi.ping((const char *)getstringarg(1))) {
+static numvar wifiPing(void) {
+  if (!Scout.wifi.ping((const char *)getstringarg(1))) {
      Serial.println("Error: Wi-Fi ping command failed");
   }
 }
 
-numvar wifiDNSLookup(void) {
-  if (!wifi.dnsLookup((const char *)getstringarg(1))) {
+static numvar wifiDNSLookup(void) {
+  if (!Scout.wifi.dnsLookup((const char *)getstringarg(1))) {
      Serial.println("Error: Wi-Fi DNS lookup command failed");
   }
 }
 
-numvar wifiGetTime(void) {
-  if (!wifi.getTime()) {
+static numvar wifiGetTime(void) {
+  if (!Scout.wifi.getTime()) {
      Serial.println("Error: Wi-Fi NTP time lookup command failed");
   }
 }
 
-numvar wifiSleep(void) {
-  if (!wifi.goToSleep()) {
+static numvar wifiSleep(void) {
+  if (!Scout.wifi.goToSleep()) {
      Serial.println("Error: Wi-Fi sleep command failed");
   }
 }
 
-numvar wifiWakeup(void) {
-  if (!wifi.wakeUp()) {
+static numvar wifiWakeup(void) {
+  if (!Scout.wifi.wakeUp()) {
      Serial.println("Error: Wi-Fi wakeup command failed");
   }
 }
 
-numvar wifiVerbose(void) {
+static numvar wifiVerbose(void) {
   Gainspan.debugAutoConnect = getarg(1);
 }
 
@@ -632,28 +634,23 @@ static void pingScout(int address) {
   //RgbLed.blinkCyan(200);
 
   Serial.print("PING ");
-  Serial.print(address);
-  Serial.print(": ");
-
-  pingCounter++;
+  Serial.println(address);
 }
 
 static void pingGroup(int address) {
   pingDataReq.dstAddr = address;
+  char *ping = "ping";
 
   pingDataReq.dstEndpoint = 1;
   pingDataReq.srcEndpoint = 1;
   pingDataReq.options = NWK_OPT_MULTICAST|NWK_OPT_ENABLE_SECURITY;
-  pingDataReq.data = &pingCounter;
-  pingDataReq.size = sizeof(pingCounter);
+  pingDataReq.data = (byte *)ping;
+  pingDataReq.size = strlen(ping);
   pingDataReq.confirm = pingConfirm;
   NWK_DataReq(&pingDataReq);
 
   Serial.print("PING ");
-  Serial.print(address, HEX);
-  Serial.print(": ");
-
-  pingCounter++;
+  Serial.println(address, HEX);
 }
 
 static void pingConfirm(NWK_DataReq_t *req) {
@@ -747,7 +744,8 @@ static void sendMessage(int address, char *data, bool getAck) {
   sendDataReq.size = strlen(data);
   sendDataReq.confirm = sendConfirm;
   NWK_DataReq(&sendDataReq);
-  //RgbLed.blinkCyan(200);
+  RgbLed.blinkCyan(200);
+
   sendDataReqBusy = true;
 
   if (isMeshVerbose) {

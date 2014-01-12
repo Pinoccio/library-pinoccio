@@ -91,4 +91,7 @@ static bool nwkGroupSwitch(uint16_t from, uint16_t to)
   return false;
 }
 
+uint16_t* NWK_GetGroups(void) {
+  return nwkGroups;
+}
 #endif // NWK_ENABLE_MULTICAST
