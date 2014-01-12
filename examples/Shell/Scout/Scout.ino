@@ -169,6 +169,8 @@ void setup(void) {
   addBitlashFunction("pin.makeoutput", (bitlash_function) pinMakeOutput);
   addBitlashFunction("pin.read", (bitlash_function) pinRead);
   addBitlashFunction("pin.write", (bitlash_function) pinWrite);
+  addBitlashFunction("pin.enablearef", (bitlash_function) enableAref);
+  addBitlashFunction("pin.disablearef", (bitlash_function) disableAref);
   addBitlashFunction("pin.report", (bitlash_function) pinReport);
 
   addBitlashFunction("backpack.report", (bitlash_function) backpackReport);
@@ -972,10 +974,12 @@ numvar pinWrite(void) {
   return true;
 }
 
-numvar pinThreshold(void) {
-  // TODO: create a threshold function with the following format:
-  // threshold(pin, value, fnToCallIfValueLessThan, fnToCallIfValueEqual, fnToCallIfValueGreaterThan)
-  return true;
+numvar enableAref(void) {
+  Scout.enableExternalAref();
+}
+
+numvar disableAref(void) {
+  Scout.disableExternalAref();
 }
 
 numvar pinReport(void) {

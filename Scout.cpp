@@ -32,7 +32,7 @@ PinoccioScout::PinoccioScout() {
   digitalStateChangeTimer.mode = SYS_TIMER_PERIODIC_MODE;
   digitalStateChangeTimer.handler = scoutDigitalStateChangeTimerHandler;
 
-  analogStateChangeTimer.interval = 5000;
+  analogStateChangeTimer.interval = 60000;
   analogStateChangeTimer.mode = SYS_TIMER_PERIODIC_MODE;
   analogStateChangeTimer.handler = scoutAnalogStateChangeTimerHandler;
 
@@ -152,7 +152,7 @@ void PinoccioScout::saveState() {
   batteryVoltage = HAL_FuelGaugeVoltage();
   isBattCharging = (digitalRead(CHG_STATUS) == LOW);
   isBattAlarmTriggered = (digitalRead(BATT_ALARM) == HIGH);
-  temperature = HAL_MeasureTemperature();
+  temperature = this->getTemperature();
 }
 
 static void scoutDigitalStateChangeTimerHandler(SYS_Timer_t *timer) {

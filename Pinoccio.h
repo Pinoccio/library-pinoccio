@@ -60,6 +60,10 @@ class PinoccioClass {
     void goToSleep(uint32_t sleepForMs);
 
     int8_t getTemperature();
+    void enableExternalAref();
+    void disableExternalAref();
+    bool getExternalAref();
+
     void loadSettingsFromEeprom();
 
     void setHQToken(const char *token);
@@ -92,7 +96,8 @@ class PinoccioClass {
     void convertLongToBytes(byte *convBytes, uint32_t target);
     uint32_t convertBytesToLong(byte *convBytes);
 
-    bool shellEnabled;
+    bool isExternalAref;
+    bool isShellEnabled;
     uint16_t address;
     uint16_t panId;
     uint8_t channel;
