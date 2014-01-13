@@ -514,6 +514,7 @@ static numvar scoutReport(void) {
   sp(",\"hwid\":");
   sp(Scout.getHwSerial());
   sp("}");
+  speol();
 }
 
 static numvar isScoutLeadScout(void) {
