@@ -4,7 +4,7 @@
 #include <math.h>
 #include <avr/eeprom.h>
 
-PinoccioScout Scout(true);
+PinoccioScout Scout(false);
 
 PinoccioScout::PinoccioScout(bool isForcedLeadScout) {
   RgbLed.turnOff();
@@ -42,7 +42,6 @@ PinoccioScout::~PinoccioScout() { }
 
 void PinoccioScout::setup() {
   PinoccioClass::setup();
-  shell.setup();
 
   bp.begin(BACKPACK_BUS);
   Wire.begin();

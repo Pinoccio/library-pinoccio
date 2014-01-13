@@ -4,7 +4,6 @@
 #define P_MAX_BACKPACKS 3
 
 #include <Pinoccio.h>
-#include <Shell.h>
 #include <utility/WiFiBackpack.h>
 #include <Wire.h>
 
@@ -66,8 +65,6 @@ class PinoccioScout : public PinoccioClass {
 
   protected:
     void checkStateChange();
-
-    PinoccioShell shell;
 
     bool isVccEnabled;
     bool isStateSaved;

@@ -1,7 +1,19 @@
 #ifndef LIB_PINOCCIO_SHELL_H_
 #define LIB_PINOCCIO_SHELL_H_
 
-#include <Pinoccio.h>
+#include "bitlash.h"
+#include "src/bitlash.h"
+
+#include "utility/sysConfig.h"
+#include "utility/phy.h"
+#include "utility/hal.h"
+#include "utility/sys.h"
+#include "utility/nwk.h"
+#include "utility/sysTimer.h"
+#include "utility/halSleep.h"
+#include "utility/halTemperature.h"
+#include "utility/meshRequest.h"
+#include "avr/sleep.h"
 
 class PinoccioShell {
 
@@ -16,7 +28,7 @@ class PinoccioShell {
     void disableShell();
 
   protected:
-    bool shellEnabled;
+    bool isShellEnabled;
 };
 
 static numvar getTemperature(void);

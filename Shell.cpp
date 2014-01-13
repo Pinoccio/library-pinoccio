@@ -1,8 +1,11 @@
 #include "Shell.h"
 #include "Scout.h"
 #include "bitlash.h"
+#include "src/bitlash.h"
 
-PinoccioShell::PinoccioShell() { }
+PinoccioShell::PinoccioShell() {
+  isShellEnabled = true;
+}
 
 PinoccioShell::~PinoccioShell() { }
 
@@ -74,33 +77,41 @@ void PinoccioShell::setup() {
   addBitlashFunction("events.verbose", (bitlash_function) setEventVerbose);
 
   if (Scout.isLeadScout()) {
-    addBitlashFunction("Scout.wifi.report", (bitlash_function) wifiReport);
-    addBitlashFunction("Scout.wifi.list", (bitlash_function) wifiList);
-    addBitlashFunction("Scout.wifi.config", (bitlash_function) wifiConfig);
-    addBitlashFunction("Scout.wifi.connect", (bitlash_function) wifiConnect);
-    addBitlashFunction("Scout.wifi.command", (bitlash_function) wifiCommand);
-    addBitlashFunction("Scout.wifi.ping", (bitlash_function) wifiPing);
-    addBitlashFunction("Scout.wifi.dnslookup", (bitlash_function) wifiDNSLookup);
-    addBitlashFunction("Scout.wifi.gettime", (bitlash_function) wifiGetTime);
-    addBitlashFunction("Scout.wifi.sleep", (bitlash_function) wifiSleep);
-    addBitlashFunction("Scout.wifi.wakeup", (bitlash_function) wifiWakeup);
-    addBitlashFunction("Scout.wifi.verbose", (bitlash_function) wifiVerbose);
+    addBitlashFunction("wifi.report", (bitlash_function) wifiReport);
+    addBitlashFunction("wifi.list", (bitlash_function) wifiList);
+    addBitlashFunction("wifi.config", (bitlash_function) wifiConfig);
+    addBitlashFunction("wifi.connect", (bitlash_function) wifiConnect);
+    addBitlashFunction("wifi.command", (bitlash_function) wifiCommand);
+    addBitlashFunction("wifi.ping", (bitlash_function) wifiPing);
+    addBitlashFunction("wifi.dnslookup", (bitlash_function) wifiDNSLookup);
+    addBitlashFunction("wifi.gettime", (bitlash_function) wifiGetTime);
+    addBitlashFunction("wifi.sleep", (bitlash_function) wifiSleep);
+    addBitlashFunction("wifi.wakeup", (bitlash_function) wifiWakeup);
+    addBitlashFunction("wifi.verbose", (bitlash_function) wifiVerbose);
   }
 
   Scout.meshListen(1, receiveMessage);
 
-  startShell();
+  if (isShellEnabled) {
+    startShell();
+  } else {
+    Serial.begin(115200);
+  }
 }
 
-void PinoccioShell::loop() { }
+void PinoccioShell::loop() {
+  if (isShellEnabled) {
+    runBitlash();
+  }
+}
 
 void PinoccioShell::startShell() {
-  shellEnabled = true;
+  isShellEnabled = true;
   initBitlash(115200);
 }
 
 void PinoccioShell::disableShell() {
-  shellEnabled = false;
+  isShellEnabled = false;
 }
 
 

@@ -11,27 +11,20 @@
 
 PinoccioClass Pinoccio;
 
-PinoccioClass::PinoccioClass() {
-  isShellEnabled = true;
-}
+PinoccioClass::PinoccioClass() { }
 
 PinoccioClass::~PinoccioClass() { }
 
 void PinoccioClass::startShell() {
-  isShellEnabled = true;
-  initBitlash(115200);
+  shell.startShell();
 }
 
 void PinoccioClass::disableShell() {
-  isShellEnabled = false;
+  shell.disableShell();
 }
 
 void PinoccioClass::setup() {
-  if (isShellEnabled) {
-    initBitlash(115200);
-  } else {
-    Serial.begin(115200);
-  }
+  shell.setup();
 
   SYS_Init();
   PHY_RandomReq();
@@ -41,10 +34,7 @@ void PinoccioClass::setup() {
 
 void PinoccioClass::loop() {
   SYS_TaskHandler();
-
-  if (isShellEnabled) {
-    runBitlash();
-  }
+  shell.loop();
 }
 
 void PinoccioClass::goToSleep(uint32_t sleepForMs) {
