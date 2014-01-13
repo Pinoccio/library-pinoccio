@@ -1,1 +1,0 @@
-/Applications/Pinoccio.app/Contents/Resources/Java/hardware/pinoccio/avr/cores/pinoccio/new.h

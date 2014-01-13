@@ -1,5 +1,3 @@
-#include <SPI.h>
-#include <Wire.h>
 #include <Scout.h>
 
 void setup() {

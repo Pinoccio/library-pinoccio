@@ -42,7 +42,7 @@ class HalRgbLed {
     void blinkYellow(unsigned int ms=500);
     void blinkOrange(unsigned int ms=500);
     void blinkWhite(unsigned int ms=500);
-    void blinkTorchColor(unsigned int ms=500);
+    void blinkTorch(unsigned int ms=500);
     void blinkColor(short red, short green, short blue, int ms=500);
 
     void setRedValue(int value);

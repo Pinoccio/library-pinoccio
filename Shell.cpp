@@ -224,9 +224,9 @@ static numvar ledBlink(void) {
 
 static numvar ledBlinkTorch(void) {
   if (getarg(0) == 1) {
-    RgbLed.blinkTorchColor(getarg(1));
+    RgbLed.blinkTorch(getarg(1));
   } else {
-    RgbLed.blinkTorchColor();
+    RgbLed.blinkTorch();
   }
 }
 

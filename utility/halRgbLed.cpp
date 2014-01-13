@@ -131,7 +131,7 @@ void HalRgbLed::blinkWhite(unsigned int ms) {
   blinkColor(255, 255, 255);
 }
 
-void HalRgbLed::blinkTorchColor(unsigned int ms) {
+void HalRgbLed::blinkTorch(unsigned int ms) {
   blinkColor(torchRedValue, torchGreenValue, torchBlueValue, ms);
 }
 

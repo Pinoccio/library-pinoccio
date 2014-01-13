@@ -1,3 +1,5 @@
+#include <SPI.h>
+#include <Wire.h>
 #include <Scout.h>
 
 void setup() {
@@ -9,6 +11,6 @@ void loop() {
 
   Serial.print("Random Number: ");
   Serial.println(Scout.getRandomNumber());
-  
+
   delay(1000);
 }
