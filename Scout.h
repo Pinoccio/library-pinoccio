@@ -19,10 +19,10 @@
 class PinoccioScout : public PinoccioClass {
 
   public:
-    PinoccioScout(bool isForcedLeadScout=false);
+    PinoccioScout();
     ~PinoccioScout();
 
-    void setup();
+    void setup(bool isForcedLeadScout=false);
     void loop();
 
     bool isBatteryCharging();

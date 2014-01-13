@@ -4,9 +4,9 @@
 #include <math.h>
 #include <avr/eeprom.h>
 
-PinoccioScout Scout(false);
+PinoccioScout Scout;
 
-PinoccioScout::PinoccioScout(bool isForcedLeadScout) {
+PinoccioScout::PinoccioScout() {
   RgbLed.turnOff();
 
   pinMode(CHG_STATUS, INPUT_PULLUP);
@@ -41,12 +41,14 @@ PinoccioScout::PinoccioScout(bool isForcedLeadScout) {
   analogStateChangeTimer.handler = scoutAnalogStateChangeTimerHandler;
 
   eventVerboseOutput = false;
-  forceLeadScout = isForcedLeadScout;
+  forceLeadScout = false;
 }
 
 PinoccioScout::~PinoccioScout() { }
 
-void PinoccioScout::setup() {
+void PinoccioScout::setup(bool isForcedLeadScout) {
+  forceLeadScout = isForcedLeadScout;
+
   PinoccioClass::setup();
   handler.setup();
   Shell.setup();
@@ -66,7 +68,7 @@ void PinoccioScout::loop() {
   Shell.loop();
   handler.loop();
 
-  if (Scout.isLeadScout()) {
+  if (isLeadScout()) {
     wifi.loop();
   }
 }
