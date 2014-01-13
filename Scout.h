@@ -1,9 +1,10 @@
 #ifndef LIB_PINOCCIO_SCOUT_H_
 #define LIB_PINOCCIO_SCOUT_H_
 
-#define P_MAX_BACKPACKS 3
-
 #include <Pinoccio.h>
+#include <Shell.h>
+#include <ScoutHandler.h>
+#include <PBBP.h>
 #include <utility/WiFiBackpack.h>
 #include <Wire.h>
 
@@ -13,7 +14,7 @@
 #include "utility/nwk.h"
 #include "utility/halFuelGauge.h"
 #include "utility/halRgbLed.h"
-#include "PBBP.h"
+
 
 class PinoccioScout : public PinoccioClass {
 
@@ -42,8 +43,6 @@ class PinoccioScout : public PinoccioClass {
     void setStateChangeEventPeriods(uint32_t digitalInterval, uint32_t analogInterval);
     void saveState();
 
-    PBBP bp;
-
     void (*digitalPinEventHandler)(uint8_t pin, uint8_t value);
     void (*analogPinEventHandler)(uint8_t pin, uint16_t value);
     void (*batteryPercentageEventHandler)(uint8_t value);
@@ -61,7 +60,10 @@ class PinoccioScout : public PinoccioClass {
     uint8_t temperature;
 
     bool eventVerboseOutput;
+
+    PBBP bp;
     WiFiBackpack wifi;
+    PinoccioScoutHandler handler;
 
   protected:
     void checkStateChange();

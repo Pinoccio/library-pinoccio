@@ -27,9 +27,12 @@ class PinoccioShell {
     void startShell();
     void disableShell();
 
+    char *bitlashOutput;
   protected:
     bool isShellEnabled;
 };
+
+extern PinoccioShell Shell;
 
 static numvar getTemperature(void);
 static numvar getRandomNumber(void);
@@ -116,4 +119,16 @@ static void pingConfirm(NWK_DataReq_t *req);
 static bool receiveMessage(NWK_DataInd_t *ind);
 static void sendMessage(int address, char *data, bool getAck);
 static void sendConfirm(NWK_DataReq_t *req);
+
+static void digitalPinEventHandler(uint8_t pin, uint8_t value);
+static void analogPinEventHandler(uint8_t pin, uint16_t value);
+static void batteryPercentageEventHandler(uint8_t value);
+static void batteryVoltageEventHandler(uint8_t value);
+static void batteryChargingEventHandler(uint8_t value);
+static void batteryAlarmTriggeredEventHandler(uint8_t value);
+static void temperatureEventHandler(uint8_t value);
+
+void bitlashFilter(byte b); // watches bitlash output for channel announcements
+void bitlashBuffer(byte b); // buffers bitlash output from a command
+
 #endif

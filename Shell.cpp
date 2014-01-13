@@ -3,6 +3,8 @@
 #include "bitlash.h"
 #include "src/bitlash.h"
 
+PinoccioShell Shell;
+
 PinoccioShell::PinoccioShell() {
   isShellEnabled = true;
 }
@@ -91,6 +93,15 @@ void PinoccioShell::setup() {
   }
 
   Scout.meshListen(1, receiveMessage);
+
+  // set up event handlers
+  Scout.digitalPinEventHandler = digitalPinEventHandler;
+  Scout.analogPinEventHandler = analogPinEventHandler;
+  Scout.batteryPercentageEventHandler = batteryPercentageEventHandler;
+  Scout.batteryVoltageEventHandler = batteryVoltageEventHandler;
+  Scout.batteryChargingEventHandler = batteryChargingEventHandler;
+  Scout.batteryAlarmTriggeredEventHandler = batteryAlarmTriggeredEventHandler;
+  Scout.temperatureEventHandler = temperatureEventHandler;
 
   if (isShellEnabled) {
     startShell();
@@ -802,4 +813,148 @@ static void sendConfirm(NWK_DataReq_t *req) {
       Serial.println(")");
     }
   }
+}
+
+
+/****************************\
+ *      EVENT HANDLERS      *
+\****************************/
+static void digitalPinEventHandler(uint8_t pin, uint8_t value) {
+  uint32_t time = millis();
+
+  if (findscript("event.digital")) {
+    String callback = "event.digital(" + String(pin) + "," + String(value) + ")";
+    char buf[24];
+    callback.toCharArray(buf, callback.length()+1);
+    doCommand(buf);
+  }
+
+  if (Scout.eventVerboseOutput) {
+    Serial.print("Digital pin event handler took ");
+    Serial.print(millis() - time);
+    Serial.println("ms");
+    Serial.println();
+  }
+}
+
+static void analogPinEventHandler(uint8_t pin, uint16_t value) {
+  if (findscript("event.analog")) {
+    String callback = "event.analog(" + String(pin) + "," + String(value) + ")";
+    char buf[24];
+    callback.toCharArray(buf, callback.length()+1);
+    doCommand(buf);
+  }
+}
+
+static void batteryPercentageEventHandler(uint8_t value) {
+  if (findscript("event.percent")) {
+    String callback = "event.percent(" + String(value) + ")";
+    char buf[24];
+    callback.toCharArray(buf, callback.length()+1);
+    doCommand(buf);
+  }
+}
+
+static void batteryVoltageEventHandler(uint8_t value) {
+  if (findscript("event.voltage")) {
+    String callback = "event.voltage(" + String(value) + ")";
+    char buf[24];
+    callback.toCharArray(buf, callback.length()+1);
+    doCommand(buf);
+  }
+}
+
+static void batteryChargingEventHandler(uint8_t value) {
+  if (findscript("event.charging")) {
+    String callback = "event.charging(" + String(value) + ")";
+    char buf[24];
+    callback.toCharArray(buf, callback.length()+1);
+    doCommand(buf);
+  }
+}
+
+static void batteryAlarmTriggeredEventHandler(uint8_t value) {
+  if (findscript("event.batteryalarm")) {
+    String callback = "event.batteryalarm(" + String(value) + ")";
+    char buf[24];
+    callback.toCharArray(buf, callback.length()+1);
+    doCommand(buf);
+  }
+}
+
+static void temperatureEventHandler(uint8_t value) {
+  if (findscript("event.temperature")) {
+    String callback = "event.temperature(" + String(value) + ")";
+    char buf[24];
+    callback.toCharArray(buf, callback.length()+1);
+    doCommand(buf);
+  }
+}
+
+void bitlashFilter(byte b) {
+  static char buf[101];
+  static int offset = 0;
+
+  Serial.write(b); // cc to serial
+  if (b == '\r') {
+    return; // skip CR
+  }
+
+  // newline or max len announces and resets
+  if (b == '\n' || offset == 100) {
+    char *message;
+    int chan;
+    buf[offset] = 0;
+    message = strchr(buf, ' ');
+
+    // any lines looking like "CHAN:4 message" will send "message" to channel 4
+    if (strncmp("CH4N:", buf, 5) == 0 && message) {
+      *message = 0;
+      message++;
+      chan = atoi(buf+5);
+      if (chan) {
+        //FIXME fieldAnnounce(chan, message);
+      }
+    }
+    offset=0;
+    return;
+  }
+
+  if (b == '"') {
+    buf[offset++] = '\\';
+    b = '"';
+  }
+
+  buf[offset] = b;
+  offset++;
+}
+
+void bitlashBuffer(byte b) {
+  int len;
+
+  Serial.write(b); // cc to serial
+  if (b == '\r') {
+    return; // skip CR
+  }
+
+  len = strlen(Shell.bitlashOutput);
+  Shell.bitlashOutput = (char*)realloc(Shell.bitlashOutput, len+3); // up to 2 bytes w/ escaping, and the null term
+
+  // escape newlines, quotes, and slashes
+  if (b == '\n') {
+    Shell.bitlashOutput[len++] = '\\';
+    b = 'n';
+  }
+
+  if (b == '"') {
+    Shell.bitlashOutput[len++] = '\\';
+    b = '"';
+  }
+
+  if (b == '\\') {
+    Shell.bitlashOutput[len++] = '\\';
+    b = '\\';
+  }
+  Shell.bitlashOutput[len] = b;
+  Shell.bitlashOutput[len+1] = 0;
 }

@@ -1,6 +1,5 @@
 #include <Arduino.h>
 #include <Pinoccio.h>
-#include <bitlash.h>
 #include <avr/eeprom.h>
 
 #if defined(__AVR_ATmega128RFA1__)
@@ -15,26 +14,15 @@ PinoccioClass::PinoccioClass() { }
 
 PinoccioClass::~PinoccioClass() { }
 
-void PinoccioClass::startShell() {
-  shell.startShell();
-}
-
-void PinoccioClass::disableShell() {
-  shell.disableShell();
-}
-
 void PinoccioClass::setup() {
-  shell.setup();
-
   SYS_Init();
   PHY_RandomReq();
-
   loadSettingsFromEeprom();
+  Serial.begin(115200);
 }
 
 void PinoccioClass::loop() {
   SYS_TaskHandler();
-  shell.loop();
 }
 
 void PinoccioClass::goToSleep(uint32_t sleepForMs) {

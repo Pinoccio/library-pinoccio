@@ -31,7 +31,6 @@
 // End - Specifics for the LWM library
 
 #include <Arduino.h>
-#include "Shell.h"
 
 #include "utility/sysConfig.h"
 #include "utility/phy.h"
@@ -50,8 +49,6 @@ class PinoccioClass {
     PinoccioClass();
     ~PinoccioClass();
 
-    void startShell();
-    void disableShell();
     void setup();
     void loop();
 
@@ -93,8 +90,6 @@ class PinoccioClass {
   protected:
     void convertLongToBytes(byte *convBytes, uint32_t target);
     uint32_t convertBytesToLong(byte *convBytes);
-
-    PinoccioShell shell;
 
     bool isExternalAref;
     uint16_t address;

@@ -1,6 +1,6 @@
 #include <Arduino.h>
 #include <Wire.h>
-#include "Scout.h"
+#include <Scout.h>
 #include <math.h>
 #include <avr/eeprom.h>
 
@@ -12,8 +12,14 @@ PinoccioScout::PinoccioScout(bool isForcedLeadScout) {
   pinMode(CHG_STATUS, INPUT_PULLUP);
   pinMode(BATT_ALARM, INPUT_PULLUP);
   pinMode(VCC_ENABLE, OUTPUT);
-  pinMode(BACKPACK_BUS, INPUT);
   enableBackpackVcc();
+
+  /* FIXME
+  bp.begin(BACKPACK_BUS);
+  if (!bp.enumerate()) {
+    bp.printLastError(Serial);
+    Serial.println();
+  } */
 
   digitalWrite(SS, HIGH);
   pinMode(SS, OUTPUT);
@@ -42,18 +48,13 @@ PinoccioScout::~PinoccioScout() { }
 
 void PinoccioScout::setup() {
   PinoccioClass::setup();
+  handler.setup();
+  Shell.setup();
 
-  bp.begin(BACKPACK_BUS);
   Wire.begin();
   delay(100);
   HAL_FuelGaugeConfig(20);   // Configure the MAX17048G's alert percentage to 20%
   HAL_FuelGaugeQuickStart(); // Restart fuel-gauge calculations
-
-  // Enumerate backpack bus
-  if (!bp.enumerate()) {
-    bp.printLastError(Serial);
-    Serial.println();
-  }
 
   saveState();
   startDigitalStateChangeEvents();
@@ -62,6 +63,12 @@ void PinoccioScout::setup() {
 
 void PinoccioScout::loop() {
   PinoccioClass::loop();
+  Shell.loop();
+  handler.loop();
+
+  if (Scout.isLeadScout()) {
+    wifi.loop();
+  }
 }
 
 bool PinoccioScout::isBatteryCharging() {
@@ -255,15 +262,15 @@ static void scoutAnalogStateChangeTimerHandler(SYS_Timer_t *timer) {
   }
 
   if (Scout.temperatureEventHandler != 0) {
-       val = HAL_MeasureTemperature();
-       if (Scout.temperature != val) {
-         if (Scout.eventVerboseOutput == true) {
-           Serial.print("Running: temperatureEventHandler(");
-           Serial.print(val);
-           Serial.println(")");
-         }
-         Scout.temperature = val;
-         Scout.temperatureEventHandler(val);
-       }
-     }
+    val = HAL_MeasureTemperature();
+    if (Scout.temperature != val) {
+      if (Scout.eventVerboseOutput == true) {
+        Serial.print("Running: temperatureEventHandler(");
+        Serial.print(val);
+        Serial.println(")");
+      }
+      Scout.temperature = val;
+      Scout.temperatureEventHandler(val);
+    }
+  }
 }
