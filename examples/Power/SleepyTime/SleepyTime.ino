@@ -1,3 +1,5 @@
+#include <SPI.h>
+#include <Wire.h>
 #include <Scout.h>
 
 typedef enum AppState_t
@@ -34,7 +36,7 @@ void loop() {
     case APP_STATE_START_SEND:
       if (sleepCtr < 5) {
         Serial.println("Radio send");
-      
+
         appState = APP_STATE_GO_TO_SLEEP;
       } else {
         Serial.println("Deep sleep");
@@ -46,7 +48,7 @@ void loop() {
       }
       break;
 
-    case APP_STATE_GO_TO_SLEEP:    
+    case APP_STATE_GO_TO_SLEEP:
       if (!NWK_Busy()) {
         Serial.println("Radio sleep");
         sleepCtr++;
