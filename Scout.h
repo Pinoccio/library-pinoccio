@@ -4,7 +4,7 @@
 #define P_MAX_BACKPACKS 3
 
 #include <Pinoccio.h>
-#include <utility/Backpack.h>
+#include <utility/WiFiBackpack.h>
 #include <Wire.h>
 
 #include "utility/phy.h"
@@ -18,7 +18,7 @@
 class PinoccioScout : public PinoccioClass {
 
   public:
-    PinoccioScout();
+    PinoccioScout(bool isForcedLeadScout=false);
     ~PinoccioScout();
 
     void setup();
@@ -61,14 +61,14 @@ class PinoccioScout : public PinoccioClass {
     uint8_t temperature;
 
     bool eventVerboseOutput;
+    WiFiBackpack wifi;
 
   protected:
     void checkStateChange();
 
-    Backpack* backpacks[P_MAX_BACKPACKS];
-
     bool isVccEnabled;
     bool isStateSaved;
+    bool forceLeadScout;
 
     SYS_Timer_t digitalStateChangeTimer;
     SYS_Timer_t analogStateChangeTimer;

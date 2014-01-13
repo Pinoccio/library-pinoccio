@@ -4,9 +4,9 @@
 #include <math.h>
 #include <avr/eeprom.h>
 
-PinoccioScout Scout;
+PinoccioScout Scout(false);
 
-PinoccioScout::PinoccioScout() {
+PinoccioScout::PinoccioScout(bool isForcedLeadScout) {
   RgbLed.turnOff();
 
   pinMode(CHG_STATUS, INPUT_PULLUP);
@@ -17,8 +17,6 @@ PinoccioScout::PinoccioScout() {
 
   digitalWrite(SS, HIGH);
   pinMode(SS, OUTPUT);
-
-  backpacks[0] = NULL;
 
   digitalPinEventHandler = 0;
   analogPinEventHandler = 0;
@@ -37,6 +35,7 @@ PinoccioScout::PinoccioScout() {
   analogStateChangeTimer.handler = scoutAnalogStateChangeTimerHandler;
 
   eventVerboseOutput = false;
+  forceLeadScout = isForcedLeadScout;
 }
 
 PinoccioScout::~PinoccioScout() { }
@@ -96,6 +95,10 @@ bool PinoccioScout::isBackpackVccEnabled() {
 }
 
 bool PinoccioScout::isLeadScout() {
+  if (forceLeadScout) {
+    return true;
+  }
+
   // Check for attached wifi backpack (model id 0x0001)
   for (uint8_t i = 0; i < bp.num_slaves; ++i) {
     if (bp.slave_ids[i][1] == 0 &&
