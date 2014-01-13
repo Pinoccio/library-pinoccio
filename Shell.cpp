@@ -505,15 +505,15 @@ static numvar backpackReport(void) {
  *   SCOUT REPORT HANDLERS  *
 \****************************/
 static numvar scoutReport(void) {
-  Serial.println("-- Scout Information --");
-  Serial.print(" - EEPROM Version: 0x");
-  Serial.println(Scout.getEEPROMVersion(), HEX);
-  Serial.print(" - HW Version: 0x");
-  Serial.println(Scout.getHwVersion(), HEX);
-  Serial.print(" - HW Family: 0x");
-  Serial.println(Scout.getHwFamily(), HEX);
-  Serial.print(" - HW Serial ID: 0x");
-  Serial.println(Scout.getHwSerial(), HEX);
+  sp("{\"e\":");
+  sp(Scout.getEEPROMVersion());
+  sp(",\"hwv\":");
+  sp(Scout.getHwVersion());
+  sp(",\"hwf\":");
+  sp(Scout.getHwFamily());
+  sp(",\"hwid\":");
+  sp(Scout.getHwSerial());
+  sp("}");
 }
 
 static numvar isScoutLeadScout(void) {
