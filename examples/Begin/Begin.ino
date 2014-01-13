@@ -4,7 +4,6 @@
 
 void setup() {
   Scout.setup();
-  RgbLed.blinkTorch();
 }
 
 void loop() {
