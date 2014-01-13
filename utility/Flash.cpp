@@ -132,9 +132,7 @@ void FlashClass::writeDisable(void) {
   delay(10);
 }
 
-void FlashClass::write(uint32_t address, void *buffer, uint16_t length) {
-  while (this->isBusy()) { }
-
+void FlashClass::write(uint32_t address, void *buffer, uint8_t length) {
   writeEnable();
   digitalWrite(this->CS, LOW);
   this->SPI.transfer(FLASH_PP);
@@ -147,7 +145,6 @@ void FlashClass::write(uint32_t address, void *buffer, uint16_t length) {
   }
 
   digitalWrite(this->CS, HIGH);
-  //delay(1);
   writeDisable();
 }
 

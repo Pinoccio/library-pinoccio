@@ -23,7 +23,7 @@ public:
   bool isBusy(void);
   void writeEnable(void);
   void writeDisable(void);
-  void write(uint32_t address, void *buffer, uint16_t length);
+  void write(uint32_t address, void *buffer, uint8_t length);
   void subSectorErase(uint32_t address);
   void sectorErase(uint32_t address);
   void bulkErase(void);
@@ -35,5 +35,3 @@ public:
 };
 
 #endif
-
-
