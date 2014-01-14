@@ -78,6 +78,7 @@ static numvar meshPingGroup(void);
 static numvar meshSend(void);
 static numvar meshVerbose(void);
 static numvar meshReport(void);
+static numvar meshAnnounce(void);
 
 static numvar pinOn(void);
 static numvar pinOff(void);
