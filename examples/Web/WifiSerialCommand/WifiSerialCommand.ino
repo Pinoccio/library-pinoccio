@@ -46,7 +46,7 @@ uint8_t send_receive(uint8_t c) {
 }
 
 // Send a byte as-is, don't do any additional stuffing
-int send_byte(uint8_t c) {
+void send_byte(uint8_t c) {
   uint8_t in = send_receive(c);
   switch (in) {
    case GS_SPI_XON_CHAR:
@@ -61,12 +61,12 @@ int send_byte(uint8_t c) {
       in = send_receive(GS_SPI_IDLE_CHAR) ^ GS_SPI_ESC_XOR;
       // fallthrough
     default:
-      Serial.write(in);
+      display_byte(in);
   }
 }
 
 // Send the given byte, adding stuffing if needed
-int send_and_stuff_byte(uint8_t c) {
+void send_and_stuff_byte(uint8_t c) {
   if( (GS_SPI_ESC_CHAR  == c) ||
       (GS_SPI_XON_CHAR  == c) ||
       (GS_SPI_XOFF_CHAR == c) ||
