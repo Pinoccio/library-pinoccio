@@ -506,13 +506,13 @@ static numvar backpackReport(void) {
 \****************************/
 static numvar scoutReport(void) {
   sp("{\"e\":");
-  sp(Scout.getEEPROMVersion());
+  sp((int)Scout.getEEPROMVersion());
   sp(",\"hwv\":");
-  sp(Scout.getHwVersion());
+  sp((int)Scout.getHwVersion());
   sp(",\"hwf\":");
-  sp(Scout.getHwFamily());
+  sp((int)Scout.getHwFamily());
   sp(",\"hwid\":");
-  sp(Scout.getHwSerial());
+  sp((int)Scout.getHwSerial());
   sp("}");
   speol();
 }
