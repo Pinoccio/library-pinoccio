@@ -67,6 +67,7 @@ static numvar ledReport(void);
 
 static numvar meshConfig(void);
 static numvar meshSetPower(void);
+static numvar meshSetDataRate(void);
 static numvar meshSetKey(void);
 static numvar meshResetKey(void);
 static numvar meshJoinGroup(void);

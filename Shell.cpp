@@ -22,6 +22,7 @@ void PinoccioShell::setup() {
 
   addBitlashFunction("mesh.config", (bitlash_function) meshConfig);
   addBitlashFunction("mesh.setpower", (bitlash_function) meshSetPower);
+  addBitlashFunction("mesh.setdatarate", (bitlash_function) meshSetDataRate);
   addBitlashFunction("mesh.key", (bitlash_function) meshSetKey);
   addBitlashFunction("mesh.resetkey", (bitlash_function) meshResetKey);
   addBitlashFunction("mesh.joingroup", (bitlash_function) meshJoinGroup);
@@ -325,12 +326,16 @@ static numvar meshSetPower(void) {
   Scout.meshSetPower(getarg(1));
 }
 
+static numvar meshSetDataRate(void) {
+  Scout.meshSetDataRate(getarg(1));
+}
+
 static numvar meshSetKey(void) {
-  Pinoccio.meshSetSecurityKey((const char *)getstringarg(1));
+  Scout.meshSetSecurityKey((const char *)getstringarg(1));
 }
 
 static numvar meshResetKey(void) {
-  Pinoccio.meshResetSecurityKey();
+  Scout.meshResetSecurityKey();
 }
 
 static numvar meshJoinGroup(void) {
@@ -371,9 +376,16 @@ static numvar meshReport(void) {
   Serial.println(Scout.getPanId(), HEX);
   Serial.print(" - Channel: ");
   Serial.println(Scout.getChannel());
-  Serial.print(" - Tx Power: ");
+  Serial.print(" - Data Rate: ");
   // gotta read these from program memory (for SRAM savings)
   char c;
+  const char *kbString = Scout.getDataRatekbps();
+  while((c = pgm_read_byte(kbString++))) {
+     Serial.write(c);
+  }
+  Serial.println();
+  Serial.print(" - Tx Power: ");
+  // gotta read these from program memory (for SRAM savings)
   const char *dbString = Scout.getTxPowerDb();
   while((c = pgm_read_byte(dbString++))) {
      Serial.write(c);

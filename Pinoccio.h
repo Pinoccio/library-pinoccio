@@ -72,6 +72,7 @@ class PinoccioClass {
 
     void meshSetRadio(const uint16_t theAddress, const uint16_t thePanId=0x4567, const uint8_t theChannel=0x1a);
     void meshSetPower(const uint8_t theTxPower);
+    void meshSetDataRate(const uint8_t theRate);
     void meshSetSecurityKey(const char *key);
     void meshResetSecurityKey(void);
     void meshSendMessage(MeshRequest request);
@@ -86,6 +87,8 @@ class PinoccioClass {
     uint8_t getChannel();
     uint8_t getTxPower();
     const char* getTxPowerDb();
+    uint8_t getDataRate();
+    const char* getDataRatekbps();
 
   protected:
     void convertLongToBytes(byte *convBytes, uint32_t target);
@@ -96,6 +99,7 @@ class PinoccioClass {
     uint16_t panId;
     uint8_t channel;
     uint8_t txPower;
+    uint8_t dataRate;
 };
 
 extern PinoccioClass Pinoccio;

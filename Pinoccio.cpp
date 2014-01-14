@@ -89,6 +89,7 @@ void PinoccioClass::sendStateToHQ() {
 }
 
 void PinoccioClass::loadSettingsFromEeprom() {
+  // Address 8126 - 1 byte   - Data rate
   // Address 8127 - 3 bytes  - Torch color (R,G,B)
   // Address 8130 - 32 bytes - HQ Token
   // Address 8162 - 16 bytes - Security Key
@@ -122,6 +123,9 @@ void PinoccioClass::loadSettingsFromEeprom() {
   if (eeprom_read_byte((uint8_t *)8178) != 0xFF) {
     meshSetPower(eeprom_read_byte((uint8_t *)8178));
   }
+  if (eeprom_read_byte((uint8_t *)8126) != 0xFF) {
+    meshSetDataRate(eeprom_read_byte((uint8_t *)8126));
+  }
 }
 
 void PinoccioClass::meshSetRadio(const uint16_t theAddress, const uint16_t thePanId, const uint8_t theChannel) {
@@ -138,6 +142,7 @@ void PinoccioClass::meshSetRadio(const uint16_t theAddress, const uint16_t thePa
   eeprom_update_byte((uint8_t *)8179, channel);
 
   meshSetPower(0);
+  meshSetDataRate(2);
 }
 
 
@@ -163,6 +168,18 @@ void PinoccioClass::meshSetPower(const uint8_t theTxPower) {
   PHY_SetTxPower(theTxPower);
   txPower = theTxPower;
   eeprom_update_byte((uint8_t *)8178, theTxPower);
+}
+
+void PinoccioClass::meshSetDataRate(const uint8_t theRate) {
+  /* Page 123 of the 256RFR2 datasheet
+    0   250 kb/s  | -100 dBm
+    1   500 kb/s  |  -96 dBm
+    2   1000 kb/s |  -94 dBm
+    3   2000 kb/s |  -86 dBm
+  */
+  TRX_CTRL_2_REG_s.oqpskDataRate = theRate;
+  dataRate = theRate;
+  eeprom_update_byte((uint8_t *)8126, theRate);
 }
 
 void PinoccioClass::meshSetSecurityKey(const char *key) {
@@ -272,6 +289,30 @@ const char* PinoccioClass::getTxPowerDb() {
       break;
     case 15:
       return PSTR("-16.5 dBm");
+      break;
+    default:
+      return PSTR("unknown");
+      break;
+  }
+}
+
+uint8_t PinoccioClass::getDataRate() {
+  return dataRate;
+}
+
+const char* PinoccioClass::getDataRatekbps() {
+  switch (dataRate) {
+    case 0:
+      return PSTR("250 kb/s");
+      break;
+    case 1:
+      return PSTR("500 kb/s");
+      break;
+    case 2:
+      return PSTR("1 Mb/s");
+      break;
+    case 3:
+      return PSTR("2 Mb/s");
       break;
     default:
       return PSTR("unknown");
