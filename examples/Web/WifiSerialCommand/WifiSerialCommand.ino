@@ -1,10 +1,24 @@
+// Note: Programming of the Flash with gs_flashprogram only seems to
+// work through UART and needs ESCAPE_NON_PRINT disabled
 //#define USE_SPI
+//#define ESCAPE_NON_PRINT
 
 #ifdef USE_SPI
 #include <SPI.h>
 #endif
 
-
+void display_byte(uint8_t c)
+{
+#ifdef ESCAPE_NON_PRINT
+  if (!isprint(c) && !isspace(c)) {
+    Serial.write('\\');
+    if (c < 0x10) Serial.write('0');
+    Serial.print(c, HEX);
+    return;
+  }
+#endif
+  Serial.write(c);
+}
 void setup() {
   Serial.begin(115200);
 #ifdef USE_SPI
@@ -93,7 +107,7 @@ void loop() {
 void loop() {
   // read from port 1, send to port 0:
   if (Serial1.available()) {
-    Serial.write(Serial1.read());
+    display_byte(Serial1.read());
   }
 
   // read from port 0, send to port 1:
