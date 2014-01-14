@@ -33,6 +33,7 @@ void PinoccioShell::setup() {
   addBitlashFunction("mesh.send", (bitlash_function) meshSend);
   addBitlashFunction("mesh.verbose", (bitlash_function) meshVerbose);
   addBitlashFunction("mesh.report", (bitlash_function) meshReport);
+  addBitlashFunction("mesh.announce", (bitlash_function) meshAnnounce);
 
   addBitlashFunction("temperature", (bitlash_function) getTemperature);
   addBitlashFunction("randomnumber", (bitlash_function) getRandomNumber);
@@ -362,6 +363,10 @@ static numvar meshSend(void) {
   sendMessage(getarg(1), (char *)getstringarg(2), true);
 }
 
+static numvar meshAnnounce(void) {
+  Scout.handler.fieldAnnounce(getarg(1), (char*)getstringarg(2));
+}
+ 
 static numvar meshVerbose(void) {
   isMeshVerbose = getarg(1);
 }
@@ -926,7 +931,7 @@ void bitlashFilter(byte b) {
       message++;
       chan = atoi(buf+5);
       if (chan) {
-        //FIXME fieldAnnounce(chan, message);
+        Scout.handler.fieldAnnounce(chan, message);
       }
     }
     offset=0;

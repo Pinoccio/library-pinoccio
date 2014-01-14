@@ -167,7 +167,7 @@ static void fieldAnnounceConfirm(NWK_DataReq_t *req) {
   isAnnouncing = false;
 }
 
-static void fieldAnnounce(int chan, char *message) {
+void PinoccioScoutHandler::fieldAnnounce(int chan, char *message) {
   int len = strlen(message);
 
   if (isAnnouncing) {
