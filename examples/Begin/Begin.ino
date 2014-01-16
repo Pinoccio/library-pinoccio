@@ -3,9 +3,9 @@
 #include <Scout.h>
 
 /* MANUAL PROVISIONING BITLASH COMMANDS
-mesh.config()
-wifi.config()
-scout.sethqtoken()
+mesh.config(<Scout ID>, <Troop ID>)
+wifi.config("<Access point name>", "<Access point password>", "<API IP Address>", <API Port>)
+scout.sethqtoken("<HQ Token String>")
 */
 
 void setup() {
