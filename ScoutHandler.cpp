@@ -220,7 +220,9 @@ static bool fieldAnnouncements(NWK_DataInd_t *ind) {
 
 static void leadAnnouncementSend(int chan, int from, char *message) {
   char sig[256];
-  sprintf(sig,"{\"type\":\"channel\",\"id\":%d,\"from\":%d,\"data\":\"%s\"}\n", chan, from, message);
+  // reports are expected to be json objects
+  if(chan == 0xBEEF) sprintf(sig,"{\"type\":\"report\",\"from\":%d,\"report\":%s}\n", from, message);
+  else sprintf(sig,"{\"type\":\"channel\",\"id\":%d,\"from\":%d,\"data\":\"%s\"}\n", chan, from, message);
   leadSignal(sig);
 }
 

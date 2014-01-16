@@ -38,6 +38,7 @@ Triggered every change of degree.
 * "v" - integer, battery voltage usually 370-420 (3.7V to 4.2V)
 * "c" - bool, battery charging state
 * "vcc" - bool, is vcc enabled
+* "a" - bool, alarm triggered
 
 Power reports are automatically sent every 10% of battery change, and every 1% when below 5.  They are also sent whenever charging is enabled/disabled.
 
