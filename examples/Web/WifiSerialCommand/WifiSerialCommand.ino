@@ -23,7 +23,7 @@ void setup() {
   Serial.begin(115200);
 #ifdef USE_SPI
   // Max 3.5Mhz
-  SPI.setClockDivider(SPI_CLOCK_DIV16);
+  SPI.setClockDivider(SPI_CLOCK_DIV8);
   SPI.begin();
   pinMode(7, OUTPUT);
   digitalWrite(7, HIGH);
