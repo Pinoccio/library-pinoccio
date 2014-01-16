@@ -15,24 +15,24 @@
 
 /*****************************************************************************
 *****************************************************************************/
-static volatile uint8_t halAdcFinished;
 static int8_t halAdcOffset;
+
+static inline void sleep (void)
+{
+    asm volatile("sleep");
+}
 
 /*****************************************************************************
 *****************************************************************************/
 static inline int16_t HAL_AdcMeasure(void) {
-  set_sleep_mode(SLEEP_MODE_ADC);
   /* dummy cycle */
-  halAdcFinished = false;
   do
   {
-    sleep_mode();
-    /* sleep, wake up by ADC IRQ */
-    /* check here for ADC IRQ because sleep mode could wake up from * another source too */
+      sleep();
   }
-  while (false == halAdcFinished);
-  //while (ADCSRA & (1 << ADSC));
-  /* set by ISR */
+  while (ADCSRA & (1 << ADSC));
+
+   /* set by ISR */
   return ADC;
 }
 
@@ -55,7 +55,7 @@ int8_t HAL_MeasureTemperature(void) {
   ADCSRA |= (1 << ADIF); /* clear flag */
   ADCSRA |= (1 << ADIE);
 
-  /* dummy cycle after REF change (suggested by datasheet) */
+  // dummy cycle after REF change (suggested by datasheet)
   HAL_AdcMeasure();
 
   val = HAL_AdcMeasure();
@@ -65,10 +65,4 @@ int8_t HAL_MeasureTemperature(void) {
   ADCSRC = adcsrc;
   ADMUX = admux;
   return (int)((1.13 * val - 272.8)) + HAL_TEMPERATURE_CALIBRATION_OFFSET - 3;
-}
-
-/*****************************************************************************
-*****************************************************************************/
-ISR(ADC_vect, ISR_BLOCK) {
-  halAdcFinished = true;
 }
