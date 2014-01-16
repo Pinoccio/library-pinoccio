@@ -46,8 +46,9 @@ FlashClass::FlashClass(int chipSelectPin, SPIClass &SPIDriver) : CS(chipSelectPi
 }
 
 void FlashClass::begin(int chipSelectPin, SPIClass &SPIDriver) {
-  pinMode(chipSelectPin, OUTPUT);
   digitalWrite(chipSelectPin, HIGH);
+  pinMode(chipSelectPin, OUTPUT);
+
   pinMode(SCK, OUTPUT);
   pinMode(MOSI, OUTPUT);
   pinMode(MISO, INPUT);
@@ -63,6 +64,7 @@ void FlashClass::begin(int chipSelectPin, SPIClass &SPIDriver) {
 
 void FlashClass::end() {
   this->SPI.end();
+  digitalWrite(this->CS, HIGH);
 }
 
 // return true if the chip is supported
@@ -78,7 +80,7 @@ bool FlashClass::available(void) {
 void FlashClass::info(uint8_t *manufacturer, uint16_t *device) {
   uint32_t start = millis();
   while (this->isBusy()) {
-    if (millis() - start > 30) {
+    if (millis() - start > 1000) {
       return;
     }
   }
@@ -95,7 +97,7 @@ void FlashClass::info(uint8_t *manufacturer, uint16_t *device) {
 bool FlashClass::isBusy(void) {
   digitalWrite(this->CS, LOW);
   this->SPI.transfer(FLASH_RDSR);
-  bool busy = 0 != ((FLASH_WIP | FLASH_WEL) & this->SPI.transfer(0xff));
+  bool busy = 0 != ((FLASH_WIP | FLASH_WEL) & this->SPI.transfer(FLASH_NOP));
   digitalWrite(this->CS, HIGH);
   delay(10);
   return busy;
@@ -133,6 +135,8 @@ void FlashClass::writeDisable(void) {
 }
 
 void FlashClass::write(uint32_t address, void *buffer, uint8_t length) {
+  while (this->isBusy()) { }
+
   writeEnable();
   digitalWrite(this->CS, LOW);
   this->SPI.transfer(FLASH_PP);
