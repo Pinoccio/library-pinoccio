@@ -1,15 +1,29 @@
+// Note: Programming of the Flash with gs_flashprogram only seems to
+// work through UART and needs ESCAPE_NON_PRINT disabled
 //#define USE_SPI
+//#define ESCAPE_NON_PRINT
 
 #ifdef USE_SPI
 #include <SPI.h>
 #endif
 
-
+void display_byte(uint8_t c)
+{
+#ifdef ESCAPE_NON_PRINT
+  if (!isprint(c) && !isspace(c)) {
+    Serial.write('\\');
+    if (c < 0x10) Serial.write('0');
+    Serial.print(c, HEX);
+    return;
+  }
+#endif
+  Serial.write(c);
+}
 void setup() {
   Serial.begin(115200);
 #ifdef USE_SPI
   // Max 3.5Mhz
-  SPI.setClockDivider(SPI_CLOCK_DIV16);
+  SPI.setClockDivider(SPI_CLOCK_DIV8);
   SPI.begin();
   pinMode(7, OUTPUT);
   digitalWrite(7, HIGH);
@@ -46,7 +60,7 @@ uint8_t send_receive(uint8_t c) {
 }
 
 // Send a byte as-is, don't do any additional stuffing
-int send_byte(uint8_t c) {
+void send_byte(uint8_t c) {
   uint8_t in = send_receive(c);
   switch (in) {
    case GS_SPI_XON_CHAR:
@@ -61,12 +75,12 @@ int send_byte(uint8_t c) {
       in = send_receive(GS_SPI_IDLE_CHAR) ^ GS_SPI_ESC_XOR;
       // fallthrough
     default:
-      Serial.write(in);
+      display_byte(in);
   }
 }
 
 // Send the given byte, adding stuffing if needed
-int send_and_stuff_byte(uint8_t c) {
+void send_and_stuff_byte(uint8_t c) {
   if( (GS_SPI_ESC_CHAR  == c) ||
       (GS_SPI_XON_CHAR  == c) ||
       (GS_SPI_XOFF_CHAR == c) ||
@@ -93,7 +107,7 @@ void loop() {
 void loop() {
   // read from port 1, send to port 0:
   if (Serial1.available()) {
-    Serial.write(Serial1.read());
+    display_byte(Serial1.read());
   }
 
   // read from port 0, send to port 1:

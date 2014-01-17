@@ -189,19 +189,26 @@ static numvar goToSleep(void) {
   //Pinoccio.goToSleep(getarg(1));
 }
 
+void powerReportHQ(void)
+{
+  char report[100];
+  sprintf(report,"{\"_\":\"pwr\",\"p\":%d,\"v\":%d,\"c\":%s,\"vcc\":%s}",Scout.getBatteryPercentage(),(int)Scout.getBatteryVoltage(),Scout.isBatteryCharging()?"true":"false",Scout.isBackpackVccEnabled()?"true":"false");
+  Scout.handler.fieldAnnounce(0xBEEF, report);  
+}
+
 static numvar powerReport(void) {
-  // ie: {p:85,v:4.1,c:0,v:1,a:0}
-  sp("{p:");
+  powerReportHQ();
+  sp("percent charged: ");
   sp(Scout.getBatteryPercentage());
-  sp(",v:");
+  sp("\nvoltage: ");
   sp((int)Scout.getBatteryVoltage());
-  sp(",c:");
+  sp("\ncharging: ");
   sp(Scout.isBatteryCharging());
-  sp(",v:");
+  sp("\nvcc: ");
   sp(Scout.isBackpackVccEnabled());
-  sp(",a:");
-  sp(Scout.isBatteryAlarmTriggered());
-  sp("}\n");
+//  sp("\nalarm:");
+//  sp(Scout.isBatteryAlarmTriggered());
+  sp("\n");
   return true;
 }
 
@@ -865,6 +872,7 @@ static void analogPinEventHandler(uint8_t pin, uint16_t value) {
 }
 
 static void batteryPercentageEventHandler(uint8_t value) {
+  powerReportHQ();
   if (findscript("event.percent")) {
     String callback = "event.percent(" + String(value) + ")";
     char buf[24];
@@ -874,6 +882,7 @@ static void batteryPercentageEventHandler(uint8_t value) {
 }
 
 static void batteryVoltageEventHandler(uint8_t value) {
+  powerReportHQ();
   if (findscript("event.voltage")) {
     String callback = "event.voltage(" + String(value) + ")";
     char buf[24];
@@ -883,6 +892,7 @@ static void batteryVoltageEventHandler(uint8_t value) {
 }
 
 static void batteryChargingEventHandler(uint8_t value) {
+  powerReportHQ();
   if (findscript("event.charging")) {
     String callback = "event.charging(" + String(value) + ")";
     char buf[24];
