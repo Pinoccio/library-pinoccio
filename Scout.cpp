@@ -168,7 +168,6 @@ void PinoccioScout::saveState() {
 }
 
 static void scoutDigitalStateChangeTimerHandler(SYS_Timer_t *timer) {
-  const uint8_t analogThreshold = 10;
   uint16_t val;
 
   // TODO: This can likely be optimized by hitting the pin registers directly
