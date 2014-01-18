@@ -12,5 +12,5 @@ void loop() {
   Serial.print("Temperature: ");
   Serial.println(Scout.getTemperature());
 
-  delay(1000);
+  Scout.delay(1000);
 }
