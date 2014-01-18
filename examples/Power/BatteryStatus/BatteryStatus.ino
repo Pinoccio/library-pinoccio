@@ -23,5 +23,5 @@ void loop() {
   }
 
   Serial.println("");
-  delay(3000);
+  Scout.delay(3000);
 }

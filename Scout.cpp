@@ -73,6 +73,13 @@ void PinoccioScout::loop() {
   }
 }
 
+void PinoccioScout::delay(unsigned long ms) {
+  unsigned long target = millis() + ms;
+  while ((long)(millis() - target) < 0) {
+    loop();
+  }
+}
+
 bool PinoccioScout::isBatteryCharging() {
   return isBattCharging;
 }

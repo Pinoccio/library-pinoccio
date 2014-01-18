@@ -10,9 +10,9 @@ void loop() {
   Scout.loop();
 
   RgbLed.blinkRed();
-  delay(1000);
+  Scout.delay(1000);
   RgbLed.blinkGreen();
-  delay(1000);
+  Scout.delay(1000);
   RgbLed.blinkBlue();
-  delay(1000);
+  Scout.delay(1000);
 }
