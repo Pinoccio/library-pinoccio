@@ -193,7 +193,7 @@ void powerReportHQ(void)
 {
   char report[100];
   sprintf(report,"{\"_\":\"pwr\",\"p\":%d,\"v\":%d,\"c\":%s,\"vcc\":%s}",Scout.getBatteryPercentage(),(int)Scout.getBatteryVoltage(),Scout.isBatteryCharging()?"true":"false",Scout.isBackpackVccEnabled()?"true":"false");
-  Scout.handler.fieldAnnounce(0xBEEF, report);  
+  Scout.handler.fieldAnnounce(0xBEEF, report);
 }
 
 static numvar powerReport(void) {
@@ -373,7 +373,7 @@ static numvar meshSend(void) {
 static numvar meshAnnounce(void) {
   Scout.handler.fieldAnnounce(getarg(1), (char*)getstringarg(2));
 }
- 
+
 static numvar meshVerbose(void) {
   isMeshVerbose = getarg(1);
 }

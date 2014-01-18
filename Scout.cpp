@@ -7,15 +7,6 @@
 PinoccioScout Scout;
 
 PinoccioScout::PinoccioScout() {
-  RgbLed.turnOff();
-
-  pinMode(CHG_STATUS, INPUT_PULLUP);
-  pinMode(BATT_ALARM, INPUT_PULLUP);
-  pinMode(VCC_ENABLE, OUTPUT);
-  enableBackpackVcc();
-  digitalWrite(SS, HIGH);
-  pinMode(SS, OUTPUT);
-
   digitalPinEventHandler = 0;
   analogPinEventHandler = 0;
   batteryPercentageEventHandler = 0;
@@ -40,23 +31,29 @@ PinoccioScout::~PinoccioScout() { }
 
 void PinoccioScout::setup(bool isForcedLeadScout) {
   forceLeadScout = isForcedLeadScout;
-
   PinoccioClass::setup();
 
-  bp.begin(BACKPACK_BUS);
-  if (!bp.enumerate()) {
-    bp.printLastError(Serial);
-    Serial.println();
-  }
-  Serial.println("Backpacks found:");
-  for (uint8_t i = 0; i < bp.num_slaves; ++i) {
-    for (uint8_t j = 0; j < UNIQUE_ID_LENGTH; ++j) {
-      if (bp.slave_ids[i][j] < 0x10)
-        Serial.print('0');
-      Serial.print(bp.slave_ids[i][j]);
-    }
-    Serial.println();
-  }
+  RgbLed.turnOff();
+
+  pinMode(CHG_STATUS, INPUT_PULLUP);
+  pinMode(BATT_ALARM, INPUT_PULLUP);
+  pinMode(VCC_ENABLE, OUTPUT);
+  enableBackpackVcc();
+
+  // bp.begin(BACKPACK_BUS);
+  //   if (!bp.enumerate()) {
+  //     bp.printLastError(Serial);
+  //     Serial.println();
+  //   }
+  //   Serial.println("Backpacks found:");
+  //   for (uint8_t i = 0; i < bp.num_slaves; ++i) {
+  //     for (uint8_t j = 0; j < UNIQUE_ID_LENGTH; ++j) {
+  //       if (bp.slave_ids[i][j] < 0x10)
+  //         Serial.print('0');
+  //       Serial.print(bp.slave_ids[i][j]);
+  //     }
+  //     Serial.println();
+  //   }
 
   handler.setup();
   Shell.setup();

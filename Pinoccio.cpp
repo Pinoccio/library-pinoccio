@@ -19,6 +19,9 @@ void PinoccioClass::setup() {
   PHY_RandomReq();
   loadSettingsFromEeprom();
   Serial.begin(115200);
+
+  digitalWrite(SS, HIGH);
+  pinMode(SS, OUTPUT);
 }
 
 void PinoccioClass::loop() {
