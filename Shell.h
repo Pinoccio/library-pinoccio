@@ -96,7 +96,7 @@ static numvar scoutReport(void);
 static numvar isScoutLeadScout(void);
 static numvar setHQToken(void);
 static numvar getHQToken(void);
-static numvar otaBoot(void);
+static numvar wdtBoot(void);
 
 static numvar startStateChangeEvents(void);
 static numvar stopStateChangeEvents(void);
