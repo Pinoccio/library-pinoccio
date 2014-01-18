@@ -24,6 +24,7 @@ class PinoccioScout : public PinoccioClass {
 
     void setup(bool isForcedLeadScout=false);
     void loop();
+    void delay(unsigned long ms);
 
     bool isBatteryCharging();
     int getBatteryPercentage();
