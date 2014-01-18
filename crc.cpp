@@ -24,3 +24,50 @@ uint8_t pinoccio_crc_update(const uint8_t poly, uint8_t crc, uint8_t data)
     return crc;
 }
 
+uint8_t pinoccio_crc_generate_byte(const uint8_t poly, uint8_t crc, uint8_t *data, uint16_t length)
+{
+    unsigned int i;
+    bool bit;
+    char c;
+
+    while (length--) {
+      c = *data++;
+      for (i = 0x80; i > 0; i >>= 1) {
+          bit = crc & 0x80;
+          if (c & i) {
+              bit = !bit;
+          }
+          crc <<= 1;
+          if (bit) {
+              crc ^= poly;
+          }
+      }
+      crc &= 0xFF;
+    }
+    return crc & 0xFF;
+}
+
+uint16_t pinoccio_crc_generate_word(const uint16_t poly, uint16_t crc, uint8_t *data, uint16_t length)
+{
+    unsigned int i;
+    bool bit;
+    char c;
+
+    while (length--) {
+      c = *data++;
+      for (i = 0x80; i > 0; i >>= 1) {
+          bit = crc & 0x8000;
+          if (c & i) {
+              bit = !bit;
+          }
+          crc <<= 1;
+          if (bit) {
+              crc ^= poly;
+          }
+      }
+      crc &= 0xFFFF;
+    }
+    return crc & 0xFFFF;
+}
+
+

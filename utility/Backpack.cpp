@@ -2,7 +2,7 @@
 #include <Scout.h>
 #include <Backpack.h>
 
-PinoccioBackpack::PinoccioBackpack() : family(0), id(0) { }
+PinoccioBackpack::PinoccioBackpack() : version(0), model(0), revision(0), id(0) { }
 
 PinoccioBackpack::~PinoccioBackpack() { }
 

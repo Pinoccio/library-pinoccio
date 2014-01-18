@@ -50,7 +50,7 @@ bool PBBP::enumerate() {
     this->num_slaves++;
   }
 
-  // See if there is one more 
+  // See if there is one more
   if (receiveByte(&b)) {
     // Succesfully received a byte, there are more slaves!
     this->last_error = TOO_MANY_SLAVES;

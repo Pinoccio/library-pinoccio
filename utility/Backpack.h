@@ -16,7 +16,9 @@ class PinoccioBackpack {
     void printHex(const uint8_t *buf, uint8_t len);
 
   protected:
-    uint16_t family;
+    uint8_t version;
+    uint16_t model;
+    uint8_t revision;
     uint32_t id;
 };
 
