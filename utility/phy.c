@@ -371,7 +371,7 @@ static void phyHandleSetRequests(void)
     PHY_TX_PWR_REG_s.txPwr = phyIb.txPower;
   }
 
-#ifdef PHY_ENABLE_RANDOM_NUMBER_GENERATOR
+#ifdef PHY_HAS_RANDOM_NUMBER_GENERATOR
   if (phyIb.request & PHY_REQ_RANDOM)
   {
     uint16_t rnd = phyGetRandomNumber();
