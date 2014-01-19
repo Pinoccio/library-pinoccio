@@ -38,10 +38,21 @@ void HAL_FuelGaugeConfig(byte percent) {
     byte percentBits = 32 - percent;
     HAL_FuelGaugei2cWrite16((0x9700 | percentBits), 0x0C);
   }
+
+  // VALERT min and max voltage setting of 3.1V and 4.3V respectively (20mV per LSb)
+  HAL_FuelGaugei2cWrite16(0x9BD7, 0x14);
 }
 
 void HAL_FuelGaugeQuickStart() {
   HAL_FuelGaugei2cWrite16(0x4000, 0x06);  // Write a 0x4000 to the MODE register
+}
+
+byte HAL_FuelGaugeGetAlertReason() {
+  return HAL_FuelGaugei2cRead16(0x1A >> 8);
+}
+
+void HAL_FuelGaugeClearAlert() {
+  //TODO
 }
 
 unsigned int HAL_FuelGaugei2cRead16(unsigned char address) {

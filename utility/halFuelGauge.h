@@ -39,7 +39,7 @@ int HAL_FuelGaugePercent();
 
 /*
 configMAX17048G(byte percent) configures the config register of
-the MAX170143, specifically the alert threshold therein. Pass a
+the MAX170148, specifically the alert threshold therein. Pass a
 value between 1 and 32 to set the alert threshold to a value between
 1 and 32%. Any other values will set the threshold to 32%.
 */
@@ -54,6 +54,23 @@ into the IC's first guess of SOC, you can issue a quick-start
 to reduce the error.
 */
 void HAL_FuelGaugeQuickStart();
+
+/*
+This lets you get the reason for the alert
+Masks:
+Low SOC -       0x10
+SOC 1% change - 0x20
+Reset -         0x08
+Overvoltage -   0x02
+Undervoltage -  0x04
+*/
+byte HAL_FuelGaugeGetAlertReason();
+
+/*
+Clear alerts that have been triggered
+TODO
+*/
+void HAL_FuelGaugeClearAlert();
 
 /*
 i2cRead16(unsigned char address) reads a 16-bit value beginning

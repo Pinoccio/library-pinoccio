@@ -192,7 +192,7 @@ static numvar goToSleep(void) {
 void powerReportHQ(void)
 {
   char report[100];
-  sprintf(report,"{\"_\":\"pwr\",\"p\":%d,\"v\":%d,\"c\":%s,\"vcc\":%s}",Scout.getBatteryPercentage(),(int)Scout.getBatteryVoltage(),Scout.isBatteryCharging()?"true":"false",Scout.isBackpackVccEnabled()?"true":"false");
+  sprintf(report,"{\"_\":\"pwr\",\"p\":%d,\"v\":%d,\"c\":%s,\"vcc\":%s,\"a\":%s}",Scout.getBatteryPercentage(),(int)Scout.getBatteryVoltage(),Scout.isBatteryCharging()?"true":"false",Scout.isBackpackVccEnabled()?"true":"false", Scout.isBatteryAlarmTriggered()?"true":"false");
   Scout.handler.fieldAnnounce(0xBEEF, report);
 }
 
@@ -206,8 +206,8 @@ static numvar powerReport(void) {
   sp(Scout.isBatteryCharging());
   sp("\nvcc: ");
   sp(Scout.isBackpackVccEnabled());
-//  sp("\nalarm:");
-//  sp(Scout.isBatteryAlarmTriggered());
+  sp("\nalarm: ");
+  sp(Scout.isBatteryAlarmTriggered());
   sp("\n");
   return true;
 }

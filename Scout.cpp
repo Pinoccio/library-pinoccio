@@ -33,35 +33,34 @@ void PinoccioScout::setup(bool isForcedLeadScout) {
   forceLeadScout = isForcedLeadScout;
   PinoccioClass::setup();
 
-  RgbLed.turnOff();
-
   pinMode(CHG_STATUS, INPUT_PULLUP);
   pinMode(BATT_ALARM, INPUT_PULLUP);
   pinMode(VCC_ENABLE, OUTPUT);
-  enableBackpackVcc();
 
-  bp.begin(BACKPACK_BUS);
-    if (!bp.enumerate()) {
-      bp.printLastError(Serial);
-      Serial.println();
-    }
-    Serial.println("Backpacks found:");
-    for (uint8_t i = 0; i < bp.num_slaves; ++i) {
-      for (uint8_t j = 0; j < UNIQUE_ID_LENGTH; ++j) {
-        if (bp.slave_ids[i][j] < 0x10)
-          Serial.print('0');
-        Serial.print(bp.slave_ids[i][j]);
-      }
-      Serial.println();
-    }
+  RgbLed.turnOff();
 
   handler.setup();
   Shell.setup();
 
+  enableBackpackVcc();
+  bp.begin(BACKPACK_BUS);
+  if (!bp.enumerate()) {
+    bp.printLastError(Serial);
+    Serial.println();
+  }
+  //Serial.println("Backpacks found:");
+  for (uint8_t i = 0; i < bp.num_slaves; ++i) {
+    for (uint8_t j = 0; j < UNIQUE_ID_LENGTH; ++j) {
+      if (bp.slave_ids[i][j] < 0x10) {
+        Serial.print('0');
+      }
+      //Serial.print(bp.slave_ids[i][j]);
+    }
+    //Serial.println();
+  }
+
   Wire.begin();
-  delay(100);
   HAL_FuelGaugeConfig(20);   // Configure the MAX17048G's alert percentage to 20%
-  HAL_FuelGaugeQuickStart(); // Restart fuel-gauge calculations
 
   saveState();
   startDigitalStateChangeEvents();
@@ -175,7 +174,7 @@ void PinoccioScout::saveState() {
   batteryPercentage = constrain(HAL_FuelGaugePercent(), 0, 100);
   batteryVoltage = HAL_FuelGaugeVoltage();
   isBattCharging = (digitalRead(CHG_STATUS) == LOW);
-  isBattAlarmTriggered = (digitalRead(BATT_ALARM) == HIGH);
+  isBattAlarmTriggered = (digitalRead(BATT_ALARM) == LOW);
   temperature = this->getTemperature();
 }
 
@@ -262,7 +261,7 @@ static void scoutAnalogStateChangeTimerHandler(SYS_Timer_t *timer) {
   }
 
   if (Scout.batteryAlarmTriggeredEventHandler != 0) {
-    val = (digitalRead(BATT_ALARM) == HIGH);
+    val = (digitalRead(BATT_ALARM) == LOW);
     if (Scout.isBattAlarmTriggered != val) {
       if (Scout.eventVerboseOutput == true) {
         Serial.print("Running: batteryAlarmTriggeredEventHandler(");
