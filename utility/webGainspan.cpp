@@ -123,31 +123,34 @@ uint8_t webGainspan::setup(uint32_t baud) {
 
   //(Serial.println("DEBUG: Gainspan::setup 3"));
 
-  if (!send_cmd_w_resp(CMD_AUTOCONFIGSET)) {
-    //(Serial.println("DEBUG: Gainspan::init 3.1"));
-    return 0;
-  }
-
-  //(Serial.println("DEBUG: Gainspan::setup 4"));
-
-  while (isAutoConfigSet && millis() - timeout < 10000 && !respDone) {
+  while (isAutoConfigSet && millis() - timeout < 15000 && !respDone) {
     buf = readline();
+    //Serial.print(buf.length());
+    //Serial.print(": ");
+    //Serial.println(buf);
     buf.trim();
     if (buf.startsWith("NWCONN-SUCCESS")) {
-      //(Serial.println("DEBUG: Gainspan::setup 4.1"));
+      //(Serial.println("DEBUG: Gainspan::setup 3.1"));
       //(Serial.println(buf));
       respDone = 1;
       return 1;
     }
   }
 
-  delay(100);
-  //(Serial.println("DEBUG: Gainspan::setup 5"));
+  //delay(100);
+  //(Serial.println("DEBUG: Gainspan::setup 4"));
   return 0;
 }
 
 uint8_t webGainspan::init() {
   //(Serial.println("DEBUG: Gainspan::init 1"));
+
+  // get autoconnect setting
+  //(Serial.println("DEBUG: Gainspan::init 2"));
+  if (!send_cmd_w_resp(CMD_AUTOCONFIGSET)) {
+    //(Serial.println("DEBUG: Gainspan::init 2.1"));
+    return 0;
+  }
 
   // get device ID
   //(Serial.println("DEBUG: Gainspan::init 3"));
@@ -352,7 +355,7 @@ uint8_t webGainspan::parse_resp(uint8_t cmd) {
 
   while (!resp_done) {
 
-    if (millis() - timeout > 15000) {
+    if (millis() - timeout > 10000) {
       // timeout, return error
       ret = 0;
       resp_done = 1;

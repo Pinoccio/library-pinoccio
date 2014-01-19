@@ -12,7 +12,7 @@ class PinoccioScoutHandler {
 
     void setup();
     void loop();
-    void fieldAnnounce(int chan, char *message);
+    void fieldAnnounce(uint16_t chan, char *message);
 
   protected:
 };

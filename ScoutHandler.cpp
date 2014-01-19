@@ -18,6 +18,7 @@ void PinoccioScoutHandler::setup() {
     Gainspan.connectEventHandler = hqConnectHandler;
     Gainspan.disconnectEventHandler = hqDisconnectHandler;
 
+    Scout.enableBackpackVcc();
     Serial.print("Wi-Fi backpack connecting...");
     Scout.wifi.setup();
     Scout.wifi.init();
@@ -167,15 +168,15 @@ static void fieldAnnounceConfirm(NWK_DataReq_t *req) {
   isAnnouncing = false;
 }
 
-void PinoccioScoutHandler::fieldAnnounce(int chan, char *message) {
+void PinoccioScoutHandler::fieldAnnounce(uint16_t chan, char *message) {
   int len = strlen(message);
 
   if (isAnnouncing) {
     return;
   }
 
-  Serial.print("announcing to ");
-  Serial.print(chan, DEC);
+  Serial.print("announcing to 0x");
+  Serial.print(chan, HEX);
   Serial.print(" ");
   Serial.println(message);
 
