@@ -40,6 +40,7 @@ static inline int16_t HAL_AdcMeasure(void) {
 *****************************************************************************/
 int8_t HAL_MeasureTemperature(void) {
   int32_t val;
+  return 20;
 
   ADCSRC = 10 << ADSUT0;
   ADCSRB = (1 << MUX5);
