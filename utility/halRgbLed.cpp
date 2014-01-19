@@ -96,46 +96,46 @@ void HalRgbLed::white() {
 }
 
 void HalRgbLed::blinkRed(unsigned int ms) {
-  blinkColor(255, 0, 0);
+  blinkColor(255, 0, 0, ms);
 }
 
 void HalRgbLed::blinkGreen(unsigned int ms) {
-  blinkColor(0, 255, 0);
+  blinkColor(0, 255, 0, ms);
 }
 
 void HalRgbLed::blinkBlue(unsigned int ms) {
-  blinkColor(0, 0, 255);
+  blinkColor(0, 0, 255, ms);
 }
 
 void HalRgbLed::blinkCyan(unsigned int ms) {
-  blinkColor(0, 255, 255);
+  blinkColor(0, 255, 255, ms);
 }
 
 void HalRgbLed::blinkPurple(unsigned int ms) {
-  blinkColor(50, 0, 255);
+  blinkColor(50, 0, 255, ms);
 }
 
 void HalRgbLed::blinkMagenta(unsigned int ms) {
-  blinkColor(255, 0, 255);
+  blinkColor(255, 0, 255, ms);
 }
 
 void HalRgbLed::blinkYellow(unsigned int ms) {
-  blinkColor(255, 255, 0);
+  blinkColor(255, 255, 0, ms);
 }
 
 void HalRgbLed::blinkOrange(unsigned int ms) {
-  blinkColor(255, 127, 0);
+  blinkColor(255, 127, 0, ms);
 }
 
 void HalRgbLed::blinkWhite(unsigned int ms) {
-  blinkColor(255, 255, 255);
+  blinkColor(255, 255, 255, ms);
 }
 
 void HalRgbLed::blinkTorch(unsigned int ms) {
   blinkColor(torchRedValue, torchGreenValue, torchBlueValue, ms);
 }
 
-void HalRgbLed::blinkColor(short red, short green, short blue, int ms) {
+void HalRgbLed::blinkColor(short red, short green, short blue, unsigned int ms) {
   if (!isEnabled()) {
     return;
   }
@@ -143,6 +143,7 @@ void HalRgbLed::blinkColor(short red, short green, short blue, int ms) {
   blinkState = true;
   setBlinkValues(red, green, blue);
   setRGBLED(red, green, blue);
+    Serial.println(blinkTimer.interval);
   SYS_TimerStart(&blinkTimer);
 }
 

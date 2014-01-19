@@ -9,10 +9,15 @@ void setup() {
 void loop() {
   Scout.loop();
 
-  RgbLed.blinkRed();
-  delay(1000);
+  // blink once for 250ms
+  RgbLed.blinkRed(250);
+  Scout.delay(1000);
+
+  // blink once using default 500ms
   RgbLed.blinkGreen();
-  delay(1000);
-  RgbLed.blinkBlue();
-  delay(1000);
+  Scout.delay(1000);
+  
+  // blink once using 750 ms
+  RgbLed.blinkBlue(750);
+  Scout.delay(1000);
 }

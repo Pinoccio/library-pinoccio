@@ -12,5 +12,5 @@ void loop() {
   Serial.print("Random Number: ");
   Serial.println(Scout.getRandomNumber());
 
-  delay(1000);
+  Scout.delay(1000);
 }
