@@ -9,8 +9,13 @@ void setup() {
 void loop() {
   Scout.loop();
 
+  int tempInCelsius = Scout.getTemperature();
+  int tempInFahrenheit = tempInCelsius * 9/5 + 32;
   Serial.print("Temperature: ");
-  Serial.println(Scout.getTemperature());
+  Serial.print(tempInCelsius);
+  Serial.print(" C, ");
+  Serial.print(tempInFahrenheit);
+  Serial.println(" F");
 
   Scout.delay(1000);
 }
