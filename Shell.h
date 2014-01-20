@@ -91,6 +91,7 @@ static numvar pinThreshold(void);
 static numvar pinReport(void);
 
 static numvar backpackReport(void);
+static numvar backpackList(void);
 
 static numvar scoutReport(void);
 static numvar isScoutLeadScout(void);

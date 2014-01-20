@@ -68,6 +68,7 @@ void PinoccioShell::setup() {
   addBitlashFunction("pin.report", (bitlash_function) pinReport);
 
   addBitlashFunction("backpack.report", (bitlash_function) backpackReport);
+  addBitlashFunction("backpack.list", (bitlash_function) backpackList);
 
   addBitlashFunction("scout.report", (bitlash_function) scoutReport);
   addBitlashFunction("scout.isleadscout", (bitlash_function) isScoutLeadScout);
@@ -523,6 +524,23 @@ static numvar pinReport(void) {
 \****************************/
 static numvar backpackReport(void) {
   sp("[{\"name\":\"wifi\",\"version\":\"1.0\"},{\"name\":\"environment\",\"version\":\"2.0\"}]");
+}
+
+static numvar backpackList(void) {
+  if (Scout.bp.num_slaves == 0) {
+    Serial.println("No backpacks found");
+  } else {
+    for (uint8_t i = 0; i < Scout.bp.num_slaves; ++i) {
+      for (uint8_t j = 0; j < UNIQUE_ID_LENGTH; ++j) {
+        if (Scout.bp.slave_ids[i][j] < 0x10) {
+          Serial.print('0');
+        }
+        Serial.print(Scout.bp.slave_ids[i][j]);
+      }
+      Serial.println();
+    }
+  }
+  return 0;
 }
 
 /****************************\

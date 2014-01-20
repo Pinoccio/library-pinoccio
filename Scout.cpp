@@ -45,18 +45,9 @@ void PinoccioScout::setup(bool isForcedLeadScout) {
   delay(5);
   bp.begin(BACKPACK_BUS);
   if (!bp.enumerate()) {
+    Serial.print("Backpack enumeration failed: ");
     bp.printLastError(Serial);
     Serial.println();
-  }
-  //Serial.println("Backpacks found:");
-  for (uint8_t i = 0; i < bp.num_slaves; ++i) {
-    for (uint8_t j = 0; j < UNIQUE_ID_LENGTH; ++j) {
-      if (bp.slave_ids[i][j] < 0x10) {
-        Serial.print('0');
-      }
-      //Serial.print(bp.slave_ids[i][j]);
-    }
-    //Serial.println();
   }
 
   handler.setup();
