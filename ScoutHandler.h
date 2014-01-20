@@ -63,7 +63,7 @@ static void leadAnnouncementSend(int chan, int from, char *message);
 static void leadHQ(void);
 static void leadSignal(char *json);
 static void leadIncoming(char *packet, unsigned short *index);
-static void leadHQConnect(uint8_t cid);
+void leadHQConnect();
 
 // this is called on the main loop to try to (re)connect to the HQ
 static void leadHQHandle(void);

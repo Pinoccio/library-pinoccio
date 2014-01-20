@@ -1,101 +1,111 @@
 #include <Arduino.h>
+#include <SPI.h>
 #include <utility/WiFiBackpack.h>
+#include "../ScoutHandler.h"
 
-//#define P_BACKPACK_WIFI_DEBUG
-#ifdef P_BACKPACK_WIFI_DEBUG
-#  define WD(x) x
-#else
-#  define WD(x)
-#endif
+static void print_line(const uint8_t *buf, uint16_t len, void *data) {
+  static_cast<Print*>(data)->write(buf, len);
+  static_cast<Print*>(data)->println();
+}
 
-WiFiBackpack::WiFiBackpack() { }
+WiFiBackpack::WiFiBackpack() : client(gs) { }
 
 WiFiBackpack::~WiFiBackpack() { }
 
 bool WiFiBackpack::setup() {
   Backpack::setup();
 
-  WD(Serial.println("WiFiBackpack::setup 1"));
+  // Alternatively, use the UART for Wifi backpacks that still have the
+  // UART firmware running on them
+  // Serial1.begin(115200);
+  // return gs.begin(Serial1);
 
-  if (!Gainspan.setup()) {
-     WD(Serial.println("FAIL: Setup failed"));
-     return 0;
-  }
+  SPI.begin();
+  SPI.setClockDivider(SPI_CLOCK_DIV8);
 
-  WD(Serial.println("WiFiBackpack::setup 2"));
-  return 1;
-}
-
-bool WiFiBackpack::init() {
-
-  WD(Serial.println("WiFiBackpack::init 1"));
-
-  if (!Gainspan.init()) {
-    WD(Serial.println("Error: no response from Wi-Fi backpack"));
-    return 0;
-  }
-  WD(Serial.println("WiFiBackpack::init 2"));
-  client.autoConnect();
-  WD(Serial.println("WiFiBackpack::init 3"));
-
-  return 1;
+  return gs.begin(7);
 }
 
 void WiFiBackpack::loop() {
   Backpack::loop();
-  Gainspan.process();
-}
-
-bool WiFiBackpack::apConfig(const char *ssid, const char *passphrase, String host, String port) {
-  String ip;
-  if (client.connected()) {
-    ip = Gainspan.dnsLookup(host);
-  } else {
-    ip = host;
+  client = gs.getNcmCid();
+  if (!client.connected()) {
+    hqConnected = false;
+  } else if (!hqConnected) {
+    leadHQConnect();
+    hqConnected = true;
   }
-
-  Gainspan.autoConfigure(ssid, passphrase, ip, port);
+  // TODO: Don't call leadHQConnect directly
+  // TODO: There is a race condition here: If a disconnect and connect
+  // happen quickly before we can notice the disconnect, leadHqConnect
+  // will not be called for the new connection.
 }
 
-bool WiFiBackpack::apConnect() {
-  Gainspan.autoConnect();
+bool WiFiBackpack::autoConfig(const char *ssid, const char *passphrase, const String& host, uint16_t port) {
+  bool ok = true;
+  ok = ok && gs.setSecurity(GSModule::GS_SECURITY_AUTO);
+  ok = ok && gs.setWpaPassphrase(passphrase);
+  ok = ok && gs.setAutoAssociate(ssid);
+  ok = ok && gs.setAutoConnectClient(host.c_str(), port);
+  // Remember these settings through a reboot
+  ok = ok && gs.saveProfile(0);
+  ok = ok && gs.setDefaultProfile(0);
+  return ok;
 }
 
-void WiFiBackpack::printAPs() {
-  Gainspan.send_cmd_w_resp(CMD_LIST_SSIDS);
+bool WiFiBackpack::autoConnect() {
+  // Try to disable the NCM in case it's already running
+  gs.setNcm(false);
+  return gs.setNcm(/* enable */ true, /* associate_only */ false, /* remember */ false);
 }
 
-void WiFiBackpack::printProfiles() {
-  Gainspan.send_cmd_w_resp(CMD_PROFILEGET);
+void WiFiBackpack::printAPs(Print& p) {
+  runDirectCommand(p, "AT+WS");
 }
 
-void WiFiBackpack::printCurrentNetworkStatus() {
-  Gainspan.send_cmd_w_resp(CMD_NET_STATUS);
-  Gainspan.send_cmd_w_resp(CMD_CURCID);
+void WiFiBackpack::printProfiles(Print& p) {
+  runDirectCommand(p, "AT&V");
 }
 
-bool WiFiBackpack::dnsLookup(const char *host) {
-  Serial.println(Gainspan.dnsLookup(host));
+void WiFiBackpack::printCurrentNetworkStatus(Print& p) {
+  runDirectCommand(p, "AT+NSTAT=?");
+  runDirectCommand(p, "AT+CID=?");
 }
 
-bool WiFiBackpack::ping(const char *host) {
-  Gainspan.ping(host);
+void WiFiBackpack::printFirmwareVersions(Print& p) {
+  runDirectCommand(p, "AT+VER=?");
 }
 
-bool WiFiBackpack::runDirectCommand(const char *command) {
-  Gainspan.send_raw_cmd_w_resp(command);
+
+bool WiFiBackpack::dnsLookup(Print& p, const char *host) {
+  // TODO
+  return false;
+}
+
+bool WiFiBackpack::ping(Print &p, const char *host) {
+  // TODO
+  return false;
+}
+
+bool WiFiBackpack::runDirectCommand(Print &p, const char *command) {
+  gs.writeCommand("%s", command);
+  return gs.readResponse(print_line, &p);
 }
 
 bool WiFiBackpack::goToSleep() {
-  Gainspan.send_cmd(CMD_PSDPSLEEP);
+  // TODO
+  //Gainspan.send_cmd(CMD_PSDPSLEEP);
+  return false;
 }
 
 bool WiFiBackpack::wakeUp() {
-  Gainspan.send_cmd_w_resp(CMD_AT);
+  // TODO
+  // Gainspan.send_cmd_w_resp(CMD_AT);
+  return false;
 }
 
-bool WiFiBackpack::getTime() {
-  Gainspan.send_cmd_w_resp(CMD_GETTIME);
+bool WiFiBackpack::printTime(Print &p) {
+  return runDirectCommand(p, "AT+GETTIME=?");
 }
 
 

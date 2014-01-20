@@ -592,32 +592,27 @@ static numvar setEventVerbose(void) {
 \****************************/
 static numvar wifiReport(void) {
   if (getarg(0) > 0 && getarg(1) == 1) {
-    Scout.wifi.printProfiles();
+    Scout.wifi.printProfiles(Serial);
   } else {
-    Serial.print("Wi-Fi App Version: ");
-    Serial.println(Gainspan.getAppVersion());
-    Serial.print("Wi-Fi GEPS Version: ");
-    Serial.println(Gainspan.getGepsVersion());
-    Serial.print("Wi-Fi Wlan Version: ");
-    Serial.println(Gainspan.getWlanVersion());
-    Scout.wifi.printCurrentNetworkStatus();
+    Serial.print("Wi-Fi Versions: ");
+    Scout.wifi.printFirmwareVersions(Serial);
+    Scout.wifi.printCurrentNetworkStatus(Serial);
   }
 }
 
 static numvar wifiList(void) {
-    Scout.wifi.printAPs();
+    Scout.wifi.printAPs(Serial);
 }
 
 static numvar wifiConfig(void) {
-  String port = String(getarg(4));
-  if (!Scout.wifi.apConfig((const char *)getstringarg(1), (const char *)getstringarg(2), (const char *)getstringarg(3), port)) {
+  if (!Scout.wifi.autoConfig((const char *)getstringarg(1), (const char *)getstringarg(2), (const char *)getstringarg(3), getarg(4))) {
     Serial.println("Error: saving Scout.wifi.configuration data failed");
   }
 }
 
 static numvar wifiConnect(void) {
   Serial.print("Wi-Fi backpack connecting...");
-  if (!Scout.wifi.apConnect()) {
+  if (!Scout.wifi.autoConnect()) {
     Serial.println("Error: unable to connect");
   } else {
     Serial.println("Done");
@@ -625,25 +620,25 @@ static numvar wifiConnect(void) {
 }
 
 static numvar wifiCommand(void) {
-  if (!Scout.wifi.runDirectCommand((const char *)getstringarg(1))) {
+  if (!Scout.wifi.runDirectCommand(Serial, (const char *)getstringarg(1))) {
      Serial.println("Error: Wi-Fi direct command failed");
   }
 }
 
 static numvar wifiPing(void) {
-  if (!Scout.wifi.ping((const char *)getstringarg(1))) {
+  if (!Scout.wifi.ping(Serial, (const char *)getstringarg(1))) {
      Serial.println("Error: Wi-Fi ping command failed");
   }
 }
 
 static numvar wifiDNSLookup(void) {
-  if (!Scout.wifi.dnsLookup((const char *)getstringarg(1))) {
+  if (!Scout.wifi.dnsLookup(Serial, (const char *)getstringarg(1))) {
      Serial.println("Error: Wi-Fi DNS lookup command failed");
   }
 }
 
 static numvar wifiGetTime(void) {
-  if (!Scout.wifi.getTime()) {
+  if (!Scout.wifi.printTime(Serial)) {
      Serial.println("Error: Wi-Fi NTP time lookup command failed");
   }
 }
@@ -661,7 +656,7 @@ static numvar wifiWakeup(void) {
 }
 
 static numvar wifiVerbose(void) {
-  Gainspan.debugAutoConnect = getarg(1);
+  // TODO
 }
 
 /****************************\

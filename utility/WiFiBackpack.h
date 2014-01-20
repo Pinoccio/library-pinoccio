@@ -3,12 +3,7 @@
 
 #include <Pinoccio.h>
 #include <utility/Backpack.h>
-
-#include "utility/webGainspan.h"
-#include "utility/webWifi.h"
-#include "utility/webWifiServer.h"
-#include "utility/webWifiClient.h"
-#include "utility/Flash.h"
+#include <GS.h>
 
 class WiFiBackpack : public Backpack {
 
@@ -20,25 +15,29 @@ class WiFiBackpack : public Backpack {
     bool init();
     void loop();
 
-    bool apConfig(const char *ssid, const char *passphrase, String ip, String port);
-    bool apConnect();
-    void printAPs();
-    void printProfiles();
-    void printCurrentNetworkStatus();
+    bool autoConfig(const char *ssid, const char *passphrase, const String &host, uint16_t port);
+    bool autoConnect();
 
-    bool dnsLookup(const char *host);
-    bool ping(const char *host);
+    void printAPs(Print& p);
+    void printProfiles(Print& p);
+    void printCurrentNetworkStatus(Print& p);
+    bool printTime(Print& p);
+    void printFirmwareVersions(Print& p);
 
-    bool runDirectCommand(const char *command);
+    bool dnsLookup(Print &p, const char *host);
+    bool ping(Print &p, const char *host);
+
+    /** Run a command and print the results */
+    bool runDirectCommand(Print& p, const char *command);
 
     bool goToSleep();
     bool wakeUp();
 
-    bool getTime();
-
-    PinoccioWifiClient client;
-
+    GSClient client;
   protected:
+    GSModule gs;
+    // Was leadHQConnect already called?
+    bool hqConnected = false;
 };
 
 #endif // LIB_PINOCCIO_WIFI_BACKPACK_H_

@@ -15,13 +15,11 @@ PinoccioScoutHandler::~PinoccioScoutHandler() { }
 
 void PinoccioScoutHandler::setup() {
   if (Scout.isLeadScout()) {
-    Gainspan.connectEventHandler = hqConnectHandler;
-    Gainspan.disconnectEventHandler = hqDisconnectHandler;
 
     Scout.enableBackpackVcc();
     Serial.print("Wi-Fi backpack connecting...");
     Scout.wifi.setup();
-    Scout.wifi.init();
+    Scout.wifi.autoConnect();
     Serial.println("Done");
     RgbLed.blinkGreen();
 
@@ -47,14 +45,6 @@ void PinoccioScoutHandler::loop() {
   if (Scout.isLeadScout()) {
     leadHQHandle();
   }
-}
-
-static void hqConnectHandler(uint8_t cid) {
-  leadHQConnect(cid);
-}
-
-static void hqDisconnectHandler(uint8_t cid) {
-  Serial.println("Disconnected from HQ");
 }
 
 static bool fieldCommands(NWK_DataInd_t *ind) {
@@ -230,7 +220,7 @@ static void leadAnnouncementSend(int chan, int from, char *message) {
 ////////////////////
 // lead scout stuff
 
-void leadHQConnect(uint8_t cid) {
+void leadHQConnect() {
   char auth[256], token[33];
 
   if (Scout.wifi.client.connected()) {
