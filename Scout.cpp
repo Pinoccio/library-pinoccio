@@ -39,9 +39,6 @@ void PinoccioScout::setup(bool isForcedLeadScout) {
 
   RgbLed.turnOff();
 
-  handler.setup();
-  Shell.setup();
-
   enableBackpackVcc();
   bp.begin(BACKPACK_BUS);
   if (!bp.enumerate()) {
@@ -58,6 +55,9 @@ void PinoccioScout::setup(bool isForcedLeadScout) {
     }
     //Serial.println();
   }
+
+  handler.setup();
+  Shell.setup();
 
   Wire.begin();
   HAL_FuelGaugeConfig(20);   // Configure the MAX17048G's alert percentage to 20%
