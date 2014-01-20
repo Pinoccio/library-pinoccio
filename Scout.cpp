@@ -40,6 +40,9 @@ void PinoccioScout::setup(bool isForcedLeadScout) {
   RgbLed.turnOff();
 
   enableBackpackVcc();
+  // Give the slaves on the backpack bus a bit of time to start up. 1ms
+  // seems to be enough, but let's be generous.
+  delay(5);
   bp.begin(BACKPACK_BUS);
   if (!bp.enumerate()) {
     bp.printLastError(Serial);
