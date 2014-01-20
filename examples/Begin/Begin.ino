@@ -12,7 +12,7 @@ scout.sethqtoken("<HQ Token String>")
 
 void setup() {
   // pass setup(1) to force lead scout
-  Scout.setup(1);
+  Scout.setup(0);
 }
 
 void loop() {
