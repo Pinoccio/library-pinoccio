@@ -10,7 +10,7 @@ void loop() {
   Scout.loop();
 
   Serial.print("Random Number: ");
-  Serial.println(Scout.getRandomNumber());
+  Serial.println(random());
 
   Scout.delay(1000);
 }
