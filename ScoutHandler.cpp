@@ -16,10 +16,9 @@ PinoccioScoutHandler::~PinoccioScoutHandler() { }
 void PinoccioScoutHandler::setup() {
   if (Scout.isLeadScout()) {
 
-    Scout.enableBackpackVcc();
     Serial.print("Wi-Fi backpack connecting...");
     Scout.wifi.setup();
-    Scout.wifi.autoConnect();
+    Scout.wifi.autoConnectHq();
     Serial.println("Done");
     RgbLed.blinkGreen();
 
@@ -253,7 +252,7 @@ void leadHQHandle(void) {
   }
 
   // get all waiting data and look for packets
-  while(rsize = Scout.wifi.client.read(block, 256)){
+  while(rsize = Scout.wifi.client.read(block, sizeof(block))){
     len = strlen(buffer);
 
     // process chunk of incoming data
