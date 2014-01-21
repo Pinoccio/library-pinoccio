@@ -18,7 +18,7 @@ void PinoccioClass::setup() {
   SYS_Init();
   PHY_RandomReq();
   loadSettingsFromEeprom();
-  Serial.begin(115200);
+  Shell.setup(); // Serial is initialized in here
 
   digitalWrite(SS, HIGH);
   pinMode(SS, OUTPUT);
@@ -26,6 +26,7 @@ void PinoccioClass::setup() {
 
 void PinoccioClass::loop() {
   SYS_TaskHandler();
+  Shell.loop();
 }
 
 void PinoccioClass::goToSleep(uint32_t sleepForMs) {
