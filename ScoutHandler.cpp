@@ -16,7 +16,6 @@ PinoccioScoutHandler::~PinoccioScoutHandler() { }
 void PinoccioScoutHandler::setup() {
   if (Scout.isLeadScout()) {
 
-    Scout.enableBackpackVcc();
     Serial.print("Wi-Fi backpack connecting...");
     Scout.wifi.setup();
     Scout.wifi.autoConnect();
