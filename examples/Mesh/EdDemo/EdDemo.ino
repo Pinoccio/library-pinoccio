@@ -1,5 +1,6 @@
 #include "config.h"
 #include <Scout.h>
+#include <GS.h>
 
 /*- Types ------------------------------------------------------------------*/
 typedef enum AppState_t

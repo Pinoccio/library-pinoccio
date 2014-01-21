@@ -1,6 +1,7 @@
 #include <SPI.h>
 #include <Wire.h>
 #include <Scout.h>
+#include <GS.h>
 
 typedef enum AppState_t
 {
