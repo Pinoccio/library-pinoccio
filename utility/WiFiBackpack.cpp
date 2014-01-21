@@ -2,6 +2,9 @@
 #include <SPI.h>
 #include <utility/WiFiBackpack.h>
 #include "../ScoutHandler.h"
+#include "../HqHandler.h"
+
+#define CA_CERTNAME_HQ "hq-ca"
 
 static void print_line(const uint8_t *buf, uint16_t len, void *data) {
   static_cast<Print*>(data)->write(buf, len);
@@ -23,7 +26,14 @@ bool WiFiBackpack::setup() {
   SPI.begin();
   SPI.setClockDivider(SPI_CLOCK_DIV8);
 
-  return gs.begin(7);
+
+  if (!gs.begin(7))
+    return false;
+
+  #ifdef HQ_USE_TLS
+    if (HqHandler::cacert_len)
+      gs.addCert(CA_CERTNAME_HQ, /* to_flash */ false, HqHandler::cacert, HqHandler::cacert_len);
+  #endif
 }
 
 void WiFiBackpack::loop() {
@@ -32,8 +42,10 @@ void WiFiBackpack::loop() {
   if (!client.connected()) {
     hqConnected = false;
   } else if (!hqConnected) {
-    leadHQConnect();
-    hqConnected = true;
+    if (HqHandler::cacert_len == 0 || client.enableTls(CA_CERTNAME_HQ)) {
+      leadHQConnect();
+      hqConnected = true;
+    }
   }
   // TODO: Don't call leadHQConnect directly
   // TODO: There is a race condition here: If a disconnect and connect
@@ -41,22 +53,22 @@ void WiFiBackpack::loop() {
   // will not be called for the new connection.
 }
 
-bool WiFiBackpack::autoConfig(const char *ssid, const char *passphrase, const String& host, uint16_t port) {
+bool WiFiBackpack::wifiConfig(const char *ssid, const char *passphrase) {
   bool ok = true;
   ok = ok && gs.setSecurity(GSModule::GS_SECURITY_AUTO);
   ok = ok && gs.setWpaPassphrase(passphrase);
   ok = ok && gs.setAutoAssociate(ssid);
-  ok = ok && gs.setAutoConnectClient(host.c_str(), port);
   // Remember these settings through a reboot
   ok = ok && gs.saveProfile(0);
   ok = ok && gs.setDefaultProfile(0);
   return ok;
 }
 
-bool WiFiBackpack::autoConnect() {
+bool WiFiBackpack::autoConnectHq() {
   // Try to disable the NCM in case it's already running
   gs.setNcm(false);
-  return gs.setNcm(/* enable */ true, /* associate_only */ false, /* remember */ false);
+  return gs.setAutoConnectClient(HqHandler::host, HqHandler::port) &&
+         gs.setNcm(/* enable */ true, /* associate_only */ false, /* remember */ false);
 }
 
 void WiFiBackpack::printAPs(Print& p) {

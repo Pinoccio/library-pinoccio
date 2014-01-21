@@ -18,7 +18,7 @@ void PinoccioScoutHandler::setup() {
 
     Serial.print("Wi-Fi backpack connecting...");
     Scout.wifi.setup();
-    Scout.wifi.autoConnect();
+    Scout.wifi.autoConnectHq();
     Serial.println("Done");
     RgbLed.blinkGreen();
 

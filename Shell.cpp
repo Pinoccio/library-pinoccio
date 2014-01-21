@@ -622,7 +622,7 @@ static numvar wifiList(void) {
 }
 
 static numvar wifiConfig(void) {
-  if (!Scout.wifi.autoConfig((const char *)getstringarg(1), (const char *)getstringarg(2), (const char *)getstringarg(3), getarg(4))) {
+  if (!Scout.wifi.wifiConfig((const char *)getstringarg(1), (const char *)getstringarg(2))) {
     Serial.println("Error: saving Scout.wifi.configuration data failed");
   }
 }
