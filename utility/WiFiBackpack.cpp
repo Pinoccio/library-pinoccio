@@ -30,10 +30,8 @@ bool WiFiBackpack::setup() {
   if (!gs.begin(7))
     return false;
 
-  #ifdef HQ_USE_TLS
-    if (HqHandler::cacert_len)
-      gs.addCert(CA_CERTNAME_HQ, /* to_flash */ false, HqHandler::cacert, HqHandler::cacert_len);
-  #endif
+  if (HqHandler::cacert_len)
+    gs.addCert(CA_CERTNAME_HQ, /* to_flash */ false, HqHandler::cacert, HqHandler::cacert_len);
 }
 
 void WiFiBackpack::loop() {
