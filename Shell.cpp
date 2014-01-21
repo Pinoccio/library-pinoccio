@@ -85,7 +85,6 @@ void PinoccioShell::setup() {
     addBitlashFunction("wifi.report", (bitlash_function) wifiReport);
     addBitlashFunction("wifi.list", (bitlash_function) wifiList);
     addBitlashFunction("wifi.config", (bitlash_function) wifiConfig);
-    addBitlashFunction("wifi.connect", (bitlash_function) wifiConnect);
     addBitlashFunction("wifi.command", (bitlash_function) wifiCommand);
     addBitlashFunction("wifi.ping", (bitlash_function) wifiPing);
     addBitlashFunction("wifi.dnslookup", (bitlash_function) wifiDNSLookup);
@@ -625,15 +624,6 @@ static numvar wifiList(void) {
 static numvar wifiConfig(void) {
   if (!Scout.wifi.autoConfig((const char *)getstringarg(1), (const char *)getstringarg(2), (const char *)getstringarg(3), getarg(4))) {
     Serial.println("Error: saving Scout.wifi.configuration data failed");
-  }
-}
-
-static numvar wifiConnect(void) {
-  Serial.print("Wi-Fi backpack connecting...");
-  if (!Scout.wifi.autoConnect()) {
-    Serial.println("Error: unable to connect");
-  } else {
-    Serial.println("Done");
   }
 }
 
