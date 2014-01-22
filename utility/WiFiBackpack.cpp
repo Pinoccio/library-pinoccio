@@ -54,7 +54,8 @@ void WiFiBackpack::loop() {
 bool WiFiBackpack::wifiConfig(const char *ssid, const char *passphrase) {
   bool ok = true;
   ok = ok && gs.setSecurity(GSModule::GS_SECURITY_AUTO);
-  ok = ok && gs.setWpaPassphrase(passphrase);
+  if (passphrase && *passphrase)
+    ok = ok && gs.setWpaPassphrase(passphrase);
   ok = ok && gs.setAutoAssociate(ssid);
   // Remember these settings through a reboot
   ok = ok && gs.saveProfile(0);
