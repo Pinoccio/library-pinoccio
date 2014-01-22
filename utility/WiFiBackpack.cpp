@@ -128,6 +128,19 @@ bool WiFiBackpack::wifiStatic(IPAddress ip, IPAddress netmask, IPAddress gw, IPA
 bool WiFiBackpack::autoConnectHq() {
   // Try to disable the NCM in case it's already running
   gs.setNcm(false);
+
+  // When association fails, keep retrying indefinately (at least it
+  // seems that a retry count of 0 means that, even though the
+  // documentation says it should be >= 1).
+  gs.setNcmParam(GSModule::GS_NCM_L3_CONNECT_RETRY_COUNT, 0);
+
+  // When association succeeds, but the TCP connection fails, keep
+  // retrying to connect (but not as fast as the default 500ms between
+  // attempts) indefinately (at least it seems that a retry count of 0
+  // means that, documentation doesn't say).
+  gs.setParam(GSModule::GS_PARAM_L4_RETRY_PERIOD, 1000 /* x 10ms */);
+  gs.setParam(GSModule::GS_PARAM_L4_RETRY_COUNT, 0);
+
   return gs.setAutoConnectClient(HqHandler::host, HqHandler::port) &&
          gs.setNcm(/* enable */ true, /* associate_only */ false, /* remember */ false);
 }
