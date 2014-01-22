@@ -15,9 +15,14 @@ class WiFiBackpack : public Backpack {
     bool init();
     void loop();
 
+    // Does not take effect until autoConnectHq() is called
     bool wifiConfig(const char *ssid, const char *passphrase);
+    // Takes effect immediately
     bool wifiDhcp(const char *hostname);
+    // Takes effect immediately
     bool wifiStatic(IPAddress ip, IPAddress netmask, IPAddress gw, IPAddress dns);
+
+    // (Re-)connects the wifi and HQ connection
     bool autoConnectHq();
 
     void printAPs(Print& p);
