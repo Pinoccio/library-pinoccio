@@ -127,7 +127,7 @@ bool WiFiBackpack::ping(Print &p, const char *host) {
 
 bool WiFiBackpack::runDirectCommand(Print &p, const char *command) {
   gs.writeCommand("%s", command);
-  return gs.readResponse(print_line, &p);
+  return (gs.readResponse(print_line, &p) == GSCore::GS_SUCCESS);
 }
 
 bool WiFiBackpack::goToSleep() {
