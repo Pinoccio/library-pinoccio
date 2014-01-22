@@ -19,8 +19,6 @@ class HalRgbLed {
     void enable();
     void disable();
     bool isEnabled();
-    void enableContinuousBlink();
-    void disableContinuousBlink();
     void turnOff();
 
     void red();
@@ -33,17 +31,17 @@ class HalRgbLed {
     void orange();
     void white();
 
-    void blinkRed(unsigned int ms=500);
-    void blinkGreen(unsigned int ms=500);
-    void blinkBlue(unsigned int ms=500);
-    void blinkCyan(unsigned int ms=500);
-    void blinkPurple(unsigned int ms=500);
-    void blinkMagenta(unsigned int ms=500);
-    void blinkYellow(unsigned int ms=500);
-    void blinkOrange(unsigned int ms=500);
-    void blinkWhite(unsigned int ms=500);
-    void blinkTorch(unsigned int ms=500);
-    void blinkColor(short red, short green, short blue, unsigned int ms=500);
+    void blinkRed(unsigned int ms=500, bool continuous=false);
+    void blinkGreen(unsigned int ms=500, bool continuous=false);
+    void blinkBlue(unsigned int ms=500, bool continuous=false);
+    void blinkCyan(unsigned int ms=500, bool continuous=false);
+    void blinkPurple(unsigned int ms=500, bool continuous=false);
+    void blinkMagenta(unsigned int ms=500, bool continuous=false);
+    void blinkYellow(unsigned int ms=500, bool continuous=false);
+    void blinkOrange(unsigned int ms=500, bool continuous=false);
+    void blinkWhite(unsigned int ms=500, bool continuous=false);
+    void blinkTorch(unsigned int ms=500, bool continuous=false);
+    void blinkColor(short red, short green, short blue, unsigned int ms=500, bool continuous=false);
 
     void setRedValue(int value);
     void setGreenValue(int value);
@@ -64,8 +62,6 @@ class HalRgbLed {
     short getRedTorchValue(void);
     short getGreenTorchValue(void);
     short getBlueTorchValue(void);
-
-    bool blinkState;
 
   protected:
     bool enabled;
