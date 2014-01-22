@@ -16,6 +16,8 @@ class WiFiBackpack : public Backpack {
     void loop();
 
     bool wifiConfig(const char *ssid, const char *passphrase);
+    bool wifiDhcp(const char *hostname);
+    bool wifiStatic(IPAddress ip, IPAddress netmask, IPAddress gw, IPAddress dns);
     bool autoConnectHq();
 
     void printAPs(Print& p);

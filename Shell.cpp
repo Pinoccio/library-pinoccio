@@ -85,6 +85,9 @@ void PinoccioShell::setup() {
     addBitlashFunction("wifi.report", (bitlash_function) wifiReport);
     addBitlashFunction("wifi.list", (bitlash_function) wifiList);
     addBitlashFunction("wifi.config", (bitlash_function) wifiConfig);
+    addBitlashFunction("wifi.dhcp", (bitlash_function) wifiDhcp);
+    addBitlashFunction("wifi.static", (bitlash_function) wifiStatic);
+    addBitlashFunction("wifi.reassociate", (bitlash_function) wifiReassociate);
     addBitlashFunction("wifi.command", (bitlash_function) wifiCommand);
     addBitlashFunction("wifi.ping", (bitlash_function) wifiPing);
     addBitlashFunction("wifi.dnslookup", (bitlash_function) wifiDNSLookup);
@@ -625,6 +628,47 @@ static numvar wifiConfig(void) {
   if (!Scout.wifi.wifiConfig((const char *)getstringarg(1), (const char *)getstringarg(2))) {
     Serial.println("Error: saving Scout.wifi.configuration data failed");
   }
+}
+
+static numvar wifiDhcp(void) {
+  if (!Scout.wifi.wifiDhcp((const char *)getstringarg(1))) {
+    Serial.println("Error: saving Scout.wifi.configuration data failed");
+  }
+}
+
+static numvar wifiStatic(void) {
+  IPAddress ip, nm, gw, dns;
+
+  if (!GSCore::parseIpAddress(&ip, (const char *)getstringarg(1))) {
+    Serial.println("Error: Invalid IP address");
+    return 0;
+  }
+
+  if (!GSCore::parseIpAddress(&nm, (const char *)getstringarg(2))) {
+    Serial.println("Error: Invalid netmask");
+    return 0;
+  }
+
+  if (!GSCore::parseIpAddress(&gw, (const char *)getstringarg(3))) {
+    Serial.println("Error: Invalid gateway");
+    return 0;
+  }
+
+  if (!GSCore::parseIpAddress(&dns, (const char *)getstringarg(3))) {
+    Serial.println("Error: Invalid dns server");
+    return 0;
+  }
+
+  if (!Scout.wifi.wifiStatic(ip, nm, gw, dns)) {
+    Serial.println("Error: saving Scout.wifi.configuration data failed");
+    return 0;
+  }
+  return 1;
+}
+
+static numvar wifiReassociate(void) {
+  // This restart the NCM
+  return Scout.wifi.autoConnectHq();
 }
 
 static numvar wifiCommand(void) {

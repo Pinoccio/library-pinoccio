@@ -62,6 +62,31 @@ bool WiFiBackpack::wifiConfig(const char *ssid, const char *passphrase) {
   return ok;
 }
 
+bool WiFiBackpack::wifiDhcp(const char *hostname) {
+  bool ok = true;
+  ok = ok && gs.setDhcp(true, hostname);
+  // Remember these settings through a reboot
+  ok = ok && gs.saveProfile(0);
+  // Ignore setDefaultProfile failure, since it fails also when only a
+  // single profile is available
+  ok && gs.setDefaultProfile(0);
+  return ok;
+}
+
+bool WiFiBackpack::wifiStatic(IPAddress ip, IPAddress netmask, IPAddress gw, IPAddress dns) {
+  bool ok = true;
+  ok = ok && gs.setDhcp(false);
+  ok = ok && gs.setStaticIp(ip, netmask, gw);
+  ok = ok && gs.setDns(dns);
+
+  // Remember these settings through a reboot
+  ok = ok && gs.saveProfile(0);
+  // Ignore setDefaultProfile failure, since it fails also when only a
+  // single profile is available
+  ok && gs.setDefaultProfile(0);
+  return ok;
+}
+
 bool WiFiBackpack::autoConnectHq() {
   // Try to disable the NCM in case it's already running
   gs.setNcm(false);
