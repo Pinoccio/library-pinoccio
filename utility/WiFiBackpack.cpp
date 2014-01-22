@@ -59,7 +59,9 @@ bool WiFiBackpack::wifiConfig(const char *ssid, const char *passphrase) {
   ok = ok && gs.setAutoAssociate(ssid);
   // Remember these settings through a reboot
   ok = ok && gs.saveProfile(0);
-  ok = ok && gs.setDefaultProfile(0);
+  // Ignore setDefaultProfile failure, since it fails also when only a
+  // single profile is available
+  ok && gs.setDefaultProfile(0);
   return ok;
 }
 
