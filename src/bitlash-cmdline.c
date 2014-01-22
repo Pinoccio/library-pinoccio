@@ -196,8 +196,13 @@ void doCharacter(char c) {
 //
 void runBitlash(void) {
 
-	// Pipe the serial input into the command handler
-	if (serialAvailable()) doCharacter(serialRead());
+	// Pipe the serial input into the command handler. Read up to 12
+	// bytes, which is as much as can be sent over at 115200 bps in
+	// one millisecond. This means that when runBitlash is called
+	// at least once every millisecond, the receive buffer will not
+	// overflow.
+	uint8_t times = 12;
+	while (times-- && serialAvailable()) doCharacter(serialRead());
 
 	// Background macro handler: feed it one call each time through
 	runBackgroundTasks();
