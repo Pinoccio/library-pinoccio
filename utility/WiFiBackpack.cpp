@@ -4,7 +4,9 @@
 #include "../ScoutHandler.h"
 #include "../HqHandler.h"
 
-#define CA_CERTNAME_HQ "hq-ca"
+// Be careful with using non-alphanumerics like '-' here, they might
+// silently cause SSL to fail
+#define CA_CERTNAME_HQ "hq.ca"
 
 static void print_line(const uint8_t *buf, uint16_t len, void *data) {
   static_cast<Print*>(data)->write(buf, len);
