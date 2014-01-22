@@ -1,6 +1,7 @@
 #include <SPI.h>
 #include <Wire.h>
 #include <Scout.h>
+#include <GS.h>
 
 void setup() {
   Scout.setup();
@@ -22,9 +23,8 @@ void loop() {
   Scout.delay(1500);
 
   Serial.println("blink yellow continuously every 100ms");
-  RgbLed.enableContinuousBlink();
-  RgbLed.blinkYellow(100);
+  RgbLed.blinkYellow(100, true);
   Scout.delay(1500);
-  RgbLed.disableContinuousBlink();
+  RgbLed.turnOff();
   Scout.delay(1000);
 }
