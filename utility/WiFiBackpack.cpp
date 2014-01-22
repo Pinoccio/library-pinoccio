@@ -61,6 +61,8 @@ void WiFiBackpack::loop() {
   if (!client.connected()) {
     hqConnected = false;
   } else if (!hqConnected) {
+    // TODO: If enableTls fails, the NCM doesn't retry the TCP
+    // connection
     if (HqHandler::cacert_len == 0 || client.enableTls(CA_CERTNAME_HQ)) {
       leadHQConnect();
       hqConnected = true;
