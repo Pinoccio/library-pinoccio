@@ -7,6 +7,9 @@
 // Be careful with using non-alphanumerics like '-' here, they might
 // silently cause SSL to fail
 #define CA_CERTNAME_HQ "hq.ca"
+#define NTP_SERVER "pool.ntp.org"
+// Sync on connect and every 24 hours thereafter
+#define NTP_INTERVAL (3600L * 24)
 
 static void print_line(const uint8_t *buf, uint16_t len, void *data) {
   static_cast<Print*>(data)->write(buf, len);
@@ -16,6 +19,19 @@ static void print_line(const uint8_t *buf, uint16_t len, void *data) {
 WiFiBackpack::WiFiBackpack() : client(gs) { }
 
 WiFiBackpack::~WiFiBackpack() { }
+
+void WiFiBackpack::onAssociate(void *data) {
+  WiFiBackpack& wifi = *(WiFiBackpack*)data;
+
+  // Do a timesync
+  IPAddress ip = wifi.gs.dnsLookup(NTP_SERVER);
+  // TODO: Until https://github.com/arduino/Arduino/pull/1798 is merged,
+  // we have to remove the constness here.
+  if (ip == const_cast<IPAddress&>(INADDR_NONE) ||
+      !wifi.gs.timeSync(ip, NTP_INTERVAL)) {
+    Serial.println("Time sync failed");
+  }
+}
 
 bool WiFiBackpack::setup() {
   Backpack::setup();
@@ -28,6 +44,8 @@ bool WiFiBackpack::setup() {
   SPI.begin();
   SPI.setClockDivider(SPI_CLOCK_DIV8);
 
+  gs.onAssociate = onAssociate;
+  gs.eventData = this;
 
   if (!gs.begin(7))
     return false;
@@ -38,6 +56,7 @@ bool WiFiBackpack::setup() {
 
 void WiFiBackpack::loop() {
   Backpack::loop();
+  gs.loop();
   client = gs.getNcmCid();
   if (!client.connected()) {
     hqConnected = false;

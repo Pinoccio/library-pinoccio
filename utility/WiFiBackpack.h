@@ -40,6 +40,9 @@ class WiFiBackpack : public Backpack {
     GSModule gs;
     // Was leadHQConnect already called?
     bool hqConnected = false;
+
+    // Event handlers
+    static void onAssociate(void *data);
 };
 
 #endif // LIB_PINOCCIO_WIFI_BACKPACK_H_
