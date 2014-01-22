@@ -33,6 +33,30 @@ void WiFiBackpack::onAssociate(void *data) {
   }
 }
 
+void WiFiBackpack::onNcmConnect(void *data, GSCore::cid_t cid) {
+  WiFiBackpack& wifi = *(WiFiBackpack*)data;
+
+  wifi.client = cid;
+
+  if (HqHandler::cacert_len != 0) {
+    if (!wifi.client.enableTls(CA_CERTNAME_HQ)) {
+      // TODO: If enableTls fails, the NCM doesn't retry the TCP
+      // connection
+      Serial.println("SSL negotiation to HQ failed");
+      return;
+    }
+  }
+
+  // TODO: Don't call leadHQConnect directly?
+  leadHQConnect();
+}
+
+void WiFiBackpack::onNcmDisconnect(void *data) {
+  WiFiBackpack& wifi = *(WiFiBackpack*)data;
+
+  wifi.client = GSCore::INVALID_CID;
+}
+
 bool WiFiBackpack::setup() {
   Backpack::setup();
 
@@ -45,6 +69,8 @@ bool WiFiBackpack::setup() {
   SPI.setClockDivider(SPI_CLOCK_DIV8);
 
   gs.onAssociate = onAssociate;
+  gs.onNcmConnect = onNcmConnect;
+  gs.onNcmDisconnect = onNcmDisconnect;
   gs.eventData = this;
 
   if (!gs.begin(7))
@@ -58,20 +84,6 @@ void WiFiBackpack::loop() {
   Backpack::loop();
   gs.loop();
   client = gs.getNcmCid();
-  if (!client.connected()) {
-    hqConnected = false;
-  } else if (!hqConnected) {
-    // TODO: If enableTls fails, the NCM doesn't retry the TCP
-    // connection
-    if (HqHandler::cacert_len == 0 || client.enableTls(CA_CERTNAME_HQ)) {
-      leadHQConnect();
-      hqConnected = true;
-    }
-  }
-  // TODO: Don't call leadHQConnect directly
-  // TODO: There is a race condition here: If a disconnect and connect
-  // happen quickly before we can notice the disconnect, leadHqConnect
-  // will not be called for the new connection.
 }
 
 bool WiFiBackpack::wifiConfig(const char *ssid, const char *passphrase) {

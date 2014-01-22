@@ -43,11 +43,11 @@ class WiFiBackpack : public Backpack {
     GSClient client;
   protected:
     GSModule gs;
-    // Was leadHQConnect already called?
-    bool hqConnected = false;
 
     // Event handlers
     static void onAssociate(void *data);
+    static void onNcmConnect(void *data, GSCore::cid_t cid);
+    static void onNcmDisconnect(void *data);
 };
 
 #endif // LIB_PINOCCIO_WIFI_BACKPACK_H_
