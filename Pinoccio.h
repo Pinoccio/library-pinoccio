@@ -31,6 +31,7 @@
 // End - Specifics for the LWM library
 
 #include <Arduino.h>
+#include <Shell.h>
 
 #include "utility/sysConfig.h"
 #include "utility/phy.h"
