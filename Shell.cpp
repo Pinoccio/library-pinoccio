@@ -631,7 +631,9 @@ static numvar wifiConfig(void) {
 }
 
 static numvar wifiDhcp(void) {
-  if (!Scout.wifi.wifiDhcp((const char *)getstringarg(1))) {
+  const char *host = (getarg(0) >= 1 ? (const char*)getstringarg(1) : NULL);
+
+  if (!Scout.wifi.wifiDhcp(host)) {
     Serial.println("Error: saving Scout.wifi.configuration data failed");
   }
 }
