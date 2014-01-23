@@ -17,7 +17,6 @@ HalRgbLed RgbLed;
 HalRgbLed::HalRgbLed() {
   turnOff();
   enable();
-  blinkState = false;
 
   redValue = greenValue = blueValue = 0;
 
@@ -26,7 +25,6 @@ HalRgbLed::HalRgbLed() {
   torchBlueValue = eeprom_read_byte((uint8_t *)8129);
 
   blinkTimer.interval = 500;
-  blinkTimer.mode = SYS_TIMER_INTERVAL_MODE;
   blinkTimer.handler = halRgbLedBlinkTimerHandler;
 }
 
@@ -43,19 +41,11 @@ bool HalRgbLed::isEnabled() {
   return enabled;
 }
 
-void HalRgbLed::enableContinuousBlink() {
-  blinkTimer.mode = SYS_TIMER_PERIODIC_MODE;
-}
-
-void HalRgbLed::disableContinuousBlink() {
-  blinkTimer.mode = SYS_TIMER_INTERVAL_MODE;
-}
-
 void HalRgbLed::turnOff() {
   setRedValue(0);
   setGreenValue(0);
   setBlueValue(0);
-  blinkState = false;
+  blinkTimer.mode = SYS_TIMER_INTERVAL_MODE;
   SYS_TimerStop(&blinkTimer);
 }
 
@@ -95,52 +85,56 @@ void HalRgbLed::white() {
   setColor(255, 255, 255);
 }
 
-void HalRgbLed::blinkRed(unsigned int ms) {
-  blinkColor(255, 0, 0, ms);
+void HalRgbLed::blinkRed(unsigned int ms, bool continuous) {
+  blinkColor(255, 0, 0, ms, continuous);
 }
 
-void HalRgbLed::blinkGreen(unsigned int ms) {
-  blinkColor(0, 255, 0, ms);
+void HalRgbLed::blinkGreen(unsigned int ms, bool continuous) {
+  blinkColor(0, 255, 0, ms, continuous);
 }
 
-void HalRgbLed::blinkBlue(unsigned int ms) {
-  blinkColor(0, 0, 255, ms);
+void HalRgbLed::blinkBlue(unsigned int ms, bool continuous) {
+  blinkColor(0, 0, 255, ms, continuous);
 }
 
-void HalRgbLed::blinkCyan(unsigned int ms) {
-  blinkColor(0, 255, 255, ms);
+void HalRgbLed::blinkCyan(unsigned int ms, bool continuous) {
+  blinkColor(0, 255, 255, ms, continuous);
 }
 
-void HalRgbLed::blinkPurple(unsigned int ms) {
-  blinkColor(50, 0, 255, ms);
+void HalRgbLed::blinkPurple(unsigned int ms, bool continuous) {
+  blinkColor(50, 0, 255, ms, continuous);
 }
 
-void HalRgbLed::blinkMagenta(unsigned int ms) {
-  blinkColor(255, 0, 255, ms);
+void HalRgbLed::blinkMagenta(unsigned int ms, bool continuous) {
+  blinkColor(255, 0, 255, ms, continuous);
 }
 
-void HalRgbLed::blinkYellow(unsigned int ms) {
-  blinkColor(255, 255, 0, ms);
+void HalRgbLed::blinkYellow(unsigned int ms, bool continuous) {
+  blinkColor(255, 255, 0, ms, continuous);
 }
 
-void HalRgbLed::blinkOrange(unsigned int ms) {
-  blinkColor(255, 127, 0, ms);
+void HalRgbLed::blinkOrange(unsigned int ms, bool continuous) {
+  blinkColor(255, 127, 0, ms, continuous);
 }
 
-void HalRgbLed::blinkWhite(unsigned int ms) {
-  blinkColor(255, 255, 255, ms);
+void HalRgbLed::blinkWhite(unsigned int ms, bool continuous) {
+  blinkColor(255, 255, 255, ms, continuous);
 }
 
-void HalRgbLed::blinkTorch(unsigned int ms) {
-  blinkColor(torchRedValue, torchGreenValue, torchBlueValue, ms);
+void HalRgbLed::blinkTorch(unsigned int ms, bool continuous) {
+  blinkColor(torchRedValue, torchGreenValue, torchBlueValue, ms, continuous);
 }
 
-void HalRgbLed::blinkColor(short red, short green, short blue, unsigned int ms) {
+void HalRgbLed::blinkColor(short red, short green, short blue, unsigned int ms, bool continuous) {
   if (!isEnabled()) {
     return;
   }
+  if (continuous) {
+    blinkTimer.mode = SYS_TIMER_PERIODIC_MODE;
+  } else {
+    blinkTimer.mode = SYS_TIMER_INTERVAL_MODE;
+  }
   blinkTimer.interval = ms;
-  blinkState = true;
   setBlinkValues(red, green, blue);
   setRGBLED(red, green, blue);
   SYS_TimerStart(&blinkTimer);
@@ -251,13 +245,11 @@ short HalRgbLed::getBlueTorchValue(void) {
 
 static void halRgbLedBlinkTimerHandler(SYS_Timer_t *timer) {
   if (timer->mode == SYS_TIMER_PERIODIC_MODE) {
-    if (RgbLed.blinkState == true) {
-      RgbLed.blinkState = false;
+    if (RgbLed.getRedValue() || RgbLed.getGreenValue() || RgbLed.getBlueValue()) {
       RgbLed.setRedValue(0);
       RgbLed.setGreenValue(0);
       RgbLed.setBlueValue(0);
     } else {
-      RgbLed.blinkState = true;
       RgbLed.setLEDToBlinkValue();
     }
   } else {
