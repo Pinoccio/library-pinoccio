@@ -41,6 +41,11 @@ static inline int16_t HAL_AdcMeasure(void) {
 int8_t HAL_MeasureTemperature(void) {
   int32_t val;
 
+  uint8_t adcsrc = ADCSRC;
+  uint8_t adcsrb = ADCSRB;
+  uint8_t adcsra = ADCSRA;
+  uint8_t admux = ADMUX;
+  
   ADCSRC = 10 << ADSUT0;
   ADCSRB = (1 << MUX5);
   ADMUX = (1 << REFS1) | (1 << REFS0) | (1 << MUX3) | (1 << MUX0); /* reference: 1.6V, input Temp Sensor */
@@ -56,6 +61,9 @@ int8_t HAL_MeasureTemperature(void) {
 
   val = HAL_AdcMeasure();
 
-  ADCSRA = 0;
+  ADCSRA = adcsra;
+  ADCSRB = adcsrb;
+  ADCSRC = adcsrc;
+  ADMUX = admux;
   return (int)((1.13 * val - 272.8)) + HAL_TEMPERATURE_CALIBRATION_OFFSET - 3;
 }
