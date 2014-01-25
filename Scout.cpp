@@ -178,17 +178,20 @@ static void scoutDigitalStateChangeTimerHandler(SYS_Timer_t *timer) {
   // TODO: This can likely be optimized by hitting the pin registers directly
   if (Scout.digitalPinEventHandler != 0) {
     for (uint8_t i=0; i<7; i++) {
-      val = digitalRead(i+2);
+      // Skip pins D0 an D1 (TX0 and RX0). TODO: Unhardcode this
+      // Scout-specific detail
+      uint8_t pin = i + 2;
+      val = digitalRead(pin);
       if (Scout.digitalPinState[i] != val) {
         if (Scout.eventVerboseOutput == true) {
           Serial.print("Running: digitalPinEventHandler(");
-          Serial.print(i+2);
+          Serial.print(pin);
           Serial.print(",");
           Serial.print(val);
           Serial.println(")");
         }
         Scout.digitalPinState[i] = val;
-        Scout.digitalPinEventHandler(i+2, val);
+        Scout.digitalPinEventHandler(pin, val);
       }
     }
   }
