@@ -181,6 +181,9 @@ static void scoutDigitalStateChangeTimerHandler(SYS_Timer_t *timer) {
       // Skip pins D0 an D1 (TX0 and RX0). TODO: Unhardcode this
       // Scout-specific detail
       uint8_t pin = i + 2;
+      // Skip output mode pins
+      if (*portModeRegister(digitalPinToPort(pin)) & digitalPinToBitMask(pin))
+        continue;
       val = digitalRead(pin);
       if (Scout.digitalPinState[i] != val) {
         if (Scout.eventVerboseOutput == true) {
