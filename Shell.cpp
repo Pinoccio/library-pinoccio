@@ -201,17 +201,17 @@ void powerReportHQ(void)
 
 static numvar powerReport(void) {
   powerReportHQ();
-  sp("percent charged: ");
+  sp("{\"report\":\"power\", \"charged\":");
   sp(Scout.getBatteryPercentage());
-  sp("\nvoltage: ");
+  sp(", \"voltage\":");
   sp((int)Scout.getBatteryVoltage());
-  sp("\ncharging: ");
-  sp(Scout.isBatteryCharging());
-  sp("\nvcc: ");
-  sp(Scout.isBackpackVccEnabled());
-  sp("\nalarm: ");
-  sp(Scout.isBatteryAlarmTriggered());
-  sp("\n");
+  sp(", \"charging\":");
+  sp(Scout.isBatteryCharging()?"true":"false");
+  sp(", \"vcc\":");
+  sp(Scout.isBackpackVccEnabled()?"true":"false");
+  sp(", \"alarm\":");
+  sp(Scout.isBatteryAlarmTriggered()?"true":"false");
+  sp("}\n");
   return true;
 }
 
@@ -304,20 +304,28 @@ static numvar ledTorch(void) {
   RgbLed.setTorch();
 }
 
+void ledReportHQ(void)
+{
+  char report[100];
+  sprintf(report,"{\"_\":\"led\",\"l\":[%d,%d,%d],\"t\":[%d,%d,%d]}",RgbLed.getRedValue(),RgbLed.getGreenValue(),RgbLed.getBlueValue(),RgbLed.getRedTorchValue(),RgbLed.getGreenTorchValue(),RgbLed.getBlueTorchValue());
+  Scout.handler.fieldAnnounce(0xBEEF, report);
+}
+
 static numvar ledReport(void) {
-  sp("{\"c\": {\"r\":");
+  ledReportHQ();
+  sp("{\"report\":\"led\", \"rgb\":[");
   sp(RgbLed.getRedValue());
-  sp(",\"g\":");
+  sp(",");
   sp(RgbLed.getGreenValue());
-  sp(",\"b\":");
+  sp(",");
   sp(RgbLed.getBlueValue());
-  sp("}, \"t\": {\"r\":");
+  sp(", \"torch\":[");
   sp(RgbLed.getRedTorchValue());
-  sp(",\"g\":");
+  sp(",");
   sp(RgbLed.getGreenTorchValue());
-  sp(",\"b\":");
+  sp(",");
   sp(RgbLed.getBlueTorchValue());
-  sp("}}\n");
+  sp("]}\n");
 }
 
 /****************************\
