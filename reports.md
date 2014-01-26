@@ -71,7 +71,10 @@ Each backpack attached generates it's own report (two backpacks on one scout wou
 
 There may be [more values](https://docs.google.com/document/d/1SVDNBB62NCAtVEWtao9h0Uc8jENlW3GP6svxdSTk-xc/edit#heading=h.9jwcjy4ekhf) based on each backpack (power usage, etc). 
 
-* "wifi", includes wifi network name/status
+* `"b":"wifi"`
+  * "v" - version 
+  * "c" - connection status, true/false
+  * "n" - network (max 16 char)
 
 ### "rf" - RF Mesh
 

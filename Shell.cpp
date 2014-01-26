@@ -86,6 +86,7 @@ void PinoccioShell::setup() {
 
   if (Scout.isLeadScout()) {
     addBitlashFunction("wifi.report", (bitlash_function) wifiReport);
+    addBitlashFunction("wifi.status", (bitlash_function) wifiStatus);
     addBitlashFunction("wifi.list", (bitlash_function) wifiList);
     addBitlashFunction("wifi.config", (bitlash_function) wifiConfig);
     addBitlashFunction("wifi.dhcp", (bitlash_function) wifiDhcp);
@@ -717,7 +718,27 @@ static numvar setEventVerbose(void) {
 /****************************\
  *       Scout.wifi.HANDLERS      *
 \****************************/
+
+void wifiReportHQ(void)
+{
+  char report[100];
+  sprintf(report,"{\"_\":\"bp\",\"b\":\"wifi\",\"v\":%d,\"c\":%s}",0,"true");
+  Scout.handler.fieldAnnounce(0xBEEF, report);
+}
+
 static numvar wifiReport(void) {
+  wifiReportHQ();
+  sp("{\"report\":\"wifi\", \"version\":");
+  sp(0);
+  sp(", \"connected\":");
+  sp("true");
+//  sp(", \"network\":");
+//  sp();
+  sp("}");
+  speol();
+}
+
+static numvar wifiStatus(void) {
   if (getarg(0) > 0 && getarg(1) == 1) {
     Scout.wifi.printProfiles(Serial);
   } else {
