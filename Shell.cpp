@@ -606,8 +606,24 @@ static numvar pinReport(void) {
 /****************************\
 *     BACKPACK HANDLERS     *
 \****************************/
+
+void backpackReportHQ(void)
+{
+  char report[100];
+  sprintf(report,"{\"_\":\"bps\",\"a\":[");
+  for (uint8_t i = 0; i < Scout.bp.num_slaves; ++i) {
+    for (uint8_t j = 0; j < UNIQUE_ID_LENGTH; ++j) {
+      // TODO add id to array
+    }
+  }
+  sprintf(report+strlen(report),"]}");
+  Scout.handler.fieldAnnounce(0xBEEF, report);
+}
+
 static numvar backpackReport(void) {
-  sp("[{\"name\":\"wifi\",\"version\":\"1.0\"},{\"name\":\"environment\",\"version\":\"2.0\"}]");
+  backpackReportHQ();
+  sp("{\"report\":\"backpacks\", \"backpacks\":[]}");
+  speol()
 }
 
 static numvar backpackList(void) {
