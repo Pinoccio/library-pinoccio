@@ -38,6 +38,7 @@ extern PinoccioShell Shell;
 static numvar getTemperature(void);
 static numvar getRandomNumber(void);
 static numvar uptimeReport(void);
+static numvar allReport(void);
 
 static numvar isBatteryCharging(void);
 static numvar getBatteryPercentage(void);
@@ -108,6 +109,7 @@ static numvar setEventPeriods(void);
 static numvar setEventVerbose(void);
 
 static numvar wifiReport(void);
+static numvar wifiStatus(void);
 static numvar wifiList(void);
 static numvar wifiConfig(void);
 static numvar wifiDhcp(void);

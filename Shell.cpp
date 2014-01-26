@@ -122,6 +122,13 @@ void PinoccioShell::setup() {
   }
 }
 
+void scoutReportHQ(void);
+void uptimeReportHQ(void);
+void powerReportHQ(void);
+void backpackReportHQ(void);
+void pinReportHQ(void);
+void meshReportHQ(void);
+
 // report all transient settings when asked
 void PinoccioShell::allReportHQ() {
   // XXX TODO, either delay between these or set up a callback system since only one packet can go out at once!
@@ -136,7 +143,7 @@ void PinoccioShell::allReportHQ() {
 static numvar allReport(void) {
   sp("running all reports");
   speol();
-  allReportHQ();
+  Shell.allReportHQ();
 }
 
 void PinoccioShell::loop() {
@@ -500,10 +507,10 @@ static numvar meshRouting(void) {
     sp(table[i].multicast);
     sp("      |      ");
     sp(table[i].score);
-    sp("      |     0x");
-    sp(table[i].dstAddr, HEX);
-    sp("     |     0x");
-    sp(table[i].nextHopAddr, HEX);
+    sp("      |     ");
+    sp(table[i].dstAddr);
+    sp("     |     ");
+    sp(table[i].nextHopAddr);
     sp("     |     ");
     sp(table[i].rank);
     sp("     |     ");
@@ -624,7 +631,7 @@ void backpackReportHQ(void)
 static numvar backpackReport(void) {
   backpackReportHQ();
   sp("{\"report\":\"backpacks\", \"backpacks\":[]}");
-  speol()
+  speol();
 }
 
 static numvar backpackList(void) {
