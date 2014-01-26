@@ -79,16 +79,6 @@ There may be [more values](https://docs.google.com/document/d/1SVDNBB62NCAtVEWta
 * "p" - pan id, integer
 * "c" - channel id, integer
 * "tx" - transmit power, string
-
-### "rr" - RF Routing State
-
-TBD, report routing table changes, number of entries, high/low lqi.
-
-* "f" - fixed
-* "m" - multicast
-* "s" - score
-* "d" - dest address
-* "h" - next hop address
-* "r" - rank
-* "l" - link quality indicator
+* "r" - data rate, string
+* "t" - routing table size, integer
 

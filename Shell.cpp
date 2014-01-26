@@ -33,11 +33,13 @@ void PinoccioShell::setup() {
   addBitlashFunction("mesh.send", (bitlash_function) meshSend);
   addBitlashFunction("mesh.verbose", (bitlash_function) meshVerbose);
   addBitlashFunction("mesh.report", (bitlash_function) meshReport);
+  addBitlashFunction("mesh.routing", (bitlash_function) meshRouting);
   addBitlashFunction("mesh.announce", (bitlash_function) meshAnnounce);
 
   addBitlashFunction("temperature", (bitlash_function) getTemperature);
   addBitlashFunction("randomnumber", (bitlash_function) getRandomNumber);
   addBitlashFunction("uptime", (bitlash_function) uptimeReport);
+  addBitlashFunction("report", (bitlash_function) allReport);
 
   addBitlashFunction("led.blink", (bitlash_function) ledBlink);
   addBitlashFunction("led.blinktorch", (bitlash_function) ledBlinkTorch);
@@ -119,11 +121,21 @@ void PinoccioShell::setup() {
   }
 }
 
+// report all transient settings when asked
 void PinoccioShell::allReportHQ() {
   // XXX TODO, either delay between these or set up a callback system since only one packet can go out at once!
   scoutReportHQ();
   uptimeReportHQ();
   powerReportHQ();
+  backpackReportHQ();
+  pinReportHQ();
+  meshReportHQ();
+}
+
+static numvar allReport(void) {
+  sp("running all reports");
+  speol();
+  allReportHQ();
 }
 
 void PinoccioShell::loop() {
@@ -427,60 +439,76 @@ static numvar meshVerbose(void) {
   isMeshVerbose = getarg(1);
 }
 
+int meshRoutingCount(void)
+{
+  int count = 0;
+  NWK_RouteTableEntry_t *table = NWK_RouteTable();
+  for (int i=0; i < NWK_ROUTE_TABLE_SIZE; i++) {
+    if (table[i].dstAddr == NWK_ROUTE_UNKNOWN) continue;
+    count++;
+  }
+  return count;
+}
+
+void meshReportHQ(void)
+{
+  char report[100];
+  sprintf(report,"{\"_\":\"rf\",\"id\":%d,\"p\":%d,\"c\":%d,\"tx\":\"%s\",\"tx\":\"%s\",\"t\":%d}",Scout.getAddress(),Scout.getPanId(),Scout.getChannel(),Scout.getTxPowerDb(),Scout.getDataRatekbps(),meshRoutingCount());
+  Scout.handler.fieldAnnounce(0xBEEF, report);
+}
+
 static numvar meshReport(void) {
-  // TODO: return JSON formatted report of radio details
-  // ie: {"id":34,"pid":1,"ch":26,"sec":true}
-  Serial.println("-- Mesh Radio Settings --");
-  Serial.print(" - Address: ");
-  Serial.println(Scout.getAddress());
-  Serial.print(" - Pan ID: 0x");
-  Serial.println(Scout.getPanId(), HEX);
-  Serial.print(" - Channel: ");
-  Serial.println(Scout.getChannel());
-  Serial.print(" - Data Rate: ");
+  meshReportHQ();
+  sp("{\"report\":\"mesh\", \"address\":");
+  sp(Scout.getAddress());
+  sp(", \"pan\":");
+  sp(Scout.getPanId());
+  sp(", \"channel\":");
+  sp(Scout.getChannel());
+  sp(", \"routes\":");
+  sp(meshRoutingCount());
+  sp(", \"rate\":\"");
   // gotta read these from program memory (for SRAM savings)
   char c;
   const char *kbString = Scout.getDataRatekbps();
   while((c = pgm_read_byte(kbString++))) {
-     Serial.write(c);
+     sp(c);
   }
-  Serial.println();
-  Serial.print(" - Tx Power: ");
+  sp("\", \"power\":\"");
   // gotta read these from program memory (for SRAM savings)
   const char *dbString = Scout.getTxPowerDb();
   while((c = pgm_read_byte(dbString++))) {
-     Serial.write(c);
+     sp(c);
   }
-  Serial.println();
-  // TODO: loop through all NWK_GetGroups() output and print
-  // Serial.print(" - In groups: ");
-  //   if (Scout.meshGetGroups()) {
-  //     Serial.println("Yes");
-  //   } else {
-  //     Serial.println("No");
-  //   }
-  Serial.println(" - Routing: ");
-  Serial.println("|    Fixed    |  Multicast  |    Score    |    DstAdd   | NextHopAddr |    Rank     |     LQI    |");
+  sp("\"}");
+  speol();
+}
+
+static numvar meshRouting(void) {
+  sp(" - Routing: ");
+  sp("|    Fixed    |  Multicast  |    Score    |    DstAdd   | NextHopAddr |    Rank     |     LQI    |");
+  speol();
   NWK_RouteTableEntry_t *table = NWK_RouteTable();
   for (int i=0; i < NWK_ROUTE_TABLE_SIZE; i++) {
     if (table[i].dstAddr == NWK_ROUTE_UNKNOWN) {
       continue;
     }
-    Serial.print("|      ");
-    Serial.print(table[i].fixed);
-    Serial.print("      |      ");
-    Serial.print(table[i].multicast);
-    Serial.print("      |      ");
-    Serial.print(table[i].score);
-    Serial.print("      |     0x");
-    Serial.print(table[i].dstAddr, HEX);
-    Serial.print("     |     0x");
-    Serial.print(table[i].nextHopAddr, HEX);
-    Serial.print("     |     ");
-    Serial.print(table[i].rank);
-    Serial.print("     |     ");
-    Serial.print(table[i].lqi);
-    Serial.println("    |");
+    sp("|      ");
+    sp(table[i].fixed);
+    sp("      |      ");
+    sp(table[i].multicast);
+    sp("      |      ");
+    sp(table[i].score);
+    sp("      |     0x");
+    sp(table[i].dstAddr, HEX);
+    sp("     |     0x");
+    sp(table[i].nextHopAddr, HEX);
+    sp("     |     ");
+    sp(table[i].rank);
+    sp("     |     ");
+    sp(table[i].lqi);
+    sp("    |");
+    speol();
   }
 }
 
@@ -531,39 +559,47 @@ static numvar pinThreshold(void) {
   return true;
 }
 
+void pinReportHQ(void)
+{
+  char report[100];
+  sprintf(report,"{\"_\":\"pin\",\"a\":[%d,%d,%d,%d,%d,%d,%d,%d],\"d\":[%d,%d,%d,%d,%d,%d,%d]}",Scout.analogPinState[0],Scout.analogPinState[1],Scout.analogPinState[2],Scout.analogPinState[3],Scout.analogPinState[4],Scout.analogPinState[5],Scout.analogPinState[6],Scout.analogPinState[7],Scout.digitalPinState[0],Scout.digitalPinState[1],Scout.digitalPinState[2],Scout.digitalPinState[3],Scout.digitalPinState[4],Scout.digitalPinState[5],Scout.digitalPinState[6]);
+  Scout.handler.fieldAnnounce(0xBEEF, report);
+}
+
 static numvar pinReport(void) {
   // TODO: return JSON formmated report of all IO pins and their values
-  sp("{\"d2\": ");
+  sp("{\"report\":\"pins\", \"d2\":");
   sp(Scout.digitalPinState[0]);
-  sp(", \"d3\": ");
+  sp(", \"d3\":");
   sp(Scout.digitalPinState[1]);
-  sp(", \"d4\": ");
+  sp(", \"d4\":");
   sp(Scout.digitalPinState[2]);
-  sp(", \"d5\": ");
+  sp(", \"d5\":");
   sp(Scout.digitalPinState[3]);
-  sp(", \"d6\": ");
+  sp(", \"d6\":");
   sp(Scout.digitalPinState[4]);
-  sp(", \"d7\": ");
+  sp(", \"d7\":");
   sp(Scout.digitalPinState[5]);
-  sp(", \"d8\": ");
+  sp(", \"d8\":");
   sp(Scout.digitalPinState[6]);
-  sp(", \"a0\": ");
+  sp(", \"a0\":");
   sp(Scout.analogPinState[0]);
-  sp(", \"a1\": ");
+  sp(", \"a1\":");
   sp(Scout.analogPinState[1]);
-  sp(", \"a2\": ");
+  sp(", \"a2\":");
   sp(Scout.analogPinState[2]);
-  sp(", \"a3\": ");
+  sp(", \"a3\":");
   sp(Scout.analogPinState[3]);
-  sp(", \"a4\": ");
+  sp(", \"a4\":");
   sp(Scout.analogPinState[4]);
-  sp(", \"a5\": ");
+  sp(", \"a5\":");
   sp(Scout.analogPinState[5]);
-  sp(", \"a6\": ");
+  sp(", \"a6\":");
   sp(Scout.analogPinState[6]);
-  sp(", \"a7\": ");
+  sp(", \"a7\":");
   sp(Scout.analogPinState[7]);
   sp("}");
+  speol();
   return true;
 }
 

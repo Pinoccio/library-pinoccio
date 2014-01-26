@@ -80,6 +80,7 @@ static numvar meshPingGroup(void);
 static numvar meshSend(void);
 static numvar meshVerbose(void);
 static numvar meshReport(void);
+static numvar meshRouting(void);
 static numvar meshAnnounce(void);
 
 static numvar pinOn(void);
