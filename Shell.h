@@ -23,6 +23,7 @@ class PinoccioShell {
 
     void setup();
     void loop();
+    void allReportHQ();
 
     void startShell();
     void disableShell();
@@ -36,6 +37,7 @@ extern PinoccioShell Shell;
 
 static numvar getTemperature(void);
 static numvar getRandomNumber(void);
+static numvar uptimeReport(void);
 
 static numvar isBatteryCharging(void);
 static numvar getBatteryPercentage(void);

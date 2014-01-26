@@ -37,6 +37,7 @@ void PinoccioShell::setup() {
 
   addBitlashFunction("temperature", (bitlash_function) getTemperature);
   addBitlashFunction("randomnumber", (bitlash_function) getRandomNumber);
+  addBitlashFunction("uptime", (bitlash_function) uptimeReport);
 
   addBitlashFunction("led.blink", (bitlash_function) ledBlink);
   addBitlashFunction("led.blinktorch", (bitlash_function) ledBlinkTorch);
@@ -108,11 +109,21 @@ void PinoccioShell::setup() {
   Scout.batteryAlarmTriggeredEventHandler = batteryAlarmTriggeredEventHandler;
   Scout.temperatureEventHandler = temperatureEventHandler;
 
+  // bootup reporting
+  allReport();
+
   if (isShellEnabled) {
     startShell();
   } else {
     Serial.begin(115200);
   }
+}
+
+void PinoccioShell::allReportHQ() {
+  // XXX TODO, either delay between these or set up a callback system since only one packet can go out at once!
+  scoutReportHQ();
+  uptimeReportHQ();
+  powerReportHQ();
 }
 
 void PinoccioShell::loop() {
@@ -151,6 +162,31 @@ static numvar getRandomNumber(void) {
   sp(i);
   speol();
   return i;
+}
+
+void uptimeReportHQ(void)
+{
+  char report[100];
+  sprintf(report,"{\"_\":\"u\",\"m\":%d,\"c\":%d,\"s\":\"%s\",\"f\":%d,\"r\":%d}",millis(),0,"power",0,random());
+  Scout.handler.fieldAnnounce(0xBEEF, report);
+}
+
+static numvar uptimeReport(void) {
+  powerReportHQ();
+  sp("{\"report\":\"uptime\", \"uptime\":");
+  sp(millis());
+  // TODO track total commands into bitlash, where to get restarted reason and free, update HQ too
+//  sp(", \"commands\":");
+//  sp(shellCommandCounter);
+//  sp(", \"restarted\":");
+//  sp();
+//  sp(", \"free\":");
+//  sp();
+  sp(", \"random\":");
+  sp(random());
+  sp("}");
+  speol();
+  return true;
 }
 
 /****************************\
@@ -211,7 +247,8 @@ static numvar powerReport(void) {
   sp(Scout.isBackpackVccEnabled()?"true":"false");
   sp(", \"alarm\":");
   sp(Scout.isBatteryAlarmTriggered()?"true":"false");
-  sp("}\n");
+  sp("}");
+  speol();
   return true;
 }
 
@@ -325,7 +362,8 @@ static numvar ledReport(void) {
   sp(RgbLed.getGreenTorchValue());
   sp(",");
   sp(RgbLed.getBlueTorchValue());
-  sp("]}\n");
+  sp("]}");
+  speol();
 }
 
 /****************************\
@@ -556,14 +594,23 @@ static numvar backpackList(void) {
 /****************************\
  *   SCOUT REPORT HANDLERS  *
 \****************************/
+
+void scoutReportHQ(void)
+{
+  char report[100];
+  sprintf(report,"{\"_\":\"s\",\"e\":%d,\"hv\":%d,\"hf\":%d,\"hs\":%d}",(int)Scout.getEEPROMVersion(),(int)Scout.getHwVersion(),Scout.getHwFamily(),Scout.getHwSerial());
+  Scout.handler.fieldAnnounce(0xBEEF, report);
+}
+
 static numvar scoutReport(void) {
-  sp("{\"e\":");
+  scoutReportHQ();
+  sp("{\"report\":\"scout\", \"eeprom\":");
   sp((int)Scout.getEEPROMVersion());
-  sp(",\"hwv\":");
+  sp(", \"hardware\":");
   sp((int)Scout.getHwVersion());
-  sp(",\"hwf\":");
+  sp(", \"family\":");
   sp((int)Scout.getHwFamily());
-  sp(",\"hwid\":");
+  sp(", \"serial\":");
   sp((int)Scout.getHwSerial());
   sp("}");
   speol();
