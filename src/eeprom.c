@@ -32,8 +32,8 @@
 #if defined(AVR_BUILD)
 
 #include "avr/eeprom.h"
-void eewrite(int addr, uint8_t value) { if (addr < ENDDB) eeprom_write_byte((unsigned char *) addr, value); }
-uint8_t eeread(int addr) { if (addr < ENDDB) return eeprom_read_byte((unsigned char *) addr); else return 255; }
+void eewrite(int addr, uint8_t value) { if ((addr >= 0) && (addr < ENDDB)) eeprom_write_byte((unsigned char *) addr, value); }
+uint8_t eeread(int addr) { if ((addr >= 0) && (addr < ENDDB)) return eeprom_read_byte((unsigned char *) addr); else return 255; }
 
 #elif defined(ARM_BUILD)
 
