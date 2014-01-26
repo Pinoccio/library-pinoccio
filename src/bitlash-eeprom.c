@@ -74,7 +74,7 @@ int findend(int addr) {
 
 // return true if string in EEPROM at addr matches string at str
 char eestrmatch(int addr, char *str) {
-	while (*str) if (eeread(addr++) != *str++) return 0;
+	while (*str) if ((addr >= ENDDB) || (eeread(addr++) != *str++)) return 0;
 	if (eeread(addr) == 0) return 1;	// ended at the same place?
 	return 0;
 }
@@ -135,18 +135,22 @@ int starthole = STARTDB, endhole;
 
 // Save string at str to EEPROM at addr
 void saveString(int addr, char *str) {
-	while (*str) eewrite(addr++, *str++);
-	eewrite(addr, 0);
+	if (addr + strlen(str) < ENDDB)
+	{
+		while (*str) eewrite(addr++, *str++);
+		eewrite(addr, 0);
+	}
 }
 
 // erase string at addy.  return addy of byte past end.
 int erasestr(int addr) {
-	for (;;) {
+	while (addr < ENDDB) {
 		byte c = eeread(addr);
 		if (c == EMPTY) return addr;
 		eewrite(addr++, EMPTY);
 		if (!c) return addr;
 	}
+	return addr;
 }
 
 // erase entry by id
@@ -205,7 +209,7 @@ char id[IDLEN+1];			// buffer for id
 
 // print eeprom string at addr
 void eeputs(int addr) {
-	for (;;) {
+	while (addr < ENDDB) {
 		byte c = eeread(addr++);
 		if (!c || (c == EMPTY)) return;
 #if 0
@@ -248,7 +252,7 @@ int start = STARTDB;
 void cmd_peep(void) {
 int i=0;
 
-	while (i <= ENDEEPROM) {
+	while (i <= ENDDB) {
 		if (!(i&63)) {speol(); printHex(i+0xe000); spb(':'); }
 		if (!(i&7)) spb(' ');
 		if (!(i&3)) spb(' ');		
