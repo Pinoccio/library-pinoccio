@@ -113,7 +113,7 @@ void PinoccioShell::setup() {
   Scout.temperatureEventHandler = temperatureEventHandler;
 
   // bootup reporting
-  allReport();
+//  Shell.allReportHQ();
 
   if (isShellEnabled) {
     startShell();
