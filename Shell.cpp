@@ -1031,6 +1031,7 @@ static void sendConfirm(NWK_DataReq_t *req) {
 static void digitalPinEventHandler(uint8_t pin, uint8_t value) {
   uint32_t time = millis();
 
+  pinReportHQ();
   if (findscript("event.digital")) {
     String callback = "event.digital(" + String(pin) + "," + String(value) + ")";
     char buf[24];
@@ -1047,6 +1048,7 @@ static void digitalPinEventHandler(uint8_t pin, uint8_t value) {
 }
 
 static void analogPinEventHandler(uint8_t pin, uint16_t value) {
+  pinReportHQ();
   if (findscript("event.analog")) {
     String callback = "event.analog(" + String(pin) + "," + String(value) + ")";
     char buf[24];
@@ -1086,6 +1088,7 @@ static void batteryChargingEventHandler(uint8_t value) {
 }
 
 static void batteryAlarmTriggeredEventHandler(uint8_t value) {
+  powerReportHQ();
   if (findscript("event.batteryalarm")) {
     String callback = "event.batteryalarm(" + String(value) + ")";
     char buf[24];
@@ -1095,6 +1098,7 @@ static void batteryAlarmTriggeredEventHandler(uint8_t value) {
 }
 
 static void temperatureEventHandler(uint8_t value) {
+  tempReportHQ();
   if (findscript("event.temperature")) {
     String callback = "event.temperature(" + String(value) + ")";
     char buf[24];
