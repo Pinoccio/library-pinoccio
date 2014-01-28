@@ -44,13 +44,13 @@ void PinoccioScout::setup(bool isForcedLeadScout) {
   // seems to be enough, but let's be generous.
   delay(5);
   bp.begin(BACKPACK_BUS);
-  /*
   if (!bp.enumerate()) {
+    /*
     sp("Backpack enumeration failed: ");
     bp.printLastError(Serial);
     speol();
+    */
   }
-  */
 
   handler.setup();
   Shell.setup();
