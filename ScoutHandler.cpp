@@ -28,14 +28,10 @@ void PinoccioScoutHandler::setup() {
     Scout.meshListen(3, leadAnswers);
     Scout.meshJoinGroup(0xBEEF); // our internal reporting channel
 
-    if (hqVerboseOutput) {
-      speol("- Lead Scout ready -");
-    }
+    speol("- Lead Scout ready -");
   } else {
     Scout.meshListen(2, fieldCommands);
-    if (hqVerboseOutput) {
-      speol("- Field Scout ready -");
-    }
+    speol("- Field Scout ready -");
   }
 
   // join all the "channels" to listen for announcements
