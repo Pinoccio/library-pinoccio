@@ -76,6 +76,10 @@ void PinoccioShell::setup() {
   addBitlashFunction("scout.gethqtoken", (bitlash_function) getHQToken);
   addBitlashFunction("scout.boot", (bitlash_function) wdtBoot);
 
+  addBitlashFunction("hq.settoken", (bitlash_function) setHQToken);
+  addBitlashFunction("hq.gettoken", (bitlash_function) getHQToken);
+  addBitlashFunction("hq.verbose", (bitlash_function) hqVerbose);
+
   addBitlashFunction("events.start", (bitlash_function) startStateChangeEvents);
   addBitlashFunction("events.stop", (bitlash_function) stopStateChangeEvents);
   addBitlashFunction("events.setfreqs", (bitlash_function) setEventPeriods);
@@ -583,6 +587,14 @@ static numvar wdtBoot(void) {
   cli();
   wdt_enable(WDTO_15MS);
   while(1);
+}
+
+/****************************\
+ *        HQ HANDLERS       *
+\****************************/
+
+static numvar hqVerbose(void) {
+  Scout.handler.setVerbose(getarg(1));
 }
 
 /****************************\

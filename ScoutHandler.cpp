@@ -15,20 +15,27 @@ PinoccioScoutHandler::~PinoccioScoutHandler() { }
 
 void PinoccioScoutHandler::setup() {
   if (Scout.isLeadScout()) {
-
-    Serial.print("Wi-Fi backpack connecting...");
+    if (hqVerboseOutput) {
+      sp("Wi-Fi backpack connecting...");
+    }
     Scout.wifi.setup();
     Scout.wifi.autoConnectHq();
-    Serial.println("Done");
+    if (hqVerboseOutput) {
+      speol("Done");
+    }
     RgbLed.blinkGreen();
 
     Scout.meshListen(3, leadAnswers);
     Scout.meshJoinGroup(0xBEEF); // our internal reporting channel
 
-    Serial.println("- Lead Scout ready -");
+    if (hqVerboseOutput) {
+      speol("- Lead Scout ready -");
+    }
   } else {
     Scout.meshListen(2, fieldCommands);
-    Serial.println("- Field Scout ready -");
+    if (hqVerboseOutput) {
+      speol("- Field Scout ready -");
+    }
   }
 
   // join all the "channels" to listen for announcements
@@ -46,21 +53,27 @@ void PinoccioScoutHandler::loop() {
   }
 }
 
+void PinoccioScoutHandler::setVerbose(bool flag) {
+  hqVerboseOutput = flag;
+}
+
 static bool fieldCommands(NWK_DataInd_t *ind) {
   int total, ret;
   RgbLed.blinkGreen(200);
 
-  sp("Received command");
-  sp("lqi: ");
-  sp(ind->lqi);
-  sp("  ");
-  sp("rssi: ");
-  sp(ind->rssi);
-  speol();
+  if (hqVerboseOutput) {
+    sp("Received command");
+    sp("lqi: ");
+    sp(ind->lqi);
+    sp("  ");
+    sp("rssi: ");
+    speol(ind->rssi);
+  }
 
   if (fieldAnswerTo) {
-    sp("can't receive command while sending answer");
-    speol();
+    if (hqVerboseOutput) {
+      speol("can't receive command while sending answer");
+    }
     return false;
   }
 
@@ -77,7 +90,9 @@ static bool fieldCommands(NWK_DataInd_t *ind) {
 
   // when null terminated, do the message
   if (fieldCommand[fieldCommandLen-1] != 0) {
-    Serial.println("waiting for more");
+    if (hqVerboseOutput) {
+      speol("waiting for more");
+    }
     return true;
   }
 
@@ -85,12 +100,16 @@ static bool fieldCommands(NWK_DataInd_t *ind) {
   setOutputHandler(&bitlashBuffer);
   Shell.bitlashOutput = (char*)malloc(1);
   Shell.bitlashOutput[0] = 0;
-  Serial.print("running command ");
-  Serial.println(fieldCommand);
+  if (hqVerboseOutput) {
+    sp("running command ");
+    speol(fieldCommand);
+  }
 
   ret = (int)doCommand(fieldCommand);
-  Serial.print("got result ");
-  Serial.println(ret);
+  if (hqVerboseOutput) {
+    sp("got result ");
+    speol(ret);
+  }
 
   setOutputHandler(&bitlashFilter);
   fieldCommandLen = 0;
@@ -106,9 +125,13 @@ static bool fieldCommands(NWK_DataInd_t *ind) {
 }
 
 static void fieldAnswerChunkConfirm(NWK_DataReq_t *req) {
-  Serial.print("  Message confirmation - ");
+  if (hqVerboseOutput) {
+    sp("  Message confirmation - ");
+  }
   if (req->status == NWK_SUCCESS_STATUS) {
-    Serial.println("success");
+    if (hqVerboseOutput) {
+      speol("success");
+    }
     if (strlen(fieldAnswerChunks + fieldAnswerChunksAt) > 100) {
       fieldAnswerChunksAt += 100;
       fieldAnswerChunk();
@@ -117,10 +140,14 @@ static void fieldAnswerChunkConfirm(NWK_DataReq_t *req) {
   } else {
     fieldAnswerRetries++;
     if (fieldAnswerRetries > 3) {
-      Serial.print("error: ");
-      Serial.println(req->status, HEX);
+      if (hqVerboseOutput) {
+        sp("error: ");
+        speol(req->status);
+      }
     } else {
-      Serial.println("RETRY");
+      if (hqVerboseOutput) {
+        speol("RETRY");
+      }
       NWK_DataReq(req);
       return; // don't free yet
     }
@@ -147,10 +174,12 @@ static void fieldAnswerChunk() {
   NWK_DataReq(&fieldAnswerReq);
 
   //RgbLed.blinkCyan(200);
-  Serial.print(fieldAnswerTo, DEC);
-  Serial.print(" len ");
-  Serial.print(len, DEC);
-  Serial.println("->chunk");
+  if (hqVerboseOutput) {
+    sp(fieldAnswerTo);
+    sp(" len ");
+    sp(len);
+    speol("->chunk");
+  }
 }
 
 static void fieldAnnounceConfirm(NWK_DataReq_t *req) {
@@ -164,10 +193,12 @@ void PinoccioScoutHandler::fieldAnnounce(uint16_t chan, char *message) {
     return;
   }
 
-  Serial.print("announcing to 0x");
-  Serial.print(chan, HEX);
-  Serial.print(" ");
-  Serial.println(message);
+  if (hqVerboseOutput) {
+    sp("announcing to 0x");
+    sp(chan);
+    sp(" ");
+    speol(message);
+  }
 
   // when lead scout, shortcut
   if (Scout.isLeadScout()) {
@@ -194,7 +225,9 @@ static bool fieldAnnouncements(NWK_DataInd_t *ind) {
     return true;
   }
 
-  Serial.print("MULTICAST");
+  if (hqVerboseOutput) {
+    sp("MULTICAST");
+  }
   if (Scout.isLeadScout()) {
     leadAnnouncementSend(ind->dstAddr, ind->srcAddr, (char*)ind->data);
   }
@@ -228,7 +261,9 @@ void leadHQConnect() {
     sprintf(auth,"{\"type\":\"token\",\"token\":\"%s\"}\n", token);
     leadSignal(auth);
   } else {
-    Serial.println("server unvailable");
+    if (hqVerboseOutput) {
+      speol("server unvailable");
+    }
   }
 }
 
@@ -264,8 +299,10 @@ void leadHQHandle(void) {
     buffer[len+rsize] = 0; // null terminate
 
     // look for a packet
-    Serial.print("looking for packet in: ");
-    Serial.println(buffer);
+    if (hqVerboseOutput) {
+      sp("looking for packet in: ");
+      speol(buffer);
+    }
     nl = strchr(buffer, '\n');
     if (!nl) {
       continue;
@@ -274,8 +311,14 @@ void leadHQHandle(void) {
     // null terminate just the packet and process it
     *nl = 0;
     j0g(buffer, index, 32);
-    if(*index) leadIncoming(buffer, index);
-    else Serial.println("JSON parse failed");
+    if (*index) {
+      leadIncoming(buffer, index);
+    }
+    else {
+      if (hqVerboseOutput) {
+        speol("JSON parse failed");
+      }
+    }
 
     // advance buffer and resize, minimum is just the buffer end null
     nl++;
@@ -301,7 +344,9 @@ void leadIncoming(char *packet, unsigned short *index) {
   unsigned long id;
 
   type = j0g_str("type", packet, index);
-  Serial.println(type);
+  if (hqVerboseOutput) {
+    speol(type);
+  }
 
   if (strcmp(type, "online") == 0) {
     // TODO anything hard-coded to do once confirmed online?
@@ -312,13 +357,15 @@ void leadIncoming(char *packet, unsigned short *index) {
     id = strtoul(j0g_str("id", packet, index), NULL, 10);
     command = j0g_str("command", packet, index);
     if (strlen(j0g_str("to", packet, index)) == 0 || !id || !command) {
-      Serial.println("invalid command, requires to, id, command");
-      Serial.print("to: ");
-      Serial.println(to);
-      Serial.print("id: ");
-      Serial.println(id);
-      Serial.print("command: ");
-      Serial.println(command);
+      if (hqVerboseOutput) {
+        speol("invalid command, requires to, id, command");
+        sp("to: ");
+        speol(to);
+        sp("id: ");
+        speol(id);
+        sp("command: ");
+        speol(command);
+      }
       return;
     }
 
@@ -355,9 +402,13 @@ void leadIncoming(char *packet, unsigned short *index) {
 
 // mesh callback when sending command chunks
 static void leadCommandChunkConfirm(NWK_DataReq_t *req) {
-  Serial.print("  Message confirmation - ");
+  if (hqVerboseOutput) {
+    sp("  Message confirmation - ");
+  }
   if (req->status == NWK_SUCCESS_STATUS) {
-    Serial.println("success");
+    if (hqVerboseOutput) {
+      speol("success");
+    }
     if (strlen(leadCommandChunks+leadCommandChunksAt) > 100) {
       leadCommandChunksAt += 100;
       leadCommandChunk();
@@ -366,11 +417,15 @@ static void leadCommandChunkConfirm(NWK_DataReq_t *req) {
   } else {
     leadCommandRetries++;
     if (leadCommandRetries > 3) {
-      Serial.print("error: ");
-      Serial.println(req->status, HEX);
+      if (hqVerboseOutput) {
+        sp("error: ");
+        speol(req->status);
+      }
       leadCommandError(leadCommandTo, leadAnswerID, "no response");
     } else {
-      Serial.println("RETRY");
+      if (hqVerboseOutput) {
+        speol("RETRY");
+      }
       NWK_DataReq(req);
       return; // don't free yet
     }
@@ -398,38 +453,48 @@ static void leadCommandChunk() {
   NWK_DataReq(&leadCommandReq);
   //RgbLed.blinkCyan(200);
 
-  Serial.print(leadCommandTo, DEC);
-  Serial.print(" len ");
-  Serial.print(len, DEC);
-  Serial.println("->chunk");
+  if (hqVerboseOutput) {
+    sp(leadCommandTo);
+    sp(" len ");
+    sp(len);
+    speol("->chunk");
+  }
 }
 
 // wrapper to send a chunk of JSON to the HQ
 void leadSignal(char *json) {
   if (!Scout.wifi.client.connected()) {
-    Serial.println("HQ offline, can't signal");
-    Serial.println(json);
+    if (hqVerboseOutput) {
+      speol("HQ offline, can't signal");
+      speol(json);
+    }
     return;
   }
-  Serial.println("HQ signalling");
-  Serial.println(json);
+  if (hqVerboseOutput) {
+    speol("HQ signalling");
+    speol(json);
+  }
   Scout.wifi.client.write(json);
   Scout.wifi.client.flush();
 }
 
 // called whenever another scout sends an answer back to us
-static bool leadAnswers(NWK_DataInd_t *ind) {
+bool leadAnswers(NWK_DataInd_t *ind) {
   bool end = false;
   int at;
   char sig[256];
   //RgbLed.blinkGreen(200);
 
   if (ind->options&NWK_IND_OPT_MULTICAST) {
-    Serial.println("MULTICAST on wrong endpoint");
+    if (hqVerboseOutput) {
+      speol("MULTICAST on wrong endpoint");
+    }
     return true;
   }
 
-  Serial.println("Received answer");
+  if (hqVerboseOutput) {
+    speol("Received answer");
+  }
   if (ind->data[ind->size-1] == 0) {
     end = true;
     ind->size--;

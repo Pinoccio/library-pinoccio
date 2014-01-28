@@ -564,6 +564,14 @@ void sp(int);
 void sp(unsigned int);
 void sp(long);
 void sp(unsigned long);
+void speol(const char *str);
+void speol(const String &str);
+void speol(char str);
+void speol(unsigned char str);
+void speol(int str);
+void speol(unsigned int str);
+void speol(long str);
+void speol(unsigned long str);
 void speol(void);
 
 numvar func_printf(void);
