@@ -15,14 +15,8 @@ PinoccioScoutHandler::~PinoccioScoutHandler() { }
 
 void PinoccioScoutHandler::setup() {
   if (Scout.isLeadScout()) {
-    if (hqVerboseOutput) {
-      sp("Wi-Fi backpack connecting...");
-    }
     Scout.wifi.setup();
     Scout.wifi.autoConnectHq();
-    if (hqVerboseOutput) {
-      speol("Done");
-    }
     RgbLed.blinkGreen();
 
     Scout.meshListen(3, leadAnswers);
