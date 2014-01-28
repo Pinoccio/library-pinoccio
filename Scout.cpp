@@ -51,7 +51,6 @@ void PinoccioScout::setup(bool isForcedLeadScout) {
   }
 
   handler.setup();
-  Shell.setup();
 
   Wire.begin();
   HAL_FuelGaugeConfig(20);   // Configure the MAX17048G's alert percentage to 20%
@@ -63,7 +62,6 @@ void PinoccioScout::setup(bool isForcedLeadScout) {
 
 void PinoccioScout::loop() {
   PinoccioClass::loop();
-  Shell.loop();
   handler.loop();
 
   if (isLeadScout()) {

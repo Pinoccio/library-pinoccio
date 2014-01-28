@@ -2,7 +2,6 @@
 #define LIB_PINOCCIO_SCOUT_H_
 
 #include <Pinoccio.h>
-#include <Shell.h>
 #include <ScoutHandler.h>
 #include <PBBP.h>
 #include <utility/WiFiBackpack.h>
