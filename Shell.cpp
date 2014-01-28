@@ -329,8 +329,10 @@ static numvar ledReport(void) {
 static numvar meshConfig(void) {
   uint16_t panId = 0x4567;
   uint8_t channel = 0x1a;
-  if (getarg(0) == 2) {
+  if (getarg(0) >= 2) {
     panId = getarg(2);
+  }
+  if (getarg(0) == 3) {
     channel = getarg(3);
   }
   Scout.meshSetRadio(getarg(1), panId, channel);
