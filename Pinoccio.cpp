@@ -17,10 +17,11 @@ PinoccioClass::~PinoccioClass() { }
 void PinoccioClass::setup() {
   SYS_Init();
   PHY_RandomReq();
-  loadSettingsFromEeprom();
 
   digitalWrite(SS, HIGH);
   pinMode(SS, OUTPUT);
+
+  loadSettingsFromEeprom();
 }
 
 void PinoccioClass::loop() {
@@ -144,7 +145,7 @@ void PinoccioClass::meshSetRadio(const uint16_t theAddress, const uint16_t thePa
   eeprom_update_byte((uint8_t *)8179, channel);
 
   meshSetPower(0);
-  meshSetDataRate(2);
+  meshSetDataRate(0);
 }
 
 
