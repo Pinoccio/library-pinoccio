@@ -145,15 +145,13 @@ static bool isMeshVerbose;
 \****************************/
 static numvar getTemperature(void) {
   int i = Scout.getTemperature();
-  sp(i);
-  speol();
+  speol(i);
   return i;
 }
 
 static numvar getRandomNumber(void) {
   int i = random();
-  sp(i);
-  speol();
+  speol(i);
   return i;
 }
 
@@ -162,22 +160,19 @@ static numvar getRandomNumber(void) {
 \****************************/
 static numvar isBatteryCharging(void) {
   int i = Scout.isBatteryCharging();
-  sp(i);
-  speol();
+  speol(i);
   return i;
 }
 
 static numvar getBatteryPercentage(void) {
   int i = Scout.getBatteryPercentage();
-  sp(i);
-  speol();
+  speol(i);
   return i;
 }
 
 static numvar getBatteryVoltage(void) {
   int i = Scout.getBatteryVoltage();
-  sp(i);
-  speol();
+  speol(i);
   return i;
 }
 
@@ -328,7 +323,7 @@ static numvar ledReport(void) {
 \****************************/
 static numvar meshConfig(void) {
   uint16_t panId = 0x4567;
-  uint8_t channel = 0x14; // channel 20
+  uint8_t channel = 20;
   if (getarg(0) >= 2) {
     panId = getarg(2);
   }
@@ -562,13 +557,11 @@ static numvar scoutReport(void) {
   sp((int)Scout.getHwFamily());
   sp(",\"hwid\":");
   sp((int)Scout.getHwSerial());
-  sp("}");
-  speol();
+  speol("}");
 }
 
 static numvar isScoutLeadScout(void) {
-  sp(Scout.isLeadScout() ? 1 : 0);
-  speol();
+  speol(Scout.isLeadScout() ? 1 : 0);
   return Scout.isLeadScout();
 }
 
@@ -580,8 +573,7 @@ static numvar getHQToken(void) {
   char token[33];
   Pinoccio.getHQToken((char *)token);
   token[32] = 0;
-  sp(token);
-  speol();
+  speol(token);
 }
 
 static numvar wdtBoot(void) {

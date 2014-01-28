@@ -6,13 +6,14 @@
 /* MANUAL PROVISIONING BITLASH COMMANDS
 mesh.config(<Scout ID>, <Troop ID>)
 mesh.key("<mesh encryption key with max 16 chars>")
-wifi.config("<Access point name>", "<Access point password>", "173.255.220.185", 22756)
 scout.sethqtoken("<HQ Token String>")
+wifi.config("<Access point name>", "<Access point password>")
+wifi.dhcp // if dhcp
+wifi.reassociate()
 */
 
 void setup() {
-  // pass setup(1) to force lead scout
-  Scout.setup(0);
+  Scout.setup();
 }
 
 void loop() {
