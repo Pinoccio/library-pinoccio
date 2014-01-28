@@ -17,15 +17,11 @@ void PinoccioScoutHandler::setup() {
   if (Scout.isLeadScout()) {
     Scout.wifi.setup();
     Scout.wifi.autoConnectHq();
-    RgbLed.blinkGreen();
 
     Scout.meshListen(3, leadAnswers);
     Scout.meshJoinGroup(0xBEEF); // our internal reporting channel
-
-    speol("- Lead Scout ready -");
   } else {
     Scout.meshListen(2, fieldCommands);
-    speol("- Field Scout ready -");
   }
 
   // join all the "channels" to listen for announcements

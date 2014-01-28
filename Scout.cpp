@@ -45,13 +45,10 @@ void PinoccioScout::setup(bool isForcedLeadScout) {
   delay(5);
   bp.begin(BACKPACK_BUS);
   if (!bp.enumerate()) {
-    Serial.print("Backpack enumeration failed: ");
-    bp.printLastError(Serial);
-    Serial.println();
+    //Serial.print("Backpack enumeration failed: ");
+    //bp.printLastError(Serial);
+    //Serial.println();
   }
-
-  handler.setup();
-  Shell.setup();
 
   Wire.begin();
   HAL_FuelGaugeConfig(20);   // Configure the MAX17048G's alert percentage to 20%
@@ -59,6 +56,9 @@ void PinoccioScout::setup(bool isForcedLeadScout) {
   saveState();
   startDigitalStateChangeEvents();
   startAnalogStateChangeEvents();
+
+  handler.setup();
+  Shell.setup();
 }
 
 void PinoccioScout::loop() {

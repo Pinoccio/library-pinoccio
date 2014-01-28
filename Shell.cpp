@@ -287,7 +287,6 @@ static numvar ledWhite(void) {
 }
 
 static numvar ledSetHexValue(void) {
-  Serial.println((char *)getstringarg(1));
   if (isstringarg(1)) {
     RgbLed.setHex((char *)getstringarg(1));
     return true;
