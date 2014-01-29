@@ -43,8 +43,6 @@ void PinoccioShell::setup() {
 
   addBitlashFunction("led.blink", (bitlash_function) ledBlink);
   addBitlashFunction("led.blinktorch", (bitlash_function) ledBlinkTorch);
-  addBitlashFunction("led.enableblink", (bitlash_function) ledEnableContinuousBlink);
-  addBitlashFunction("led.disableblink", (bitlash_function) ledDisableContinuousBlink);
   addBitlashFunction("led.off", (bitlash_function) ledOff);
   addBitlashFunction("led.red", (bitlash_function) ledRed);
   addBitlashFunction("led.green", (bitlash_function) ledGreen);
@@ -285,16 +283,10 @@ static numvar powerReport(void) {
 /****************************\
 *      RGB LED HANDLERS     *
 \****************************/
-static numvar ledEnableContinuousBlink(void) {
-  RgbLed.enableContinuousBlink();
-}
-
-static numvar ledDisableContinuousBlink(void) {
-  RgbLed.disableContinuousBlink();
-}
-
 static numvar ledBlink(void) {
-  if (getarg(0) == 4) {
+  if (getarg(0) == 5) {
+    RgbLed.blinkColor(getarg(1), getarg(2), getarg(3), getarg(4), getarg(5));
+  } else if (getarg(0) == 4) {
     RgbLed.blinkColor(getarg(1), getarg(2), getarg(3), getarg(4));
   } else {
     RgbLed.blinkColor(getarg(1), getarg(2), getarg(3));
