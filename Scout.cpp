@@ -24,13 +24,11 @@ PinoccioScout::PinoccioScout() {
   analogStateChangeTimer.handler = scoutAnalogStateChangeTimerHandler;
 
   eventVerboseOutput = false;
-  forceLeadScout = false;
 }
 
 PinoccioScout::~PinoccioScout() { }
 
-void PinoccioScout::setup(bool isForcedLeadScout) {
-  forceLeadScout = isForcedLeadScout;
+void PinoccioScout::setup() {
   PinoccioClass::setup();
 
   pinMode(CHG_STATUS, INPUT_PULLUP);
@@ -111,10 +109,6 @@ bool PinoccioScout::isBackpackVccEnabled() {
 }
 
 bool PinoccioScout::isLeadScout() {
-  if (forceLeadScout) {
-    return true;
-  }
-
   // Check for attached wifi backpack (model id 0x0001)
   for (uint8_t i = 0; i < bp.num_slaves; ++i) {
     if (bp.slave_ids[i][1] == 0 &&
