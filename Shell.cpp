@@ -391,7 +391,7 @@ static numvar ledReport(void) {
   sp(RgbLed.getGreenValue());
   sp(",");
   sp(RgbLed.getBlueValue());
-  sp(", \"torch\":[");
+  sp("], \"torch\":[");
   sp(RgbLed.getRedTorchValue());
   sp(",");
   sp(RgbLed.getGreenTorchValue());
@@ -602,19 +602,19 @@ static numvar pinThreshold(void) {
 static numvar pinReport(void) {
   pinReportHQ();
   sp("{\"report\":\"pins\", \"d2\":");
-  sp(Scout.digitalPinState[0]);
+  sp((int)Scout.digitalPinState[0]);
   sp(", \"d3\":");
-  sp(Scout.digitalPinState[1]);
+  sp((int)Scout.digitalPinState[1]);
   sp(", \"d4\":");
-  sp(Scout.digitalPinState[2]);
+  sp((int)Scout.digitalPinState[2]);
   sp(", \"d5\":");
-  sp(Scout.digitalPinState[3]);
+  sp((int)Scout.digitalPinState[3]);
   sp(", \"d6\":");
-  sp(Scout.digitalPinState[4]);
+  sp((int)Scout.digitalPinState[4]);
   sp(", \"d7\":");
-  sp(Scout.digitalPinState[5]);
+  sp((int)Scout.digitalPinState[5]);
   sp(", \"d8\":");
-  sp(Scout.digitalPinState[6]);
+  sp((int)Scout.digitalPinState[6]);
   sp(", \"a0\":");
   sp(Scout.analogPinState[0]);
   sp(", \"a1\":");
