@@ -22,7 +22,7 @@ class PinoccioScout : public PinoccioClass {
     PinoccioScout();
     ~PinoccioScout();
 
-    void setup(bool isForcedLeadScout=false);
+    void setup();
     void loop();
     void delay(unsigned long ms);
 
