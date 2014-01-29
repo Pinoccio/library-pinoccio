@@ -79,6 +79,10 @@ void PinoccioShell::setup() {
   addBitlashFunction("scout.gethqtoken", (bitlash_function) getHQToken);
   addBitlashFunction("scout.boot", (bitlash_function) wdtBoot);
 
+  addBitlashFunction("hq.settoken", (bitlash_function) setHQToken);
+  addBitlashFunction("hq.gettoken", (bitlash_function) getHQToken);
+  addBitlashFunction("hq.verbose", (bitlash_function) hqVerbose);
+
   addBitlashFunction("events.start", (bitlash_function) startStateChangeEvents);
   addBitlashFunction("events.stop", (bitlash_function) stopStateChangeEvents);
   addBitlashFunction("events.setfreqs", (bitlash_function) setEventPeriods);
@@ -172,15 +176,13 @@ static bool isMeshVerbose;
 \****************************/
 static numvar getTemperature(void) {
   int i = Scout.getTemperature();
-  sp(i);
-  speol();
+  speol(i);
   return i;
 }
 
 static numvar getRandomNumber(void) {
   int i = random();
-  sp(i);
-  speol();
+  speol(i);
   return i;
 }
 
@@ -214,22 +216,19 @@ static numvar uptimeReport(void) {
 \****************************/
 static numvar isBatteryCharging(void) {
   int i = Scout.isBatteryCharging();
-  sp(i);
-  speol();
+  speol(i);
   return i;
 }
 
 static numvar getBatteryPercentage(void) {
   int i = Scout.getBatteryPercentage();
-  sp(i);
-  speol();
+  speol(i);
   return i;
 }
 
 static numvar getBatteryVoltage(void) {
   int i = Scout.getBatteryVoltage();
-  sp(i);
-  speol();
+  speol(i);
   return i;
 }
 
@@ -340,7 +339,6 @@ static numvar ledWhite(void) {
 }
 
 static numvar ledSetHexValue(void) {
-  Serial.println((char *)getstringarg(1));
   if (isstringarg(1)) {
     RgbLed.setHex((char *)getstringarg(1));
     return true;
@@ -391,9 +389,11 @@ static numvar ledReport(void) {
 \****************************/
 static numvar meshConfig(void) {
   uint16_t panId = 0x4567;
-  uint8_t channel = 0x1a;
-  if (getarg(0) == 2) {
+  uint8_t channel = 20;
+  if (getarg(0) >= 2) {
     panId = getarg(2);
+  }
+  if (getarg(0) >= 3) {
     channel = getarg(3);
   }
   Scout.meshSetRadio(getarg(1), panId, channel);
@@ -672,13 +672,11 @@ static numvar scoutReport(void) {
   sp((int)Scout.getHwFamily());
   sp(", \"serial\":");
   sp((int)Scout.getHwSerial());
-  sp("}");
-  speol();
+  speol("}");
 }
 
 static numvar isScoutLeadScout(void) {
-  sp(Scout.isLeadScout() ? 1 : 0);
-  speol();
+  speol(Scout.isLeadScout() ? 1 : 0);
   return Scout.isLeadScout();
 }
 
@@ -690,14 +688,21 @@ static numvar getHQToken(void) {
   char token[33];
   Pinoccio.getHQToken((char *)token);
   token[32] = 0;
-  sp(token);
-  speol();
+  speol(token);
 }
 
 static numvar wdtBoot(void) {
   cli();
   wdt_enable(WDTO_15MS);
   while(1);
+}
+
+/****************************\
+ *        HQ HANDLERS       *
+\****************************/
+
+static numvar hqVerbose(void) {
+  Scout.handler.setVerbose(getarg(1));
 }
 
 /****************************\

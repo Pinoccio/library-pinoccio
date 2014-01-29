@@ -13,9 +13,12 @@ class PinoccioScoutHandler {
     void setup();
     void loop();
     void fieldAnnounce(uint16_t chan, char *message);
+    void setVerbose(bool flag);
 
   protected:
 };
+
+static bool hqVerboseOutput;
 
 static void hqConnectHandler(uint8_t cid);
 static void hqDisconnectHandler(uint8_t cid);

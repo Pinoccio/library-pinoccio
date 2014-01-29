@@ -24,13 +24,11 @@ PinoccioScout::PinoccioScout() {
   analogStateChangeTimer.handler = scoutAnalogStateChangeTimerHandler;
 
   eventVerboseOutput = false;
-  forceLeadScout = false;
 }
 
 PinoccioScout::~PinoccioScout() { }
 
-void PinoccioScout::setup(bool isForcedLeadScout) {
-  forceLeadScout = isForcedLeadScout;
+void PinoccioScout::setup() {
   PinoccioClass::setup();
 
   pinMode(CHG_STATUS, INPUT_PULLUP);
@@ -45,9 +43,11 @@ void PinoccioScout::setup(bool isForcedLeadScout) {
   delay(5);
   bp.begin(BACKPACK_BUS);
   if (!bp.enumerate()) {
-    Serial.print("Backpack enumeration failed: ");
+    /*
+    sp("Backpack enumeration failed: ");
     bp.printLastError(Serial);
-    Serial.println();
+    speol();
+    */
   }
 
   handler.setup();
@@ -109,10 +109,6 @@ bool PinoccioScout::isBackpackVccEnabled() {
 }
 
 bool PinoccioScout::isLeadScout() {
-  if (forceLeadScout) {
-    return true;
-  }
-
   // Check for attached wifi backpack (model id 0x0001)
   for (uint8_t i = 0; i < bp.num_slaves; ++i) {
     if (bp.slave_ids[i][1] == 0 &&
@@ -177,21 +173,21 @@ static void scoutDigitalStateChangeTimerHandler(SYS_Timer_t *timer) {
 
   // TODO: This can likely be optimized by hitting the pin registers directly
   if (Scout.digitalPinEventHandler != 0) {
-    for (uint8_t i=0; i<7; i++) {
+    for (int i=0; i<7; i++) {
       // Skip pins D0 an D1 (TX0 and RX0). TODO: Unhardcode this
       // Scout-specific detail
-      uint8_t pin = i + 2;
+      int pin = i + 2;
       // Skip output mode pins
       if (*portModeRegister(digitalPinToPort(pin)) & digitalPinToBitMask(pin))
         continue;
       val = digitalRead(pin);
       if (Scout.digitalPinState[i] != val) {
-        if (Scout.eventVerboseOutput == true) {
-          Serial.print("Running: digitalPinEventHandler(");
-          Serial.print(pin);
-          Serial.print(",");
-          Serial.print(val);
-          Serial.println(")");
+        if (Scout.eventVerboseOutput) {
+          sp("Running: digitalPinEventHandler(");
+          sp(pin);
+          sp(",");
+          sp(val);
+          speol(")");
         }
         Scout.digitalPinState[i] = val;
         Scout.digitalPinEventHandler(pin, val);
@@ -205,15 +201,15 @@ static void scoutAnalogStateChangeTimerHandler(SYS_Timer_t *timer) {
   uint16_t val;
 
   if (Scout.analogPinEventHandler != 0) {
-    for (uint8_t i=0; i<8; i++) {
+    for (int i=0; i<8; i++) {
       val = analogRead(i); // explicit digital pins until we can update core
       if (abs(Scout.analogPinState[i] - val) > analogThreshold) {
-        if (Scout.eventVerboseOutput == true) {
-          Serial.print("Running: analogPinEventHandler(");
-          Serial.print(i);
-          Serial.print(",");
-          Serial.print(val);
-          Serial.println(")");
+        if (Scout.eventVerboseOutput) {
+          sp("Running: analogPinEventHandler(");
+          sp(i);
+          sp(",");
+          sp(val);
+          speol(")");
         }
         Scout.analogPinState[i] = val;
         Scout.analogPinEventHandler(i, val);
@@ -224,10 +220,10 @@ static void scoutAnalogStateChangeTimerHandler(SYS_Timer_t *timer) {
   if (Scout.batteryPercentageEventHandler != 0) {
     val = constrain(HAL_FuelGaugePercent(), 0, 100);
     if (Scout.batteryPercentage != val) {
-      if (Scout.eventVerboseOutput == true) {
-        Serial.print("Running: batteryPercentageEventHandler(");
-        Serial.print(val);
-        Serial.println(")");
+      if (Scout.eventVerboseOutput) {
+        sp("Running: batteryPercentageEventHandler(");
+        sp(val);
+        speol(")");
       }
       Scout.batteryPercentage = val;
       Scout.batteryPercentageEventHandler(val);
@@ -237,10 +233,10 @@ static void scoutAnalogStateChangeTimerHandler(SYS_Timer_t *timer) {
   if (Scout.batteryVoltageEventHandler != 0) {
     val = HAL_FuelGaugeVoltage();
     if (Scout.batteryVoltage != val) {
-      if (Scout.eventVerboseOutput == true) {
-        Serial.print("Running: batteryVoltageEventHandler(");
-        Serial.print(val);
-        Serial.println(")");
+      if (Scout.eventVerboseOutput) {
+        sp("Running: batteryVoltageEventHandler(");
+        sp(val);
+        speol(")");
       }
       Scout.batteryVoltage = val;
       Scout.batteryVoltageEventHandler(val);
@@ -250,10 +246,10 @@ static void scoutAnalogStateChangeTimerHandler(SYS_Timer_t *timer) {
   if (Scout.batteryChargingEventHandler != 0) {
     val = (digitalRead(CHG_STATUS) == LOW);
     if (Scout.isBattCharging != val) {
-      if (Scout.eventVerboseOutput == true) {
-        Serial.print("Running: batteryChargingEventHandler(");
-        Serial.print(val);
-        Serial.println(")");
+      if (Scout.eventVerboseOutput) {
+        sp("Running: batteryChargingEventHandler(");
+        sp(val);
+        speol(")");
       }
       Scout.isBattCharging = val;
       Scout.batteryChargingEventHandler(val);
@@ -263,10 +259,10 @@ static void scoutAnalogStateChangeTimerHandler(SYS_Timer_t *timer) {
   if (Scout.batteryAlarmTriggeredEventHandler != 0) {
     val = (digitalRead(BATT_ALARM) == LOW);
     if (Scout.isBattAlarmTriggered != val) {
-      if (Scout.eventVerboseOutput == true) {
-        Serial.print("Running: batteryAlarmTriggeredEventHandler(");
-        Serial.print(val);
-        Serial.println(")");
+      if (Scout.eventVerboseOutput) {
+        sp("Running: batteryAlarmTriggeredEventHandler(");
+        sp(val);
+        speol(")");
       }
       Scout.isBattAlarmTriggered = val;
       Scout.batteryAlarmTriggeredEventHandler(val);
@@ -276,10 +272,10 @@ static void scoutAnalogStateChangeTimerHandler(SYS_Timer_t *timer) {
   if (Scout.temperatureEventHandler != 0) {
     val = HAL_MeasureTemperature();
     if (Scout.temperature != val) {
-      if (Scout.eventVerboseOutput == true) {
-        Serial.print("Running: temperatureEventHandler(");
-        Serial.print(val);
-        Serial.println(")");
+      if (Scout.eventVerboseOutput) {
+        sp("Running: temperatureEventHandler(");
+        sp(val);
+        speol(")");
       }
       Scout.temperature = val;
       Scout.temperatureEventHandler(val);

@@ -34,6 +34,7 @@
 
 ***/
 #include "bitlash.h"
+#include <Scout.h>
 
 /**********
 
@@ -79,6 +80,7 @@ const prog_char builtin_table[] PROGMEM = {
   BUILT_IN("input",  "return 0")
   BUILT_IN("output",  "return 1")
   BUILT_IN("digitalread",  "return dr(arg(1))")
+  BUILT_IN("digitalwrite",  "return dw(arg(1))")
 #endif
 
   // This sentinel must be last
@@ -115,4 +117,9 @@ void displayBanner(void) {
   // print the banner and copyright notice
   // please note the license requires that you maintain this notice
   execscript(SCRIPT_PROGMEM, (numvar) (builtin_table + strlen(builtin_table)+1), 0);
+  if (Scout.isLeadScout()) {
+    speol(" Lead Scout ready");
+  } else {
+    speol(" Field Scout ready");
+  }
 }

@@ -1,6 +1,7 @@
 #include <Arduino.h>
 #include <Pinoccio.h>
 #include <avr/eeprom.h>
+#include <src/bitlash.h>
 
 #if defined(__AVR_ATmega128RFA1__)
 #include "atmega128rfa1.h"
@@ -17,11 +18,11 @@ PinoccioClass::~PinoccioClass() { }
 void PinoccioClass::setup() {
   SYS_Init();
   PHY_RandomReq();
-  loadSettingsFromEeprom();
-  Serial.begin(115200);
 
   digitalWrite(SS, HIGH);
   pinMode(SS, OUTPUT);
+
+  loadSettingsFromEeprom();
 }
 
 void PinoccioClass::loop() {
@@ -145,7 +146,7 @@ void PinoccioClass::meshSetRadio(const uint16_t theAddress, const uint16_t thePa
   eeprom_update_byte((uint8_t *)8179, channel);
 
   meshSetPower(0);
-  meshSetDataRate(2);
+  meshSetDataRate(0);
 }
 
 
@@ -200,10 +201,10 @@ void PinoccioClass::meshResetSecurityKey(void) {
 
 void PinoccioClass::meshSendMessage(MeshRequest request) {
   NWK_DataReq_t* req = request.getRequest();
-  Serial.print("sending message to: ");
-  Serial.print(req->dstAddr);
-  Serial.print(":");
-  Serial.println(req->dstEndpoint);
+  sp("sending message to: ");
+  sp(req->dstAddr);
+  sp(":");
+  speol(req->dstEndpoint);
   NWK_DataReq(request.getRequest());
 }
 

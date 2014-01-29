@@ -103,6 +103,8 @@ static numvar setHQToken(void);
 static numvar getHQToken(void);
 static numvar wdtBoot(void);
 
+static numvar hqVerbose(void);
+
 static numvar startStateChangeEvents(void);
 static numvar stopStateChangeEvents(void);
 static numvar setEventPeriods(void);

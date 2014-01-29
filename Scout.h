@@ -71,7 +71,6 @@ class PinoccioScout : public PinoccioClass {
 
     bool isVccEnabled;
     bool isStateSaved;
-    bool forceLeadScout;
 
     SYS_Timer_t digitalStateChangeTimer;
     SYS_Timer_t analogStateChangeTimer;
