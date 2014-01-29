@@ -33,10 +33,13 @@ void PinoccioShell::setup() {
   addBitlashFunction("mesh.send", (bitlash_function) meshSend);
   addBitlashFunction("mesh.verbose", (bitlash_function) meshVerbose);
   addBitlashFunction("mesh.report", (bitlash_function) meshReport);
+  addBitlashFunction("mesh.routing", (bitlash_function) meshRouting);
   addBitlashFunction("mesh.announce", (bitlash_function) meshAnnounce);
 
   addBitlashFunction("temperature", (bitlash_function) getTemperature);
   addBitlashFunction("randomnumber", (bitlash_function) getRandomNumber);
+  addBitlashFunction("uptime", (bitlash_function) uptimeReport);
+  addBitlashFunction("report", (bitlash_function) allReport);
 
   addBitlashFunction("led.blink", (bitlash_function) ledBlink);
   addBitlashFunction("led.blinktorch", (bitlash_function) ledBlinkTorch);
@@ -87,6 +90,7 @@ void PinoccioShell::setup() {
 
   if (Scout.isLeadScout()) {
     addBitlashFunction("wifi.report", (bitlash_function) wifiReport);
+    addBitlashFunction("wifi.status", (bitlash_function) wifiStatus);
     addBitlashFunction("wifi.list", (bitlash_function) wifiList);
     addBitlashFunction("wifi.config", (bitlash_function) wifiConfig);
     addBitlashFunction("wifi.dhcp", (bitlash_function) wifiDhcp);
@@ -112,11 +116,38 @@ void PinoccioShell::setup() {
   Scout.batteryAlarmTriggeredEventHandler = batteryAlarmTriggeredEventHandler;
   Scout.temperatureEventHandler = temperatureEventHandler;
 
+  // bootup reporting
+//  Shell.allReportHQ();
+
   if (isShellEnabled) {
     startShell();
   } else {
     Serial.begin(115200);
   }
+}
+
+void scoutReportHQ(void);
+void uptimeReportHQ(void);
+void powerReportHQ(void);
+void backpackReportHQ(void);
+void pinReportHQ(void);
+void meshReportHQ(void);
+
+// report all transient settings when asked
+void PinoccioShell::allReportHQ() {
+  // XXX TODO, either delay between these or set up a callback system since only one packet can go out at once!
+  scoutReportHQ();
+  uptimeReportHQ();
+  powerReportHQ();
+  backpackReportHQ();
+  pinReportHQ();
+  meshReportHQ();
+}
+
+static numvar allReport(void) {
+  sp("running all reports");
+  speol();
+  Shell.allReportHQ();
 }
 
 void PinoccioShell::loop() {
@@ -139,10 +170,21 @@ static NWK_DataReq_t pingDataReq;
 static NWK_DataReq_t sendDataReq;
 static bool sendDataReqBusy;
 static bool isMeshVerbose;
+static int tempHigh = 0, tempLow = 0;
 
 /****************************\
 *      BUILT-IN HANDLERS    *
 \****************************/
+void tempReportHQ(void)
+{
+  char report[100];
+  int temp = Scout.getTemperature();
+  if(temp > tempHigh) tempHigh = temp;
+  if(!tempLow || temp < tempLow) tempLow = temp;
+  sprintf(report,"{\"_\":\"tmp\",\"t\":%d,\"h\":%d,\"l\":%d}",temp,tempHigh,tempLow);
+  Scout.handler.fieldAnnounce(0xBEEF, report);
+}
+
 static numvar getTemperature(void) {
   int i = Scout.getTemperature();
   speol(i);
@@ -153,6 +195,31 @@ static numvar getRandomNumber(void) {
   int i = random();
   speol(i);
   return i;
+}
+
+void uptimeReportHQ(void)
+{
+  char report[100];
+  sprintf(report,"{\"_\":\"u\",\"m\":%d,\"c\":%d,\"s\":\"%s\",\"f\":%d,\"r\":%d}",millis(),0,"power",0,random());
+  Scout.handler.fieldAnnounce(0xBEEF, report);
+}
+
+static numvar uptimeReport(void) {
+  powerReportHQ();
+  sp("{\"report\":\"uptime\", \"uptime\":");
+  sp(millis());
+  // TODO track total commands into bitlash, where to get restarted reason and free, update HQ too
+//  sp(", \"commands\":");
+//  sp(shellCommandCounter);
+//  sp(", \"restarted\":");
+//  sp();
+//  sp(", \"free\":");
+//  sp();
+  sp(", \"random\":");
+  sp(random());
+  sp("}");
+  speol();
+  return true;
 }
 
 /****************************\
@@ -200,17 +267,18 @@ void powerReportHQ(void)
 
 static numvar powerReport(void) {
   powerReportHQ();
-  sp("percent charged: ");
+  sp("{\"report\":\"power\", \"charged\":");
   sp(Scout.getBatteryPercentage());
-  sp("\nvoltage: ");
+  sp(", \"voltage\":");
   sp((int)Scout.getBatteryVoltage());
-  sp("\ncharging: ");
-  sp(Scout.isBatteryCharging());
-  sp("\nvcc: ");
-  sp(Scout.isBackpackVccEnabled());
-  sp("\nalarm: ");
-  sp(Scout.isBatteryAlarmTriggered());
-  sp("\n");
+  sp(", \"charging\":");
+  sp(Scout.isBatteryCharging()?"true":"false");
+  sp(", \"vcc\":");
+  sp(Scout.isBackpackVccEnabled()?"true":"false");
+  sp(", \"alarm\":");
+  sp(Scout.isBatteryAlarmTriggered()?"true":"false");
+  sp("}");
+  speol();
   return true;
 }
 
@@ -302,20 +370,29 @@ static numvar ledTorch(void) {
   RgbLed.setTorch();
 }
 
+void ledReportHQ(void)
+{
+  char report[100];
+  sprintf(report,"{\"_\":\"led\",\"l\":[%d,%d,%d],\"t\":[%d,%d,%d]}",RgbLed.getRedValue(),RgbLed.getGreenValue(),RgbLed.getBlueValue(),RgbLed.getRedTorchValue(),RgbLed.getGreenTorchValue(),RgbLed.getBlueTorchValue());
+  Scout.handler.fieldAnnounce(0xBEEF, report);
+}
+
 static numvar ledReport(void) {
-  sp("{\"c\": {\"r\":");
+  ledReportHQ();
+  sp("{\"report\":\"led\", \"rgb\":[");
   sp(RgbLed.getRedValue());
-  sp(",\"g\":");
+  sp(",");
   sp(RgbLed.getGreenValue());
-  sp(",\"b\":");
+  sp(",");
   sp(RgbLed.getBlueValue());
-  sp("}, \"t\": {\"r\":");
+  sp(", \"torch\":[");
   sp(RgbLed.getRedTorchValue());
-  sp(",\"g\":");
+  sp(",");
   sp(RgbLed.getGreenTorchValue());
-  sp(",\"b\":");
+  sp(",");
   sp(RgbLed.getBlueTorchValue());
-  sp("}}\n");
+  sp("]}");
+  speol();
 }
 
 /****************************\
@@ -381,60 +458,78 @@ static numvar meshVerbose(void) {
   isMeshVerbose = getarg(1);
 }
 
+int meshRoutingCount(void)
+{
+  int count = 0;
+  NWK_RouteTableEntry_t *table = NWK_RouteTable();
+  for (int i=0; i < NWK_ROUTE_TABLE_SIZE; i++) {
+    if (table[i].dstAddr == NWK_ROUTE_UNKNOWN) continue;
+    count++;
+  }
+  return count;
+}
+
+void meshReportHQ(void)
+{
+  char report[100];
+  sprintf(report,"{\"_\":\"rf\",\"id\":%d,\"p\":%d,\"c\":%d,\"tx\":\"%s\",\"tx\":\"%s\",\"t\":%d}",Scout.getAddress(),Scout.getPanId(),Scout.getChannel(),Scout.getTxPowerDb(),Scout.getDataRatekbps(),meshRoutingCount());
+  Scout.handler.fieldAnnounce(0xBEEF, report);
+}
+
 static numvar meshReport(void) {
-  // TODO: return JSON formatted report of radio details
-  // ie: {"id":34,"pid":1,"ch":26,"sec":true}
-  Serial.println("-- Mesh Radio Settings --");
-  Serial.print(" - Address: ");
-  Serial.println(Scout.getAddress());
-  Serial.print(" - Pan ID: 0x");
-  Serial.println(Scout.getPanId(), HEX);
-  Serial.print(" - Channel: ");
-  Serial.println(Scout.getChannel());
-  Serial.print(" - Data Rate: ");
+//  meshReportHQ();
+  sp("{\"report\":\"mesh\", \"address\":");
+  sp(Scout.getAddress());
+  sp(", \"pan\":");
+  sp(Scout.getPanId());
+/*
+  sp(", \"channel\":");
+  sp(Scout.getChannel());
+  sp(", \"routes\":");
+  sp(meshRoutingCount());
+  sp(", \"rate\":\"");
   // gotta read these from program memory (for SRAM savings)
   char c;
   const char *kbString = Scout.getDataRatekbps();
   while((c = pgm_read_byte(kbString++))) {
-     Serial.write(c);
+     sp(c);
   }
-  Serial.println();
-  Serial.print(" - Tx Power: ");
+  sp("\", \"power\":\"");
   // gotta read these from program memory (for SRAM savings)
   const char *dbString = Scout.getTxPowerDb();
   while((c = pgm_read_byte(dbString++))) {
-     Serial.write(c);
+     sp(c);
   }
-  Serial.println();
-  // TODO: loop through all NWK_GetGroups() output and print
-  // Serial.print(" - In groups: ");
-  //   if (Scout.meshGetGroups()) {
-  //     Serial.println("Yes");
-  //   } else {
-  //     Serial.println("No");
-  //   }
-  Serial.println(" - Routing: ");
-  Serial.println("|    Fixed    |  Multicast  |    Score    |    DstAdd   | NextHopAddr |    Rank     |     LQI    |");
+*/
+  sp("\"}");
+  speol();
+}
+
+static numvar meshRouting(void) {
+  sp(" - Routing: ");
+  sp("|    Fixed    |  Multicast  |    Score    |    DstAdd   | NextHopAddr |    Rank     |     LQI    |");
+  speol();
   NWK_RouteTableEntry_t *table = NWK_RouteTable();
   for (int i=0; i < NWK_ROUTE_TABLE_SIZE; i++) {
     if (table[i].dstAddr == NWK_ROUTE_UNKNOWN) {
       continue;
     }
-    Serial.print("|      ");
-    Serial.print(table[i].fixed);
-    Serial.print("      |      ");
-    Serial.print(table[i].multicast);
-    Serial.print("      |      ");
-    Serial.print(table[i].score);
-    Serial.print("      |     0x");
-    Serial.print(table[i].dstAddr, HEX);
-    Serial.print("     |     0x");
-    Serial.print(table[i].nextHopAddr, HEX);
-    Serial.print("     |     ");
-    Serial.print(table[i].rank);
-    Serial.print("     |     ");
-    Serial.print(table[i].lqi);
-    Serial.println("    |");
+    sp("|      ");
+    sp(table[i].fixed);
+    sp("      |      ");
+    sp(table[i].multicast);
+    sp("      |      ");
+    sp(table[i].score);
+    sp("      |     ");
+    sp(table[i].dstAddr);
+    sp("     |     ");
+    sp(table[i].nextHopAddr);
+    sp("     |     ");
+    sp(table[i].rank);
+    sp("     |     ");
+    sp(table[i].lqi);
+    sp("    |");
+    speol();
   }
 }
 
@@ -485,47 +580,71 @@ static numvar pinThreshold(void) {
   return true;
 }
 
+void pinReportHQ(void)
+{
+  char report[100];
+  sprintf(report,"{\"_\":\"pin\",\"a\":[%d,%d,%d,%d,%d,%d,%d,%d],\"d\":[%d,%d,%d,%d,%d,%d,%d]}",Scout.analogPinState[0],Scout.analogPinState[1],Scout.analogPinState[2],Scout.analogPinState[3],Scout.analogPinState[4],Scout.analogPinState[5],Scout.analogPinState[6],Scout.analogPinState[7],Scout.digitalPinState[0],Scout.digitalPinState[1],Scout.digitalPinState[2],Scout.digitalPinState[3],Scout.digitalPinState[4],Scout.digitalPinState[5],Scout.digitalPinState[6]);
+  Scout.handler.fieldAnnounce(0xBEEF, report);
+}
+
 static numvar pinReport(void) {
   // TODO: return JSON formmated report of all IO pins and their values
-  sp("{\"d2\": ");
+  sp("{\"report\":\"pins\", \"d2\":");
   sp(Scout.digitalPinState[0]);
-  sp(", \"d3\": ");
+  sp(", \"d3\":");
   sp(Scout.digitalPinState[1]);
-  sp(", \"d4\": ");
+  sp(", \"d4\":");
   sp(Scout.digitalPinState[2]);
-  sp(", \"d5\": ");
+  sp(", \"d5\":");
   sp(Scout.digitalPinState[3]);
-  sp(", \"d6\": ");
+  sp(", \"d6\":");
   sp(Scout.digitalPinState[4]);
-  sp(", \"d7\": ");
+  sp(", \"d7\":");
   sp(Scout.digitalPinState[5]);
-  sp(", \"d8\": ");
+  sp(", \"d8\":");
   sp(Scout.digitalPinState[6]);
-  sp(", \"a0\": ");
+  sp(", \"a0\":");
   sp(Scout.analogPinState[0]);
-  sp(", \"a1\": ");
+  sp(", \"a1\":");
   sp(Scout.analogPinState[1]);
-  sp(", \"a2\": ");
+  sp(", \"a2\":");
   sp(Scout.analogPinState[2]);
-  sp(", \"a3\": ");
+  sp(", \"a3\":");
   sp(Scout.analogPinState[3]);
-  sp(", \"a4\": ");
+  sp(", \"a4\":");
   sp(Scout.analogPinState[4]);
-  sp(", \"a5\": ");
+  sp(", \"a5\":");
   sp(Scout.analogPinState[5]);
-  sp(", \"a6\": ");
+  sp(", \"a6\":");
   sp(Scout.analogPinState[6]);
-  sp(", \"a7\": ");
+  sp(", \"a7\":");
   sp(Scout.analogPinState[7]);
   sp("}");
+  speol();
   return true;
 }
 
 /****************************\
 *     BACKPACK HANDLERS     *
 \****************************/
+
+void backpackReportHQ(void)
+{
+  char report[100];
+  sprintf(report,"{\"_\":\"bps\",\"a\":[");
+  for (uint8_t i = 0; i < Scout.bp.num_slaves; ++i) {
+    for (uint8_t j = 0; j < UNIQUE_ID_LENGTH; ++j) {
+      // TODO add id to array
+    }
+  }
+  sprintf(report+strlen(report),"]}");
+  Scout.handler.fieldAnnounce(0xBEEF, report);
+}
+
 static numvar backpackReport(void) {
-  sp("[{\"name\":\"wifi\",\"version\":\"1.0\"},{\"name\":\"environment\",\"version\":\"2.0\"}]");
+  backpackReportHQ();
+  sp("{\"report\":\"backpacks\", \"backpacks\":[]}");
+  speol();
 }
 
 static numvar backpackList(void) {
@@ -548,14 +667,23 @@ static numvar backpackList(void) {
 /****************************\
  *   SCOUT REPORT HANDLERS  *
 \****************************/
+
+void scoutReportHQ(void)
+{
+  char report[100];
+  sprintf(report,"{\"_\":\"s\",\"e\":%d,\"hv\":%d,\"hf\":%d,\"hs\":%d}",(int)Scout.getEEPROMVersion(),(int)Scout.getHwVersion(),Scout.getHwFamily(),Scout.getHwSerial());
+  Scout.handler.fieldAnnounce(0xBEEF, report);
+}
+
 static numvar scoutReport(void) {
-  sp("{\"e\":");
+  scoutReportHQ();
+  sp("{\"report\":\"scout\", \"eeprom\":");
   sp((int)Scout.getEEPROMVersion());
-  sp(",\"hwv\":");
+  sp(", \"hardware\":");
   sp((int)Scout.getHwVersion());
-  sp(",\"hwf\":");
+  sp(", \"family\":");
   sp((int)Scout.getHwFamily());
-  sp(",\"hwid\":");
+  sp(", \"serial\":");
   sp((int)Scout.getHwSerial());
   speol("}");
 }
@@ -615,7 +743,27 @@ static numvar setEventVerbose(void) {
 /****************************\
  *       Scout.wifi.HANDLERS      *
 \****************************/
+
+void wifiReportHQ(void)
+{
+  char report[100];
+  sprintf(report,"{\"_\":\"bp\",\"b\":\"wifi\",\"v\":%d,\"c\":%s}",0,"true");
+  Scout.handler.fieldAnnounce(0xBEEF, report);
+}
+
 static numvar wifiReport(void) {
+  wifiReportHQ();
+  sp("{\"report\":\"wifi\", \"version\":");
+  sp(0);
+  sp(", \"connected\":");
+  sp("true");
+//  sp(", \"network\":");
+//  sp();
+  sp("}");
+  speol();
+}
+
+static numvar wifiStatus(void) {
   if (getarg(0) > 0 && getarg(1) == 1) {
     Scout.wifi.printProfiles(Serial);
   } else {
@@ -901,6 +1049,7 @@ static void sendConfirm(NWK_DataReq_t *req) {
 static void digitalPinEventHandler(uint8_t pin, uint8_t value) {
   uint32_t time = millis();
 
+  pinReportHQ();
   if (findscript("event.digital")) {
     String callback = "event.digital(" + String(pin) + "," + String(value) + ")";
     char buf[24];
@@ -917,6 +1066,7 @@ static void digitalPinEventHandler(uint8_t pin, uint8_t value) {
 }
 
 static void analogPinEventHandler(uint8_t pin, uint16_t value) {
+  pinReportHQ();
   if (findscript("event.analog")) {
     String callback = "event.analog(" + String(pin) + "," + String(value) + ")";
     char buf[24];
@@ -956,6 +1106,7 @@ static void batteryChargingEventHandler(uint8_t value) {
 }
 
 static void batteryAlarmTriggeredEventHandler(uint8_t value) {
+  powerReportHQ();
   if (findscript("event.batteryalarm")) {
     String callback = "event.batteryalarm(" + String(value) + ")";
     char buf[24];
@@ -965,6 +1116,7 @@ static void batteryAlarmTriggeredEventHandler(uint8_t value) {
 }
 
 static void temperatureEventHandler(uint8_t value) {
+  tempReportHQ();
   if (findscript("event.temperature")) {
     String callback = "event.temperature(" + String(value) + ")";
     char buf[24];
