@@ -170,10 +170,21 @@ static NWK_DataReq_t pingDataReq;
 static NWK_DataReq_t sendDataReq;
 static bool sendDataReqBusy;
 static bool isMeshVerbose;
+static int tempHigh = 0, tempLow = 0;
 
 /****************************\
 *      BUILT-IN HANDLERS    *
 \****************************/
+void tempReportHQ(void)
+{
+  char report[100];
+  int temp = Scout.getTemperature();
+  if(temp > tempHigh) tempHigh = temp;
+  if(!tempLow || temp < tempLow) tempLow = temp;
+  sprintf(report,"{\"_\":\"tmp\",\"t\":%d,\"h\":%d,\"l\":%d}",temp,tempHigh,tempLow);
+  Scout.handler.fieldAnnounce(0xBEEF, report);
+}
+
 static numvar getTemperature(void) {
   int i = Scout.getTemperature();
   speol(i);
@@ -466,11 +477,12 @@ void meshReportHQ(void)
 }
 
 static numvar meshReport(void) {
-  meshReportHQ();
+//  meshReportHQ();
   sp("{\"report\":\"mesh\", \"address\":");
   sp(Scout.getAddress());
   sp(", \"pan\":");
   sp(Scout.getPanId());
+/*
   sp(", \"channel\":");
   sp(Scout.getChannel());
   sp(", \"routes\":");
@@ -488,6 +500,7 @@ static numvar meshReport(void) {
   while((c = pgm_read_byte(dbString++))) {
      sp(c);
   }
+*/
   sp("\"}");
   speol();
 }
