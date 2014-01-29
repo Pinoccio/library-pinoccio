@@ -75,6 +75,7 @@ void PinoccioShell::setup() {
   addBitlashFunction("scout.isleadscout", (bitlash_function) isScoutLeadScout);
   addBitlashFunction("scout.sethqtoken", (bitlash_function) setHQToken);
   addBitlashFunction("scout.gethqtoken", (bitlash_function) getHQToken);
+  addBitlashFunction("scout.delay", (bitlash_function) scoutDelay);
   addBitlashFunction("scout.boot", (bitlash_function) wdtBoot);
 
   addBitlashFunction("hq.settoken", (bitlash_function) setHQToken);
@@ -713,6 +714,10 @@ static numvar getHQToken(void) {
   Pinoccio.getHQToken((char *)token);
   token[32] = 0;
   speol(token);
+}
+
+static numvar scoutDelay(void) {
+  Scout.delay(getarg(1));
 }
 
 static numvar wdtBoot(void) {
