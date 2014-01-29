@@ -39,6 +39,7 @@ static numvar getTemperature(void);
 static numvar getRandomNumber(void);
 static numvar uptimeReport(void);
 static numvar allReport(void);
+static numvar allVerbose(void);
 
 static numvar isBatteryCharging(void);
 static numvar getBatteryPercentage(void);

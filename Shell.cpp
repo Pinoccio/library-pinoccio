@@ -40,6 +40,7 @@ void PinoccioShell::setup() {
   addBitlashFunction("randomnumber", (bitlash_function) getRandomNumber);
   addBitlashFunction("uptime", (bitlash_function) uptimeReport);
   addBitlashFunction("report", (bitlash_function) allReport);
+  addBitlashFunction("verbose", (bitlash_function) allVerbose);
 
   addBitlashFunction("led.blink", (bitlash_function) ledBlink);
   addBitlashFunction("led.blinktorch", (bitlash_function) ledBlinkTorch);
@@ -131,6 +132,7 @@ void powerReportHQ(void);
 void backpackReportHQ(void);
 void pinReportHQ(void);
 void meshReportHQ(void);
+static bool isMeshVerbose;
 
 // report all transient settings when asked
 void PinoccioShell::allReportHQ() {
@@ -147,6 +149,12 @@ static numvar allReport(void) {
   sp("running all reports");
   speol();
   Shell.allReportHQ();
+}
+
+static numvar allVerbose(void) {
+  Scout.handler.setVerbose(getarg(1));
+  isMeshVerbose = getarg(1);
+  Scout.eventVerboseOutput = getarg(1);
 }
 
 void PinoccioShell::loop() {
@@ -168,7 +176,6 @@ void PinoccioShell::disableShell() {
 static NWK_DataReq_t pingDataReq;
 static NWK_DataReq_t sendDataReq;
 static bool sendDataReqBusy;
-static bool isMeshVerbose;
 static int tempHigh = 0, tempLow = 0;
 
 /****************************\
