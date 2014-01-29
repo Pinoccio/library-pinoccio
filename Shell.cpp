@@ -301,49 +301,67 @@ static numvar ledBlinkTorch(void) {
   }
 }
 
+void ledReportHQ(void)
+{
+  char report[100];
+  sprintf(report,"{\"_\":\"led\",\"l\":[%d,%d,%d],\"t\":[%d,%d,%d]}",RgbLed.getRedValue(),RgbLed.getGreenValue(),RgbLed.getBlueValue(),RgbLed.getRedTorchValue(),RgbLed.getGreenTorchValue(),RgbLed.getBlueTorchValue());
+  Scout.handler.fieldAnnounce(0xBEEF, report);
+}
+
 static numvar ledOff(void) {
   RgbLed.turnOff();
+  ledReportHQ();
 }
 
 static numvar ledRed(void) {
   RgbLed.red();
+  ledReportHQ();
 }
 
 static numvar ledGreen(void) {
   RgbLed.green();
+  ledReportHQ();
 }
 
 static numvar ledBlue(void) {
   RgbLed.blue();
+  ledReportHQ();
 }
 
 static numvar ledCyan(void) {
   RgbLed.cyan();
+  ledReportHQ();
 }
 
 static numvar ledPurple(void) {
   RgbLed.purple();
+  ledReportHQ();
 }
 
 static numvar ledMagenta(void) {
   RgbLed.magenta();
+  ledReportHQ();
 }
 
 static numvar ledYellow(void) {
   RgbLed.yellow();
+  ledReportHQ();
 }
 
 static numvar ledOrange(void) {
   RgbLed.orange();
+  ledReportHQ();
 }
 
 static numvar ledWhite(void) {
   RgbLed.white();
+  ledReportHQ();
 }
 
 static numvar ledSetHexValue(void) {
   if (isstringarg(1)) {
     RgbLed.setHex((char *)getstringarg(1));
+    ledReportHQ();
     return true;
   } else {
     return false;
@@ -352,21 +370,16 @@ static numvar ledSetHexValue(void) {
 
 static numvar ledSetRgb(void) {
   RgbLed.setColor(getarg(1), getarg(2), getarg(3));
+  ledReportHQ();
 }
 
 static numvar ledSaveTorch(void) {
   RgbLed.saveTorch(getarg(1), getarg(2), getarg(3));
+  ledReportHQ();
 }
 
 static numvar ledTorch(void) {
   RgbLed.setTorch();
-}
-
-void ledReportHQ(void)
-{
-  char report[100];
-  sprintf(report,"{\"_\":\"led\",\"l\":[%d,%d,%d],\"t\":[%d,%d,%d]}",RgbLed.getRedValue(),RgbLed.getGreenValue(),RgbLed.getBlueValue(),RgbLed.getRedTorchValue(),RgbLed.getGreenTorchValue(),RgbLed.getBlueTorchValue());
-  Scout.handler.fieldAnnounce(0xBEEF, report);
 }
 
 static numvar ledReport(void) {
