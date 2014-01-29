@@ -541,26 +541,38 @@ static numvar meshRouting(void) {
 /****************************\
 *        I/O HANDLERS       *
 \****************************/
+void pinReportHQ(void)
+{
+  char report[100];
+  sprintf(report,"{\"_\":\"pin\",\"a\":[%d,%d,%d,%d,%d,%d,%d,%d],\"d\":[%d,%d,%d,%d,%d,%d,%d]}",Scout.analogPinState[0],Scout.analogPinState[1],Scout.analogPinState[2],Scout.analogPinState[3],Scout.analogPinState[4],Scout.analogPinState[5],Scout.analogPinState[6],Scout.analogPinState[7],Scout.digitalPinState[0],Scout.digitalPinState[1],Scout.digitalPinState[2],Scout.digitalPinState[3],Scout.digitalPinState[4],Scout.digitalPinState[5],Scout.digitalPinState[6]);
+  Scout.handler.fieldAnnounce(0xBEEF, report);
+}
+
 static numvar pinOn(void) {
   pinMode(getarg(1), OUTPUT);
   digitalWrite(getarg(1), HIGH);
+  pinReportHQ();
 }
 
 static numvar pinOff(void) {
   pinMode(getarg(1), OUTPUT);
   digitalWrite(getarg(1), LOW);
+  pinReportHQ();
 }
 
 static numvar pinMakeInput(void) {
   pinMode(getarg(1), INPUT);
+  pinReportHQ();
 }
 
 static numvar pinMakeInputPullup(void) {
   pinMode(getarg(1), INPUT_PULLUP);
+  pinReportHQ();
 }
 
 static numvar pinMakeOutput(void) {
   pinMode(getarg(1), OUTPUT);
+  pinReportHQ();
 }
 
 static numvar pinRead(void) {
@@ -576,6 +588,7 @@ static numvar pinRead(void) {
 
 static numvar pinWrite(void) {
   // TODO: set a PWM pin's value from 0 - 255
+  pinReportHQ();
   return true;
 }
 
@@ -585,15 +598,8 @@ static numvar pinThreshold(void) {
   return true;
 }
 
-void pinReportHQ(void)
-{
-  char report[100];
-  sprintf(report,"{\"_\":\"pin\",\"a\":[%d,%d,%d,%d,%d,%d,%d,%d],\"d\":[%d,%d,%d,%d,%d,%d,%d]}",Scout.analogPinState[0],Scout.analogPinState[1],Scout.analogPinState[2],Scout.analogPinState[3],Scout.analogPinState[4],Scout.analogPinState[5],Scout.analogPinState[6],Scout.analogPinState[7],Scout.digitalPinState[0],Scout.digitalPinState[1],Scout.digitalPinState[2],Scout.digitalPinState[3],Scout.digitalPinState[4],Scout.digitalPinState[5],Scout.digitalPinState[6]);
-  Scout.handler.fieldAnnounce(0xBEEF, report);
-}
-
 static numvar pinReport(void) {
-  // TODO: return JSON formmated report of all IO pins and their values
+  pinReportHQ();
   sp("{\"report\":\"pins\", \"d2\":");
   sp(Scout.digitalPinState[0]);
   sp(", \"d3\":");
