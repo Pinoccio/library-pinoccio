@@ -177,8 +177,8 @@ static void scoutDigitalStateChangeTimerHandler(SYS_Timer_t *timer) {
       int pin = i+2;
 
       // Skip input pins that don't have pull-ups enabled--they drift
-      if (*portModeRegister(digitalPinToPort(pin)) & ~digitalPinToBitMask(pin) &&
-          *portOutputRegister(digitalPinToPort(pin)) & ~digitalPinToBitMask(pin)) {
+      if ((*portModeRegister(digitalPinToPort(pin)) & digitalPinToBitMask(pin)) == 0 &&
+          (*portOutputRegister(digitalPinToPort(pin)) & digitalPinToBitMask(pin)) == 0) {
         continue;
       }
 
