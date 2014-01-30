@@ -174,12 +174,20 @@ static void scoutDigitalStateChangeTimerHandler(SYS_Timer_t *timer) {
   // TODO: This can likely be optimized by hitting the pin registers directly
   if (Scout.digitalPinEventHandler != 0) {
     for (int i=0; i<7; i++) {
-      // Skip pins D0 an D1 (TX0 and RX0). TODO: Unhardcode this
-      // Scout-specific detail
-      int pin = i + 2;
-      // Skip output mode pins
-      if (*portModeRegister(digitalPinToPort(pin)) & digitalPinToBitMask(pin))
+      int pin = i+2;
+
+      // Skip input pins that don't have pull-ups enabled--they drift
+      if (*portModeRegister(digitalPinToPort(pin)) & ~digitalPinToBitMask(pin) &&
+          *portOutputRegister(digitalPinToPort(pin)) & ~digitalPinToBitMask(pin)) {
         continue;
+      }
+
+      // Also skip any pins reserved for use on the backpack bus
+      // TODO: add this as a bp.isPinReserved(pin) method instead of hardwired
+      if (Scout.isLeadScout() && pin >= 6 && pin <= 8) {
+        continue;
+      }
+
       val = digitalRead(pin);
       if (Scout.digitalPinState[i] != val) {
         if (Scout.eventVerboseOutput) {
