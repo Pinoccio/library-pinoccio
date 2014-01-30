@@ -149,9 +149,9 @@ void PinoccioScout::saveState() {
   digitalPinState[1] = digitalRead(3);
   digitalPinState[2] = digitalRead(4);
   digitalPinState[3] = digitalRead(5);
-  digitalPinState[4] = digitalRead(6);
-  digitalPinState[5] = digitalRead(7);
-  digitalPinState[6] = digitalRead(8);
+  digitalPinState[4] = isLeadScout() ? -1 : digitalRead(6);
+  digitalPinState[5] = isLeadScout() ? -1 : digitalRead(7);
+  digitalPinState[6] = isLeadScout() ? -1 : digitalRead(8);
   analogPinState[0] = analogRead(0); // pin 24
   analogPinState[1] = analogRead(1); // pin 25
   analogPinState[2] = analogRead(2); // pin 26

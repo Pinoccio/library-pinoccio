@@ -52,8 +52,8 @@ class PinoccioScout : public PinoccioClass {
     void (*batteryAlarmTriggeredEventHandler)(uint8_t value);
     void (*temperatureEventHandler)(uint8_t value);
 
-    uint8_t digitalPinState[7];
-    uint16_t analogPinState[8];
+    int8_t digitalPinState[7];
+    int16_t analogPinState[8];
     uint8_t batteryPercentage;
     uint16_t batteryVoltage;
     bool isBattCharging;
