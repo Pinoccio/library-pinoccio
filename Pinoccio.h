@@ -1,6 +1,8 @@
 #ifndef LIB_PINOCCIO_H_
 #define LIB_PINOCCIO_H_
 
+#define PINOCCIO_BUILD 20140130
+
 //#define PINOCCIO_DEBUG
 #ifdef PINOCCIO_DEBUG
 #  define D(x) x

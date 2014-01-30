@@ -104,6 +104,9 @@ void PinoccioShell::setup() {
     addBitlashFunction("wifi.sleep", (bitlash_function) wifiSleep);
     addBitlashFunction("wifi.wakeup", (bitlash_function) wifiWakeup);
     addBitlashFunction("wifi.verbose", (bitlash_function) wifiVerbose);
+  }else{
+    // bootup reporting
+    Shell.allReportHQ();    
   }
 
   Scout.meshListen(1, receiveMessage);
@@ -117,9 +120,6 @@ void PinoccioShell::setup() {
   Scout.batteryAlarmTriggeredEventHandler = batteryAlarmTriggeredEventHandler;
   Scout.temperatureEventHandler = temperatureEventHandler;
 
-  // bootup reporting
-//  Shell.allReportHQ();
-
   if (isShellEnabled) {
     startShell();
   } else {
@@ -127,13 +127,13 @@ void PinoccioShell::setup() {
   }
 }
 
-void scoutReportHQ(void);
-void uptimeReportHQ(void);
-void powerReportHQ(void);
-void backpackReportHQ(void);
-void pinReportHQ(void);
-void meshReportHQ(void);
-void tempReportHQ(void);
+char *scoutReportHQ(void);
+char *uptimeReportHQ(void);
+char *powerReportHQ(void);
+char *backpackReportHQ(void);
+char *pinReportHQ(void);
+char *meshReportHQ(void);
+char *tempReportHQ(void);
 static bool isMeshVerbose;
 
 // report all transient settings when asked
@@ -183,14 +183,15 @@ static int tempHigh = 0, tempLow = 0;
 /****************************\
 *      BUILT-IN HANDLERS    *
 \****************************/
-void tempReportHQ(void)
+char *tempReportHQ(void)
 {
-  char report[100];
+  static char report[100];
   int temp = Scout.getTemperature();
   if(temp > tempHigh) tempHigh = temp;
   if(!tempLow || temp < tempLow) tempLow = temp;
   sprintf(report,"{\"_\":\"tmp\",\"t\":%d,\"h\":%d,\"l\":%d}",temp,tempHigh,tempLow);
   Scout.handler.announce(0xBEEF, report);
+  return report;
 }
 
 static numvar getTemperature(void) {
@@ -207,14 +208,15 @@ static numvar getRandomNumber(void) {
 }
 
 extern int __bss_end;
-void uptimeReportHQ(void)
+char *uptimeReportHQ(void)
 {
-  char report[100];
+  static char report[100];
   int free_mem;
   int uptime = millis();
   // free memory based on http://forum.pololu.com/viewtopic.php?f=10&t=989&view=unread#p4218
   sprintf(report,"{\"_\":\"u\",\"m\":%d,\"f\":%d,\"r\":%d}",uptime,((int)&free_mem) - ((int)&__bss_end),random());
   Scout.handler.announce(0xBEEF, report);
+  return report;
 }
 
 static numvar uptimeReport(void) {
@@ -260,27 +262,16 @@ static numvar goToSleep(void) {
   //Pinoccio.goToSleep(getarg(1));
 }
 
-void powerReportHQ(void)
+char *powerReportHQ(void)
 {
-  char report[100];
+  static char report[100];
   sprintf(report,"{\"_\":\"pwr\",\"p\":%d,\"v\":%d,\"c\":%s,\"vcc\":%s,\"a\":%s}",Scout.getBatteryPercentage(),(int)Scout.getBatteryVoltage(),Scout.isBatteryCharging()?"true":"false",Scout.isBackpackVccEnabled()?"true":"false", Scout.isBatteryAlarmTriggered()?"true":"false");
   Scout.handler.announce(0xBEEF, report);
+  return report;
 }
 
 static numvar powerReport(void) {
-  powerReportHQ();
-  sp("{\"report\":\"power\", \"charged\":");
-  sp(Scout.getBatteryPercentage());
-  sp(", \"voltage\":");
-  sp((int)Scout.getBatteryVoltage());
-  sp(", \"charging\":");
-  sp(Scout.isBatteryCharging()?"true":"false");
-  sp(", \"vcc\":");
-  sp(Scout.isBackpackVccEnabled()?"true":"false");
-  sp(", \"alarm\":");
-  sp(Scout.isBatteryAlarmTriggered()?"true":"false");
-  sp("}");
-  speol();
+  speol(powerReportHQ());
   return true;
 }
 
@@ -305,11 +296,12 @@ static numvar ledBlinkTorch(void) {
   }
 }
 
-void ledReportHQ(void)
+char *ledReportHQ(void)
 {
-  char report[100];
+  static char report[100];
   sprintf(report,"{\"_\":\"led\",\"l\":[%d,%d,%d],\"t\":[%d,%d,%d]}",RgbLed.getRedValue(),RgbLed.getGreenValue(),RgbLed.getBlueValue(),RgbLed.getRedTorchValue(),RgbLed.getGreenTorchValue(),RgbLed.getBlueTorchValue());
   Scout.handler.announce(0xBEEF, report);
+  return report;
 }
 
 static numvar ledOff(void) {
@@ -387,21 +379,7 @@ static numvar ledTorch(void) {
 }
 
 static numvar ledReport(void) {
-  ledReportHQ();
-  sp("{\"report\":\"led\", \"rgb\":[");
-  sp(RgbLed.getRedValue());
-  sp(",");
-  sp(RgbLed.getGreenValue());
-  sp(",");
-  sp(RgbLed.getBlueValue());
-  sp("], \"torch\":[");
-  sp(RgbLed.getRedTorchValue());
-  sp(",");
-  sp(RgbLed.getGreenTorchValue());
-  sp(",");
-  sp(RgbLed.getBlueTorchValue());
-  sp("]}");
-  speol();
+  speol(ledReportHQ());
 }
 
 /****************************\
@@ -467,50 +445,33 @@ static numvar meshVerbose(void) {
   isMeshVerbose = getarg(1);
 }
 
-int meshRoutingCount(void)
+char *meshReportHQ(void)
 {
+  static char report[100], c;
   int count = 0;
   NWK_RouteTableEntry_t *table = NWK_RouteTable();
   for (int i=0; i < NWK_ROUTE_TABLE_SIZE; i++) {
     if (table[i].dstAddr == NWK_ROUTE_UNKNOWN) continue;
     count++;
   }
-  return count;
-}
-
-void meshReportHQ(void)
-{
-  char report[100];
-  sprintf(report,"{\"_\":\"rf\",\"id\":%d,\"p\":%d,\"t\":%d}",Scout.getAddress(),Scout.getPanId(),meshRoutingCount());
-  //sprintf(report,"{\"_\":\"rf\",\"id\":%d,\"p\":%d,\"c\":%d,\"tx\":\"%s\",\"tx\":\"%s\",\"t\":%d}",Scout.getAddress(),Scout.getPanId(),Scout.getChannel(),Scout.getTxPowerDb(),Scout.getDataRatekbps(),meshRoutingCount());
+  
+  sprintf(report,"{\"_\":\"rf\",\"id\":%d,\"p\":%d,\"t\":%d,\"c\":%d,\"x\":\"",Scout.getAddress(),Scout.getPanId(),count,Scout.getChannel());
+  const char *kbString = Scout.getDataRatekbps();
+  while((c = pgm_read_byte(kbString++))) {
+    sprintf(report+strlen(report),"%c",c);
+  }
+  sprintf(report+strlen(report),"\",\"w\":\"");
+  const char *dbString = Scout.getTxPowerDb();
+  while((c = pgm_read_byte(dbString++))) {
+    sprintf(report+strlen(report),"%c",c);
+  }
+  sprintf(report+strlen(report),"\"}");
   Scout.handler.announce(0xBEEF, report);
+  return report;
 }
 
 static numvar meshReport(void) {
-  meshReportHQ();
-  sp("{\"report\":\"mesh\", \"address\":");
-  sp(Scout.getAddress());
-  sp(", \"pan\":");
-  sp(Scout.getPanId());
-  sp(", \"channel\":");
-  sp(Scout.getChannel());
-  sp(", \"routes\":");
-  sp(meshRoutingCount());
-  sp(", \"rate\":\"");
-  // gotta read these from program memory (for SRAM savings)
-  char c;
-  const char *kbString = Scout.getDataRatekbps();
-  while((c = pgm_read_byte(kbString++))) {
-     sp(c);
-  }
-  sp("\", \"power\":\"");
-  // gotta read these from program memory (for SRAM savings)
-  const char *dbString = Scout.getTxPowerDb();
-  while((c = pgm_read_byte(dbString++))) {
-     sp(c);
-  }
-  sp("\"}");
-  speol();
+  speol(meshReportHQ());
 }
 
 static numvar meshRouting(void) {
@@ -544,11 +505,12 @@ static numvar meshRouting(void) {
 /****************************\
 *        I/O HANDLERS       *
 \****************************/
-void pinReportHQ(void)
+char *pinReportHQ(void)
 {
-  char report[100];
+  static char report[100];
   sprintf(report,"{\"_\":\"pin\",\"a\":[%d,%d,%d,%d,%d,%d,%d,%d],\"d\":[%d,%d,%d,%d,%d,%d,%d]}",Scout.analogPinState[0],Scout.analogPinState[1],Scout.analogPinState[2],Scout.analogPinState[3],Scout.analogPinState[4],Scout.analogPinState[5],Scout.analogPinState[6],Scout.analogPinState[7],Scout.digitalPinState[0],Scout.digitalPinState[1],Scout.digitalPinState[2],Scout.digitalPinState[3],Scout.digitalPinState[4],Scout.digitalPinState[5],Scout.digitalPinState[6]);
   Scout.handler.announce(0xBEEF, report);
+  return report;
 }
 
 static numvar pinOn(void) {
@@ -607,39 +569,7 @@ static numvar pinThreshold(void) {
 }
 
 static numvar pinReport(void) {
-  pinReportHQ();
-  sp("{\"report\":\"pins\", \"d2\":");
-  sp((int)Scout.digitalPinState[0]);
-  sp(", \"d3\":");
-  sp((int)Scout.digitalPinState[1]);
-  sp(", \"d4\":");
-  sp((int)Scout.digitalPinState[2]);
-  sp(", \"d5\":");
-  sp((int)Scout.digitalPinState[3]);
-  sp(", \"d6\":");
-  sp((int)Scout.digitalPinState[4]);
-  sp(", \"d7\":");
-  sp((int)Scout.digitalPinState[5]);
-  sp(", \"d8\":");
-  sp((int)Scout.digitalPinState[6]);
-  sp(", \"a0\":");
-  sp(Scout.analogPinState[0]);
-  sp(", \"a1\":");
-  sp(Scout.analogPinState[1]);
-  sp(", \"a2\":");
-  sp(Scout.analogPinState[2]);
-  sp(", \"a3\":");
-  sp(Scout.analogPinState[3]);
-  sp(", \"a4\":");
-  sp(Scout.analogPinState[4]);
-  sp(", \"a5\":");
-  sp(Scout.analogPinState[5]);
-  sp(", \"a6\":");
-  sp(Scout.analogPinState[6]);
-  sp(", \"a7\":");
-  sp(Scout.analogPinState[7]);
-  sp("}");
-  speol();
+  speol(pinReportHQ());
   return true;
 }
 
@@ -647,22 +577,24 @@ static numvar pinReport(void) {
 *     BACKPACK HANDLERS     *
 \****************************/
 
-void backpackReportHQ(void)
+char *backpackReportHQ(void)
 {
-  char report[100];
+  static char report[100];
+  int comma = 0;
   sprintf(report,"{\"_\":\"bps\",\"a\":[");
   for (uint8_t i = 0; i < Scout.bp.num_slaves; ++i) {
     for (uint8_t j = 0; j < UNIQUE_ID_LENGTH; ++j) {
-      // TODO add id to array
+      // TODO this isn't correct, dunno what to do here
+      sprintf(report+strlen(report),"%s%d",comma++?",":"",Scout.bp.slave_ids[i][j]);
     }
   }
   sprintf(report+strlen(report),"]}");
   Scout.handler.announce(0xBEEF, report);
+  return report;
 }
 
 static numvar backpackReport(void) {
-  backpackReportHQ();
-  sp("{\"report\":\"backpacks\", \"backpacks\":[]}");
+  sp(backpackReportHQ());
   speol();
 }
 
@@ -687,24 +619,16 @@ static numvar backpackList(void) {
  *   SCOUT REPORT HANDLERS  *
 \****************************/
 
-void scoutReportHQ(void)
+char *scoutReportHQ(void)
 {
-  char report[100];
-  sprintf(report,"{\"_\":\"s\",\"e\":%d,\"hv\":%d,\"hf\":%d,\"hs\":%d}",(int)Scout.getEEPROMVersion(),(int)Scout.getHwVersion(),Scout.getHwFamily(),Scout.getHwSerial());
+  static char report[100];
+  sprintf(report,"{\"_\":\"s\",\"e\":%d,\"hv\":%d,\"hf\":%d,\"hs\":%d,\"b\":%ld}",(int)Scout.getEEPROMVersion(),(int)Scout.getHwVersion(),Scout.getHwFamily(),Scout.getHwSerial(),PINOCCIO_BUILD);
   Scout.handler.announce(0xBEEF, report);
+  return report;
 }
 
 static numvar scoutReport(void) {
-  scoutReportHQ();
-  sp("{\"report\":\"scout\", \"eeprom\":");
-  sp((int)Scout.getEEPROMVersion());
-  sp(", \"hardware\":");
-  sp((int)Scout.getHwVersion());
-  sp(", \"family\":");
-  sp((int)Scout.getHwFamily());
-  sp(", \"serial\":");
-  sp((int)Scout.getHwSerial());
-  speol("}");
+  speol(scoutReportHQ());
 }
 
 static numvar isScoutLeadScout(void) {
@@ -767,23 +691,17 @@ static numvar setEventVerbose(void) {
  *       Scout.wifi.HANDLERS      *
 \****************************/
 
-void wifiReportHQ(void)
+char *wifiReportHQ(void)
 {
-  char report[100];
+  static char report[100];
+  // TODO real wifi status/version
   sprintf(report,"{\"_\":\"bp\",\"b\":\"wifi\",\"v\":%d,\"c\":%s}",0,"true");
   Scout.handler.announce(0xBEEF, report);
+  return report;
 }
 
 static numvar wifiReport(void) {
-  wifiReportHQ();
-  sp("{\"report\":\"wifi\", \"version\":");
-  sp(0);
-  sp(", \"connected\":");
-  sp("true");
-//  sp(", \"network\":");
-//  sp();
-  sp("}");
-  speol();
+  speol(wifiReportHQ());
 }
 
 static numvar wifiStatus(void) {

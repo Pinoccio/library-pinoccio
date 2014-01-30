@@ -15,6 +15,7 @@ This report is sent upon startup.
 * "hv" - integer (1-255), hardware version
 * "hf" - integer (1-64k), hardware family id
 * "hs" - integer (big), hardware serial id
+* "b" - integer, build version (YYYYMMDD)
 
 ### "u" - Uptime
 

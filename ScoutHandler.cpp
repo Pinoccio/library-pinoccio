@@ -174,7 +174,7 @@ struct announceQ_t {
 } *announceQ = NULL;
 
 static void announceConfirm(NWK_DataReq_t *req) {
-  if (hqVerboseOutput) speol("announce confirmed");
+//  if (hqVerboseOutput) speol("announce confirmed");
   struct announceQ_t *next = announceQ->next;
   free(req->data);
   free(announceQ);
@@ -356,6 +356,7 @@ void leadIncoming(char *packet, unsigned short *index) {
 
   if (strcmp(type, "online") == 0) {
     // TODO anything hard-coded to do once confirmed online?
+    Shell.allReportHQ();
   }
 
   if (strcmp(type, "command") == 0) {
