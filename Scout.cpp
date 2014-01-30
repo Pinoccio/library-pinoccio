@@ -35,9 +35,12 @@ void PinoccioScout::setup() {
   pinMode(BATT_ALARM, INPUT_PULLUP);
   pinMode(VCC_ENABLE, OUTPUT);
 
+  disableBackpackVcc();
+  delay(100);
+  enableBackpackVcc();
+
   RgbLed.turnOff();
 
-  enableBackpackVcc();
   // Give the slaves on the backpack bus a bit of time to start up. 1ms
   // seems to be enough, but let's be generous.
   delay(5);
@@ -179,6 +182,7 @@ static void scoutDigitalStateChangeTimerHandler(SYS_Timer_t *timer) {
       // Skip input pins that don't have pull-ups enabled--they drift
       if ((*portModeRegister(digitalPinToPort(pin)) & digitalPinToBitMask(pin)) == 0 &&
           (*portOutputRegister(digitalPinToPort(pin)) & digitalPinToBitMask(pin)) == 0) {
+        Scout.digitalPinState[i] = -1;
         continue;
       }
 
