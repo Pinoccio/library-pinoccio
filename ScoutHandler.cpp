@@ -168,19 +168,23 @@ static void fieldAnswerChunk() {
   }
 }
 
-static void fieldAnnounceConfirm(NWK_DataReq_t *req) {
-  isAnnouncing = false;
+struct announceQ_t {
+  NWK_DataReq_t req;
+  struct announceQ_t *next;
+} *announceQ = NULL;
+
+static void announceConfirm(NWK_DataReq_t *req) {
+  if (hqVerboseOutput) speol("announce confirmed");
+  struct announceQ_t *next = announceQ->next;
+  free(req->data);
+  free(announceQ);
+  announceQ = next;
+  if(next) NWK_DataReq(&(next->req));
 }
 
-void PinoccioScoutHandler::fieldAnnounce(uint16_t chan, char *message) {
-  int len = strlen(message);
-
-  if (isAnnouncing) {
-    return;
-  }
-
+void PinoccioScoutHandler::announce(uint16_t chan, char *message) {
   if (hqVerboseOutput) {
-    sp("announcing to 0x");
+    sp("announcing to ");
     sp(chan);
     sp(" ");
     speol(message);
@@ -190,17 +194,31 @@ void PinoccioScoutHandler::fieldAnnounce(uint16_t chan, char *message) {
   if (Scout.isLeadScout()) {
     leadAnnouncementSend(chan, Scout.getAddress(), message);
   }
+  
+  char *data = strdup(message);
+  if(!data) return;
+
+  struct announceQ_t *r = (struct announceQ_t*)malloc(sizeof(struct announceQ_t));
+  if(!r) return;
 
   Scout.meshJoinGroup(chan); // must be joined to send
-  fieldAnnounceReq.dstAddr = chan;
-  fieldAnnounceReq.dstEndpoint = 4;
-  fieldAnnounceReq.srcEndpoint = Scout.getAddress();
-  fieldAnnounceReq.options = NWK_OPT_MULTICAST|NWK_OPT_ENABLE_SECURITY;
-  fieldAnnounceReq.data = (uint8_t*)message;
-  fieldAnnounceReq.size = len+1;
-  fieldAnnounceReq.confirm = fieldAnnounceConfirm;
-  isAnnouncing = true;
-  NWK_DataReq(&fieldAnnounceReq);
+  memset(r, 0, sizeof(struct announceQ_t));
+  r->req.dstAddr = chan;
+  r->req.dstEndpoint = 4;
+  r->req.srcEndpoint = Scout.getAddress();
+  r->req.options = NWK_OPT_MULTICAST|NWK_OPT_ENABLE_SECURITY;
+  r->req.data = (uint8_t*)data;
+  r->req.size = strlen(data)+1;
+  r->req.confirm = announceConfirm;
+  if(!announceQ)
+  {
+    announceQ = r;
+    NWK_DataReq(&(r->req));
+  }else{
+    struct announceQ_t *last = announceQ;
+    while(last->next) last = last->next;
+    last->next = r;
+  }
 }
 
 static bool fieldAnnouncements(NWK_DataInd_t *ind) {
@@ -221,7 +239,9 @@ static bool fieldAnnouncements(NWK_DataInd_t *ind) {
   // run the Bitlash callback function, if defined
   sprintf(callback,"event.channel%d",ind->dstAddr);
   if (findscript(callback)) {
-    doCommand(callback);
+    char cbarg[128];
+    sprintf(cbarg,"event.channel%d(\"%s\")",ind->dstAddr,ind->data);
+    doCommand(cbarg);
   }
 
   return true;

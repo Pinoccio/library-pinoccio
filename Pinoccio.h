@@ -14,10 +14,10 @@
 // #define NWK_ENABLE_MULTICAST
 // #define NWK_ENABLE_ROUTE_DISCOVERY
 //
-// #define NWK_BUFFERS_AMOUNT                  5
-// #define NWK_MAX_ENDPOINTS_AMOUNT            4
+#define NWK_BUFFERS_AMOUNT                  10
+#define NWK_MAX_ENDPOINTS_AMOUNT            20
 // #define NWK_ACK_WAIT_TIME                   1000  // ms
-// #define NWK_GROUPS_AMOUNT                   10
+#define NWK_GROUPS_AMOUNT                   20
 //
 // #define NWK_DUPLICATE_REJECTION_TABLE_SIZE  10
 // #define NWK_DUPLICATE_REJECTION_TTL         1000 // ms

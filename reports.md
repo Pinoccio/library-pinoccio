@@ -19,8 +19,6 @@ This report is sent upon startup.
 ### "u" - Uptime
 
 * "m" - integer, milliseconds since boot
-* "c" - integer, number of commands executed since last boot
-* "s" - string, restart method, "watchdog", "pin", "switch", "power"
 * "f" - integer, free memory
 * "r" - integer, random number
 

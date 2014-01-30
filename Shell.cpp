@@ -133,17 +133,18 @@ void powerReportHQ(void);
 void backpackReportHQ(void);
 void pinReportHQ(void);
 void meshReportHQ(void);
+void tempReportHQ(void);
 static bool isMeshVerbose;
 
 // report all transient settings when asked
 void PinoccioShell::allReportHQ() {
-  // XXX TODO, either delay between these or set up a callback system since only one packet can go out at once!
   scoutReportHQ();
   uptimeReportHQ();
   powerReportHQ();
   backpackReportHQ();
   pinReportHQ();
   meshReportHQ();
+  tempReportHQ();
 }
 
 static numvar allReport(void) {
@@ -189,10 +190,11 @@ void tempReportHQ(void)
   if(temp > tempHigh) tempHigh = temp;
   if(!tempLow || temp < tempLow) tempLow = temp;
   sprintf(report,"{\"_\":\"tmp\",\"t\":%d,\"h\":%d,\"l\":%d}",temp,tempHigh,tempLow);
-  Scout.handler.fieldAnnounce(0xBEEF, report);
+  Scout.handler.announce(0xBEEF, report);
 }
 
 static numvar getTemperature(void) {
+  tempReportHQ();
   int i = Scout.getTemperature();
   speol(i);
   return i;
@@ -204,27 +206,20 @@ static numvar getRandomNumber(void) {
   return i;
 }
 
+extern int __bss_end;
 void uptimeReportHQ(void)
 {
   char report[100];
-  sprintf(report,"{\"_\":\"u\",\"m\":%d,\"c\":%d,\"s\":\"%s\",\"f\":%d,\"r\":%d}",millis(),0,"power",0,random());
-  Scout.handler.fieldAnnounce(0xBEEF, report);
+  int free_mem;
+  int uptime = millis();
+  // free memory based on http://forum.pololu.com/viewtopic.php?f=10&t=989&view=unread#p4218
+  sprintf(report,"{\"_\":\"u\",\"m\":%d,\"f\":%d,\"r\":%d}",uptime,((int)&free_mem) - ((int)&__bss_end),random());
+  Scout.handler.announce(0xBEEF, report);
 }
 
 static numvar uptimeReport(void) {
-  powerReportHQ();
-  sp("{\"report\":\"uptime\", \"uptime\":");
+  uptimeReportHQ();
   sp(millis());
-  // TODO track total commands into bitlash, where to get restarted reason and free, update HQ too
-//  sp(", \"commands\":");
-//  sp(shellCommandCounter);
-//  sp(", \"restarted\":");
-//  sp();
-//  sp(", \"free\":");
-//  sp();
-  sp(", \"random\":");
-  sp(random());
-  sp("}");
   speol();
   return true;
 }
@@ -269,7 +264,7 @@ void powerReportHQ(void)
 {
   char report[100];
   sprintf(report,"{\"_\":\"pwr\",\"p\":%d,\"v\":%d,\"c\":%s,\"vcc\":%s,\"a\":%s}",Scout.getBatteryPercentage(),(int)Scout.getBatteryVoltage(),Scout.isBatteryCharging()?"true":"false",Scout.isBackpackVccEnabled()?"true":"false", Scout.isBatteryAlarmTriggered()?"true":"false");
-  Scout.handler.fieldAnnounce(0xBEEF, report);
+  Scout.handler.announce(0xBEEF, report);
 }
 
 static numvar powerReport(void) {
@@ -314,7 +309,7 @@ void ledReportHQ(void)
 {
   char report[100];
   sprintf(report,"{\"_\":\"led\",\"l\":[%d,%d,%d],\"t\":[%d,%d,%d]}",RgbLed.getRedValue(),RgbLed.getGreenValue(),RgbLed.getBlueValue(),RgbLed.getRedTorchValue(),RgbLed.getGreenTorchValue(),RgbLed.getBlueTorchValue());
-  Scout.handler.fieldAnnounce(0xBEEF, report);
+  Scout.handler.announce(0xBEEF, report);
 }
 
 static numvar ledOff(void) {
@@ -465,7 +460,7 @@ static numvar meshSend(void) {
 }
 
 static numvar meshAnnounce(void) {
-  Scout.handler.fieldAnnounce(getarg(1), (char*)getstringarg(2));
+  Scout.handler.announce(getarg(1), (char*)getstringarg(2));
 }
 
 static numvar meshVerbose(void) {
@@ -486,17 +481,17 @@ int meshRoutingCount(void)
 void meshReportHQ(void)
 {
   char report[100];
-  sprintf(report,"{\"_\":\"rf\",\"id\":%d,\"p\":%d,\"c\":%d,\"tx\":\"%s\",\"tx\":\"%s\",\"t\":%d}",Scout.getAddress(),Scout.getPanId(),Scout.getChannel(),Scout.getTxPowerDb(),Scout.getDataRatekbps(),meshRoutingCount());
-  Scout.handler.fieldAnnounce(0xBEEF, report);
+  sprintf(report,"{\"_\":\"rf\",\"id\":%d,\"p\":%d,\"t\":%d}",Scout.getAddress(),Scout.getPanId(),meshRoutingCount());
+  //sprintf(report,"{\"_\":\"rf\",\"id\":%d,\"p\":%d,\"c\":%d,\"tx\":\"%s\",\"tx\":\"%s\",\"t\":%d}",Scout.getAddress(),Scout.getPanId(),Scout.getChannel(),Scout.getTxPowerDb(),Scout.getDataRatekbps(),meshRoutingCount());
+  Scout.handler.announce(0xBEEF, report);
 }
 
 static numvar meshReport(void) {
-//  meshReportHQ();
+  meshReportHQ();
   sp("{\"report\":\"mesh\", \"address\":");
   sp(Scout.getAddress());
   sp(", \"pan\":");
   sp(Scout.getPanId());
-/*
   sp(", \"channel\":");
   sp(Scout.getChannel());
   sp(", \"routes\":");
@@ -514,7 +509,6 @@ static numvar meshReport(void) {
   while((c = pgm_read_byte(dbString++))) {
      sp(c);
   }
-*/
   sp("\"}");
   speol();
 }
@@ -554,7 +548,7 @@ void pinReportHQ(void)
 {
   char report[100];
   sprintf(report,"{\"_\":\"pin\",\"a\":[%d,%d,%d,%d,%d,%d,%d,%d],\"d\":[%d,%d,%d,%d,%d,%d,%d]}",Scout.analogPinState[0],Scout.analogPinState[1],Scout.analogPinState[2],Scout.analogPinState[3],Scout.analogPinState[4],Scout.analogPinState[5],Scout.analogPinState[6],Scout.analogPinState[7],Scout.digitalPinState[0],Scout.digitalPinState[1],Scout.digitalPinState[2],Scout.digitalPinState[3],Scout.digitalPinState[4],Scout.digitalPinState[5],Scout.digitalPinState[6]);
-  Scout.handler.fieldAnnounce(0xBEEF, report);
+  Scout.handler.announce(0xBEEF, report);
 }
 
 static numvar pinOn(void) {
@@ -663,7 +657,7 @@ void backpackReportHQ(void)
     }
   }
   sprintf(report+strlen(report),"]}");
-  Scout.handler.fieldAnnounce(0xBEEF, report);
+  Scout.handler.announce(0xBEEF, report);
 }
 
 static numvar backpackReport(void) {
@@ -697,7 +691,7 @@ void scoutReportHQ(void)
 {
   char report[100];
   sprintf(report,"{\"_\":\"s\",\"e\":%d,\"hv\":%d,\"hf\":%d,\"hs\":%d}",(int)Scout.getEEPROMVersion(),(int)Scout.getHwVersion(),Scout.getHwFamily(),Scout.getHwSerial());
-  Scout.handler.fieldAnnounce(0xBEEF, report);
+  Scout.handler.announce(0xBEEF, report);
 }
 
 static numvar scoutReport(void) {
@@ -777,7 +771,7 @@ void wifiReportHQ(void)
 {
   char report[100];
   sprintf(report,"{\"_\":\"bp\",\"b\":\"wifi\",\"v\":%d,\"c\":%s}",0,"true");
-  Scout.handler.fieldAnnounce(0xBEEF, report);
+  Scout.handler.announce(0xBEEF, report);
 }
 
 static numvar wifiReport(void) {
@@ -1081,7 +1075,7 @@ static void digitalPinEventHandler(uint8_t pin, uint8_t value) {
   pinReportHQ();
   if (findscript("event.digital")) {
     String callback = "event.digital(" + String(pin) + "," + String(value) + ")";
-    char buf[24];
+    char buf[32];
     callback.toCharArray(buf, callback.length()+1);
     doCommand(buf);
   }
@@ -1098,7 +1092,7 @@ static void analogPinEventHandler(uint8_t pin, uint16_t value) {
   pinReportHQ();
   if (findscript("event.analog")) {
     String callback = "event.analog(" + String(pin) + "," + String(value) + ")";
-    char buf[24];
+    char buf[32];
     callback.toCharArray(buf, callback.length()+1);
     doCommand(buf);
   }
@@ -1108,7 +1102,7 @@ static void batteryPercentageEventHandler(uint8_t value) {
   powerReportHQ();
   if (findscript("event.percent")) {
     String callback = "event.percent(" + String(value) + ")";
-    char buf[24];
+    char buf[32];
     callback.toCharArray(buf, callback.length()+1);
     doCommand(buf);
   }
@@ -1118,7 +1112,7 @@ static void batteryVoltageEventHandler(uint8_t value) {
   powerReportHQ();
   if (findscript("event.voltage")) {
     String callback = "event.voltage(" + String(value) + ")";
-    char buf[24];
+    char buf[32];
     callback.toCharArray(buf, callback.length()+1);
     doCommand(buf);
   }
@@ -1128,7 +1122,7 @@ static void batteryChargingEventHandler(uint8_t value) {
   powerReportHQ();
   if (findscript("event.charging")) {
     String callback = "event.charging(" + String(value) + ")";
-    char buf[24];
+    char buf[32];
     callback.toCharArray(buf, callback.length()+1);
     doCommand(buf);
   }
@@ -1138,7 +1132,7 @@ static void batteryAlarmTriggeredEventHandler(uint8_t value) {
   powerReportHQ();
   if (findscript("event.batteryalarm")) {
     String callback = "event.batteryalarm(" + String(value) + ")";
-    char buf[24];
+    char buf[32];
     callback.toCharArray(buf, callback.length()+1);
     doCommand(buf);
   }
@@ -1148,7 +1142,7 @@ static void temperatureEventHandler(uint8_t value) {
   tempReportHQ();
   if (findscript("event.temperature")) {
     String callback = "event.temperature(" + String(value) + ")";
-    char buf[24];
+    char buf[32];
     callback.toCharArray(buf, callback.length()+1);
     doCommand(buf);
   }
@@ -1176,7 +1170,7 @@ void bitlashFilter(byte b) {
       message++;
       chan = atoi(buf+5);
       if (chan) {
-        Scout.handler.fieldAnnounce(chan, message);
+        Scout.handler.announce(chan, message);
       }
     }
     offset=0;
