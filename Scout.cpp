@@ -35,9 +35,12 @@ void PinoccioScout::setup() {
   pinMode(BATT_ALARM, INPUT_PULLUP);
   pinMode(VCC_ENABLE, OUTPUT);
 
+  disableBackpackVcc();
+  delay(100);
+  enableBackpackVcc();
+
   RgbLed.turnOff();
 
-  enableBackpackVcc();
   // Give the slaves on the backpack bus a bit of time to start up. 1ms
   // seems to be enough, but let's be generous.
   delay(5);
