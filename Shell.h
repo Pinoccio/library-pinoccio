@@ -90,6 +90,7 @@ static numvar pinOff(void);
 static numvar pinMakeInput(void);
 static numvar pinMakeInputPullup(void);
 static numvar pinMakeOutput(void);
+static numvar pinSetMode(void);
 static numvar pinRead(void);
 static numvar pinWrite(void);
 static numvar pinThreshold(void);

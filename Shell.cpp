@@ -65,6 +65,7 @@ void PinoccioShell::setup() {
   addBitlashFunction("pin.makeinput", (bitlash_function) pinMakeInput);
   addBitlashFunction("pin.makeinputup", (bitlash_function) pinMakeInputPullup);
   addBitlashFunction("pin.makeoutput", (bitlash_function) pinMakeOutput);
+  addBitlashFunction("pin.setmode", (bitlash_function) pinSetMode);
   addBitlashFunction("pin.read", (bitlash_function) pinRead);
   addBitlashFunction("pin.write", (bitlash_function) pinWrite);
   addBitlashFunction("pin.report", (bitlash_function) pinReport);
@@ -580,6 +581,11 @@ static numvar pinMakeInputPullup(void) {
 
 static numvar pinMakeOutput(void) {
   pinMode(getarg(1), OUTPUT);
+  pinReportHQ();
+}
+
+static numvar pinSetMode(void) {
+  pinMode(getarg(1), getarg(2));
   pinReportHQ();
 }
 
