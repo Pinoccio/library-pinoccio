@@ -15,55 +15,27 @@
 
 /*****************************************************************************
 *****************************************************************************/
-static int8_t halAdcOffset;
-
-static inline void sleep (void)
-{
-    asm volatile("sleep");
-}
-
-/*****************************************************************************
-*****************************************************************************/
-static inline int16_t HAL_AdcMeasure(void) {
-  /* dummy cycle */
-  do
-  {
-      sleep();
-  }
-  while (ADCSRA & (1 << ADSC));
-
-   /* set by ISR */
-  return ADC;
-}
-
-/*****************************************************************************
-*****************************************************************************/
 int8_t HAL_MeasureTemperature(void) {
-  int32_t val;
+  uint16_t val;
 
   uint8_t adcsrc = ADCSRC;
   uint8_t adcsrb = ADCSRB;
   uint8_t adcsra = ADCSRA;
   uint8_t admux = ADMUX;
-  
-  ADCSRC = 10 << ADSUT0;
-  ADCSRB = (1 << MUX5);
-  ADMUX = (1 << REFS1) | (1 << REFS0) | (1 << MUX3) | (1 << MUX0); /* reference: 1.6V, input Temp Sensor */
-  ADCSRA = (1 << ADEN) | (1 << ADSC) | (1 << ADPS2) | (1 << ADPS1); /* PS 64 */
 
-  _delay_us(HAL_TEMPERATURE_READING_DELAY); /* some time to settle */
+  ADCSRC = 10<<ADSUT0; // set start-up time
+  ADCSRB = 1<<MUX5; // set MUX5 first
+  ADMUX = (3<<REFS0) + (9<<MUX0); // store new ADMUX, 1.6V AREF // switch ADC on, set prescaler, start conversion
+  ADCSRA = (1<<ADEN) + (1<<ADSC) + (4<<ADPS0);
+  do
+  {} while( (ADCSRA & (1<<ADSC))); // wait for conversion end ADCSRA = 0; // disable the ADC
 
-  ADCSRA |= (1 << ADIF); /* clear flag */
-  ADCSRA |= (1 << ADIE);
-
-  // dummy cycle after REF change (suggested by datasheet)
-  HAL_AdcMeasure();
-
-  val = HAL_AdcMeasure();
+  val = ADC;
 
   ADCSRA = adcsra;
   ADCSRB = adcsrb;
   ADCSRC = adcsrc;
   ADMUX = admux;
-  return (int)((1.13 * val - 272.8)) + HAL_TEMPERATURE_CALIBRATION_OFFSET - 3;
+
+  return ((int)((1.13 * val - 272.8)));
 }
