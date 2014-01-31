@@ -141,6 +141,7 @@ void PinoccioShell::allReportHQ() {
   analogPinReportHQ();
   meshReportHQ();
   tempReportHQ();
+  ledReportHQ();
 }
 
 static numvar allReport(void) {
