@@ -106,7 +106,7 @@ void PinoccioShell::setup() {
     addBitlashFunction("wifi.verbose", (bitlash_function) wifiVerbose);
   }else{
     // bootup reporting
-    Shell.allReportHQ();    
+    Shell.allReportHQ();
   }
 
   Scout.meshListen(1, receiveMessage);
@@ -454,7 +454,7 @@ char *meshReportHQ(void)
     if (table[i].dstAddr == NWK_ROUTE_UNKNOWN) continue;
     count++;
   }
-  
+
   sprintf(report,"{\"_\":\"rf\",\"id\":%d,\"p\":%d,\"t\":%d,\"c\":%d,\"x\":\"",Scout.getAddress(),Scout.getPanId(),count,Scout.getChannel());
   const char *kbString = Scout.getDataRatekbps();
   while((c = pgm_read_byte(kbString++))) {
@@ -680,7 +680,7 @@ static numvar stopStateChangeEvents(void) {
 }
 
 static numvar setEventPeriods(void) {
-  Scout.setStateChangeEventPeriods(getarg(1), getarg(2));
+  Scout.setStateChangeEventPeriods(getarg(1), getarg(2), getarg(3));
 }
 
 static numvar setEventVerbose(void) {

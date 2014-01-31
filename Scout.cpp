@@ -23,6 +23,10 @@ PinoccioScout::PinoccioScout() {
   analogStateChangeTimer.mode = SYS_TIMER_PERIODIC_MODE;
   analogStateChangeTimer.handler = scoutAnalogStateChangeTimerHandler;
 
+  peripheralStateChangeTimer.interval = 60000;
+  peripheralStateChangeTimer.mode = SYS_TIMER_PERIODIC_MODE;
+  peripheralStateChangeTimer.handler = scoutPeripheralStateChangeTimerHandler;
+
   eventVerboseOutput = false;
 }
 
@@ -137,7 +141,15 @@ void PinoccioScout::stopAnalogStateChangeEvents() {
   SYS_TimerStop(&analogStateChangeTimer);
 }
 
-void PinoccioScout::setStateChangeEventPeriods(uint32_t digitalInterval, uint32_t analogInterval) {
+void PinoccioScout::startPeripheralStateChangeEvents() {
+  SYS_TimerStart(&peripheralStateChangeTimer);
+}
+
+void PinoccioScout::stopPeripheralStateChangeEvents() {
+  SYS_TimerStop(&peripheralStateChangeTimer);
+}
+
+void PinoccioScout::setStateChangeEventPeriods(uint32_t digitalInterval, uint32_t analogInterval, uint32_t peripheralInterval) {
   stopDigitalStateChangeEvents();
   digitalStateChangeTimer.interval = digitalInterval;
   startDigitalStateChangeEvents();
@@ -145,6 +157,10 @@ void PinoccioScout::setStateChangeEventPeriods(uint32_t digitalInterval, uint32_
   stopAnalogStateChangeEvents();
   analogStateChangeTimer.interval = analogInterval;
   startAnalogStateChangeEvents();
+
+  stopPeripheralStateChangeEvents();
+  peripheralStateChangeTimer.interval = peripheralInterval;
+  startPeripheralStateChangeEvents();
 }
 
 void PinoccioScout::saveState() {
@@ -219,25 +235,26 @@ static void scoutDigitalStateChangeTimerHandler(SYS_Timer_t *timer) {
 }
 
 static void scoutAnalogStateChangeTimerHandler(SYS_Timer_t *timer) {
-  const uint8_t analogThreshold = 10;
   uint16_t val;
 
   if (Scout.analogPinEventHandler != 0) {
     for (int i=0; i<8; i++) {
       val = analogRead(i); // explicit digital pins until we can update core
-      if (abs(Scout.analogPinState[i] - val) > analogThreshold) {
-        if (Scout.eventVerboseOutput) {
-          sp("Running: analogPinEventHandler(");
-          sp(i);
-          sp(",");
-          sp(val);
-          speol(")");
-        }
-        Scout.analogPinState[i] = val;
-        Scout.analogPinEventHandler(i, val);
+      if (Scout.eventVerboseOutput) {
+        sp("Running: analogPinEventHandler(");
+        sp(i);
+        sp(",");
+        sp(val);
+        speol(")");
       }
+      Scout.analogPinState[i] = val;
+      Scout.analogPinEventHandler(i, val);
     }
   }
+}
+
+static void scoutPeripheralStateChangeTimerHandler(SYS_Timer_t *timer) {
+  uint16_t val;
 
   if (Scout.batteryPercentageEventHandler != 0) {
     val = constrain(HAL_FuelGaugePercent(), 0, 100);

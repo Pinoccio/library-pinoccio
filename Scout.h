@@ -41,7 +41,9 @@ class PinoccioScout : public PinoccioClass {
     void stopDigitalStateChangeEvents();
     void startAnalogStateChangeEvents();
     void stopAnalogStateChangeEvents();
-    void setStateChangeEventPeriods(uint32_t digitalInterval, uint32_t analogInterval);
+    void startPeripheralStateChangeEvents();
+    void stopPeripheralStateChangeEvents();
+    void setStateChangeEventPeriods(uint32_t digitalInterval, uint32_t analogInterval, uint32_t peripheralInterval);
     void saveState();
 
     int8_t getPinMode(uint8_t pin);
@@ -76,10 +78,12 @@ class PinoccioScout : public PinoccioClass {
 
     SYS_Timer_t digitalStateChangeTimer;
     SYS_Timer_t analogStateChangeTimer;
+    SYS_Timer_t peripheralStateChangeTimer;
 };
 
 extern PinoccioScout Scout;
 static void scoutDigitalStateChangeTimerHandler(SYS_Timer_t *timer);
 static void scoutAnalogStateChangeTimerHandler(SYS_Timer_t *timer);
+static void scoutPeripheralStateChangeTimerHandler(SYS_Timer_t *timer);
 
 #endif
