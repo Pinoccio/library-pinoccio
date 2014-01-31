@@ -92,8 +92,8 @@ static numvar pinMakeOutput(void);
 static numvar pinSetMode(void);
 static numvar pinRead(void);
 static numvar pinWrite(void);
-static numvar pinThreshold(void);
-static numvar pinReport(void);
+static numvar digitalPinReport(void);
+static numvar analogPinReport(void);
 
 static numvar backpackReport(void);
 static numvar backpackList(void);
@@ -126,6 +126,15 @@ static numvar wifiGetTime(void);
 static numvar wifiSleep(void);
 static numvar wifiWakeup(void);
 static numvar wifiVerbose(void);
+
+static char *scoutReportHQ(void);
+static char *uptimeReportHQ(void);
+static char *powerReportHQ(void);
+static char *backpackReportHQ(void);
+static char *digitalPinReportHQ(void);
+static char *analogPinReportHQ(void);
+static char *meshReportHQ(void);
+static char *tempReportHQ(void);
 
 static void pingScout(int address);
 static void pingGroup(int address);

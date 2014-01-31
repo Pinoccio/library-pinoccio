@@ -68,7 +68,8 @@ void PinoccioShell::setup() {
   addBitlashFunction("pin.setmode", (bitlash_function) pinSetMode);
   addBitlashFunction("pin.read", (bitlash_function) pinRead);
   addBitlashFunction("pin.write", (bitlash_function) pinWrite);
-  addBitlashFunction("pin.report", (bitlash_function) pinReport);
+  addBitlashFunction("pin.digitalreport", (bitlash_function) digitalPinReport);
+  addBitlashFunction("pin.analogreport", (bitlash_function) analogPinReport);
 
   addBitlashFunction("backpack.report", (bitlash_function) backpackReport);
   addBitlashFunction("backpack.list", (bitlash_function) backpackList);
@@ -104,7 +105,7 @@ void PinoccioShell::setup() {
     addBitlashFunction("wifi.sleep", (bitlash_function) wifiSleep);
     addBitlashFunction("wifi.wakeup", (bitlash_function) wifiWakeup);
     addBitlashFunction("wifi.verbose", (bitlash_function) wifiVerbose);
-  }else{
+  } else {
     // bootup reporting
     Shell.allReportHQ();
   }
@@ -127,13 +128,6 @@ void PinoccioShell::setup() {
   }
 }
 
-char *scoutReportHQ(void);
-char *uptimeReportHQ(void);
-char *powerReportHQ(void);
-char *backpackReportHQ(void);
-char *pinReportHQ(void);
-char *meshReportHQ(void);
-char *tempReportHQ(void);
 static bool isMeshVerbose;
 
 // report all transient settings when asked
@@ -142,7 +136,8 @@ void PinoccioShell::allReportHQ() {
   uptimeReportHQ();
   powerReportHQ();
   backpackReportHQ();
-  pinReportHQ();
+  digitalPinReportHQ();
+  analogPinReportHQ();
   meshReportHQ();
   tempReportHQ();
 }
@@ -183,7 +178,7 @@ static int tempHigh = 0, tempLow = 0;
 /****************************\
 *      BUILT-IN HANDLERS    *
 \****************************/
-char *tempReportHQ(void)
+static char *tempReportHQ(void)
 {
   static char report[100];
   int temp = Scout.getTemperature();
@@ -208,8 +203,7 @@ static numvar getRandomNumber(void) {
 }
 
 extern int __bss_end;
-char *uptimeReportHQ(void)
-{
+static char *uptimeReportHQ(void) {
   static char report[100];
   int free_mem;
   int uptime = millis();
@@ -262,8 +256,7 @@ static numvar goToSleep(void) {
   //Pinoccio.goToSleep(getarg(1));
 }
 
-char *powerReportHQ(void)
-{
+static char *powerReportHQ(void) {
   static char report[100];
   sprintf(report,"{\"_\":\"pwr\",\"p\":%d,\"v\":%d,\"c\":%s,\"vcc\":%s,\"a\":%s}",Scout.getBatteryPercentage(),(int)Scout.getBatteryVoltage(),Scout.isBatteryCharging()?"true":"false",Scout.isBackpackVccEnabled()?"true":"false", Scout.isBatteryAlarmTriggered()?"true":"false");
   Scout.handler.announce(0xBEEF, report);
@@ -296,8 +289,7 @@ static numvar ledBlinkTorch(void) {
   }
 }
 
-char *ledReportHQ(void)
-{
+static char *ledReportHQ(void) {
   static char report[100];
   sprintf(report,"{\"_\":\"led\",\"l\":[%d,%d,%d],\"t\":[%d,%d,%d]}",RgbLed.getRedValue(),RgbLed.getGreenValue(),RgbLed.getBlueValue(),RgbLed.getRedTorchValue(),RgbLed.getGreenTorchValue(),RgbLed.getBlueTorchValue());
   Scout.handler.announce(0xBEEF, report);
@@ -445,8 +437,7 @@ static numvar meshVerbose(void) {
   isMeshVerbose = getarg(1);
 }
 
-char *meshReportHQ(void)
-{
+static char *meshReportHQ(void) {
   static char report[100], c;
   int count = 0;
   NWK_RouteTableEntry_t *table = NWK_RouteTable();
@@ -505,10 +496,30 @@ static numvar meshRouting(void) {
 /****************************\
 *        I/O HANDLERS       *
 \****************************/
-char *pinReportHQ(void)
-{
-  static char report[135];
-  sprintf(report,"{\"_\":\"pin\",\"am\":[%d,%d,%d,%d,%d,%d,%d,%d],\"av\":[%d,%d,%d,%d,%d,%d,%d,%d],\"dm\":[%d,%d,%d,%d,%d,%d,%d],\"dv\":[%d,%d,%d,%d,%d,%d,%d]}",
+static char *digitalPinReportHQ(void) {
+  static char report[80];
+  sprintf(report,"{\"_\":\"digialpin\",\"m\":[%d,%d,%d,%d,%d,%d,%d],\"v\":[%d,%d,%d,%d,%d,%d,%d]}",
+  Scout.getPinMode(2),
+  Scout.getPinMode(3),
+  Scout.getPinMode(4),
+  Scout.getPinMode(5),
+  Scout.getPinMode(6),
+  Scout.getPinMode(7),
+  Scout.getPinMode(8),
+  Scout.digitalPinState[0],
+  Scout.digitalPinState[1],
+  Scout.digitalPinState[2],
+  Scout.digitalPinState[3],
+  Scout.digitalPinState[4],
+  Scout.digitalPinState[5],
+  Scout.digitalPinState[6]);
+  Scout.handler.announce(0xBEEF, report);
+  return report;
+}
+
+static char *analogPinReportHQ(void) {
+  static char report[80];
+  sprintf(report,"{\"_\":\"analogpin\",\"m\":[%d,%d,%d,%d,%d,%d,%d,%d],\"v\":[%d,%d,%d,%d,%d,%d,%d,%d]}",
   Scout.getPinMode(24),
   Scout.getPinMode(25),
   Scout.getPinMode(26),
@@ -524,55 +535,81 @@ char *pinReportHQ(void)
   Scout.analogPinState[4],
   Scout.analogPinState[5],
   Scout.analogPinState[6],
-  Scout.analogPinState[7],
-  Scout.getPinMode(2),
-  Scout.getPinMode(3),
-  Scout.getPinMode(4),
-  Scout.getPinMode(5),
-  Scout.getPinMode(6),
-  Scout.getPinMode(7),
-  Scout.getPinMode(8),
-  Scout.digitalPinState[0],
-  Scout.digitalPinState[1],
-  Scout.digitalPinState[2],
-  Scout.digitalPinState[3],
-  Scout.digitalPinState[4],
-  Scout.digitalPinState[5],
-  Scout.digitalPinState[6]);
-  //Scout.handler.announce(0xBEEF, report);
+  Scout.analogPinState[7]);
+  Scout.handler.announce(0xBEEF, report);
   return report;
 }
 
 static numvar pinOn(void) {
-  pinMode(getarg(1), OUTPUT);
-  digitalWrite(getarg(1), HIGH);
-  pinReportHQ();
+  uint8_t pin = getarg(1);
+  if (Scout.isDigitalPin(pin)) {
+    pinMode(pin, OUTPUT);
+    digitalWrite(pin, HIGH);
+    digitalPinReportHQ();
+  }
+  if (Scout.isAnalogPin(pin)) {
+    pinMode(pin, OUTPUT);
+    digitalWrite(pin, HIGH);
+    analogPinReportHQ();
+  }
 }
 
 static numvar pinOff(void) {
-  pinMode(getarg(1), OUTPUT);
-  digitalWrite(getarg(1), LOW);
-  pinReportHQ();
+  uint8_t pin = getarg(1);
+  if (Scout.isDigitalPin(pin)) {
+    pinMode(pin, OUTPUT);
+    digitalWrite(pin, LOW);
+    digitalPinReportHQ();
+  }
+  if (Scout.isAnalogPin(pin)) {
+    pinMode(pin, OUTPUT);
+    digitalWrite(pin, LOW);
+    analogPinReportHQ();
+  }
 }
 
 static numvar pinMakeInput(void) {
-  pinMode(getarg(1), INPUT);
-  pinReportHQ();
+  uint8_t pin = getarg(1);
+  pinMode(pin, INPUT);
+  if (Scout.isDigitalPin(pin)) {
+    digitalPinReportHQ();
+  }
+  if (Scout.isAnalogPin(pin)) {
+    analogPinReportHQ();
+  }
 }
 
 static numvar pinMakeInputPullup(void) {
-  pinMode(getarg(1), INPUT_PULLUP);
-  pinReportHQ();
+  uint8_t pin = getarg(1);
+  pinMode(pin, INPUT_PULLUP);
+  if (Scout.isDigitalPin(pin)) {
+    digitalPinReportHQ();
+  }
+  if (Scout.isAnalogPin(pin)) {
+    analogPinReportHQ();
+  }
 }
 
 static numvar pinMakeOutput(void) {
-  pinMode(getarg(1), OUTPUT);
-  pinReportHQ();
+  uint8_t pin = getarg(1);
+  pinMode(pin, OUTPUT);
+  if (Scout.isDigitalPin(pin)) {
+    digitalPinReportHQ();
+  }
+  if (Scout.isAnalogPin(pin)) {
+    analogPinReportHQ();
+  }
 }
 
 static numvar pinSetMode(void) {
-  pinMode(getarg(1), getarg(2));
-  pinReportHQ();
+  uint8_t pin = getarg(1);
+  pinMode(pin, getarg(2));
+  if (Scout.isDigitalPin(pin)) {
+    digitalPinReportHQ();
+  }
+  if (Scout.isAnalogPin(pin)) {
+    analogPinReportHQ();
+  }
 }
 
 static numvar pinRead(void) {
@@ -588,12 +625,17 @@ static numvar pinRead(void) {
 
 static numvar pinWrite(void) {
   // TODO: set a PWM pin's value from 0 - 255
-  pinReportHQ();
+  digitalPinReportHQ();
   return true;
 }
 
-static numvar pinReport(void) {
-  speol(pinReportHQ());
+static numvar digitalPinReport(void) {
+  speol(digitalPinReportHQ());
+  return true;
+}
+
+static numvar analogPinReport(void) {
+  speol(analogPinReportHQ());
   return true;
 }
 
@@ -601,8 +643,7 @@ static numvar pinReport(void) {
 *     BACKPACK HANDLERS     *
 \****************************/
 
-char *backpackReportHQ(void)
-{
+static char *backpackReportHQ(void) {
   static char report[100];
   int comma = 0;
   sprintf(report,"{\"_\":\"bps\",\"a\":[");
@@ -643,8 +684,7 @@ static numvar backpackList(void) {
  *   SCOUT REPORT HANDLERS  *
 \****************************/
 
-char *scoutReportHQ(void)
-{
+static char *scoutReportHQ(void) {
   static char report[100];
   sprintf(report,"{\"_\":\"s\",\"e\":%d,\"hv\":%d,\"hf\":%d,\"hs\":%d,\"b\":%ld}",(int)Scout.getEEPROMVersion(),(int)Scout.getHwVersion(),Scout.getHwFamily(),Scout.getHwSerial(),PINOCCIO_BUILD);
   Scout.handler.announce(0xBEEF, report);
@@ -715,8 +755,7 @@ static numvar setEventVerbose(void) {
  *       Scout.wifi.HANDLERS      *
 \****************************/
 
-char *wifiReportHQ(void)
-{
+static char *wifiReportHQ(void) {
   static char report[100];
   // TODO real wifi status/version
   sprintf(report,"{\"_\":\"bp\",\"b\":\"wifi\",\"v\":%d,\"c\":%s}",0,"true");
@@ -1014,7 +1053,7 @@ static void sendConfirm(NWK_DataReq_t *req) {
 static void digitalPinEventHandler(uint8_t pin, uint8_t value) {
   uint32_t time = millis();
 
-  pinReportHQ();
+  digitalPinReportHQ();
   if (findscript("event.digital")) {
     String callback = "event.digital(" + String(pin) + "," + String(value) + ")";
     char buf[32];
@@ -1031,12 +1070,21 @@ static void digitalPinEventHandler(uint8_t pin, uint8_t value) {
 }
 
 static void analogPinEventHandler(uint8_t pin, uint16_t value) {
-  pinReportHQ();
+  uint32_t time = millis();
+
+  analogPinReportHQ();
   if (findscript("event.analog")) {
     String callback = "event.analog(" + String(pin) + "," + String(value) + ")";
     char buf[32];
     callback.toCharArray(buf, callback.length()+1);
     doCommand(buf);
+  }
+
+  if (Scout.eventVerboseOutput) {
+    Serial.print("Analog pin event handler took ");
+    Serial.print(millis() - time);
+    Serial.println("ms");
+    Serial.println();
   }
 }
 

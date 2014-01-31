@@ -204,6 +204,20 @@ int8_t PinoccioScout::getPinMode(uint8_t pin) {
   }
 }
 
+bool PinoccioScout::isDigitalPin(uint8_t pin) {
+  if (pin >= 2 && pin <= 8) {
+    return true;
+  }
+  return false;
+}
+
+bool PinoccioScout::isAnalogPin(uint8_t pin) {
+  if (pin >= 24 && pin <= 31) {
+    return true;
+  }
+  return false;
+}
+
 static void scoutDigitalStateChangeTimerHandler(SYS_Timer_t *timer) {
   uint16_t val;
 

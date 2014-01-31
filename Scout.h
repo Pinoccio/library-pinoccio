@@ -47,6 +47,8 @@ class PinoccioScout : public PinoccioClass {
     void saveState();
 
     int8_t getPinMode(uint8_t pin);
+    bool isDigitalPin(uint8_t pin);
+    bool isAnalogPin(uint8_t pin);
 
     void (*digitalPinEventHandler)(uint8_t pin, uint8_t value);
     void (*analogPinEventHandler)(uint8_t pin, uint16_t value);
