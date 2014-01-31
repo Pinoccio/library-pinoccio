@@ -136,6 +136,7 @@ static char *digitalPinReportHQ(void);
 static char *analogPinReportHQ(void);
 static char *meshReportHQ(void);
 static char *tempReportHQ(void);
+static char *ledReportHQ(void);
 
 static void pingScout(int address);
 static void pingGroup(int address);
