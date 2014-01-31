@@ -79,6 +79,7 @@ void PinoccioShell::setup() {
   addBitlashFunction("scout.sethqtoken", (bitlash_function) setHQToken);
   addBitlashFunction("scout.gethqtoken", (bitlash_function) getHQToken);
   addBitlashFunction("scout.delay", (bitlash_function) scoutDelay);
+  addBitlashFunction("scout.daisy", (bitlash_function) daisyWipe);
   addBitlashFunction("scout.boot", (bitlash_function) wdtBoot);
 
   addBitlashFunction("hq.settoken", (bitlash_function) setHQToken);
@@ -767,6 +768,29 @@ static numvar getHQToken(void) {
 
 static numvar scoutDelay(void) {
   Scout.delay(getarg(1));
+}
+
+static numvar daisyWipe(void) {
+  bool ret = true;
+  static char report[] = "{\"_\":\"daisy\",\"m\":\"Ok, terminating. Goodbye Dave\"}";
+
+  if (Scout.isLeadScout()) {
+    if (!Scout.wifi.runDirectCommand(Serial, "AT&F")) {
+       Serial.println("Error: Wi-Fi direct command failed");
+       ret = false;
+    }
+    if (!Scout.wifi.runDirectCommand(Serial, "AT&W0")) {
+       Serial.println("Error: Wi-Fi direct command failed");
+       ret = false;
+    }
+  }
+
+  if (ret == true) {
+    Scout.handler.announce(0xBEEF, report);
+     // so long, and thanks for all the fish!
+    doCommand("rm *");
+    doCommand("scout.boot");
+  }
 }
 
 static numvar wdtBoot(void) {

@@ -103,6 +103,7 @@ static numvar isScoutLeadScout(void);
 static numvar setHQToken(void);
 static numvar getHQToken(void);
 static numvar scoutDelay(void);
+static numvar daisyWipe(void);
 static numvar wdtBoot(void);
 
 static numvar hqVerbose(void);
