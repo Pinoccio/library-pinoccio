@@ -187,6 +187,10 @@ void PinoccioScout::saveState() {
 }
 
 int8_t PinoccioScout::getPinMode(uint8_t pin) {
+  // TODO: add this as a bp.isPinReserved(pin) method instead of hardwired
+  if (Scout.isLeadScout() && pin >= 6 && pin <= 8) {
+    return -1;
+  }
   if ((~(*portModeRegister(digitalPinToPort(pin))) & digitalPinToBitMask(pin)) &&
       (~(*portOutputRegister(digitalPinToPort(pin))) & digitalPinToBitMask(pin))) {
     return INPUT; // 0
@@ -197,10 +201,6 @@ int8_t PinoccioScout::getPinMode(uint8_t pin) {
   if ((~(*portModeRegister(digitalPinToPort(pin))) & digitalPinToBitMask(pin)) &&
       (*portOutputRegister(digitalPinToPort(pin)) & digitalPinToBitMask(pin))) {
     return INPUT_PULLUP; // 2
-  }
-  // TODO: add this as a bp.isPinReserved(pin) method instead of hardwired
-  if (Scout.isLeadScout() && pin >= 6 && pin <= 8) {
-    return -1;
   }
 }
 
