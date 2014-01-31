@@ -55,8 +55,9 @@ void PinoccioShell::setup() {
   addBitlashFunction("led.orange", (bitlash_function) ledOrange);
   addBitlashFunction("led.white", (bitlash_function) ledWhite);
   addBitlashFunction("led.torch", (bitlash_function) ledTorch);
-  addBitlashFunction("led.hexvalue", (bitlash_function) ledSetHexValue);
-  addBitlashFunction("led.setrgbvalue", (bitlash_function) ledSetRgb);
+  addBitlashFunction("led.sethex", (bitlash_function) ledSetHex);
+  addBitlashFunction("led.gethex", (bitlash_function) ledGetHex);
+  addBitlashFunction("led.setrgb", (bitlash_function) ledSetRgb);
   addBitlashFunction("led.savetorch", (bitlash_function) ledSaveTorch);
   addBitlashFunction("led.report", (bitlash_function) ledReport);
 
@@ -402,9 +403,21 @@ static numvar ledWhite(void) {
   ledReportHQ();
 }
 
-static numvar ledSetHexValue(void) {
-  if (isstringarg(1)) {
-    RgbLed.setHex((char *)getstringarg(1));
+static numvar ledGetHex(void) {
+  char *buf;
+  if (!isstringarg(1)) return false;
+  buf = (char*)malloc(strlen((char*)getstringarg(1))+16);
+  sprintf(buf,"%s(\"%02x%02x%02x\")",(char*)getstringarg(1),RgbLed.getRedValue(),RgbLed.getGreenValue(),RgbLed.getBlueValue());
+//  sp("calling ");
+//  speol(buf);
+  doCommand(buf);
+  free(buf);
+  return true;
+}
+
+static numvar ledSetHex(void) {
+  if (getarg(1)) {
+    RgbLed.setHex((char *)getarg(1));
     ledReportHQ();
     return true;
   } else {
@@ -487,7 +500,7 @@ static numvar meshSend(void) {
 }
 
 static numvar meshAnnounce(void) {
-  Scout.handler.announce(getarg(1), (char*)getstringarg(2));
+  Scout.handler.announce(getarg(1), (char*)getarg(2));
 }
 
 static numvar meshVerbose(void) {
@@ -1132,13 +1145,26 @@ static void sendConfirm(NWK_DataReq_t *req) {
 \****************************/
 static void digitalPinEventHandler(uint8_t pin, uint8_t value) {
   uint32_t time = millis();
+  char buf[32];
 
   digitalPinReportHQ();
   if (findscript("event.digital")) {
     String callback = "event.digital(" + String(pin) + "," + String(value) + ")";
-    char buf[32];
     callback.toCharArray(buf, callback.length()+1);
     doCommand(buf);
+  }
+  sprintf(buf,"event.digital%d",pin);
+  if (findscript(buf)) {
+    sprintf(buf,"event.digital%d(%d)",pin,value);
+    doCommand(buf);
+  }
+  // simplified button trigger
+  if(value == 0)
+  {
+    sprintf(buf,"event.button%d",pin);
+    if (findscript(buf)) {
+      doCommand(buf);
+    }    
   }
 
   if (Scout.eventVerboseOutput) {
@@ -1151,12 +1177,18 @@ static void digitalPinEventHandler(uint8_t pin, uint8_t value) {
 
 static void analogPinEventHandler(uint8_t pin, uint16_t value) {
   uint32_t time = millis();
+  char buf[32];
 
   analogPinReportHQ();
   if (findscript("event.analog")) {
     String callback = "event.analog(" + String(pin) + "," + String(value) + ")";
     char buf[32];
     callback.toCharArray(buf, callback.length()+1);
+    doCommand(buf);
+  }
+  sprintf(buf,"event.analog%d",pin);
+  if (findscript(buf)) {
+    sprintf(buf,"event.analog%d(%d)",pin,value);
     doCommand(buf);
   }
 

@@ -45,7 +45,7 @@ void PinoccioScoutHandler::setVerbose(bool flag) {
 
 static bool fieldCommands(NWK_DataInd_t *ind) {
   int total, ret;
-  RgbLed.blinkGreen(200);
+//  RgbLed.blinkGreen(200);
 
   if (hqVerboseOutput) {
     sp("Received command");
@@ -223,14 +223,15 @@ void PinoccioScoutHandler::announce(uint16_t chan, char *message) {
 
 static bool fieldAnnouncements(NWK_DataInd_t *ind) {
   char callback[32];
-  RgbLed.blinkBlue(200);
   // be safe
   if (!ind->options & NWK_IND_OPT_MULTICAST) {
     return true;
   }
 
   if (hqVerboseOutput) {
-    sp("MULTICAST");
+    sp("multicast in ");
+    sp(ind->dstAddr);
+    speol();
   }
   if (Scout.isLeadScout()) {
     leadAnnouncementSend(ind->dstAddr, ind->srcAddr, (char*)ind->data);
