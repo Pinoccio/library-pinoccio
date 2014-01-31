@@ -68,8 +68,8 @@ void PinoccioShell::setup() {
   addBitlashFunction("pin.setmode", (bitlash_function) pinSetMode);
   addBitlashFunction("pin.read", (bitlash_function) pinRead);
   addBitlashFunction("pin.write", (bitlash_function) pinWrite);
-  addBitlashFunction("pin.digital.report", (bitlash_function) digitalPinReport);
-  addBitlashFunction("pin.analog.report", (bitlash_function) analogPinReport);
+  addBitlashFunction("pin.report.digital", (bitlash_function) digitalPinReport);
+  addBitlashFunction("pin.report.analog", (bitlash_function) analogPinReport);
 
   addBitlashFunction("backpack.report", (bitlash_function) backpackReport);
   addBitlashFunction("backpack.list", (bitlash_function) backpackList);
@@ -554,7 +554,7 @@ static numvar meshRouting(void) {
 \****************************/
 static char *digitalPinReportHQ(void) {
   static char report[80];
-  sprintf(report,"{\"_\":\"digitalpin\",\"m\":[%d,%d,%d,%d,%d,%d,%d],\"v\":[%d,%d,%d,%d,%d,%d,%d]}",
+  sprintf(report,"{\"_\":\"pind\",\"m\":[%d,%d,%d,%d,%d,%d,%d],\"v\":[%d,%d,%d,%d,%d,%d,%d]}",
   Scout.getPinMode(2),
   Scout.getPinMode(3),
   Scout.getPinMode(4),
@@ -575,7 +575,7 @@ static char *digitalPinReportHQ(void) {
 
 static char *analogPinReportHQ(void) {
   static char report[80];
-  sprintf(report,"{\"_\":\"analogpin\",\"m\":[%d,%d,%d,%d,%d,%d,%d,%d],\"v\":[%d,%d,%d,%d,%d,%d,%d,%d]}",
+  sprintf(report,"{\"_\":\"pina\",\"m\":[%d,%d,%d,%d,%d,%d,%d,%d],\"v\":[%d,%d,%d,%d,%d,%d,%d,%d]}",
   Scout.getPinMode(24),
   Scout.getPinMode(25),
   Scout.getPinMode(26),
