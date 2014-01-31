@@ -170,6 +170,24 @@ void PinoccioScout::saveState() {
   temperature = this->getTemperature();
 }
 
+int8_t PinoccioScout::getPinMode(uint8_t pin) {
+  if ((~(*portModeRegister(digitalPinToPort(pin))) & digitalPinToBitMask(pin)) &&
+      (~(*portOutputRegister(digitalPinToPort(pin))) & digitalPinToBitMask(pin))) {
+    return INPUT; // 0
+  }
+  if ((*portModeRegister(digitalPinToPort(pin)) & digitalPinToBitMask(pin))) {
+    return OUTPUT; // 1
+  }
+  if ((~(*portModeRegister(digitalPinToPort(pin))) & digitalPinToBitMask(pin)) &&
+      (*portOutputRegister(digitalPinToPort(pin)) & digitalPinToBitMask(pin))) {
+    return INPUT_PULLUP; // 2
+  }
+  // TODO: add this as a bp.isPinReserved(pin) method instead of hardwired
+  if (Scout.isLeadScout() && pin >= 6 && pin <= 8) {
+    return -1;
+  }
+}
+
 static void scoutDigitalStateChangeTimerHandler(SYS_Timer_t *timer) {
   uint16_t val;
 
@@ -178,16 +196,9 @@ static void scoutDigitalStateChangeTimerHandler(SYS_Timer_t *timer) {
     for (int i=0; i<7; i++) {
       int pin = i+2;
 
-      // Skip input pins that don't have pull-ups enabled--they drift
-      if ((*portModeRegister(digitalPinToPort(pin)) & digitalPinToBitMask(pin)) == 0 &&
-          (*portOutputRegister(digitalPinToPort(pin)) & digitalPinToBitMask(pin)) == 0) {
+      // Skip pins that don't have pull-ups enabled or are reserved by backpacks
+      if (Scout.getPinMode(pin) < 1) {
         Scout.digitalPinState[i] = -1;
-        continue;
-      }
-
-      // Also skip any pins reserved for use on the backpack bus
-      // TODO: add this as a bp.isPinReserved(pin) method instead of hardwired
-      if (Scout.isLeadScout() && pin >= 6 && pin <= 8) {
         continue;
       }
 
