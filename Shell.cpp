@@ -68,8 +68,8 @@ void PinoccioShell::setup() {
   addBitlashFunction("pin.setmode", (bitlash_function) pinSetMode);
   addBitlashFunction("pin.read", (bitlash_function) pinRead);
   addBitlashFunction("pin.write", (bitlash_function) pinWrite);
-  addBitlashFunction("pin.digitalreport", (bitlash_function) digitalPinReport);
-  addBitlashFunction("pin.analogreport", (bitlash_function) analogPinReport);
+  addBitlashFunction("pin.digital.report", (bitlash_function) digitalPinReport);
+  addBitlashFunction("pin.analog.report", (bitlash_function) analogPinReport);
 
   addBitlashFunction("backpack.report", (bitlash_function) backpackReport);
   addBitlashFunction("backpack.list", (bitlash_function) backpackList);
