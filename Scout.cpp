@@ -163,7 +163,6 @@ void PinoccioScout::saveState() {
   analogPinState[5] = analogRead(5); // pin 29
   analogPinState[6] = analogRead(6); // pin 30
   analogPinState[7] = analogRead(7); // pin 31
-
   batteryPercentage = constrain(HAL_FuelGaugePercent(), 0, 100);
   batteryVoltage = HAL_FuelGaugeVoltage();
   isBattCharging = (digitalRead(CHG_STATUS) == LOW);
@@ -282,7 +281,7 @@ static void scoutAnalogStateChangeTimerHandler(SYS_Timer_t *timer) {
   }
 
   if (Scout.temperatureEventHandler != 0) {
-    val = HAL_MeasureTemperature();
+    val = Scout.getTemperature();
     if (Scout.temperature != val) {
       if (Scout.eventVerboseOutput) {
         sp("Running: temperatureEventHandler(");
