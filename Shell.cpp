@@ -424,6 +424,7 @@ static numvar ledSaveTorch(void) {
 
 static numvar ledTorch(void) {
   RgbLed.setTorch();
+  ledReportHQ();
 }
 
 static numvar ledReport(void) {
