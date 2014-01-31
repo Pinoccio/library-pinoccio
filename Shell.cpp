@@ -302,47 +302,101 @@ static numvar ledOff(void) {
 }
 
 static numvar ledRed(void) {
-  RgbLed.red();
+  if (getarg(0) == 2) {
+    RgbLed.blinkRed(getarg(1), getarg(2));
+  } else if (getarg(0) == 1) {
+    RgbLed.blinkRed(getarg(1));
+  } else {
+    RgbLed.red();
+  }
   ledReportHQ();
 }
 
 static numvar ledGreen(void) {
-  RgbLed.green();
+  if (getarg(0) == 2) {
+    RgbLed.blinkGreen(getarg(1), getarg(2));
+  } else if (getarg(0) == 1) {
+    RgbLed.blinkGreen(getarg(1));
+  } else {
+    RgbLed.green();
+  }
   ledReportHQ();
 }
 
 static numvar ledBlue(void) {
-  RgbLed.blue();
+  if (getarg(0) == 2) {
+    RgbLed.blinkBlue(getarg(1), getarg(2));
+  } else if (getarg(0) == 1) {
+    RgbLed.blinkBlue(getarg(1));
+  } else {
+    RgbLed.blue();
+  }
   ledReportHQ();
 }
 
 static numvar ledCyan(void) {
-  RgbLed.cyan();
+  if (getarg(0) == 2) {
+    RgbLed.blinkCyan(getarg(1), getarg(2));
+  } else if (getarg(0) == 1) {
+    RgbLed.blinkCyan(getarg(1));
+  } else {
+    RgbLed.cyan();
+  }
   ledReportHQ();
 }
 
 static numvar ledPurple(void) {
-  RgbLed.purple();
+  if (getarg(0) == 2) {
+    RgbLed.blinkPurple(getarg(1), getarg(2));
+  } else if (getarg(0) == 1) {
+    RgbLed.blinkPurple(getarg(1));
+  } else {
+    RgbLed.purple();
+  }
   ledReportHQ();
 }
 
 static numvar ledMagenta(void) {
-  RgbLed.magenta();
+  if (getarg(0) == 2) {
+    RgbLed.blinkMagenta(getarg(1), getarg(2));
+  } else if (getarg(0) == 1) {
+    RgbLed.blinkMagenta(getarg(1));
+  } else {
+    RgbLed.magenta();
+  }
   ledReportHQ();
 }
 
 static numvar ledYellow(void) {
-  RgbLed.yellow();
+  if (getarg(0) == 2) {
+    RgbLed.blinkYellow(getarg(1), getarg(2));
+  } else if (getarg(0) == 1) {
+    RgbLed.blinkYellow(getarg(1));
+  } else {
+    RgbLed.yellow();
+  }
   ledReportHQ();
 }
 
 static numvar ledOrange(void) {
-  RgbLed.orange();
+  if (getarg(0) == 2) {
+    RgbLed.blinkOrange(getarg(1), getarg(2));
+  } else if (getarg(0) == 1) {
+    RgbLed.blinkOrange(getarg(1));
+  } else {
+    RgbLed.orange();
+  }
   ledReportHQ();
 }
 
 static numvar ledWhite(void) {
-  RgbLed.white();
+  if (getarg(0) == 2) {
+    RgbLed.blinkWhite(getarg(1), getarg(2));
+  } else if (getarg(0) == 1) {
+    RgbLed.blinkWhite(getarg(1));
+  } else {
+    RgbLed.white();
+  }
   ledReportHQ();
 }
 
