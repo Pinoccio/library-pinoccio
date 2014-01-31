@@ -178,14 +178,14 @@ void sp(int str) { sp(String(str)); }
 void sp(unsigned int str) { sp(String(str)); }
 void sp(long str) { sp(String(str)); }
 void sp(unsigned long str) { sp(String(str)); }
-void speol(const char *str) {{ while (*str) spb(*str++); } speol(); }
-void speol(const String &str) { char buf[str.length()+1]; str.toCharArray(buf, str.length()+1); sp(buf); speol(); }
-void speol(char str) { spb(str); speol(); }
-void speol(unsigned char str) { spb((char)str); speol(); }
-void speol(int str) { sp(String(str)); speol(); }
-void speol(unsigned int str) { sp(String(str)); speol(); }
-void speol(long str) { sp(String(str)); speol(); }
-void speol(unsigned long str) { sp(String(str)); speol(); }
+void speol(const char *str) { sp(str); speol(); }
+void speol(const String &str) { sp(str); speol(); }
+void speol(char str) { sp(str); speol(); }
+void speol(unsigned char str) { sp(str); speol(); }
+void speol(int str) { sp(str); speol(); }
+void speol(unsigned int str) { sp(str); speol(); }
+void speol(long str) { sp(str); speol(); }
+void speol(unsigned long str) { sp(str); speol(); }
 void speol(void) { spb(13); spb(10); }
 #else
 // handle no-serial case
