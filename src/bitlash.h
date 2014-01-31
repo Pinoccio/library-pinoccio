@@ -507,7 +507,7 @@ void eeputs(int);
 //
 // Use the predefined constant from the avr-gcc support file
 //
-#define PCONFIGLENGTH 128
+#define PCONFIGLENGTH 256
 #define ENDDB (E2END - PCONFIGLENGTH) // we want remaining  bytes saved for Pinoccio-specific settings
 #define ENDEEPROM E2END
 
