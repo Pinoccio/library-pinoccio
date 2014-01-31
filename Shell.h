@@ -12,7 +12,6 @@
 #include "utility/sysTimer.h"
 #include "utility/halSleep.h"
 #include "utility/halTemperature.h"
-#include "utility/meshRequest.h"
 #include "avr/sleep.h"
 
 class PinoccioShell {

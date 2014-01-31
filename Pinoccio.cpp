@@ -2,6 +2,7 @@
 #include <Pinoccio.h>
 #include <avr/eeprom.h>
 #include <src/bitlash.h>
+#include <utility/meshRequest.h>
 
 #if defined(__AVR_ATmega128RFA1__)
 #include "atmega128rfa1.h"
@@ -204,7 +205,8 @@ void PinoccioClass::meshSendMessage(MeshRequest request) {
   sp("sending message to: ");
   sp(req->dstAddr);
   sp(":");
-  speol(req->dstEndpoint);
+  sp(req->dstEndpoint);
+  speol();
   NWK_DataReq(request.getRequest());
 }
 

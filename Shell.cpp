@@ -507,9 +507,39 @@ static numvar meshRouting(void) {
 \****************************/
 char *pinReportHQ(void)
 {
-  static char report[100];
-  sprintf(report,"{\"_\":\"pin\",\"a\":[%d,%d,%d,%d,%d,%d,%d,%d],\"d\":[%d,%d,%d,%d,%d,%d,%d]}",Scout.analogPinState[0],Scout.analogPinState[1],Scout.analogPinState[2],Scout.analogPinState[3],Scout.analogPinState[4],Scout.analogPinState[5],Scout.analogPinState[6],Scout.analogPinState[7],Scout.digitalPinState[0],Scout.digitalPinState[1],Scout.digitalPinState[2],Scout.digitalPinState[3],Scout.digitalPinState[4],Scout.digitalPinState[5],Scout.digitalPinState[6]);
-  Scout.handler.announce(0xBEEF, report);
+  static char report[135];
+  sprintf(report,"{\"_\":\"pin\",\"am\":[%d,%d,%d,%d,%d,%d,%d,%d],\"av\":[%d,%d,%d,%d,%d,%d,%d,%d],\"dm\":[%d,%d,%d,%d,%d,%d,%d],\"dv\":[%d,%d,%d,%d,%d,%d,%d]}",
+  Scout.getPinMode(24),
+  Scout.getPinMode(25),
+  Scout.getPinMode(26),
+  Scout.getPinMode(27),
+  Scout.getPinMode(28),
+  Scout.getPinMode(29),
+  Scout.getPinMode(30),
+  Scout.getPinMode(31),
+  Scout.analogPinState[0],
+  Scout.analogPinState[1],
+  Scout.analogPinState[2],
+  Scout.analogPinState[3],
+  Scout.analogPinState[4],
+  Scout.analogPinState[5],
+  Scout.analogPinState[6],
+  Scout.analogPinState[7],
+  Scout.getPinMode(2),
+  Scout.getPinMode(3),
+  Scout.getPinMode(4),
+  Scout.getPinMode(5),
+  Scout.getPinMode(6),
+  Scout.getPinMode(7),
+  Scout.getPinMode(8),
+  Scout.digitalPinState[0],
+  Scout.digitalPinState[1],
+  Scout.digitalPinState[2],
+  Scout.digitalPinState[3],
+  Scout.digitalPinState[4],
+  Scout.digitalPinState[5],
+  Scout.digitalPinState[6]);
+  //Scout.handler.announce(0xBEEF, report);
   return report;
 }
 
@@ -559,12 +589,6 @@ static numvar pinRead(void) {
 static numvar pinWrite(void) {
   // TODO: set a PWM pin's value from 0 - 255
   pinReportHQ();
-  return true;
-}
-
-static numvar pinThreshold(void) {
-  // TODO: create a threshold function with the following format:
-  // threshold(pin, value, fnToCallIfValueLessThan, fnToCallIfValueEqual, fnToCallIfValueGreaterThan)
   return true;
 }
 

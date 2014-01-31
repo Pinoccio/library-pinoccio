@@ -194,7 +194,7 @@ void PinoccioScoutHandler::announce(uint16_t chan, char *message) {
   if (Scout.isLeadScout()) {
     leadAnnouncementSend(chan, Scout.getAddress(), message);
   }
-  
+
   char *data = strdup(message);
   if(!data) return;
 
