@@ -552,7 +552,7 @@ static numvar meshRouting(void) {
 \****************************/
 static char *digitalPinReportHQ(void) {
   static char report[80];
-  sprintf(report,"{\"_\":\"digialpin\",\"m\":[%d,%d,%d,%d,%d,%d,%d],\"v\":[%d,%d,%d,%d,%d,%d,%d]}",
+  sprintf(report,"{\"_\":\"digitalpin\",\"m\":[%d,%d,%d,%d,%d,%d,%d],\"v\":[%d,%d,%d,%d,%d,%d,%d]}",
   Scout.getPinMode(2),
   Scout.getPinMode(3),
   Scout.getPinMode(4),
