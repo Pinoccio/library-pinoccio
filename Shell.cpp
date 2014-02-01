@@ -496,7 +496,11 @@ static numvar meshPingGroup(void) {
 }
 
 static numvar meshSend(void) {
-  sendMessage(getarg(1), (char *)getstringarg(2), true);
+  bool getAck = true;
+  if (getarg(0) == 3) {
+    bool getAck = getarg(3);
+  }
+  sendMessage(getarg(1), (char *)getstringarg(2), getAck);
 }
 
 static numvar meshAnnounce(void) {
