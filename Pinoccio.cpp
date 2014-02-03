@@ -73,6 +73,12 @@ void PinoccioClass::getHQToken(char *token) {
   }
 }
 
+void PinoccioClass::resetHQToken() {
+  for (int i=0; i<32; i++) {
+    eeprom_update_byte((uint8_t *)8130+i, 0xFF);
+  }
+}
+
 uint32_t PinoccioClass::getHwSerial() {
   return eeprom_read_dword((uint32_t *)8184);
 }

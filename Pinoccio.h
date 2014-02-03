@@ -65,6 +65,7 @@ class PinoccioClass {
 
     void setHQToken(const char *token);
     void getHQToken(char *token);
+    void resetHQToken();
     uint32_t getHwSerial();
     uint16_t getHwFamily();
     uint8_t getHwVersion();
@@ -72,7 +73,7 @@ class PinoccioClass {
 
     void sendStateToHQ();
 
-    void meshSetRadio(const uint16_t theAddress, const uint16_t thePanId=0x4567, const uint8_t theChannel=0x1a);
+    void meshSetRadio(const uint16_t theAddress, const uint16_t thePanId=0x4567, const uint8_t theChannel=20);
     void meshSetPower(const uint8_t theTxPower);
     void meshSetDataRate(const uint8_t theRate);
     void meshSetSecurityKey(const char *key);

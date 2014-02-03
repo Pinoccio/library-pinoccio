@@ -28,6 +28,7 @@ PinoccioScout::PinoccioScout() {
   peripheralStateChangeTimer.handler = scoutPeripheralStateChangeTimerHandler;
 
   eventVerboseOutput = false;
+  isFactoryResetReady = false;
 }
 
 PinoccioScout::~PinoccioScout() { }
@@ -123,6 +124,15 @@ bool PinoccioScout::isLeadScout() {
       return true;
   }
   return false;
+}
+
+bool PinoccioScout::factoryReset() {
+  if (!isFactoryResetReady) {
+    isFactoryResetReady = true;
+    return false;
+  } else {
+    return true;
+  }
 }
 
 void PinoccioScout::startDigitalStateChangeEvents() {
