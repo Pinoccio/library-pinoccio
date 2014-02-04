@@ -35,6 +35,8 @@ void PinoccioShell::setup() {
   addBitlashFunction("mesh.report", (bitlash_function) meshReport);
   addBitlashFunction("mesh.routing", (bitlash_function) meshRouting);
   addBitlashFunction("mesh.announce", (bitlash_function) meshAnnounce);
+  addBitlashFunction("mesh.signal", (bitlash_function) meshSignal);
+  addBitlashFunction("mesh.loss", (bitlash_function) meshLoss);
 
   addBitlashFunction("temperature", (bitlash_function) getTemperature);
   addBitlashFunction("randomnumber", (bitlash_function) getRandomNumber);
@@ -131,6 +133,8 @@ void PinoccioShell::setup() {
 }
 
 static bool isMeshVerbose;
+static int lastMeshRssi = 0;
+static int lastMeshLqi = 0;
 
 // report all transient settings when asked
 void PinoccioShell::allReportHQ() {
@@ -496,11 +500,19 @@ static numvar meshPingGroup(void) {
 }
 
 static numvar meshSend(void) {
-  sendMessage(getarg(1), (char *)getstringarg(2), true);
+  sendMessage(getarg(1), getarg(2), true);
 }
 
 static numvar meshAnnounce(void) {
   Scout.handler.announce(getarg(1), (char*)getarg(2));
+}
+
+static numvar meshSignal(void) {
+  return lastMeshRssi;
+}
+
+static numvar meshLoss(void) {
+  return lastMeshLqi;
 }
 
 static numvar meshVerbose(void) {
@@ -1044,35 +1056,30 @@ static void pingConfirm(NWK_DataReq_t *req) {
 }
 
 static bool receiveMessage(NWK_DataInd_t *ind) {
+  char buf[32];
+  int data = (int)*(ind->data);
+
   if (isMeshVerbose) {
-    Serial.print("Received message - ");
-    Serial.print("lqi: ");
+    Serial.print("Received message of ");
+    Serial.print(data, DEC);
+    Serial.print(" from ");
+    Serial.print(ind->srcAddr, DEC);
+    Serial.print(" lqi ");
     Serial.print(ind->lqi, DEC);
-
-    Serial.print("  ");
-
-    Serial.print("rssi: ");
+    Serial.print(" rssi ");
     Serial.print(abs(ind->rssi), DEC);
-    Serial.print("  ");
-
-    Serial.print("data: ");
-    for (int i=0; i<ind->size; i++) {
-      Serial.print(ind->data[i], DEC);
-    }
     Serial.println("");
   }
 
   NWK_SetAckControl(abs(ind->rssi));
 
-  // run the Bitlash callback function, if defined
-  char *callback = "event.message";
-  if (findscript(callback)) {
-    doCommand(callback);
-  }
+  // run the Bitlash callback function
+  sprintf(buf,"event.message(%d,%d,%d)",ind->srcAddr,data,ind->lqi);
+  doCommand(buf);
   return true;
 }
 
-static void sendMessage(int address, char *data, bool getAck) {
+static void sendMessage(int address, int data, bool getAck) {
   if (sendDataReqBusy) {
     return;
   }
@@ -1086,11 +1093,11 @@ static void sendMessage(int address, char *data, bool getAck) {
   } else {
     sendDataReq.options = NWK_OPT_ENABLE_SECURITY;
   }
-  sendDataReq.data = (byte *)data;
-  sendDataReq.size = strlen(data);
+  sendDataReq.data = (uint8_t*)&data;
+  sendDataReq.size = sizeof(int);
   sendDataReq.confirm = sendConfirm;
   NWK_DataReq(&sendDataReq);
-  RgbLed.blinkCyan(200);
+//  RgbLed.blinkCyan(200);
 
   sendDataReqBusy = true;
 

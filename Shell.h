@@ -84,6 +84,8 @@ static numvar meshVerbose(void);
 static numvar meshReport(void);
 static numvar meshRouting(void);
 static numvar meshAnnounce(void);
+static numvar meshSignal(void);
+static numvar meshLoss(void);
 
 static numvar pinOn(void);
 static numvar pinOff(void);
@@ -143,7 +145,7 @@ static void pingScout(int address);
 static void pingGroup(int address);
 static void pingConfirm(NWK_DataReq_t *req);
 static bool receiveMessage(NWK_DataInd_t *ind);
-static void sendMessage(int address, char *data, bool getAck);
+static void sendMessage(int address, int data, bool getAck);
 static void sendConfirm(NWK_DataReq_t *req);
 
 static void digitalPinEventHandler(uint8_t pin, uint8_t value);
