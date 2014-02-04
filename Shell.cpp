@@ -864,7 +864,7 @@ static numvar setEventVerbose(void) {
 static char *wifiReportHQ(void) {
   static char report[100];
   // TODO real wifi status/version
-  sprintf(report,"{\"_\":\"bp\",\"b\":\"wifi\",\"v\":%d,\"wc\":%d,\"hc\":%d}",0,Scout.wifi.isAPConnected()?1:0,Scout.wifi.isHQConnected()?1:0);
+  sprintf(report,"{\"_\":\"bp\",\"b\":\"wifi\",\"v\":%d,\"wc\":%s,\"hc\":%s}",0,Scout.wifi.isAPConnected()?"true":"false",Scout.wifi.isHQConnected()?"true":"false");
   Scout.handler.announce(0xBEEF, report);
   return report;
 }
