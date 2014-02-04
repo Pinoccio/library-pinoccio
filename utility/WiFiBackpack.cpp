@@ -162,6 +162,13 @@ void WiFiBackpack::printFirmwareVersions(Print& p) {
   runDirectCommand(p, "AT+VER=?");
 }
 
+bool WiFiBackpack::isAPConnected() {
+  return gs.isAssociated();
+}
+
+bool WiFiBackpack::isHQConnected() {
+  return client.connected();
+}
 
 bool WiFiBackpack::dnsLookup(Print& p, const char *host) {
   // TODO

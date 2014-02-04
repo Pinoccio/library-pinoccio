@@ -31,6 +31,9 @@ class WiFiBackpack : public Backpack {
     bool printTime(Print& p);
     void printFirmwareVersions(Print& p);
 
+    bool isAPConnected();
+    bool isHQConnected();
+
     bool dnsLookup(Print &p, const char *host);
     bool ping(Print &p, const char *host);
 
