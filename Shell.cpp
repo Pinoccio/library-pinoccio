@@ -500,7 +500,11 @@ static numvar meshPingGroup(void) {
 }
 
 static numvar meshSend(void) {
-  sendMessage(getarg(1), getarg(2), true);
+  bool getAck = true;
+  if (getarg(0) == 3) {
+    bool getAck = getarg(3);
+  }
+  sendMessage(getarg(1), (char *)getstringarg(2), getAck);
 }
 
 static numvar meshAnnounce(void) {
@@ -799,22 +803,31 @@ static numvar scoutDelay(void) {
 
 static numvar daisyWipe(void) {
   bool ret = true;
+
+  if (Scout.factoryReset() == false) {
+    speol("Factory reset requested. Send command again to confirm.");
+    return false;
+  }
   static char report[] = "{\"_\":\"daisy\",\"m\":\"Ok, terminating. Goodbye Dave\"}";
+  Scout.handler.announce(0xBEEF, report);
 
   if (Scout.isLeadScout()) {
     if (!Scout.wifi.runDirectCommand(Serial, "AT&F")) {
-       Serial.println("Error: Wi-Fi direct command failed");
+       sp("Error: Wi-Fi direct command failed");
        ret = false;
     }
     if (!Scout.wifi.runDirectCommand(Serial, "AT&W0")) {
-       Serial.println("Error: Wi-Fi direct command failed");
+       sp("Error: Wi-Fi direct command failed");
        ret = false;
     }
   }
 
   if (ret == true) {
-    Scout.handler.announce(0xBEEF, report);
-     // so long, and thanks for all the fish!
+    Scout.meshResetSecurityKey();
+    Scout.meshSetRadio(0,0x0000);
+    Scout.resetHQToken();
+
+    // so long, and thanks for all the fish!
     doCommand("rm *");
     doCommand("scout.boot");
   }
@@ -1171,7 +1184,7 @@ static void digitalPinEventHandler(uint8_t pin, uint8_t value) {
     sprintf(buf,"event.button%d",pin);
     if (findscript(buf)) {
       doCommand(buf);
-    }    
+    }
   }
 
   if (Scout.eventVerboseOutput) {

@@ -36,6 +36,7 @@ class PinoccioScout : public PinoccioClass {
     bool isBackpackVccEnabled();
 
     bool isLeadScout();
+    bool factoryReset();
 
     void startDigitalStateChangeEvents();
     void stopDigitalStateChangeEvents();
@@ -77,6 +78,7 @@ class PinoccioScout : public PinoccioClass {
 
     bool isVccEnabled;
     bool isStateSaved;
+    bool isFactoryResetReady;
 
     SYS_Timer_t digitalStateChangeTimer;
     SYS_Timer_t analogStateChangeTimer;

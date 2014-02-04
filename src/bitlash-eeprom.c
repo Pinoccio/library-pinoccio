@@ -253,7 +253,7 @@ void cmd_peep(void) {
 int i=0;
 
 	while (i <= ENDDB) {
-		if (!(i&63)) {speol(); printHex(i); spb(':'); }
+		if (!(i&63)) {speol(); printIntegerInBase(i, 16, 4, '0'); spb(':'); }
 		if (!(i&7)) spb(' ');
 		if (!(i&3)) spb(' ');		
 		byte c = eeread(i) & 0xff;
