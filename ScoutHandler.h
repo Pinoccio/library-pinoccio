@@ -12,7 +12,7 @@ class PinoccioScoutHandler {
 
     void setup();
     void loop();
-    void announce(uint16_t chan, char *message);
+    void announce(uint16_t group, char *message);
     void setVerbose(bool flag);
 
   protected:

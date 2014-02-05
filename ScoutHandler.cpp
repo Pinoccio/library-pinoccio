@@ -21,11 +21,12 @@ void PinoccioScoutHandler::setup() {
 
     Scout.meshListen(3, leadAnswers);
     Scout.meshJoinGroup(0xBEEF); // our internal reporting channel
+    Scout.meshJoinGroup(0); // reports to HQ
   } else {
     Scout.meshListen(2, fieldCommands);
   }
 
-  // join all the "channels" to listen for announcements
+  // join a set of groups to listen for announcements
   for (int i = 1; i < 10; i++) {
     Scout.meshJoinGroup(i);
   }
@@ -183,17 +184,17 @@ static void announceConfirm(NWK_DataReq_t *req) {
   if(next) NWK_DataReq(&(next->req));
 }
 
-void PinoccioScoutHandler::announce(uint16_t chan, char *message) {
+void PinoccioScoutHandler::announce(uint16_t group, char *message) {
   if (hqVerboseOutput) {
     sp("announcing to ");
-    sp(chan);
+    sp(group);
     sp(" ");
     speol(message);
   }
 
   // when lead scout, shortcut
   if (Scout.isLeadScout()) {
-    leadAnnouncementSend(chan, Scout.getAddress(), message);
+    leadAnnouncementSend(group, Scout.getAddress(), message);
   }
 
   char *data = strdup(message);
@@ -202,9 +203,9 @@ void PinoccioScoutHandler::announce(uint16_t chan, char *message) {
   struct announceQ_t *r = (struct announceQ_t*)malloc(sizeof(struct announceQ_t));
   if(!r) return;
 
-  Scout.meshJoinGroup(chan); // must be joined to send
+  Scout.meshJoinGroup(group); // must be joined to send
   memset(r, 0, sizeof(struct announceQ_t));
-  r->req.dstAddr = chan;
+  r->req.dstAddr = group;
   r->req.dstEndpoint = 4;
   r->req.srcEndpoint = Scout.getAddress();
   r->req.options = NWK_OPT_MULTICAST|NWK_OPT_ENABLE_SECURITY;
@@ -223,7 +224,7 @@ void PinoccioScoutHandler::announce(uint16_t chan, char *message) {
 }
 
 static bool fieldAnnouncements(NWK_DataInd_t *ind) {
-  char callback[32];
+  char callback[32], *data = (char*)ind->data;
   // be safe
   if (!ind->options & NWK_IND_OPT_MULTICAST) {
     return true;
@@ -235,25 +236,31 @@ static bool fieldAnnouncements(NWK_DataInd_t *ind) {
     speol();
   }
   if (Scout.isLeadScout()) {
-    leadAnnouncementSend(ind->dstAddr, ind->srcAddr, (char*)ind->data);
+    leadAnnouncementSend(ind->dstAddr, ind->srcAddr, data);
   }
+  if(ind->dstAddr == 0xBEEF || strlen(data) <3 || data[0] != '[') return false;
+
+  int keys[10];
+  key_load((char*)ind->data,keys,millis());
 
   // run the Bitlash callback function, if defined
-  sprintf(callback,"event.channel%d",ind->dstAddr);
+  sprintf(callback,"event.group%d",ind->dstAddr);
   if (findscript(callback)) {
-    char cbarg[128];
-    sprintf(cbarg,"event.channel%d(\"%s\")",ind->dstAddr,ind->data);
-    doCommand(cbarg);
+    char buf[128];
+    sprintf(buf,"event.group%d(%d",ind->dstAddr,ind->srcAddr);
+    for(int i=2;i<=keys[0];i++) sprintf(buf+strlen(buf),",%d",keys[i]);
+    sprintf(buf+strlen(buf),")");
+    doCommand(buf);
   }
 
   return true;
 }
 
-static void leadAnnouncementSend(int chan, int from, char *message) {
+static void leadAnnouncementSend(int group, int from, char *message) {
   char sig[256];
   // reports are expected to be json objects
-  if(chan == 0xBEEF) sprintf(sig,"{\"type\":\"report\",\"from\":%d,\"report\":%s}\n", from, message);
-  else sprintf(sig,"{\"type\":\"channel\",\"id\":%d,\"from\":%d,\"data\":\"%s\"}\n", chan, from, message);
+  if(group == 0xBEEF) sprintf(sig,"{\"type\":\"report\",\"from\":%d,\"report\":%s}\n", from, message);
+  if(group == 0) sprintf(sig,"{\"type\":\"announce\",\"from\":%d,\"announce\":%s}\n", from, message);
   leadSignal(sig);
 }
 

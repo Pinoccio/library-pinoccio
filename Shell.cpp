@@ -548,20 +548,32 @@ static numvar meshPingGroup(void) {
   pingGroup(getarg(1));
 }
 
-static numvar meshSend(void) {
+char *arg2array(int ver, char *msg)
+{
   int i;
-  static char msg[100];
-  sprintf(msg,"[1,");
-  for(i=2; i <= getarg(0); i++)
+  int args = getarg(0);
+  if(args > 8) args = 8;
+  sprintf(msg,"[%d,",ver);
+  for(i=2; i <= args; i++)
   {
     sprintf(msg+strlen(msg),"\"%s\",",key_get(getarg(i)));
   }
   sprintf(msg+(strlen(msg)-1),"]");
-  sendMessage(getarg(1), msg);
+  return msg;
+}
+
+static numvar meshSend(void) {
+  char msg[100];
+  if(!getarg(0)) return false;
+  sendMessage(getarg(1), arg2array(1,msg));
+  return true;
 }
 
 static numvar meshAnnounce(void) {
-  Scout.handler.announce(getarg(1), (char*)getarg(2));
+  char msg[100];
+  if(!getarg(0)) return false;
+  Scout.handler.announce(getarg(1), arg2array(1,msg));
+  return true;
 }
 
 static numvar meshSignal(void) {
@@ -1125,7 +1137,7 @@ static void pingConfirm(NWK_DataReq_t *req) {
 }
 
 static bool receiveMessage(NWK_DataInd_t *ind) {
-  char buf[32];
+  char buf[64];
   char *data = (char*)ind->data;
   int keys[10];
 
@@ -1144,14 +1156,20 @@ static bool receiveMessage(NWK_DataInd_t *ind) {
   lastMeshLqi = ind->lqi;
   NWK_SetAckControl(abs(ind->rssi));
 
+  if(strlen(data) <3 || data[0] != '[') return false;
+
   // parse the array payload into keys, [1,"foo","bar"]
   key_load(data,keys,millis());
 
   // generate callback
-  sprintf(buf,"event.message(%d",ind->srcAddr);
-  for(int i=2;i<=keys[0];i++) sprintf(buf+strlen(buf),",%d",keys[i]);
-  sprintf(buf+strlen(buf),")");
-  doCommand(buf);
+  
+  sprintf(buf,"event.message");
+  if (findscript(buf)) {
+    sprintf(buf,"event.message(%d",ind->srcAddr);
+    for(int i=2;i<=keys[0];i++) sprintf(buf+strlen(buf),",%d",keys[i]);
+    sprintf(buf+strlen(buf),")");
+    doCommand(buf);
+  }
   return true;
 }
 
@@ -1338,10 +1356,12 @@ static void temperatureEventHandler(uint8_t value) {
 }
 
 void bitlashFilter(byte b) {
+  Serial.write(b); // cc to serial
+  return;
+
+  /* this isn't used anymore, but might be useful in the future?
   static char buf[101];
   static int offset = 0;
-
-  Serial.write(b); // cc to serial
   if (b == '\r') {
     return; // skip CR
   }
@@ -1373,6 +1393,7 @@ void bitlashFilter(byte b) {
 
   buf[offset] = b;
   offset++;
+  */
 }
 
 void bitlashBuffer(byte b) {
