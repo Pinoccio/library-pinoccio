@@ -929,13 +929,13 @@ static numvar setEventVerbose(void) {
 }
 
 /****************************\
- *       Scout.wifi.HANDLERS      *
+ *   SCOUT.WIFI.HANDLERS    *
 \****************************/
 
 static char *wifiReportHQ(void) {
   static char report[100];
   // TODO real wifi status/version
-  sprintf(report,"{\"_\":\"bp\",\"b\":\"wifi\",\"v\":%d,\"c\":%s}",0,"true");
+  sprintf(report,"{\"_\":\"bp\",\"b\":\"wifi\",\"v\":%d,\"wc\":%s,\"hc\":%s}",0,Scout.wifi.isAPConnected()?"true":"false",Scout.wifi.isHQConnected()?"true":"false");
   Scout.handler.announce(0xBEEF, report);
   return report;
 }
