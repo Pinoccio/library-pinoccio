@@ -3,7 +3,7 @@
 #include "bitlash.h"
 #include "src/bitlash.h"
 extern "C" {
-#include "utility/key.h"  
+#include "utility/key.h"
 }
 
 PinoccioShell Shell;
@@ -261,7 +261,7 @@ static numvar keyMap(void)
 static numvar keyPrint(void)
 {
   char *key = key_get(getarg(1));
-  if(!key) return 0;  
+  if(!key) return 0;
   speol(key);
 }
 
@@ -866,8 +866,11 @@ static numvar daisyWipe(void) {
   if (Scout.factoryReset() == false) {
     speol("Factory reset requested. Send command again to confirm.");
     return false;
+  } else {
+    speol("Ok, terminating. Goodbye Dave.");
   }
-  static char report[] = "{\"_\":\"daisy\",\"m\":\"Ok, terminating. Goodbye Dave\"}";
+
+  static char report[] = "{\"_\":\"daisy\",\"m\":\"Ok, terminating. Goodbye Dave.\"}";
   Scout.handler.announce(0xBEEF, report);
 
   if (Scout.isLeadScout()) {
