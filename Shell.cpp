@@ -2,6 +2,9 @@
 #include "Scout.h"
 #include "bitlash.h"
 #include "src/bitlash.h"
+extern "C" {
+#include "utility/key.h"  
+}
 
 PinoccioShell Shell;
 
@@ -12,6 +15,7 @@ PinoccioShell::PinoccioShell() {
 PinoccioShell::~PinoccioShell() { }
 
 void PinoccioShell::setup() {
+  key_init();
   addBitlashFunction("power.ischarging", (bitlash_function) isBatteryCharging);
   addBitlashFunction("power.percent", (bitlash_function) getBatteryPercentage);
   addBitlashFunction("power.voltage", (bitlash_function) getBatteryVoltage);
@@ -94,6 +98,11 @@ void PinoccioShell::setup() {
   addBitlashFunction("events.setfreqs", (bitlash_function) setEventPeriods);
   addBitlashFunction("events.verbose", (bitlash_function) setEventVerbose);
 
+  addBitlashFunction("key", (bitlash_function) keyMap);
+  addBitlashFunction("key.print", (bitlash_function) keyPrint);
+  addBitlashFunction("key.number", (bitlash_function) keyNumber);
+  addBitlashFunction("key.save", (bitlash_function) keySave);
+
   if (Scout.isLeadScout()) {
     addBitlashFunction("wifi.report", (bitlash_function) wifiReport);
     addBitlashFunction("wifi.status", (bitlash_function) wifiStatus);
@@ -164,12 +173,19 @@ static numvar allVerbose(void) {
 void PinoccioShell::loop() {
   if (isShellEnabled) {
     runBitlash();
+    key_loop();
   }
 }
 
 void PinoccioShell::startShell() {
+  char boot[32], i;
   isShellEnabled = true;
   initBitlash(115200);
+  for(i='a';i<'z';i++)
+  {
+    sprintf(boot,"boot.%c",i);
+    if(findscript(boot)) doCommand(boot);
+  }
 }
 
 void PinoccioShell::disableShell() {
@@ -226,6 +242,45 @@ static numvar uptimeReport(void) {
   speol();
   return true;
 }
+
+
+/****************************\
+*        KEY HANDLERS        *
+\****************************/
+static numvar keyMap(void)
+{
+  static char num[8];
+  if(isstringarg(1))
+  {
+    return key_map((char*)getstringarg(1), 0);
+  }
+  snprintf(num,8,"%d",getarg(1));
+  return key_map(num, 0);
+}
+
+static numvar keyPrint(void)
+{
+  char *key = key_get(getarg(1));
+  if(!key) return 0;  
+  speol(key);
+}
+
+static numvar keyNumber(void)
+{
+  char *key = key_get(getarg(1));
+  if(!key) return 0;
+  return atoi(key);
+}
+
+static numvar keySave(void)
+{
+  char cmd[42], *var;
+  if(getarg(0) != 2 || !isstringarg(1)) return 0;
+  var = (char*)getstringarg(1);
+  sprintf(cmd,"function boot.%s {%s=key(\"%s\");}",var,var,key_get(getarg(2)));
+  doCommand(cmd);
+}
+
 
 /****************************\
 *      POWER HANDLERS       *
@@ -500,11 +555,15 @@ static numvar meshPingGroup(void) {
 }
 
 static numvar meshSend(void) {
-  bool getAck = true;
-  if (getarg(0) == 3) {
-    bool getAck = getarg(3);
+  int i;
+  static char msg[100];
+  sprintf(msg,"[1,");
+  for(i=1; i <= getarg(0); i++)
+  {
+    sprintf(msg+strlen(msg),"\"%s\",",key_get(getarg(i)));
   }
-  sendMessage(getarg(1), (char *)getstringarg(2), getAck);
+  sprintf(msg+(strlen(msg)-1),"]");
+  sendMessage(getarg(1), msg);
 }
 
 static numvar meshAnnounce(void) {
@@ -1092,7 +1151,7 @@ static bool receiveMessage(NWK_DataInd_t *ind) {
   return true;
 }
 
-static void sendMessage(int address, int data, bool getAck) {
+static void sendMessage(int address, char *data) {
   if (sendDataReqBusy) {
     return;
   }
@@ -1101,13 +1160,9 @@ static void sendMessage(int address, int data, bool getAck) {
 
   sendDataReq.dstEndpoint = 1;
   sendDataReq.srcEndpoint = 1;
-  if (getAck) {
-    sendDataReq.options = NWK_OPT_ACK_REQUEST|NWK_OPT_ENABLE_SECURITY;
-  } else {
-    sendDataReq.options = NWK_OPT_ENABLE_SECURITY;
-  }
-  sendDataReq.data = (uint8_t*)&data;
-  sendDataReq.size = sizeof(int);
+  sendDataReq.options = NWK_OPT_ENABLE_SECURITY;
+  sendDataReq.data = (uint8_t*)data;
+  sendDataReq.size = strlen(data)+1;
   sendDataReq.confirm = sendConfirm;
   NWK_DataReq(&sendDataReq);
 //  RgbLed.blinkCyan(200);
@@ -1115,8 +1170,10 @@ static void sendMessage(int address, int data, bool getAck) {
   sendDataReqBusy = true;
 
   if (isMeshVerbose) {
-    Serial.print("Sent message to Scout ");
-    Serial.println(address);
+    sp("Sent message to Scout ");
+    sp(address);
+    sp(": ");
+    speol(data);
   }
 }
 

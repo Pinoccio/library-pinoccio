@@ -27,7 +27,6 @@ char *j0g_str(char *key, char *json, unsigned short *index)
 char *j0g_safe(int val, char *json, unsigned short *index)
 {
   char *str, *cursor;
-  if(!val) return NULL;
   *(json+(index[val]+index[val+1])) = 0; // null terminate
   // unescape stuff
   for(cursor=str=json+index[val]; *cursor; cursor++,str++)

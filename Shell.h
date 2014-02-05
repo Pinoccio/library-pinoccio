@@ -131,6 +131,11 @@ static numvar wifiSleep(void);
 static numvar wifiWakeup(void);
 static numvar wifiVerbose(void);
 
+static numvar keyMap(void);
+static numvar keyPrint(void);
+static numvar keyNumber(void);
+static numvar keySave(void);
+
 static char *scoutReportHQ(void);
 static char *uptimeReportHQ(void);
 static char *powerReportHQ(void);
@@ -145,7 +150,7 @@ static void pingScout(int address);
 static void pingGroup(int address);
 static void pingConfirm(NWK_DataReq_t *req);
 static bool receiveMessage(NWK_DataInd_t *ind);
-static void sendMessage(int address, int data, bool getAck);
+static void sendMessage(int address, char *data);
 static void sendConfirm(NWK_DataReq_t *req);
 
 static void digitalPinEventHandler(uint8_t pin, uint8_t value);
