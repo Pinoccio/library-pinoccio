@@ -11,39 +11,41 @@ void key_init()
   memset(keytable,0,sizeof(keytable));
   memset(keytable_tmp,0,sizeof(keytable_tmp));
   key_map("OVERFLOW",0); // becomes 0, error
-  key_load(KEYS_BUNDLE, 0);
+  key_load(KEYS_BUNDLE, 0, 0);
 }
 
-void key_loop()
+// idea was to use now to do time based expirations, but for now just expiring all temps immediately
+int key_loop(unsigned long now)
 {
   int i;
-  if(!keytable_last) return;
-  if(millis() - keytable_last < 10*1000) return;
+  if(!keytable_last) return 0;
 
   // free any tmp keys
-  for(i = 0; keytable[i] && i < KEY_MAX; i++)
+  for(i = 0; i < KEY_MAX; i++)
   {
     if(!keytable_tmp[i]) continue;
     key_free(i);
-  }  
+  }
+  keytable_last = 0;
+  return 1;
 }
 
-int key_map(char *key, int tmp)
+int key_map(char *key, unsigned long at)
 {
   int i;
   if(strlen(key) > 8) return 0;
   for(i = 0; keytable[i] && i < KEY_MAX; i++)
   {
     if(strcmp(keytable[i],key) != 0) continue;
-    if(!tmp) keytable_tmp[i] = 0; // always make sticky if not tmp
+    if(!at) keytable_tmp[i] = 0; // always make sticky if not tmp
     return i;
   }
   // full!
   if(i == KEY_MAX) return 0;
   // save new key
   keytable[i] = strdup(key);
-  if(tmp) {
-    keytable_last = millis();    
+  if(at) {
+    keytable_last = at;
     keytable_tmp[i] = 1;
   }
   return i;
@@ -63,19 +65,17 @@ void key_free(int i)
   keytable[i] = 0;
 }
 
-// loads json array of strings, will optionally write new json array of ints into out
-void key_load(char *array, char *out)
+// loads json array of strings, outs is optional
+void key_load(char *array, int *outs, unsigned long at)
 {
-  unsigned int *index, i;
+  unsigned int *index, i, oi=1;
   if(!array || !*array) return;
   index = malloc(strlen(array));
   j0g(array,index,strlen(array));
-  if(out) sprintf(out,"[");
   for(i=0;index[i];i+=2)
   {
-    int k = key_map(j0g_safe(i,array,index),0);
-    if(k && out) sprintf(out+strlen(out),"%d,",k);
+    int k = key_map(j0g_safe(i,array,index),at);
+    if(outs) outs[oi++] = k;
   }
-  // remove comma if there was any entries
-  if(out) sprintf(out+(strlen(out)-(i>0?1:0)),"]");
+  if(outs) outs[0] = oi-1;
 }

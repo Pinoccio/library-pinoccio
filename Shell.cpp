@@ -118,12 +118,7 @@ void PinoccioShell::setup() {
     addBitlashFunction("wifi.sleep", (bitlash_function) wifiSleep);
     addBitlashFunction("wifi.wakeup", (bitlash_function) wifiWakeup);
     addBitlashFunction("wifi.verbose", (bitlash_function) wifiVerbose);
-  } else {
-    // bootup reporting
-    Shell.allReportHQ();
   }
-
-  Scout.meshListen(1, receiveMessage);
 
   // set up event handlers
   Scout.digitalPinEventHandler = digitalPinEventHandler;
@@ -139,6 +134,10 @@ void PinoccioShell::setup() {
   } else {
     Serial.begin(115200);
   }
+
+  Scout.meshListen(1, receiveMessage);
+  if(!Scout.isLeadScout()) Shell.allReportHQ(); // lead scout reports on hq connect
+
 }
 
 static bool isMeshVerbose;
@@ -173,7 +172,7 @@ static numvar allVerbose(void) {
 void PinoccioShell::loop() {
   if (isShellEnabled) {
     runBitlash();
-    key_loop();
+    key_loop(millis());
   }
 }
 
@@ -463,20 +462,15 @@ static numvar ledWhite(void) {
 }
 
 static numvar ledGetHex(void) {
-  char *buf;
-  if (!isstringarg(1)) return false;
-  buf = (char*)malloc(strlen((char*)getstringarg(1))+16);
-  sprintf(buf,"%s(\"%02x%02x%02x\")",(char*)getstringarg(1),RgbLed.getRedValue(),RgbLed.getGreenValue(),RgbLed.getBlueValue());
-//  sp("calling ");
-//  speol(buf);
-  doCommand(buf);
-  free(buf);
-  return true;
+  char hex[8];
+  sprintf(hex,"%02x%02x%02x",RgbLed.getRedValue(),RgbLed.getGreenValue(),RgbLed.getBlueValue());
+  return key_map(hex,millis());
 }
 
 static numvar ledSetHex(void) {
   if (getarg(1)) {
-    RgbLed.setHex((char *)getarg(1));
+    if(isstringarg(1)) RgbLed.setHex((char *)getarg(1));
+    else RgbLed.setHex(key_get(getarg(1)));
     ledReportHQ();
     return true;
   } else {
@@ -558,7 +552,7 @@ static numvar meshSend(void) {
   int i;
   static char msg[100];
   sprintf(msg,"[1,");
-  for(i=1; i <= getarg(0); i++)
+  for(i=2; i <= getarg(0); i++)
   {
     sprintf(msg+strlen(msg),"\"%s\",",key_get(getarg(i)));
   }
@@ -1129,11 +1123,12 @@ static void pingConfirm(NWK_DataReq_t *req) {
 
 static bool receiveMessage(NWK_DataInd_t *ind) {
   char buf[32];
-  int data = (int)*(ind->data);
+  char *data = (char*)ind->data;
+  int keys[10];
 
   if (isMeshVerbose) {
     Serial.print("Received message of ");
-    Serial.print(data, DEC);
+    Serial.print(data);
     Serial.print(" from ");
     Serial.print(ind->srcAddr, DEC);
     Serial.print(" lqi ");
@@ -1142,11 +1137,17 @@ static bool receiveMessage(NWK_DataInd_t *ind) {
     Serial.print(abs(ind->rssi), DEC);
     Serial.println("");
   }
-
+  lastMeshRssi = abs(ind->rssi);
+  lastMeshLqi = ind->lqi;
   NWK_SetAckControl(abs(ind->rssi));
 
-  // run the Bitlash callback function
-  sprintf(buf,"event.message(%d,%d,%d)",ind->srcAddr,data,ind->lqi);
+  // parse the array payload into keys, [1,"foo","bar"]
+  key_load(data,keys,millis());
+
+  // generate callback
+  sprintf(buf,"event.message(%d",ind->srcAddr);
+  for(int i=2;i<=keys[0];i++) sprintf(buf+strlen(buf),",%d",keys[i]);
+  sprintf(buf+strlen(buf),")");
   doCommand(buf);
   return true;
 }
@@ -1160,7 +1161,7 @@ static void sendMessage(int address, char *data) {
 
   sendDataReq.dstEndpoint = 1;
   sendDataReq.srcEndpoint = 1;
-  sendDataReq.options = NWK_OPT_ENABLE_SECURITY;
+  sendDataReq.options = NWK_OPT_ACK_REQUEST|NWK_OPT_ENABLE_SECURITY;
   sendDataReq.data = (uint8_t*)data;
   sendDataReq.size = strlen(data)+1;
   sendDataReq.confirm = sendConfirm;
@@ -1214,6 +1215,12 @@ static void sendConfirm(NWK_DataReq_t *req) {
       Serial.println(")");
     }
   }
+  lastMeshRssi = req->control;
+  
+  // run the Bitlash callback ack function
+  char buf[32];
+  sprintf(buf,"event.ack(%d,%d)",req->dstAddr,(req->status == NWK_SUCCESS_STATUS)?req->control:0);
+  doCommand(buf);
 }
 
 
