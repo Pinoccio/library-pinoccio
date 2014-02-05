@@ -825,7 +825,13 @@ static numvar backpackList(void) {
 
 static char *scoutReportHQ(void) {
   static char report[100];
-  sprintf(report,"{\"_\":\"s\",\"e\":%d,\"hv\":%d,\"hf\":%d,\"hs\":%d,\"b\":%ld}",(int)Scout.getEEPROMVersion(),(int)Scout.getHwVersion(),Scout.getHwFamily(),Scout.getHwSerial(),PINOCCIO_BUILD);
+  sprintf(report,"{\"_\":\"s\",\"l\":%s,\"e\":%d,\"hv\":%d,\"hf\":%d,\"hs\":%d,\"b\":%ld}",
+          Scout.isLeadScout()?"true":"false",
+          (int)Scout.getEEPROMVersion(),
+          (int)Scout.getHwVersion(),
+          Scout.getHwFamily(),
+          Scout.getHwSerial(),
+          PINOCCIO_BUILD);
   Scout.handler.announce(0xBEEF, report);
   return report;
 }
