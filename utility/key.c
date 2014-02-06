@@ -33,7 +33,7 @@ int key_loop(unsigned long now)
 int key_map(char *key, unsigned long at)
 {
   int i;
-  if(strlen(key) > 8) return 0;
+  if(strlen(key) > KEY_LEN) return 0;
   for(i = 0; keytable[i] && i < KEY_MAX; i++)
   {
     if(strcmp(keytable[i],key) != 0) continue;

@@ -14,6 +14,7 @@ class PinoccioScoutHandler {
     void loop();
     void announce(uint16_t group, char *message);
     void setVerbose(bool flag);
+    char *report(char *report);
 
   protected:
 };

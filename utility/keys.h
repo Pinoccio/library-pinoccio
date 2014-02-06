@@ -1,1 +1,1 @@
-#define KEYS_BUNDLE "[\"foo\",\"bar\",\"baz\"]"
+#define KEYS_BUNDLE "[\"pinoccio\",\"scout\",\"lead\",\"version\",\"family\",\"serial\",\"hardware\",\"build\",\"mesh\",\"address\",\"panid\",\"routes\",\"rate\",\"power\",\"digital\",\"mode\",\"state\",\"analog\",\"backpacks\",\"list\",\"wifi\",\"connected\",\"hq\",\"temp\",\"current\",\"high\",\"low\",\"uptime\",\"millis\",\"free\",\"random\",\"power\",\"battery\",\"voltage\",\"charging\",\"vcc\",\"alarm\",\"led\",\"torch\",\"daisy\",\"dave\"]"

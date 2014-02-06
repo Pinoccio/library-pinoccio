@@ -206,9 +206,12 @@ static char *tempReportHQ(void)
   int temp = Scout.getTemperature();
   if(temp > tempHigh) tempHigh = temp;
   if(!tempLow || temp < tempLow) tempLow = temp;
-  sprintf(report,"{\"_\":\"tmp\",\"t\":%d,\"h\":%d,\"l\":%d}",temp,tempHigh,tempLow);
-  Scout.handler.announce(0xBEEF, report);
-  return report;
+  sprintf(report,"[%d,[%d,%d,%d],[%d,%d,%d]]",key_map("temp",0),
+          key_map("current",0),key_map("high",0),key_map("low",0),
+          temp,
+          tempHigh,
+          tempLow);
+  return Scout.handler.report(report);
 }
 
 static numvar getTemperature(void) {
@@ -230,9 +233,12 @@ static char *uptimeReportHQ(void) {
   int free_mem;
   int uptime = millis();
   // free memory based on http://forum.pololu.com/viewtopic.php?f=10&t=989&view=unread#p4218
-  sprintf(report,"{\"_\":\"u\",\"m\":%d,\"f\":%d,\"r\":%d}",uptime,((int)&free_mem) - ((int)&__bss_end),random());
-  Scout.handler.announce(0xBEEF, report);
-  return report;
+  sprintf(report,"[%d,[%d,%d,%d],[%d,%d,%d]]",key_map("uptime",0),
+          key_map("millis",0),key_map("free",0),key_map("random",0),
+          uptime,
+          ((int)&free_mem) - ((int)&__bss_end),
+          (int)random());
+  return Scout.handler.report(report);
 }
 
 static numvar uptimeReport(void) {
@@ -319,9 +325,14 @@ static numvar goToSleep(void) {
 
 static char *powerReportHQ(void) {
   static char report[100];
-  sprintf(report,"{\"_\":\"pwr\",\"p\":%d,\"v\":%d,\"c\":%s,\"vcc\":%s,\"a\":%s}",Scout.getBatteryPercentage(),(int)Scout.getBatteryVoltage(),Scout.isBatteryCharging()?"true":"false",Scout.isBackpackVccEnabled()?"true":"false", Scout.isBatteryAlarmTriggered()?"true":"false");
-  Scout.handler.announce(0xBEEF, report);
-  return report;
+  sprintf(report,"[%d,[%d,%d,%d,%d,%d],[%d,%d,%s,%s,%s]]",key_map("power",0),
+          key_map("battery",0),key_map("voltage",0),key_map("charging",0),key_map("vcc",0),key_map("alarm",0),
+          (int)Scout.getBatteryPercentage(),
+          (int)Scout.getBatteryVoltage(),
+          Scout.isBatteryCharging()?"true":"false",
+          Scout.isBackpackVccEnabled()?"true":"false",
+          Scout.isBatteryAlarmTriggered()?"true":"false");
+  return Scout.handler.report(report);
 }
 
 static numvar powerReport(void) {
@@ -352,9 +363,11 @@ static numvar ledBlinkTorch(void) {
 
 static char *ledReportHQ(void) {
   static char report[100];
-  sprintf(report,"{\"_\":\"led\",\"l\":[%d,%d,%d],\"t\":[%d,%d,%d]}",RgbLed.getRedValue(),RgbLed.getGreenValue(),RgbLed.getBlueValue(),RgbLed.getRedTorchValue(),RgbLed.getGreenTorchValue(),RgbLed.getBlueTorchValue());
-  Scout.handler.announce(0xBEEF, report);
-  return report;
+  sprintf(report,"[%d,[%d,%d],[[%d,%d,%d],[%d,%d,%d]]]",key_map("led",0),
+          key_map("led",0),key_map("torch",0),
+          RgbLed.getRedValue(),RgbLed.getGreenValue(),RgbLed.getBlueValue(),
+          RgbLed.getRedTorchValue(),RgbLed.getGreenTorchValue(),RgbLed.getBlueTorchValue());
+  return Scout.handler.report(report);
 }
 
 static numvar ledOff(void) {
@@ -596,20 +609,23 @@ static char *meshReportHQ(void) {
     if (table[i].dstAddr == NWK_ROUTE_UNKNOWN) continue;
     count++;
   }
-
-  sprintf(report,"{\"_\":\"rf\",\"id\":%d,\"p\":%d,\"t\":%d,\"c\":%d,\"x\":\"",Scout.getAddress(),Scout.getPanId(),count,Scout.getChannel());
+  sprintf(report,"[%d,[%d,%d,%d,%d,%d,%d],[%d,%d,%d,%d,\"",key_map("mesh",0),
+          key_map("address",0),key_map("panid",0),key_map("routes",0),key_map("channel",0),key_map("rate",0),key_map("power",0),
+          Scout.getAddress(),
+          Scout.getPanId(),
+          count,
+          Scout.getChannel());
   const char *kbString = Scout.getDataRatekbps();
   while((c = pgm_read_byte(kbString++))) {
     sprintf(report+strlen(report),"%c",c);
   }
-  sprintf(report+strlen(report),"\",\"w\":\"");
+  sprintf(report+strlen(report),"\",\"");
   const char *dbString = Scout.getTxPowerDb();
   while((c = pgm_read_byte(dbString++))) {
     sprintf(report+strlen(report),"%c",c);
   }
-  sprintf(report+strlen(report),"\"}");
-  Scout.handler.announce(0xBEEF, report);
-  return report;
+  sprintf(report+strlen(report),"\"]]");
+  return Scout.handler.report(report);
 }
 
 static numvar meshReport(void) {
@@ -649,46 +665,46 @@ static numvar meshRouting(void) {
 \****************************/
 static char *digitalPinReportHQ(void) {
   static char report[80];
-  sprintf(report,"{\"_\":\"pind\",\"m\":[%d,%d,%d,%d,%d,%d,%d],\"v\":[%d,%d,%d,%d,%d,%d,%d]}",
-  Scout.getPinMode(2),
-  Scout.getPinMode(3),
-  Scout.getPinMode(4),
-  Scout.getPinMode(5),
-  Scout.getPinMode(6),
-  Scout.getPinMode(7),
-  Scout.getPinMode(8),
-  Scout.digitalPinState[0],
-  Scout.digitalPinState[1],
-  Scout.digitalPinState[2],
-  Scout.digitalPinState[3],
-  Scout.digitalPinState[4],
-  Scout.digitalPinState[5],
-  Scout.digitalPinState[6]);
-  Scout.handler.announce(0xBEEF, report);
-  return report;
+  sprintf(report,"[%d,[%d,%d],[[%d,%d,%d,%d,%d,%d,%d],[%d,%d,%d,%d,%d,%d,%d]]]",key_map("digital",0),
+          key_map("mode",0),key_map("state",0),
+          Scout.getPinMode(2),
+          Scout.getPinMode(3),
+          Scout.getPinMode(4),
+          Scout.getPinMode(5),
+          Scout.getPinMode(6),
+          Scout.getPinMode(7),
+          Scout.getPinMode(8),
+          Scout.digitalPinState[0],
+          Scout.digitalPinState[1],
+          Scout.digitalPinState[2],
+          Scout.digitalPinState[3],
+          Scout.digitalPinState[4],
+          Scout.digitalPinState[5],
+          Scout.digitalPinState[6]);
+  return Scout.handler.report(report);
 }
 
 static char *analogPinReportHQ(void) {
   static char report[80];
-  sprintf(report,"{\"_\":\"pina\",\"m\":[%d,%d,%d,%d,%d,%d,%d,%d],\"v\":[%d,%d,%d,%d,%d,%d,%d,%d]}",
-  Scout.getPinMode(24),
-  Scout.getPinMode(25),
-  Scout.getPinMode(26),
-  Scout.getPinMode(27),
-  Scout.getPinMode(28),
-  Scout.getPinMode(29),
-  Scout.getPinMode(30),
-  Scout.getPinMode(31),
-  Scout.analogPinState[0],
-  Scout.analogPinState[1],
-  Scout.analogPinState[2],
-  Scout.analogPinState[3],
-  Scout.analogPinState[4],
-  Scout.analogPinState[5],
-  Scout.analogPinState[6],
-  Scout.analogPinState[7]);
-  Scout.handler.announce(0xBEEF, report);
-  return report;
+  sprintf(report,"[%d,[%d,%d],[[%d,%d,%d,%d,%d,%d,%d,%d],[%d,%d,%d,%d,%d,%d,%d,%d]]]",key_map("analog",0),
+          key_map("mode",0),key_map("state",0),
+          Scout.getPinMode(24),
+          Scout.getPinMode(25),
+          Scout.getPinMode(26),
+          Scout.getPinMode(27),
+          Scout.getPinMode(28),
+          Scout.getPinMode(29),
+          Scout.getPinMode(30),
+          Scout.getPinMode(31),
+          Scout.analogPinState[0],
+          Scout.analogPinState[1],
+          Scout.analogPinState[2],
+          Scout.analogPinState[3],
+          Scout.analogPinState[4],
+          Scout.analogPinState[5],
+          Scout.analogPinState[6],
+          Scout.analogPinState[7]);
+  Scout.handler.report(report);
 }
 
 static numvar pinOn(void) {
@@ -797,16 +813,15 @@ static numvar analogPinReport(void) {
 static char *backpackReportHQ(void) {
   static char report[100];
   int comma = 0;
-  sprintf(report,"{\"_\":\"bps\",\"a\":[");
+  sprintf(report,"[%d,[%d],[[",key_map("backpacks",0),key_map("list",0));
   for (uint8_t i = 0; i < Scout.bp.num_slaves; ++i) {
     for (uint8_t j = 0; j < UNIQUE_ID_LENGTH; ++j) {
       // TODO this isn't correct, dunno what to do here
       sprintf(report+strlen(report),"%s%d",comma++?",":"",Scout.bp.slave_ids[i][j]);
     }
   }
-  sprintf(report+strlen(report),"]}");
-  Scout.handler.announce(0xBEEF, report);
-  return report;
+  sprintf(report+strlen(report),"]]]");
+  return Scout.handler.report(report);
 }
 
 static numvar backpackReport(void) {
@@ -837,15 +852,15 @@ static numvar backpackList(void) {
 
 static char *scoutReportHQ(void) {
   static char report[100];
-  sprintf(report,"{\"_\":\"s\",\"l\":%s,\"e\":%d,\"hv\":%d,\"hf\":%d,\"hs\":%d,\"b\":%ld}",
+  sprintf(report,"[%d,[%d,%d,%d,%d,%d,%d],[%s,%d,%d,%d,%d,%ld]]",key_map("scout",0),
+          key_map("lead",0),key_map("version",0),key_map("hardware",0),key_map("family",0),key_map("serial",0),key_map("build",0),
           Scout.isLeadScout()?"true":"false",
           (int)Scout.getEEPROMVersion(),
           (int)Scout.getHwVersion(),
           Scout.getHwFamily(),
           Scout.getHwSerial(),
           PINOCCIO_BUILD);
-  Scout.handler.announce(0xBEEF, report);
-  return report;
+  return Scout.handler.report(report);
 }
 
 static numvar scoutReport(void) {
@@ -882,8 +897,9 @@ static numvar daisyWipe(void) {
     speol("Ok, terminating. Goodbye Dave.");
   }
 
-  static char report[] = "{\"_\":\"daisy\",\"m\":\"Ok, terminating. Goodbye Dave.\"}";
-  Scout.handler.announce(0xBEEF, report);
+  char report[32];
+  sprintf(report,"[%d,[%d],[\"bye\"]]",key_map("daisy",0),key_map("dave",0));
+  Scout.handler.report(report);
 
   if (Scout.isLeadScout()) {
     if (!Scout.wifi.runDirectCommand(Serial, "AT&F")) {
@@ -950,9 +966,12 @@ static numvar setEventVerbose(void) {
 static char *wifiReportHQ(void) {
   static char report[100];
   // TODO real wifi status/version
-  sprintf(report,"{\"_\":\"bp\",\"b\":\"wifi\",\"v\":%d,\"wc\":%s,\"hc\":%s}",0,Scout.wifi.isAPConnected()?"true":"false",Scout.wifi.isHQConnected()?"true":"false");
-  Scout.handler.announce(0xBEEF, report);
-  return report;
+  sprintf(report,"[%d,[%d,%d,%d],[%d,%s,%s]]",key_map("wifi",0),
+          key_map("version",0),key_map("connected",0),key_map("hq",0),
+          0,
+          Scout.wifi.isAPConnected()?"true":"false",
+          Scout.wifi.isHQConnected()?"true":"false");
+  return Scout.handler.report(report);
 }
 
 static numvar wifiReport(void) {

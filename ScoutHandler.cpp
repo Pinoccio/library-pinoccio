@@ -5,6 +5,7 @@
 #include <PBBP.h>
 #include <utility/WiFiBackpack.h>
 extern "C" {
+#include "utility/js0n.h"
 #include "utility/j0g.h"
 #include "utility/key.h"
 #include "utility/sysTimer.h"
@@ -256,12 +257,48 @@ static bool fieldAnnouncements(NWK_DataInd_t *ind) {
   return true;
 }
 
+// TODO, it's super twisty how things call into here depending on leadScout state, needs refactoring!
 static void leadAnnouncementSend(int group, int from, char *message) {
   char sig[256];
   // reports are expected to be json objects
-  if(group == 0xBEEF) sprintf(sig,"{\"type\":\"report\",\"from\":%d,\"report\":%s}\n", from, message);
+  if(group == 0xBEEF) sprintf(sig,"{\"type\":\"report\",\"from\":%d,\"report\":%s}\n", from, Scout.handler.report(message));
   if(group == 0) sprintf(sig,"{\"type\":\"announce\",\"from\":%d,\"announce\":%s}\n", from, message);
   leadSignal(sig);
+}
+
+// [3,[0,1,2],[v,v,v]]
+char *PinoccioScoutHandler::report(char *report) {
+  static char json[256], *keys, *vals, *type;
+  unsigned short ir[16], ik[32], iv[32], i;
+
+  // parse this and humanize
+  js0n((unsigned char*)report,strlen(report),ir,16);
+  if(!*ir) return NULL;
+  sprintf(json,"{\"type\":\"%s\"",key_get(atoi(j0g_safe(0,report,ir))));
+  keys = report+ir[2];
+  js0n((unsigned char*)keys,ir[3],ik,32);
+  if(!*ik) return NULL;
+  vals = report+ir[4];
+  js0n((unsigned char*)vals,ir[5],iv,32);
+  if(!*iv) return NULL;
+  
+  for(i=0;ik[i];i+=2)
+  {
+    sprintf(json+strlen(json),",\"%s\":",key_get(atoi(j0g_safe(i,keys,ik))));
+    if(vals[iv[i]-1] == '"')
+    {
+      iv[i]--; iv[i+1]+=2;
+    }
+    *(vals+iv[i]+iv[i+1]) = 0;
+    sprintf(json+strlen(json),"%s",vals+iv[i]);
+  }
+
+  sprintf(json+strlen(json),"}");
+
+  if(!Scout.isLeadScout()) Scout.handler.announce(0xBEEF, report);
+  else leadAnnouncementSend(0xBEEF, Scout.getAddress(), json);
+
+  return json;
 }
 
 ////////////////////
