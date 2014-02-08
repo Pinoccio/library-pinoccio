@@ -48,8 +48,6 @@ void PinoccioShell::setup() {
   addBitlashFunction("report", (bitlash_function) allReport);
   addBitlashFunction("verbose", (bitlash_function) allVerbose);
 
-  addBitlashFunction("led.blink", (bitlash_function) ledBlink);
-  addBitlashFunction("led.blinktorch", (bitlash_function) ledBlinkTorch);
   addBitlashFunction("led.off", (bitlash_function) ledOff);
   addBitlashFunction("led.red", (bitlash_function) ledRed);
   addBitlashFunction("led.green", (bitlash_function) ledGreen);
@@ -61,6 +59,7 @@ void PinoccioShell::setup() {
   addBitlashFunction("led.orange", (bitlash_function) ledOrange);
   addBitlashFunction("led.white", (bitlash_function) ledWhite);
   addBitlashFunction("led.torch", (bitlash_function) ledTorch);
+  addBitlashFunction("led.blink", (bitlash_function) ledBlink);
   addBitlashFunction("led.sethex", (bitlash_function) ledSetHex);
   addBitlashFunction("led.gethex", (bitlash_function) ledGetHex);
   addBitlashFunction("led.setrgb", (bitlash_function) ledSetRgb);
@@ -353,14 +352,6 @@ static numvar ledBlink(void) {
   }
 }
 
-static numvar ledBlinkTorch(void) {
-  if (getarg(0) == 1) {
-    RgbLed.blinkTorch(getarg(1));
-  } else {
-    RgbLed.blinkTorch();
-  }
-}
-
 static char *ledReportHQ(void) {
   static char report[100];
   sprintf(report,"[%d,[%d,%d],[[%d,%d,%d],[%d,%d,%d]]]",key_map("led",0),
@@ -476,14 +467,17 @@ static numvar ledWhite(void) {
 
 static numvar ledGetHex(void) {
   char hex[8];
-  sprintf(hex,"%02x%02x%02x",RgbLed.getRedValue(),RgbLed.getGreenValue(),RgbLed.getBlueValue());
-  return key_map(hex,millis());
+  sprintf(hex,"%02x%02x%02x", RgbLed.getRedValue(), RgbLed.getGreenValue(), RgbLed.getBlueValue());
+  return key_map(hex, millis());
 }
 
 static numvar ledSetHex(void) {
   if (getarg(1)) {
-    if(isstringarg(1)) RgbLed.setHex((char *)getarg(1));
-    else RgbLed.setHex(key_get(getarg(1)));
+    if (isstringarg(1)) {
+      RgbLed.setHex((char *)getarg(1));
+    } else {
+      RgbLed.setHex(key_get(getarg(1)));
+    }
     ledReportHQ();
     return true;
   } else {
@@ -502,7 +496,13 @@ static numvar ledSaveTorch(void) {
 }
 
 static numvar ledTorch(void) {
-  RgbLed.setTorch();
+  if (getarg(0) == 2) {
+    RgbLed.blinkTorch(getarg(1), getarg(2));
+  } else if (getarg(0) == 1) {
+    RgbLed.blinkTorch(getarg(1));
+  } else {
+    RgbLed.setTorch();
+  }
   ledReportHQ();
 }
 
@@ -852,7 +852,7 @@ static numvar backpackList(void) {
 
 static char *scoutReportHQ(void) {
   static char report[100];
-  sprintf(report,"[%d,[%d,%d,%d,%d,%d,%d],[%s,%d,%d,%d,%d,%ld]]",key_map("scout",0),
+  sprintf(report,"[%d,[%d,%d,%d,%d,%d,%d],[%s,%d,%d,%d,%ld,%ld]]",key_map("scout",0),
           key_map("lead",0),key_map("version",0),key_map("hardware",0),key_map("family",0),key_map("serial",0),key_map("build",0),
           Scout.isLeadScout()?"true":"false",
           (int)Scout.getEEPROMVersion(),
@@ -1187,7 +1187,7 @@ static bool receiveMessage(NWK_DataInd_t *ind) {
   key_load(data,keys,millis());
 
   // generate callback
-  
+
   sprintf(buf,"event.message");
   if (findscript(buf)) {
     sprintf(buf,"event.message(%d",ind->srcAddr);
@@ -1262,7 +1262,7 @@ static void sendConfirm(NWK_DataReq_t *req) {
     }
   }
   lastMeshRssi = req->control;
-  
+
   // run the Bitlash callback ack function
   char buf[32];
   sprintf(buf,"event.ack(%d,%d)",req->dstAddr,(req->status == NWK_SUCCESS_STATUS)?req->control:0);
