@@ -1209,7 +1209,7 @@ static void sendMessage(int address, char *data) {
   sendDataReq.dstEndpoint = 1;
   sendDataReq.srcEndpoint = 1;
   sendDataReq.options = NWK_OPT_ACK_REQUEST|NWK_OPT_ENABLE_SECURITY;
-  sendDataReq.data = (uint8_t*)data;
+  sendDataReq.data = (uint8_t*)strdup(data);
   sendDataReq.size = strlen(data)+1;
   sendDataReq.confirm = sendConfirm;
   NWK_DataReq(&sendDataReq);
@@ -1227,6 +1227,7 @@ static void sendMessage(int address, char *data) {
 
 static void sendConfirm(NWK_DataReq_t *req) {
    sendDataReqBusy = false;
+   free(req->data);
 
    if (isMeshVerbose) {
     if (req->status == NWK_SUCCESS_STATUS) {
