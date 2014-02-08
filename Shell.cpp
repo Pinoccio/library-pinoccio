@@ -569,7 +569,8 @@ char *arg2array(int ver, char *msg)
   sprintf(msg,"[%d,",ver);
   for(i=2; i <= args; i++)
   {
-    sprintf(msg+strlen(msg),"\"%s\",",key_get(getarg(i)));
+    int key = (isstringarg(i))?key_map((char*)getstringarg(i), 0):getarg(i);
+    sprintf(msg+strlen(msg),"\"%s\",",key_get(key));
   }
   sprintf(msg+(strlen(msg)-1),"]");
   return msg;
@@ -1265,8 +1266,11 @@ static void sendConfirm(NWK_DataReq_t *req) {
 
   // run the Bitlash callback ack function
   char buf[32];
-  sprintf(buf,"event.ack(%d,%d)",req->dstAddr,(req->status == NWK_SUCCESS_STATUS)?req->control:0);
-  doCommand(buf);
+  sprintf(buf,"event.ack");
+  if (findscript(buf)) {
+    sprintf(buf,"event.ack(%d,%d)",req->dstAddr,(req->status == NWK_SUCCESS_STATUS)?req->control:0);
+    doCommand(buf);
+  }
 }
 
 
