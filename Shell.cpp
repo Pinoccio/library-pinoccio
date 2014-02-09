@@ -578,8 +578,12 @@ char *arg2array(int ver, char *msg)
 
 static numvar meshSend(void) {
   char msg[100];
-  if(!getarg(0)) return false;
-  sendMessage(getarg(1), arg2array(1,msg));
+  if (!getarg(0)) {
+    return false;
+  }
+  Serial.println(getarg(1));
+  Serial.println(arg2array(1,msg));
+  sendMessage(getarg(1), arg2array(1, msg));
   return true;
 }
 
@@ -853,8 +857,8 @@ static numvar backpackList(void) {
 
 static char *scoutReportHQ(void) {
   static char report[100];
-  sprintf(report,"[%d,[%d,%d,%d,%d,%d,%d],[%s,%d,%d,%d,%ld,%ld]]",key_map("scout",0),
-          key_map("lead",0),key_map("version",0),key_map("hardware",0),key_map("family",0),key_map("serial",0),key_map("build",0),
+  sprintf(report,"[%d,[%d,%d,%d,%d,%d,%d],[%s,%d,%d,%d,%ld,%ld]]", key_map("scout",0),
+           key_map("lead",0), key_map("version",0), key_map("hardware",0), key_map("family",0),  key_map("serial",0), key_map("build",0),
           Scout.isLeadScout()?"true":"false",
           (int)Scout.getEEPROMVersion(),
           (int)Scout.getHwVersion(),
