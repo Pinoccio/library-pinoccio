@@ -40,9 +40,11 @@ void WiFiBackpack::onNcmConnect(void *data, GSCore::cid_t cid) {
 
   if (HqHandler::cacert_len != 0) {
     if (!wifi.client.enableTls(CA_CERTNAME_HQ)) {
-      // TODO: If enableTls fails, the NCM doesn't retry the TCP
-      // connection
-      Serial.println("SSL negotiation to HQ failed");
+      // If enableTls fails, the NCM doesn't retry the TCP
+      // connection. We restart the entire association to get NCM to
+      // retry the TCP connection instead.
+      Serial.println("SSL negotiation to HQ failed, reassociating to retry");
+      wifi.autoConnectHq();
       return;
     }
   }
