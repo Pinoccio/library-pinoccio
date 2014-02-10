@@ -25,7 +25,7 @@ class WiFiBackpack : public Backpack {
     // (Re-)connects the wifi and HQ connection
     bool autoConnectHq();
 
-    void printAPs(Print& p);
+    bool printAPs(Print& p);
     void printProfiles(Print& p);
     void printCurrentNetworkStatus(Print& p);
     bool printTime(Print& p);

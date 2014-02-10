@@ -994,7 +994,11 @@ static numvar wifiStatus(void) {
 }
 
 static numvar wifiList(void) {
-    Scout.wifi.printAPs(Serial);
+  if (!Scout.wifi.printAPs(Serial)) {
+    Serial.println("Error: Scan failed");
+    return 0;
+  }
+  return 1;
 }
 
 static numvar wifiConfig(void) {
