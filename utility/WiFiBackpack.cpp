@@ -147,6 +147,11 @@ bool WiFiBackpack::autoConnectHq() {
          gs.setNcm(/* enable */ true, /* associate_only */ false, /* remember */ false);
 }
 
+void WiFiBackpack::disassociate() {
+  gs.setNcm(false);
+  gs.disassociate();
+}
+
 bool WiFiBackpack::printAPs(Print& p) {
   return runDirectCommand(p, "AT+WS");
 }

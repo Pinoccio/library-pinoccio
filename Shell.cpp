@@ -110,6 +110,7 @@ void PinoccioShell::setup() {
     addBitlashFunction("wifi.dhcp", (bitlash_function) wifiDhcp);
     addBitlashFunction("wifi.static", (bitlash_function) wifiStatic);
     addBitlashFunction("wifi.reassociate", (bitlash_function) wifiReassociate);
+    addBitlashFunction("wifi.disassociate", (bitlash_function) wifiDisassociate);
     addBitlashFunction("wifi.command", (bitlash_function) wifiCommand);
     addBitlashFunction("wifi.ping", (bitlash_function) wifiPing);
     addBitlashFunction("wifi.dnslookup", (bitlash_function) wifiDNSLookup);
@@ -1042,6 +1043,11 @@ static numvar wifiStatic(void) {
     Serial.println("Error: saving Scout.wifi.configuration data failed");
     return 0;
   }
+  return 1;
+}
+
+static numvar wifiDisassociate(void) {
+  Scout.wifi.disassociate();
   return 1;
 }
 

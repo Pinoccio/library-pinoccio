@@ -123,6 +123,7 @@ static numvar wifiConfig(void);
 static numvar wifiDhcp(void);
 static numvar wifiStatic(void);
 static numvar wifiReassociate(void);
+static numvar wifiDisassociate(void);
 static numvar wifiCommand(void);
 static numvar wifiPing(void);
 static numvar wifiDNSLookup(void);
