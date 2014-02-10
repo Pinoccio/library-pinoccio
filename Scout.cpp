@@ -67,6 +67,7 @@ void PinoccioScout::setup() {
   saveState();
   startDigitalStateChangeEvents();
   startAnalogStateChangeEvents();
+  startPeripheralStateChangeEvents();
 }
 
 void PinoccioScout::loop() {
@@ -264,15 +265,17 @@ static void scoutAnalogStateChangeTimerHandler(SYS_Timer_t *timer) {
   if (Scout.analogPinEventHandler != 0) {
     for (int i=0; i<8; i++) {
       val = analogRead(i); // explicit digital pins until we can update core
-      if (Scout.eventVerboseOutput) {
-        sp("Running: analogPinEventHandler(");
-        sp(i);
-        sp(",");
-        sp(val);
-        speol(")");
+      if (Scout.analogPinState[i] != val) {
+        if (Scout.eventVerboseOutput) {
+          sp("Running: analogPinEventHandler(");
+          sp(i);
+          sp(",");
+          sp(val);
+          speol(")");
+        }
+        Scout.analogPinState[i] = val;
+        Scout.analogPinEventHandler(i, val);
       }
-      Scout.analogPinState[i] = val;
-      Scout.analogPinEventHandler(i, val);
     }
   }
 }
