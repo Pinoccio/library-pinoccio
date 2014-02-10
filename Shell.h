@@ -159,7 +159,6 @@ static void analogPinEventHandler(uint8_t pin, uint16_t value);
 static void batteryPercentageEventHandler(uint8_t value);
 static void batteryVoltageEventHandler(uint8_t value);
 static void batteryChargingEventHandler(uint8_t value);
-static void batteryAlarmTriggeredEventHandler(uint8_t value);
 static void temperatureEventHandler(uint8_t value);
 
 void bitlashFilter(byte b); // watches bitlash output for channel announcements

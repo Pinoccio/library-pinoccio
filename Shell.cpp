@@ -126,7 +126,6 @@ void PinoccioShell::setup() {
   Scout.batteryPercentageEventHandler = batteryPercentageEventHandler;
   Scout.batteryVoltageEventHandler = batteryVoltageEventHandler;
   Scout.batteryChargingEventHandler = batteryChargingEventHandler;
-  Scout.batteryAlarmTriggeredEventHandler = batteryAlarmTriggeredEventHandler;
   Scout.temperatureEventHandler = temperatureEventHandler;
 
   if (isShellEnabled) {
@@ -325,13 +324,12 @@ static numvar goToSleep(void) {
 
 static char *powerReportHQ(void) {
   static char report[100];
-  sprintf(report,"[%d,[%d,%d,%d,%d,%d],[%d,%d,%s,%s,%s]]",key_map("power",0),
-          key_map("battery",0),key_map("voltage",0),key_map("charging",0),key_map("vcc",0),key_map("alarm",0),
+  sprintf(report,"[%d,[%d,%d,%d,%d],[%d,%d,%s,%s]]",key_map("power",0),
+          key_map("battery",0),key_map("voltage",0),key_map("charging",0),key_map("vcc",0),
           (int)Scout.getBatteryPercentage(),
           (int)Scout.getBatteryVoltage(),
           Scout.isBatteryCharging()?"true":"false",
-          Scout.isBackpackVccEnabled()?"true":"false",
-          Scout.isBatteryAlarmTriggered()?"true":"false");
+          Scout.isBackpackVccEnabled()?"true":"false");
   return Scout.handler.report(report);
 }
 
@@ -616,7 +614,7 @@ static char *meshReportHQ(void) {
     count++;
   }
   sprintf(report,"[%d,[%d,%d,%d,%d,%d,%d],[%d,%d,%d,%d,\"",key_map("mesh",0),
-          key_map("address",0),key_map("panid",0),key_map("routes",0),key_map("channel",0),key_map("rate",0),key_map("power",0),
+          key_map("scoutid",0),key_map("troopid",0),key_map("routes",0),key_map("channel",0),key_map("rate",0),key_map("power",0),
           Scout.getAddress(),
           Scout.getPanId(),
           count,
@@ -1373,16 +1371,6 @@ static void batteryChargingEventHandler(uint8_t value) {
   powerReportHQ();
   if (findscript("event.charging")) {
     String callback = "event.charging(" + String(value) + ")";
-    char buf[32];
-    callback.toCharArray(buf, callback.length()+1);
-    doCommand(buf);
-  }
-}
-
-static void batteryAlarmTriggeredEventHandler(uint8_t value) {
-  powerReportHQ();
-  if (findscript("event.batteryalarm")) {
-    String callback = "event.batteryalarm(" + String(value) + ")";
     char buf[32];
     callback.toCharArray(buf, callback.length()+1);
     doCommand(buf);

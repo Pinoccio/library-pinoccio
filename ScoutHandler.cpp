@@ -276,7 +276,7 @@ char *report2json(char *in) {
   vals = report+ir[4];
   js0n((unsigned char*)vals,ir[5],iv,32);
   if(!*iv) return NULL;
-  
+
   for(i=0;ik[i];i+=2)
   {
     sprintf(report_json+strlen(report_json),",\"%s\":",key_get(atoi(j0g_safe(i,keys,ik))));
