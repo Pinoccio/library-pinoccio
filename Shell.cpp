@@ -127,6 +127,7 @@ void PinoccioShell::setup() {
   Scout.batteryVoltageEventHandler = batteryVoltageEventHandler;
   Scout.batteryChargingEventHandler = batteryChargingEventHandler;
   Scout.temperatureEventHandler = temperatureEventHandler;
+  RgbLed.ledEventHandler = ledEventHandler;
 
   if (isShellEnabled) {
     startShell();
@@ -341,6 +342,15 @@ static numvar powerReport(void) {
 /****************************\
 *      RGB LED HANDLERS     *
 \****************************/
+static char *ledReportHQ(void) {
+  static char report[100];
+  sprintf(report,"[%d,[%d,%d],[[%d,%d,%d],[%d,%d,%d]]]",key_map("led",0),
+          key_map("led",0),key_map("torch",0),
+          RgbLed.getRedValue(),RgbLed.getGreenValue(),RgbLed.getBlueValue(),
+          RgbLed.getRedTorchValue(),RgbLed.getGreenTorchValue(),RgbLed.getBlueTorchValue());
+  return Scout.handler.report(report);
+}
+
 static numvar ledBlink(void) {
   if (getarg(0) == 5) {
     RgbLed.blinkColor(getarg(1), getarg(2), getarg(3), getarg(4), getarg(5));
@@ -351,18 +361,8 @@ static numvar ledBlink(void) {
   }
 }
 
-static char *ledReportHQ(void) {
-  static char report[100];
-  sprintf(report,"[%d,[%d,%d],[[%d,%d,%d],[%d,%d,%d]]]",key_map("led",0),
-          key_map("led",0),key_map("torch",0),
-          RgbLed.getRedValue(),RgbLed.getGreenValue(),RgbLed.getBlueValue(),
-          RgbLed.getRedTorchValue(),RgbLed.getGreenTorchValue(),RgbLed.getBlueTorchValue());
-  return Scout.handler.report(report);
-}
-
 static numvar ledOff(void) {
   RgbLed.turnOff();
-  ledReportHQ();
 }
 
 static numvar ledRed(void) {
@@ -373,7 +373,6 @@ static numvar ledRed(void) {
   } else {
     RgbLed.red();
   }
-  ledReportHQ();
 }
 
 static numvar ledGreen(void) {
@@ -384,7 +383,6 @@ static numvar ledGreen(void) {
   } else {
     RgbLed.green();
   }
-  ledReportHQ();
 }
 
 static numvar ledBlue(void) {
@@ -395,7 +393,6 @@ static numvar ledBlue(void) {
   } else {
     RgbLed.blue();
   }
-  ledReportHQ();
 }
 
 static numvar ledCyan(void) {
@@ -406,7 +403,6 @@ static numvar ledCyan(void) {
   } else {
     RgbLed.cyan();
   }
-  ledReportHQ();
 }
 
 static numvar ledPurple(void) {
@@ -417,7 +413,6 @@ static numvar ledPurple(void) {
   } else {
     RgbLed.purple();
   }
-  ledReportHQ();
 }
 
 static numvar ledMagenta(void) {
@@ -428,7 +423,6 @@ static numvar ledMagenta(void) {
   } else {
     RgbLed.magenta();
   }
-  ledReportHQ();
 }
 
 static numvar ledYellow(void) {
@@ -439,7 +433,6 @@ static numvar ledYellow(void) {
   } else {
     RgbLed.yellow();
   }
-  ledReportHQ();
 }
 
 static numvar ledOrange(void) {
@@ -450,7 +443,6 @@ static numvar ledOrange(void) {
   } else {
     RgbLed.orange();
   }
-  ledReportHQ();
 }
 
 static numvar ledWhite(void) {
@@ -461,7 +453,6 @@ static numvar ledWhite(void) {
   } else {
     RgbLed.white();
   }
-  ledReportHQ();
 }
 
 static numvar ledGetHex(void) {
@@ -477,7 +468,6 @@ static numvar ledSetHex(void) {
     } else {
       RgbLed.setHex(key_get(getarg(1)));
     }
-    ledReportHQ();
     return true;
   } else {
     return false;
@@ -486,12 +476,10 @@ static numvar ledSetHex(void) {
 
 static numvar ledSetRgb(void) {
   RgbLed.setColor(getarg(1), getarg(2), getarg(3));
-  ledReportHQ();
 }
 
 static numvar ledSaveTorch(void) {
   RgbLed.saveTorch(getarg(1), getarg(2), getarg(3));
-  ledReportHQ();
 }
 
 static numvar ledTorch(void) {
@@ -502,7 +490,6 @@ static numvar ledTorch(void) {
   } else {
     RgbLed.setTorch();
   }
-  ledReportHQ();
 }
 
 static numvar ledReport(void) {
@@ -1385,6 +1372,10 @@ static void temperatureEventHandler(uint8_t value) {
     callback.toCharArray(buf, callback.length()+1);
     doCommand(buf);
   }
+}
+
+static void ledEventHandler(uint8_t redValue, uint8_t greenValue, uint8_t blueValue) {
+  ledReportHQ();
 }
 
 void bitlashFilter(byte b) {

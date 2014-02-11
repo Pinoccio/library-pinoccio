@@ -9,6 +9,7 @@
 
 #include "halRgbLed.h"
 #include "Arduino.h"
+#include "Scout.h"
 #include <avr/eeprom.h>
 #include "utility/sysTimer.h"
 
@@ -26,6 +27,8 @@ HalRgbLed::HalRgbLed() {
 
   blinkTimer.interval = 500;
   blinkTimer.handler = halRgbLedBlinkTimerHandler;
+
+  ledEventHandler = 0;
 }
 
 void HalRgbLed::enable() {
@@ -42,9 +45,7 @@ bool HalRgbLed::isEnabled() {
 }
 
 void HalRgbLed::turnOff() {
-  setRedValue(0);
-  setGreenValue(0);
-  setBlueValue(0);
+  setColor(0, 0, 0);
   blinkTimer.mode = SYS_TIMER_INTERVAL_MODE;
   SYS_TimerStop(&blinkTimer);
 }
@@ -136,7 +137,7 @@ void HalRgbLed::blinkColor(short red, short green, short blue, unsigned int ms, 
   }
   blinkTimer.interval = ms;
   setBlinkValues(red, green, blue);
-  setRGBLED(red, green, blue);
+  setColor(red, green, blue);
   SYS_TimerStart(&blinkTimer);
 }
 
@@ -180,23 +181,25 @@ void HalRgbLed::setBlinkValues(short red, short green, short blue) {
 }
 
 void HalRgbLed::setLEDToBlinkValue() {
-  setRedValue(blinkRedValue);
-  setGreenValue(blinkGreenValue);
-  setBlueValue(blinkBlueValue);
+  setColor(blinkRedValue, blinkGreenValue, blinkBlueValue);
 }
 
 void HalRgbLed::setColor(short red, short green, short blue) {
   if (!isEnabled()) {
     return;
   }
-  turnOff();
-  setRGBLED(red, green, blue);
-}
+  bool hasChanged = false;
+  if (red != getRedValue() || green != getGreenValue() || blue != getBlueValue()) {
+    hasChanged = true;
+  }
 
-void HalRgbLed::setRGBLED(short red, short green, short blue) {
   setRedValue(red);
   setGreenValue(green);
   setBlueValue(blue);
+
+  if (hasChanged) {
+    RgbLed.triggerEvent();
+  }
 }
 
 void HalRgbLed::setHex(char* hex) {
@@ -210,9 +213,7 @@ void HalRgbLed::setHex(char* hex) {
     out[t] = (uint8_t)(hn << 4 ) | (uint8_t)ln;
   }
 
-  setRedValue(out[0]);
-  setGreenValue(out[1]);
-  setBlueValue(out[2]);
+  setColor(out[0], out[1], out[2]);
 }
 
 void HalRgbLed::saveTorch(short red, short green, short blue) {
@@ -226,9 +227,7 @@ void HalRgbLed::saveTorch(short red, short green, short blue) {
 }
 
 void HalRgbLed::setTorch(void) {
-  setRedValue(torchRedValue);
-  setGreenValue(torchGreenValue);
-  setBlueValue(torchBlueValue);
+  setColor(torchRedValue, torchGreenValue, torchBlueValue);
 }
 
 short HalRgbLed::getRedTorchValue(void) {
@@ -243,15 +242,29 @@ short HalRgbLed::getBlueTorchValue(void) {
   return torchBlueValue;
 }
 
+void HalRgbLed::triggerEvent(void) {
+  if (RgbLed.ledEventHandler != 0) {
+    if (Scout.eventVerboseOutput) {
+      sp("Running: ledEventHandler(");
+      sp(redValue);
+      sp(",");
+      sp(greenValue);
+      sp(",");
+      sp(blueValue);
+      speol(")");
+    }
+    RgbLed.ledEventHandler(redValue, greenValue, blueValue);
+  }
+}
+
 static void halRgbLedBlinkTimerHandler(SYS_Timer_t *timer) {
   if (timer->mode == SYS_TIMER_PERIODIC_MODE) {
     if (RgbLed.getRedValue() || RgbLed.getGreenValue() || RgbLed.getBlueValue()) {
-      RgbLed.setRedValue(0);
-      RgbLed.setGreenValue(0);
-      RgbLed.setBlueValue(0);
+      RgbLed.setColor(0, 0, 0);
     } else {
       RgbLed.setLEDToBlinkValue();
     }
+
   } else {
     RgbLed.turnOff();
   }

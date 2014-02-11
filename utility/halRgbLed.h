@@ -43,10 +43,6 @@ class HalRgbLed {
     void blinkTorch(unsigned int ms=500, bool continuous=false);
     void blinkColor(short red, short green, short blue, unsigned int ms=500, bool continuous=false);
 
-    void setRedValue(int value);
-    void setGreenValue(int value);
-    void setBlueValue(int value);
-
     int getRedValue();
     int getGreenValue();
     int getBlueValue();
@@ -54,7 +50,6 @@ class HalRgbLed {
     void setBlinkValues(short red, short green, short blue);
     void setLEDToBlinkValue();
     void setColor(short red, short green, short blue);
-    void setRGBLED(short red, short green, short blue);
     void setHex(char* hex);
     void saveTorch(short red, short green, short blue);
     void setTorch(void);
@@ -63,7 +58,14 @@ class HalRgbLed {
     short getGreenTorchValue(void);
     short getBlueTorchValue(void);
 
+    void triggerEvent();
+    void (*ledEventHandler)(uint8_t redValue, uint8_t greenValue, uint8_t blueValue);
+
   protected:
+    void setRedValue(int value);
+    void setGreenValue(int value);
+    void setBlueValue(int value);
+
     bool enabled;
 
     short redValue;

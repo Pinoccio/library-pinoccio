@@ -160,6 +160,7 @@ static void batteryPercentageEventHandler(uint8_t value);
 static void batteryVoltageEventHandler(uint8_t value);
 static void batteryChargingEventHandler(uint8_t value);
 static void temperatureEventHandler(uint8_t value);
+static void ledEventHandler(uint8_t redValue, uint8_t greenValue, uint8_t blueValue);
 
 void bitlashFilter(byte b); // watches bitlash output for channel announcements
 void bitlashBuffer(byte b); // buffers bitlash output from a command
