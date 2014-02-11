@@ -1,5 +1,6 @@
 #include "Shell.h"
 #include "Scout.h"
+#include "Backpacks.h"
 #include "bitlash.h"
 #include "src/bitlash.h"
 extern "C" {
@@ -805,10 +806,10 @@ static char *backpackReportHQ(void) {
   static char report[100];
   int comma = 0;
   sprintf(report,"[%d,[%d],[[",key_map("backpacks",0),key_map("list",0));
-  for (uint8_t i = 0; i < Scout.bp.num_slaves; ++i) {
+  for (uint8_t i = 0; i < Backpacks::num_backpacks; ++i) {
     for (uint8_t j = 0; j < UNIQUE_ID_LENGTH; ++j) {
       // TODO this isn't correct, dunno what to do here
-      sprintf(report+strlen(report),"%s%d",comma++?",":"",Scout.bp.slave_ids[i][j]);
+      sprintf(report+strlen(report),"%s%d",comma++?",":"",Backpacks::info[i].unique_id[j]);
     }
   }
   sprintf(report+strlen(report),"]]]");
@@ -821,15 +822,17 @@ static numvar backpackReport(void) {
 }
 
 static numvar backpackList(void) {
-  if (Scout.bp.num_slaves == 0) {
+  if (Backpacks::num_backpacks == 0) {
     Serial.println("No backpacks found");
   } else {
-    for (uint8_t i = 0; i < Scout.bp.num_slaves; ++i) {
+    for (uint8_t i = 0; i < Backpacks::num_backpacks; ++i) {
       for (uint8_t j = 0; j < UNIQUE_ID_LENGTH; ++j) {
-        if (Scout.bp.slave_ids[i][j] < 0x10) {
+	uint8_t b = Backpacks::info[i].unique_id[j];
+
+        if (b < 0x10) {
           Serial.print('0');
         }
-        Serial.print(Scout.bp.slave_ids[i][j], HEX);
+        Serial.print(b, HEX);
       }
       Serial.println();
     }

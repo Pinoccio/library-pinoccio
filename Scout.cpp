@@ -1,6 +1,7 @@
 #include <Arduino.h>
 #include <Wire.h>
 #include <Scout.h>
+#include <Backpacks.h>
 #include <math.h>
 #include <avr/eeprom.h>
 
@@ -46,18 +47,7 @@ void PinoccioScout::setup() {
 
   RgbLed.turnOff();
 
-  // Give the slaves on the backpack bus a bit of time to start up. 1ms
-  // seems to be enough, but let's be generous.
-  delay(5);
-  bp.begin(BACKPACK_BUS);
-  if (!bp.enumerate()) {
-    /*
-    sp("Backpack enumeration failed: ");
-    bp.printLastError(Serial);
-    speol();
-    */
-  }
-
+  Backpacks::setup();
   Shell.setup();
   handler.setup();
 
@@ -119,12 +109,7 @@ bool PinoccioScout::isBackpackVccEnabled() {
 
 bool PinoccioScout::isLeadScout() {
   // Check for attached wifi backpack (model id 0x0001)
-  for (uint8_t i = 0; i < bp.num_slaves; ++i) {
-    if (bp.slave_ids[i][1] == 0 &&
-        bp.slave_ids[i][2] == 1)
-      return true;
-  }
-  return false;
+  return Backpacks::isModelPresent(0x0001);
 }
 
 bool PinoccioScout::factoryReset() {

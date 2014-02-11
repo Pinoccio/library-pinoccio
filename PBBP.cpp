@@ -3,8 +3,6 @@
 #include <Arduino.h>
 
 PBBP::PBBP() {
-  this->num_slaves = 0;
-  this->slave_ids = NULL;
   this->last_error = OK;
 }
 
@@ -13,9 +11,8 @@ void PBBP::begin(uint8_t pin) {
   pinMode(this->pin, INPUT);
 }
 
-bool PBBP::enumerate() {
+bool PBBP::enumerate(void (*callback)(uint8_t*)) {
   uint8_t b;
-  this->num_slaves = 0;
   if (!sendReset() || !sendByte(BC_CMD_ENUMERATE)) {
     if (this->last_error == NO_ACK_OR_NACK) {
       // Nobody on the bus
@@ -25,10 +22,10 @@ bool PBBP::enumerate() {
     return false;
   }
 
-  while (this->num_slaves < this->max_slaves) {
+  uint8_t num_slaves = 0;
+  while (num_slaves < this->max_slaves) {
     // Allocate room to store one more address
-    this->slave_ids = (uint8_t (*)[UNIQUE_ID_LENGTH]) realloc(this->slave_ids, (this->num_slaves + 1) * sizeof(this->slave_ids[0]));
-    uint8_t *id = this->slave_ids[this->num_slaves];
+    uint8_t id[UNIQUE_ID_LENGTH];
     uint8_t crc = 0;
     for (uint8_t i = 0; i < UNIQUE_ID_LENGTH; ++i) {
       if (!receiveByte(&id[i])) {
@@ -47,7 +44,8 @@ bool PBBP::enumerate() {
       return false;
     }
 
-    this->num_slaves++;
+    callback(id);
+    num_slaves++;
   }
 
   // See if there is one more

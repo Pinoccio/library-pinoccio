@@ -10,7 +10,7 @@ class PBBP {
 public:
   PBBP();
   void begin(uint8_t pin);
-  bool enumerate();
+  bool enumerate(void (*callback)(uint8_t*));
   bool sendReset();
   bool sendByte(uint8_t b);
   bool sendBytes(const uint8_t *buf, uint8_t len);
@@ -43,10 +43,6 @@ public:
     // More slaves than available addresses
     TOO_MANY_SLAVES,
   };
-
-  // The slaves detected during enumeration
-  uint8_t num_slaves;
-  uint8_t (*slave_ids)[UNIQUE_ID_LENGTH];
 
   // Last error that occured. Only valid when the last method called
   // returned false.
