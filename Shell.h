@@ -90,11 +90,10 @@ static numvar meshLoss(void);
 static numvar pinOn(void);
 static numvar pinOff(void);
 static numvar pinMakeInput(void);
-static numvar pinMakeInputPullup(void);
 static numvar pinMakeOutput(void);
-static numvar pinSetMode(void);
-static numvar pinRead(void);
-static numvar pinWrite(void);
+static numvar pinMakeDisabled(void);
+static numvar pinGetInput(void);
+static numvar pinSetOutput(void);
 static numvar digitalPinReport(void);
 static numvar analogPinReport(void);
 
@@ -113,7 +112,7 @@ static numvar hqVerbose(void);
 
 static numvar startStateChangeEvents(void);
 static numvar stopStateChangeEvents(void);
-static numvar setEventPeriods(void);
+static numvar setEventTimers(void);
 static numvar setEventVerbose(void);
 
 static numvar wifiReport(void);

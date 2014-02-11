@@ -69,11 +69,10 @@ void PinoccioShell::setup() {
   addBitlashFunction("pin.on", (bitlash_function) pinOn);
   addBitlashFunction("pin.off", (bitlash_function) pinOff);
   addBitlashFunction("pin.makeinput", (bitlash_function) pinMakeInput);
-  addBitlashFunction("pin.makeinputup", (bitlash_function) pinMakeInputPullup);
   addBitlashFunction("pin.makeoutput", (bitlash_function) pinMakeOutput);
-  addBitlashFunction("pin.setmode", (bitlash_function) pinSetMode);
-  addBitlashFunction("pin.read", (bitlash_function) pinRead);
-  addBitlashFunction("pin.write", (bitlash_function) pinWrite);
+  addBitlashFunction("pin.makedisabled", (bitlash_function) pinMakeDisabled);
+  addBitlashFunction("pin.getinput", (bitlash_function) pinGetInput);
+  addBitlashFunction("pin.setoutput", (bitlash_function) pinSetOutput);
   addBitlashFunction("pin.report.digital", (bitlash_function) digitalPinReport);
   addBitlashFunction("pin.report.analog", (bitlash_function) analogPinReport);
 
@@ -94,7 +93,7 @@ void PinoccioShell::setup() {
 
   addBitlashFunction("events.start", (bitlash_function) startStateChangeEvents);
   addBitlashFunction("events.stop", (bitlash_function) stopStateChangeEvents);
-  addBitlashFunction("events.setfreqs", (bitlash_function) setEventPeriods);
+  addBitlashFunction("events.settimers", (bitlash_function) setEventTimers);
   addBitlashFunction("events.verbose", (bitlash_function) setEventVerbose);
 
   addBitlashFunction("key", (bitlash_function) keyMap);
@@ -714,12 +713,12 @@ static char *analogPinReportHQ(void) {
 static numvar pinOn(void) {
   uint8_t pin = getarg(1);
   if (Scout.isDigitalPin(pin)) {
-    pinMode(pin, OUTPUT);
+    Scout.makeOutput(pin);
     digitalWrite(pin, HIGH);
     digitalPinReportHQ();
   }
   if (Scout.isAnalogPin(pin)) {
-    pinMode(pin, OUTPUT);
+    Scout.makeOutput(pin);
     digitalWrite(pin, HIGH);
     analogPinReportHQ();
   }
@@ -728,12 +727,12 @@ static numvar pinOn(void) {
 static numvar pinOff(void) {
   uint8_t pin = getarg(1);
   if (Scout.isDigitalPin(pin)) {
-    pinMode(pin, OUTPUT);
+    Scout.makeOutput(pin);
     digitalWrite(pin, LOW);
     digitalPinReportHQ();
   }
   if (Scout.isAnalogPin(pin)) {
-    pinMode(pin, OUTPUT);
+    Scout.makeOutput(pin);
     digitalWrite(pin, LOW);
     analogPinReportHQ();
   }
@@ -741,18 +740,12 @@ static numvar pinOff(void) {
 
 static numvar pinMakeInput(void) {
   uint8_t pin = getarg(1);
-  pinMode(pin, INPUT);
-  if (Scout.isDigitalPin(pin)) {
-    digitalPinReportHQ();
+  bool pullup = true;
+  if (getarg(0) == 2 && getarg(2) == 0) {
+    pullup = false;
   }
-  if (Scout.isAnalogPin(pin)) {
-    analogPinReportHQ();
-  }
-}
+  Scout.makeInput(pin, pullup);
 
-static numvar pinMakeInputPullup(void) {
-  uint8_t pin = getarg(1);
-  pinMode(pin, INPUT_PULLUP);
   if (Scout.isDigitalPin(pin)) {
     digitalPinReportHQ();
   }
@@ -763,7 +756,7 @@ static numvar pinMakeInputPullup(void) {
 
 static numvar pinMakeOutput(void) {
   uint8_t pin = getarg(1);
-  pinMode(pin, OUTPUT);
+  Scout.makeOutput(pin);
   if (Scout.isDigitalPin(pin)) {
     digitalPinReportHQ();
   }
@@ -772,9 +765,9 @@ static numvar pinMakeOutput(void) {
   }
 }
 
-static numvar pinSetMode(void) {
+static numvar pinMakeDisabled(void) {
   uint8_t pin = getarg(1);
-  pinMode(pin, getarg(2));
+  Scout.makeDisabled(pin);
   if (Scout.isDigitalPin(pin)) {
     digitalPinReportHQ();
   }
@@ -783,21 +776,33 @@ static numvar pinSetMode(void) {
   }
 }
 
-static numvar pinRead(void) {
+static numvar pinGetInput(void) {
   int i;
-  if (getarg(0) == 2) {
+  uint8_t pin = getarg(1);
+
+  if (Scout.getPinMode(pin) != INPUT && Scout.getPinMode(pin) != INPUT_PULLUP) {
+    Scout.makeInput(pin, true);
+  }
+
+  if (getarg(0) == 1) {
     i = analogRead(getarg(1));
   } else {
     i = digitalRead(getarg(1));
   }
-  //sp(i);
   return i;
 }
 
-static numvar pinWrite(void) {
-  // TODO: set a PWM pin's value from 0 - 255
-  digitalPinReportHQ();
-  return true;
+static numvar pinSetOutput(void) {
+  uint8_t pin = getarg(1);
+  Scout.makeOutput(pin);
+  digitalWrite(pin, getarg(1));
+
+  if (Scout.isDigitalPin(pin)) {
+    digitalPinReportHQ();
+  }
+  if (Scout.isAnalogPin(pin)) {
+    analogPinReportHQ();
+  }
 }
 
 static numvar digitalPinReport(void) {
@@ -948,14 +953,16 @@ static numvar hqVerbose(void) {
 static numvar startStateChangeEvents(void) {
   Scout.startDigitalStateChangeEvents();
   Scout.startAnalogStateChangeEvents();
+  Scout.startPeripheralStateChangeEvents();
 }
 
 static numvar stopStateChangeEvents(void) {
   Scout.stopDigitalStateChangeEvents();
   Scout.stopAnalogStateChangeEvents();
+  Scout.stopPeripheralStateChangeEvents();
 }
 
-static numvar setEventPeriods(void) {
+static numvar setEventTimers(void) {
   Scout.setStateChangeEventPeriods(getarg(1), getarg(2), getarg(3));
 }
 
@@ -1295,21 +1302,26 @@ static void digitalPinEventHandler(uint8_t pin, uint8_t value) {
   char buf[32];
 
   digitalPinReportHQ();
-  if (findscript("event.digital")) {
-    String callback = "event.digital(" + String(pin) + "," + String(value) + ")";
-    callback.toCharArray(buf, callback.length()+1);
-    doCommand(buf);
-  }
-  sprintf(buf,"event.digital%d",pin);
+  sprintf(buf, "event.digital%d", pin);
+
   if (findscript(buf)) {
-    sprintf(buf,"event.digital%d(%d)",pin,value);
+    sprintf(buf, "event.digital%d(%d)", pin, value);
+    if (Scout.eventVerboseOutput) {
+      Serial.print("Running: ");
+      Serial.println(buf);
+      Serial.println();
+    }
     doCommand(buf);
   }
   // simplified button trigger
-  if(value == 0)
-  {
-    sprintf(buf,"event.button%d",pin);
+  if (value == 0) {
+    sprintf(buf, "event.button%d", pin);
     if (findscript(buf)) {
+      if (Scout.eventVerboseOutput) {
+        Serial.print("Running: ");
+        Serial.println(buf);
+        Serial.println();
+      }
       doCommand(buf);
     }
   }
@@ -1327,15 +1339,15 @@ static void analogPinEventHandler(uint8_t pin, uint16_t value) {
   char buf[32];
 
   analogPinReportHQ();
-  if (findscript("event.analog")) {
-    String callback = "event.analog(" + String(pin) + "," + String(value) + ")";
-    char buf[32];
-    callback.toCharArray(buf, callback.length()+1);
-    doCommand(buf);
-  }
-  sprintf(buf,"event.analog%d",pin);
+  sprintf(buf, "event.analog%d", pin);
+
   if (findscript(buf)) {
-    sprintf(buf,"event.analog%d(%d)",pin,value);
+    sprintf(buf, "event.analog%d(%d)", pin, value);
+    if (Scout.eventVerboseOutput) {
+      Serial.print("Running: ");
+      Serial.println(buf);
+      Serial.println();
+    }
     doCommand(buf);
   }
 
