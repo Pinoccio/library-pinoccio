@@ -829,7 +829,7 @@ static numvar backpackList(void) {
         if (Scout.bp.slave_ids[i][j] < 0x10) {
           Serial.print('0');
         }
-        Serial.print(Scout.bp.slave_ids[i][j]);
+        Serial.print(Scout.bp.slave_ids[i][j], HEX);
       }
       Serial.println();
     }
