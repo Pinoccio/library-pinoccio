@@ -100,12 +100,11 @@ bool PBBP::sendBytes(const uint8_t *buf, uint8_t len) {
 
 bool PBBP::receiveByte(uint8_t *b) {
   bool parity_val = 0;
-  bool ok = true;
   *b = 0;
   uint8_t next_bit = 0x80;
   bool value;
   // Receive data bits
-  while (next_bit && ok) {
+  while (next_bit) {
     if (!receiveBit(&value))
       return false;
 
