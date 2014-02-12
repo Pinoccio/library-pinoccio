@@ -18,11 +18,15 @@ void Backpacks::detect()
 {
   free(info);
   num_backpacks = 0;
-  if (!pbbp.enumerate(addBackpack)) {
-    Serial.print("Backpack enumeration failed: ");
-    pbbp.printLastError(Serial);
-    Serial.println();
-  }
+  if (!pbbp.enumerate(addBackpack))
+    printPbbpError("Backpack enumeration failed: ");
+}
+
+void Backpacks::printPbbpError(const char *prefix)
+{
+  Serial.print(prefix);
+  pbbp.printLastError(Serial);
+  Serial.println();
 }
 
 void Backpacks::addBackpack(uint8_t *unique_id)

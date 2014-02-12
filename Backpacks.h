@@ -32,6 +32,12 @@ protected:
    * Add a backpack
    */
   static void addBackpack(uint8_t unique_id[UNIQUE_ID_LENGTH]);
+
+  /**
+   * Print a Pbbp error. Prints the given prefix, followed by the
+   * last pbbp error.
+   */
+  static void printPbbpError(const char *prefix);
 };
 
 #endif // LIB_PINOCCIO_BACKPACKS_H
