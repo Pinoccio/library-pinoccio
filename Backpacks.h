@@ -5,8 +5,41 @@
 #include "PBBP.h"
 #include "Pbbe.h"
 
+/**
+ * Structure collecting some info on a backpack. Do not create any of
+ * these objects outside of Backpacks::info, since getAddress() only
+ * works when this struct lives inside that array.
+ */
 struct BackpackInfo {
   Pbbe::UniqueId id;
+
+  /**
+   * Retrieve the Eeprom a backpack, if not already done so.
+   *
+   * @returns The value of eeprom_contents if succesful, NULL otherwise.
+   */
+  uint8_t* getEeprom();
+
+  /**
+   * Free the memory used by the eeprom contents.
+   */
+  void freeEeprom();
+
+  /**
+   * Returns the bus address of this backpack.
+   */
+  uint8_t getAddress();
+
+protected:
+  // Declare a private constructor to prevent people from allocating new
+  // BackpackInfo objects outside of Backpacks::info (which would break
+  // getAddress).
+  BackpackInfo() {}
+
+  uint8_t *eeprom_contents;
+  uint8_t eeprom_contents_length;
+
+  friend class Backpacks;
 };
 
 class Backpacks {
@@ -39,6 +72,8 @@ protected:
    * last pbbp error.
    */
   static void printPbbpError(const char *prefix);
+
+  friend class BackpackInfo;
 };
 
 #endif // LIB_PINOCCIO_BACKPACKS_H
