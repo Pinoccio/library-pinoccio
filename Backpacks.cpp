@@ -83,6 +83,24 @@ uint8_t BackpackInfo::getAddress()
   return this - Backpacks::info;
 }
 
+Pbbe::Header *BackpackInfo::getHeader()
+{
+  if (this->header)
+    return this->header;
+
+  if (!getEeprom())
+    return false;
+
+  this->header = Pbbe::parseHeaderA(this->eeprom_contents, this->eeprom_contents_length);
+  return this->header;
+}
+
+void BackpackInfo::freeHeader()
+{
+  free(this->header);
+  this->header = NULL;
+}
+
 void Backpacks::addBackpack(uint8_t *unique_id)
 {
   info = (BackpackInfo*)realloc(info, (num_backpacks + 1) * sizeof(*info));
@@ -93,6 +111,7 @@ void Backpacks::addBackpack(uint8_t *unique_id)
   // (yet) supply. https://github.com/arduino/Arduino/pull/108
   bp.eeprom_contents = NULL;
   bp.eeprom_contents_length = 0;
+  bp.header = NULL;
 
   memcpy(bp.id.raw_bytes, unique_id, sizeof(bp.id));
 }

@@ -26,6 +26,17 @@ struct BackpackInfo {
   void freeEeprom();
 
   /**
+   * Gets the parsed EEPROM header of this backpack, or NULL if it could
+   * not be parsed.
+   */
+  Pbbe::Header *getHeader();
+
+  /**
+   * Free the memory used by the header.
+   */
+  void freeHeader();
+
+  /**
    * Returns the bus address of this backpack.
    */
   uint8_t getAddress();
@@ -38,6 +49,7 @@ protected:
 
   uint8_t *eeprom_contents;
   uint8_t eeprom_contents_length;
+  Pbbe::Header *header;
 
   friend class Backpacks;
 };

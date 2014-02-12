@@ -837,8 +837,18 @@ static numvar backpackList(void) {
   } else {
     for (uint8_t i = 0; i < Backpacks::num_backpacks; ++i) {
       BackpackInfo &info = Backpacks::info[i];
+      printHexBuffer(Serial, &i, 1);
+      Serial.print(": ");
+
+      Pbbe::Header *h = info.getHeader();
+      if (!h)
+	Serial.print(F("Error parsing name"));
+      else
+	Serial.print(h->backpack_name);
+
+      Serial.print(" (");
       printHexBuffer(Serial, info.id.raw_bytes, sizeof(info.id));
-      Serial.println();
+      Serial.println(")");
     }
   }
   return 0;
