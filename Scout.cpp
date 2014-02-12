@@ -58,13 +58,14 @@ void PinoccioScout::setup() {
     */
   }
 
-  Shell.setup();
-  handler.setup();
-
   Wire.begin();
   HAL_FuelGaugeConfig(20);   // Configure the MAX17048G's alert percentage to 20%
 
   saveState();
+
+  Shell.setup();
+  handler.setup();
+
   startDigitalStateChangeEvents();
   startAnalogStateChangeEvents();
   startPeripheralStateChangeEvents();
@@ -175,21 +176,18 @@ void PinoccioScout::setStateChangeEventPeriods(uint32_t digitalInterval, uint32_
 }
 
 void PinoccioScout::saveState() {
-  digitalPinState[0] = digitalRead(2);
-  digitalPinState[1] = digitalRead(3);
-  digitalPinState[2] = digitalRead(4);
-  digitalPinState[3] = digitalRead(5);
-  digitalPinState[4] = isLeadScout() ? -1 : digitalRead(6);
-  digitalPinState[5] = isLeadScout() ? -1 : digitalRead(7);
-  digitalPinState[6] = isLeadScout() ? -1 : digitalRead(8);
-  analogPinState[0] = analogRead(0); // pin 24
-  analogPinState[1] = analogRead(1); // pin 25
-  analogPinState[2] = analogRead(2); // pin 26
-  analogPinState[3] = analogRead(3); // pin 27
-  analogPinState[4] = analogRead(4); // pin 28
-  analogPinState[5] = analogRead(5); // pin 29
-  analogPinState[6] = analogRead(6); // pin 30
-  analogPinState[7] = analogRead(7); // pin 31
+
+  // initialize all pins to the disabled mode (-1)
+  for (int i=0; i<7; i++) {
+    digitalPinState[i] = -1;
+    digitalPinMode[i] = -1;
+  }
+
+  for (int i=0; i<8; i++) {
+    analogPinState[i] = -1;
+    analogPinMode[i] = -1;
+  }
+
   batteryPercentage = constrain(HAL_FuelGaugePercent(), 0, 100);
   batteryVoltage = HAL_FuelGaugeVoltage();
   isBattCharging = (digitalRead(CHG_STATUS) == LOW);
@@ -197,7 +195,7 @@ void PinoccioScout::saveState() {
   temperature = this->getTemperature();
 }
 
-int8_t PinoccioScout::getPinMode(uint8_t pin) {
+int8_t PinoccioScout::getRegisterPinMode(uint8_t pin) {
   // TODO: add this as a bp.isPinReserved(pin) method instead of hardwired
   if (Scout.isLeadScout() && pin >= 6 && pin <= 8) {
     return -1;
@@ -215,6 +213,59 @@ int8_t PinoccioScout::getPinMode(uint8_t pin) {
   }
 }
 
+int8_t PinoccioScout::getPinMode(uint8_t pin) {
+  if (isDigitalPin(pin)) {
+    return digitalPinMode[pin-2];
+  }
+
+  if (isAnalogPin(pin)) {
+    return analogPinMode[pin-A0];
+  }
+}
+
+void PinoccioScout::makeInput(uint8_t pin, bool enablePullup) {
+  uint8_t mode = enablePullup ? INPUT_PULLUP : INPUT;
+  pinMode(pin, mode);
+
+  if (isDigitalPin(pin)) {
+    digitalPinMode[pin-2] = mode;
+    digitalPinState[pin-2] = digitalRead(pin);
+  }
+
+  if (isAnalogPin(pin)) {
+    analogPinMode[pin-A0] = mode;
+    analogPinState[pin-A0] = analogRead(pin);
+  }
+}
+
+void PinoccioScout::makeOutput(uint8_t pin) {
+  pinMode(pin, OUTPUT);
+
+  if (isDigitalPin(pin)) {
+    digitalPinMode[pin-2] = OUTPUT;
+    digitalPinState[pin-2] = digitalRead(pin);
+  }
+
+  if (isAnalogPin(pin)) {
+    analogPinMode[pin-A0] = OUTPUT;
+    analogPinState[pin-A0] = analogRead(pin);
+  }
+}
+
+void PinoccioScout::makeDisabled(uint8_t pin) {
+  pinMode(pin, INPUT);  // input-no-pullup, for lowest power draw
+
+  if (isDigitalPin(pin)) {
+    digitalPinMode[pin-2] = -1;
+    digitalPinState[pin-2] = -1;
+  }
+
+  if (isAnalogPin(pin)) {
+    analogPinMode[pin-A0] = -1;
+    analogPinState[pin-A0] = -1;
+  }
+}
+
 bool PinoccioScout::isDigitalPin(uint8_t pin) {
   if (pin >= 2 && pin <= 8) {
     return true;
@@ -223,7 +274,7 @@ bool PinoccioScout::isDigitalPin(uint8_t pin) {
 }
 
 bool PinoccioScout::isAnalogPin(uint8_t pin) {
-  if (pin >= 24 && pin <= 31) {
+  if (pin >= A0 && pin <= A7) {
     return true;
   }
   return false;
@@ -238,7 +289,7 @@ static void scoutDigitalStateChangeTimerHandler(SYS_Timer_t *timer) {
       int pin = i+2;
 
       // Skip pins that don't have pull-ups enabled or are reserved by backpacks
-      if (Scout.getPinMode(pin) < 1) {
+      if (Scout.digitalPinMode[i] < 0) {
         Scout.digitalPinState[i] = -1;
         continue;
       }
@@ -264,6 +315,13 @@ static void scoutAnalogStateChangeTimerHandler(SYS_Timer_t *timer) {
 
   if (Scout.analogPinEventHandler != 0) {
     for (int i=0; i<8; i++) {
+
+      // Skip pins that aren't enabled
+      if (Scout.analogPinMode[i] < 0) {
+        Scout.analogPinState[i] = -1;
+        continue;
+      }
+
       val = analogRead(i); // explicit digital pins until we can update core
       if (Scout.analogPinState[i] != val) {
         if (Scout.eventVerboseOutput) {

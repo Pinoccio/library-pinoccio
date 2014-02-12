@@ -47,7 +47,11 @@ class PinoccioScout : public PinoccioClass {
     void setStateChangeEventPeriods(uint32_t digitalInterval, uint32_t analogInterval, uint32_t peripheralInterval);
     void saveState();
 
+    int8_t getRegisterPinMode(uint8_t pin);
     int8_t getPinMode(uint8_t pin);
+    void makeInput(uint8_t pin, bool enablePullup=true);
+    void makeOutput(uint8_t pin);
+    void makeDisabled(uint8_t pin);
     bool isDigitalPin(uint8_t pin);
     bool isAnalogPin(uint8_t pin);
 
@@ -60,7 +64,10 @@ class PinoccioScout : public PinoccioClass {
     void (*temperatureEventHandler)(uint8_t value);
 
     int8_t digitalPinState[7];
+    int8_t digitalPinMode[7];
     int16_t analogPinState[8];
+    int8_t analogPinMode[8];
+
     uint8_t batteryPercentage;
     uint16_t batteryVoltage;
     bool isBattCharging;
