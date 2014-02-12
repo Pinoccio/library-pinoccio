@@ -822,20 +822,22 @@ static numvar backpackReport(void) {
   speol();
 }
 
+static void printHexBuffer(Print &p, uint8_t *buf, size_t len)
+{
+  for (uint8_t i = 0; i < len; ++i) {
+    if (buf[i] < 0x10)
+      p.print('0');
+    p.print(buf[i], HEX);
+  }
+}
+
 static numvar backpackList(void) {
   if (Backpacks::num_backpacks == 0) {
     Serial.println("No backpacks found");
   } else {
     for (uint8_t i = 0; i < Backpacks::num_backpacks; ++i) {
       BackpackInfo &info = Backpacks::info[i];
-      for (uint8_t j = 0; j < sizeof(info.id); ++j) {
-	uint8_t b = info.id.raw_bytes[j];
-
-        if (b < 0x10) {
-          Serial.print('0');
-        }
-        Serial.print(b, HEX);
-      }
+      printHexBuffer(Serial, info.id.raw_bytes, sizeof(info.id));
       Serial.println();
     }
   }
