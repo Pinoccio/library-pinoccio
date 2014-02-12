@@ -11,14 +11,6 @@ class PinoccioBackpack {
 
     void setup();
     void loop();
-
-    void printHex(const uint8_t *buf, uint8_t len);
-
-  protected:
-    uint8_t version;
-    uint16_t model;
-    uint8_t revision;
-    uint32_t id;
 };
 
 typedef PinoccioBackpack Backpack;
