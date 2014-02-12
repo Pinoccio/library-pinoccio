@@ -153,6 +153,11 @@ void WiFiBackpack::disassociate() {
 }
 
 bool WiFiBackpack::printAPs(Print& p) {
+  // this delay is important--The Gainspan module with 2.5.1 firmware
+  // will hang if AT+WS is called too soon after boot.
+  if (millis() < 5000) {
+    delay(4000);
+  }
   return runDirectCommand(p, "AT+WS");
 }
 
