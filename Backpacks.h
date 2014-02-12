@@ -3,9 +3,10 @@
 #define LIB_PINOCCIO_BACKPACKS_H
 
 #include "PBBP.h"
+#include "Pbbe.h"
 
 struct BackpackInfo {
-  uint8_t unique_id[UNIQUE_ID_LENGTH];
+  Pbbe::UniqueId id;
 };
 
 class Backpacks {
@@ -31,7 +32,7 @@ protected:
   /**
    * Add a backpack
    */
-  static void addBackpack(uint8_t unique_id[UNIQUE_ID_LENGTH]);
+  static void addBackpack(uint8_t *unique_id);
 
   /**
    * Print a Pbbp error. Prints the given prefix, followed by the

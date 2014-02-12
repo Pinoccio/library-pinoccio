@@ -807,9 +807,10 @@ static char *backpackReportHQ(void) {
   int comma = 0;
   sprintf(report,"[%d,[%d],[[",key_map("backpacks",0),key_map("list",0));
   for (uint8_t i = 0; i < Backpacks::num_backpacks; ++i) {
-    for (uint8_t j = 0; j < UNIQUE_ID_LENGTH; ++j) {
+    BackpackInfo &info = Backpacks::info[i];
+    for (uint8_t j = 0; j < sizeof(info.id); ++j) {
       // TODO this isn't correct, dunno what to do here
-      sprintf(report+strlen(report),"%s%d",comma++?",":"",Backpacks::info[i].unique_id[j]);
+      sprintf(report+strlen(report),"%s%d",comma++?",":"",info.id.raw_bytes[j]);
     }
   }
   sprintf(report+strlen(report),"]]]");
@@ -826,8 +827,9 @@ static numvar backpackList(void) {
     Serial.println("No backpacks found");
   } else {
     for (uint8_t i = 0; i < Backpacks::num_backpacks; ++i) {
-      for (uint8_t j = 0; j < UNIQUE_ID_LENGTH; ++j) {
-	uint8_t b = Backpacks::info[i].unique_id[j];
+      BackpackInfo &info = Backpacks::info[i];
+      for (uint8_t j = 0; j < sizeof(info.id); ++j) {
+	uint8_t b = info.id.raw_bytes[j];
 
         if (b < 0x10) {
           Serial.print('0');
