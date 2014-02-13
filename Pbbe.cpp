@@ -1,6 +1,6 @@
 #include "Pbbe.h"
 
-Pbbe::Header *Pbbe::parseHeaderA(uint8_t *buf, size_t len)
+Pbbe::Header *Pbbe::parseHeaderA(const uint8_t *buf, size_t len)
 {
   if (!buf || len < 1)
     return NULL;
@@ -32,7 +32,7 @@ Pbbe::Header *Pbbe::parseHeaderA(uint8_t *buf, size_t len)
   return h;
 }
 
-size_t Pbbe::stringLength(uint8_t *buf, size_t len) {
+size_t Pbbe::stringLength(const uint8_t *buf, size_t len) {
   uint8_t strlen = 1;
   while(true) {
     if (strlen > len)
@@ -47,7 +47,7 @@ size_t Pbbe::stringLength(uint8_t *buf, size_t len) {
   }
 }
 
-void Pbbe::extractString(uint8_t *buf, char *str, size_t strlen)
+void Pbbe::extractString(const uint8_t *buf, char *str, size_t strlen)
 {
   // Add zero termination
   str[strlen] = '\0';
@@ -58,7 +58,7 @@ void Pbbe::extractString(uint8_t *buf, char *str, size_t strlen)
     str[strlen - 1] = buf[strlen - 1];
 }
 
-char *Pbbe::parseStringA(uint8_t *buf, size_t len)
+char *Pbbe::parseStringA(const uint8_t *buf, size_t len)
 {
   size_t strlen = stringLength(buf, len);
   char *str = (char*)malloc(strlen + 1);

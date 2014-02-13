@@ -63,7 +63,7 @@ public:
    * It is the responsibility of the caller to free the returned pointer
    * using free().
    */
-  static Header *parseHeaderA(uint8_t *buf, size_t len);
+  static Header *parseHeaderA(const uint8_t *buf, size_t len);
 
   /**
    * Parse a string and return it in newly allocated memory.
@@ -81,7 +81,7 @@ public:
    * It is the responsibility of the caller to free the returned pointer
    * using free().
    */
-  static char *parseStringA(uint8_t *buf, size_t len);
+  static char *parseStringA(const uint8_t *buf, size_t len);
 
   /**
    * Find out the length of a string in the EEPROM.
@@ -95,7 +95,7 @@ public:
    * @returns the number of characters (ASCII bytes) in the string, or 0
    * if no valid string was found.
    */
-  static size_t stringLength(uint8_t *buf, size_t len);
+  static size_t stringLength(const uint8_t *buf, size_t len);
 
   /**
    * Extract a string from EEPROM into a preallocated buffer, if you
@@ -115,7 +115,7 @@ public:
    *                  buffer and _not_ the length of the entire eeprom
    *                  contents.
    */
-  static void extractString(uint8_t *buf, char *str, size_t strlen);
+  static void extractString(const uint8_t *buf, char *str, size_t strlen);
 
   struct MajorMinor {
     uint8_t major : 4;
