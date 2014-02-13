@@ -80,6 +80,8 @@ void PinoccioShell::setup() {
 
   addBitlashFunction("backpack.report", (bitlash_function) backpackReport);
   addBitlashFunction("backpack.list", (bitlash_function) backpackList);
+  addBitlashFunction("backpack.eeprom", (bitlash_function) backpackEeprom);
+  addBitlashFunction("backpack.detail", (bitlash_function) backpackDetail);
 
   addBitlashFunction("scout.report", (bitlash_function) scoutReport);
   addBitlashFunction("scout.isleadscout", (bitlash_function) isScoutLeadScout);
@@ -822,12 +824,14 @@ static numvar backpackReport(void) {
   speol();
 }
 
-static void printHexBuffer(Print &p, uint8_t *buf, size_t len)
+static void printHexBuffer(Print &p, const uint8_t *buf, size_t len, const char *sep = NULL)
 {
   for (uint8_t i = 0; i < len; ++i) {
     if (buf[i] < 0x10)
       p.print('0');
     p.print(buf[i], HEX);
+    if (sep)
+      p.print(sep);
   }
 }
 
@@ -852,6 +856,72 @@ static numvar backpackList(void) {
     }
   }
   return 0;
+}
+
+static numvar backpackEeprom(void) {
+  numvar addr = getarg(1);
+  if (addr < 0 || addr >= Backpacks::num_backpacks) {
+    Serial.println("Invalid backpack number");
+    return 0;
+  }
+
+  // Get EEPROM contents and length
+  size_t len;
+  uint8_t *buf = Backpacks::info[addr].getEeprom(&len);
+
+  // Print EEPROM over multiple lines
+  size_t offset = 0;
+  const uint8_t bytes_per_line = 8;
+  while (offset < len) {
+    printHexBuffer(Serial, buf + offset, min(bytes_per_line, len - offset), " ");
+    Serial.println();
+    offset += bytes_per_line;
+  }
+  return 1;
+}
+
+static numvar backpackDetail(void) {
+  numvar addr = getarg(1);
+  if (addr < 0 || addr >= Backpacks::num_backpacks) {
+    Serial.println("Invalid backpack number");
+    return 0;
+  }
+  Pbbe::Header *h = Backpacks::info[addr].getHeader();
+  Pbbe::UniqueId &id = Backpacks::info[addr].id;
+
+  Serial.print(F("Backpack name: "));
+  Serial.println(h->backpack_name);
+
+  Serial.print(F("Model number: 0x"));
+  Serial.println(id.model, HEX); // TODO: zero pad
+
+  Serial.print(F("Board revision: "));
+  Pbbe::MajorMinor rev = Pbbe::extractMajorMinor(id.revision);
+  Serial.print(rev.major);
+  Serial.print(F("."));
+  Serial.println(rev.minor);
+
+  Serial.print(F("Serial number: 0x"));
+  Serial.println(id.serial, HEX); // TODO: zero pad
+
+  Serial.print(F("Backpack Bus Protocol version: "));
+  Serial.print(id.protocol_version);
+  Serial.println(F(".x")); // Only the major version is advertised
+
+  Serial.print(F("Backpack Bus firmware version: "));
+  Serial.println(h->firmware_version);
+
+  Serial.print(F("EEPROM layout version: "));
+  Serial.print(h->layout_version);
+  Serial.println(F(".x")); // Only the major version is advertised
+
+  Serial.print(F("EEPROM size: "));
+  Serial.print(h->total_eeprom_size);
+  Serial.println(F(" bytes"));
+
+  Serial.print(F("EEPROM used: "));
+  Serial.print(h->used_eeprom_size);
+  Serial.println(F(" bytes"));
 }
 
 /****************************\

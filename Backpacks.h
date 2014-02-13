@@ -16,9 +16,12 @@ struct BackpackInfo {
   /**
    * Retrieve the Eeprom a backpack, if not already done so.
    *
+   * @param len     Output parameter that gets set to the EEPROM used
+   *                size (e.g., the length of the buffer returned. Can
+   *                be NULL to ignore the length.
    * @returns The value of eeprom_contents if succesful, NULL otherwise.
    */
-  uint8_t* getEeprom();
+  uint8_t* getEeprom(size_t *len = NULL);
 
   /**
    * Free the memory used by the eeprom contents.

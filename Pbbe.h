@@ -116,6 +116,16 @@ public:
    *                  contents.
    */
   static void extractString(uint8_t *buf, char *str, size_t strlen);
+
+  struct MajorMinor {
+    uint8_t major : 4;
+    uint8_t minor : 4;
+  };
+
+  /**
+   * Split a hardware revision into a major and minor part.
+   */
+  static MajorMinor extractMajorMinor(uint8_t rev) { return {rev >> 4, rev & 0xf}; }
 };
 
 #endif // LIB_PINOCCIO_PBBP_EEPROM_H

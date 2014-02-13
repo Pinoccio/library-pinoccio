@@ -100,6 +100,8 @@ static numvar analogPinReport(void);
 
 static numvar backpackReport(void);
 static numvar backpackList(void);
+static numvar backpackEeprom(void);
+static numvar backpackDetail(void);
 
 static numvar scoutReport(void);
 static numvar isScoutLeadScout(void);

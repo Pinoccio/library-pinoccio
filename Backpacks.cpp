@@ -29,10 +29,13 @@ void Backpacks::printPbbpError(const char *prefix)
   Serial.println();
 }
 
-uint8_t *BackpackInfo::getEeprom()
+uint8_t *BackpackInfo::getEeprom(size_t *len)
 {
-  if (this->eeprom_contents)
+  if (this->eeprom_contents) {
+    if (len)
+      *len = this->eeprom_contents_length;
     return this->eeprom_contents;
+  }
 
   uint8_t buf[3];
   uint8_t addr = getAddress();
@@ -67,6 +70,8 @@ uint8_t *BackpackInfo::getEeprom()
 
   this->eeprom_contents = data;
   this->eeprom_contents_length = used_size;
+  if (len)
+    *len = used_size;
   return data;
 }
 
