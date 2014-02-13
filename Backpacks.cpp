@@ -29,57 +29,19 @@ void Backpacks::printPbbpError(const char *prefix)
   Serial.println();
 }
 
-uint8_t *BackpackInfo::getEeprom(size_t *len)
+Pbbe::Eeprom *BackpackInfo::getEeprom(size_t *len)
 {
-  if (this->eeprom_contents) {
-    if (len)
-      *len = this->eeprom_contents_length;
-    return this->eeprom_contents;
-  }
+  if (this->eep)
+    return this->eep;
 
-  uint8_t buf[3];
-  uint8_t addr = getAddress();
-  // Read the first 3 bytes
-  if (!Backpacks::pbbp.readEeprom(addr, 0, buf, sizeof(buf))) {
-    Backpacks::printPbbpError("EEPROM read failed: ");
-    return NULL;
-  }
-  // Check EEPROM version
-  if (buf[0] > 1) {
-    Serial.print("Unsupported EEPROM version: ");
-    Serial.print(buf[0]);
-    return NULL;
-  }
-
-  // Get the used size of the EEPROM
-  uint8_t used_size = buf[2];
-  // Allocate memory for that
-  uint8_t *data = (uint8_t*)malloc(used_size);
-  if (!data) {
-    Serial.println("Memory allocation for EEPROM failed");
-    Serial.println(used_size);
-    return NULL;
-  }
-
-  // And read the full EEPROM
-  if (!Backpacks::pbbp.readEeprom(addr, 0, data, used_size)) {
-    Backpacks::printPbbpError("EEPROM read failed: ");
-    free(data);
-    return NULL;
-  }
-
-  this->eeprom_contents = data;
-  this->eeprom_contents_length = used_size;
-  if (len)
-    *len = used_size;
-  return data;
+  this->eep = Pbbe::getEeprom(Backpacks::pbbp, getAddress());
+  return this->eep;
 }
 
 void BackpackInfo::freeEeprom()
 {
-  free(this->eeprom_contents);
-  this->eeprom_contents = NULL;
-  this->eeprom_contents_length = 0;
+  free(this->eep);
+  this->eep = NULL;
 }
 
 uint8_t BackpackInfo::getAddress()
@@ -96,7 +58,7 @@ Pbbe::Header *BackpackInfo::getHeader()
   if (!getEeprom())
     return false;
 
-  this->header = Pbbe::parseHeaderA(this->eeprom_contents, this->eeprom_contents_length);
+  this->header = Pbbe::parseHeaderA(this->eep);
   return this->header;
 }
 
@@ -114,8 +76,7 @@ void Backpacks::addBackpack(uint8_t *unique_id)
   // BackpackInfo (which is not current called!). However, doing this
   // nicely requires the placement new operator, which Arduino does not
   // (yet) supply. https://github.com/arduino/Arduino/pull/108
-  bp.eeprom_contents = NULL;
-  bp.eeprom_contents_length = 0;
+  bp.eep = NULL;
   bp.header = NULL;
 
   memcpy(bp.id.raw_bytes, unique_id, sizeof(bp.id));

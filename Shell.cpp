@@ -865,15 +865,18 @@ static numvar backpackEeprom(void) {
     return 0;
   }
 
-  // Get EEPROM contents and length
-  size_t len;
-  uint8_t *buf = Backpacks::info[addr].getEeprom(&len);
+  // Get EEPROM contents
+  Pbbe::Eeprom *eep = Backpacks::info[addr].getEeprom();
+  if (!eep) {
+    Serial.println("Failed to fetch EEPROM");
+    return 0;
+  }
 
   // Print EEPROM over multiple lines
   size_t offset = 0;
   const uint8_t bytes_per_line = 8;
-  while (offset < len) {
-    printHexBuffer(Serial, buf + offset, min(bytes_per_line, len - offset), " ");
+  while (offset < eep->size) {
+    printHexBuffer(Serial, eep->raw + offset, min(bytes_per_line, eep->size - offset), " ");
     Serial.println();
     offset += bytes_per_line;
   }

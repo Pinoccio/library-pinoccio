@@ -5,9 +5,17 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include "utility/endian_integer.h"
+#include "PBBP.h"
 
 class Pbbe {
 public:
+  // Checksum validated eeprom. Never build one yourself, only use those
+  // returned by getEeprom()
+  struct Eeprom {
+    uint8_t size;
+    uint8_t raw[];
+  };
+
   /**
    * Union describing a unique id.
    * You can either access the raw bytes using the .raw_bytes part, or the
@@ -53,9 +61,7 @@ public:
    * Parse the header of the EEPROM, up to the the first descriptor and
    * return in in newly allocated memory.
    *
-   * @param buf       A buffer containing the EEPROM.
-   * @param len       The size of the EEPROM contents (e.g., length of
-   *                  buf).
+   * @param eep       The EEPROM to parse.
    *
    * @returns a pointer to newly allocated memory containing the header.
    * If no valid header could be parsed, returns NULL.
@@ -63,16 +69,13 @@ public:
    * It is the responsibility of the caller to free the returned pointer
    * using free().
    */
-  static Header *parseHeaderA(const uint8_t *buf, size_t len);
+  static Header *parseHeaderA(const Eeprom *eep);
 
   /**
    * Parse a string and return it in newly allocated memory.
    *
-   * @param buf       The part of the EEPROM that contains the unparsed
-   *                  string. Should point to the first character of the
-   *                  string.
-   * @param len       The remaining valid size of the EEPROM contents,
-   *                  starting from buf.
+   * @param eep       The EEPROM to parse.
+   * @param offset    The offset of the first character of the string.
    *
    * @returns a pointer to newly allocated memory, containing the parsed
    * and zero-terminated string. If no valid string was found, returns
@@ -81,21 +84,18 @@ public:
    * It is the responsibility of the caller to free the returned pointer
    * using free().
    */
-  static char *parseStringA(const uint8_t *buf, size_t len);
+  static char *parseStringA(const Eeprom *eep, size_t offset);
 
   /**
    * Find out the length of a string in the EEPROM.
    *
-   * @param buf       The part of the EEPROM that contains the unparsed
-   *                  string. Should point to the first character of the
-   *                  string.
-   * @param len       The remaining valid size of the EEPROM contents,
-   *                  starting from buf.
+   * @param eep       The EEPROM to parse.
+   * @param offset    The offset of the first character of the string.
    *
    * @returns the number of characters (ASCII bytes) in the string, or 0
    * if no valid string was found.
    */
-  static size_t stringLength(const uint8_t *buf, size_t len);
+  static size_t stringLength(const Eeprom *eep, size_t offset);
 
   /**
    * Extract a string from EEPROM into a preallocated buffer, if you
@@ -105,17 +105,14 @@ public:
    * aren't reading beyond the end of the string or EEPROM if you pass
    * in the wrong size!
    *
-   * @param buf       The part of the EEPROM that contains the unparsed
-   *                  string. Should point to the first character of the
-   *                  string.
+   * @param eep       The EEPROM to parse.
+   * @param offset    The offset of the first character of the string.
    * @param str       The buffer into which to put the string. Should be
    *                  strlen + 1 (!) long.
    * @param strlen    The length of the string in EEPROM, as returned by
-   *                  stringLength. This is _not_ the length of the
-   *                  buffer and _not_ the length of the entire eeprom
-   *                  contents.
+   *                  stringLength.
    */
-  static void extractString(const uint8_t *buf, char *str, size_t strlen);
+  static void extractString(const Eeprom *eep, size_t offset, char *str, size_t strlen);
 
   struct MajorMinor {
     uint8_t major : 4;
@@ -126,6 +123,39 @@ public:
    * Split a hardware revision into a major and minor part.
    */
   static MajorMinor extractMajorMinor(uint8_t rev) { return {rev >> 4, rev & 0xf}; }
+
+  /**
+   * Read the EEPROM from a slave into a newly allocated buffer.
+   *
+   * @param pbbp     The PBBP instance to use to talk to the slave.
+   * @param addr     The backpack bus address of the slave.
+   *
+   * @returns a pointer to newly allocated memory containing the EEPROM
+   * contents. If the EEPROM could be retrieved, or the checksum fails,
+   * returns NULL.
+   *
+   * It is the responsibility of the caller to free the returned pointer
+   * using free().
+   */
+ static Eeprom *getEeprom(PBBP &pbpp, uint8_t addr);
+
+protected:
+  struct MinimalHeader {
+    uint8_t layout_version;
+    /** Header length, excluding the name */
+    uint8_t header_length;
+    /** Length of the name */
+    uint8_t name_length;
+  };
+
+  /** Parse only basic attributes from the header (in particular, don't
+   *  fully parse the variable sized name, only find out how long it
+   *  would be.
+   *
+   * @param eep       The EEPROM to parse.
+   * @param h         The MinimalHeader to fill.
+   */
+  static bool parseMinimalHeader(const Eeprom *eep, MinimalHeader *h);
 };
 
 #endif // LIB_PINOCCIO_PBBP_EEPROM_H

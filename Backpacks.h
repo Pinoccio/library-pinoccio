@@ -21,7 +21,7 @@ struct BackpackInfo {
    *                be NULL to ignore the length.
    * @returns The value of eeprom_contents if succesful, NULL otherwise.
    */
-  uint8_t* getEeprom(size_t *len = NULL);
+  Pbbe::Eeprom* getEeprom(size_t *len = NULL);
 
   /**
    * Free the memory used by the eeprom contents.
@@ -50,8 +50,7 @@ protected:
   // getAddress).
   BackpackInfo() {}
 
-  uint8_t *eeprom_contents;
-  uint8_t eeprom_contents_length;
+  Pbbe::Eeprom *eep;
   Pbbe::Header *header;
 
   friend class Backpacks;
