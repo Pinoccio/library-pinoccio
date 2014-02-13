@@ -1,5 +1,6 @@
 #include "PBBP.h"
 #include "crc.h"
+#include "PBBP-protocol.h"
 #include <Arduino.h>
 
 PBBP::PBBP() {

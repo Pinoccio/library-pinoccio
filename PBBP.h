@@ -4,7 +4,6 @@
 
 #include <stdint.h>
 #include <Print.h>
-#include "PBBP-protocol.h"
 
 class PBBP {
 public:
