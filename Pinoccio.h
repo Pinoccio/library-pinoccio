@@ -61,6 +61,7 @@ class PinoccioClass {
     void disableExternalAref();
     bool getExternalAref();
 
+    const char* getLastResetCause();
     void loadSettingsFromEeprom();
 
     void setHQToken(const char *token);
@@ -98,6 +99,7 @@ class PinoccioClass {
     uint32_t convertBytesToLong(byte *convBytes);
 
     bool isExternalAref;
+    uint8_t lastResetCause;
     uint16_t address;
     uint16_t panId;
     uint8_t channel;

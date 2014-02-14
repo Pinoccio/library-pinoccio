@@ -233,14 +233,25 @@ static numvar getRandomNumber(void) {
 extern int __bss_end;
 static char *uptimeReportHQ(void) {
   static char report[100];
-  int free_mem;
-  int uptime = millis();
+  int freeMem;
+
+  char reset[20];
+  char c;
+
+  const char *resetString = Scout.getLastResetCause();
+  while((c = pgm_read_byte(resetString++))) {
+    sprintf(reset+strlen(reset),"%c",c);
+  }
+
+  sp(reset);
+
   // free memory based on http://forum.pololu.com/viewtopic.php?f=10&t=989&view=unread#p4218
-  sprintf(report,"[%d,[%d,%d,%d],[%d,%d,%d]]",key_map("uptime",0),
-          key_map("millis",0),key_map("free",0),key_map("random",0),
-          uptime,
-          ((int)&free_mem) - ((int)&__bss_end),
-          (int)random());
+  sprintf(report,"[%d,[%d,%d,%d,%d],[%d,%d,%d,\"%s\"]]",key_map("uptime",0),
+          key_map("millis",0),key_map("free",0),key_map("random",0),key_map("reset",0),
+          millis(),
+          ((int)&freeMem) - ((int)&__bss_end),
+          (int)random(),
+          reset);
   return Scout.handler.report(report);
 }
 
@@ -846,9 +857,9 @@ static numvar backpackList(void) {
 
       Pbbe::Header *h = info.getHeader();
       if (!h)
-	Serial.print(F("Error parsing name"));
+  Serial.print(F("Error parsing name"));
       else
-	Serial.print(h->backpack_name);
+  Serial.print(h->backpack_name);
 
       Serial.print(" (");
       printHexBuffer(Serial, info.id.raw_bytes, sizeof(info.id));

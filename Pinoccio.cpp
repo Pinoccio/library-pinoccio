@@ -12,7 +12,10 @@
 
 PinoccioClass Pinoccio;
 
-PinoccioClass::PinoccioClass() { }
+PinoccioClass::PinoccioClass() {
+  // this has to be called as early as possible before other code uses the register
+  lastResetCause = GPIOR0;
+}
 
 PinoccioClass::~PinoccioClass() { }
 
@@ -51,6 +54,28 @@ void PinoccioClass::disableExternalAref() {
 
 bool PinoccioClass::getExternalAref() {
   return isExternalAref;
+}
+
+const char* PinoccioClass::getLastResetCause() {
+  switch (lastResetCause) {
+      case 1:
+        return PSTR("Power-on");
+        break;
+      case 2:
+        return PSTR("External");
+        break;
+      case 4:
+        return PSTR("Brown-out");
+        break;
+      case 8:
+        return PSTR("Watchdog");
+        break;
+      case 16:
+        return PSTR("JTAG");
+        break;
+      default:
+        return PSTR("Unknown Cause Reset");
+  }
 }
 
 int8_t PinoccioClass::getTemperature() {
@@ -100,6 +125,7 @@ void PinoccioClass::sendStateToHQ() {
 }
 
 void PinoccioClass::loadSettingsFromEeprom() {
+  // Address 8125 - 1 byte   - Initiate OTA flag
   // Address 8126 - 1 byte   - Data rate
   // Address 8127 - 3 bytes  - Torch color (R,G,B)
   // Address 8130 - 32 bytes - HQ Token
