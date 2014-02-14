@@ -66,7 +66,10 @@ void nukeeeprom(void) {
 void cmd_boot(void) {
   // This is recommended but does not work on Arduino
   // Reset_AVR();
-  void (*bootvec)(void) = 0; (*bootvec)();   // we jump through 0 instead
+  cli();
+  wdt_enable(WDTO_15MS);
+  while(1);
+  //void (*bootvec)(void) = 0; (*bootvec)();   // we jump through 0 instead
 }
 #elif defined(ARM_BUILD)
 // SAM3XA software restart
