@@ -243,8 +243,6 @@ static char *uptimeReportHQ(void) {
     sprintf(reset+strlen(reset),"%c",c);
   }
 
-  sp(reset);
-
   // free memory based on http://forum.pololu.com/viewtopic.php?f=10&t=989&view=unread#p4218
   sprintf(report,"[%d,[%d,%d,%d,%d],[%d,%d,%d,\"%s\"]]",key_map("uptime",0),
           key_map("millis",0),key_map("free",0),key_map("random",0),key_map("reset",0),
