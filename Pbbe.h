@@ -11,8 +11,6 @@
 
 class Pbbe {
 public:
-  // Checksum validated eeprom. Never build one yourself, only use those
-  // returned by getEeprom()
   struct Eeprom {
     uint8_t size;
     uint8_t raw[];
@@ -270,6 +268,40 @@ public:
   static Eeprom *getEeprom(PBBP &pbpp, uint8_t addr);
 
   /**
+   * Write the EEPROM in the given slave.
+   *
+   * @param pbbp     The PBBP instance to use to talk to the slave.
+   * @param addr     The backpack bus address of the slave.
+   * @param eeprom   The EEPROM content to write to the slave.
+   *
+   * @returns true when the EEPROM contents were valid and could be
+   *          succesfully written, false otherwise.
+   */
+  static bool writeEeprom(PBBP &pbbp, uint8_t addr, const Eeprom *eeprom);
+
+  /**
+   * Update part of the given eeprom with the given bytes.
+   *
+   * To enlarge the EEPROM used size, simply update bytes paste the
+   * currend used size. To shrink it, replace the last descriptor(s)
+   * with 0xff bytes. Automatically updates the used size in the EEPROM
+   * header and recalculates the checksum.
+   *
+   * @param eeprom     The current eeprom contents
+   * @param offset     The offset of the bytes to update
+   * @param buf        The new bytes to put at offset. Should be length
+   *                   bytes long.
+   * @param length     The number of bytes to replace. Should not
+   *                   include the checksum bytes.
+   *
+   * @returns The update EEPROM contents. If the size has changed, the
+   *          memory might be realloc'd and this pointer could be
+   *          different from the one passed in. If the EEPROM contents
+   *          could not be updated, NULL is returned.
+   */
+  static Eeprom *updateEeprom(Eeprom *eep, size_t offset, const uint8_t *buf, uint8_t length);
+
+  /**
    * Calculate the checksum for a unique ID.
    *
    * @param buf      A pointer to the raw bytes of the unique id. Should
@@ -292,6 +324,8 @@ public:
    * @returns The checksum of the eeprom passed.
    */
   static uint16_t eepromChecksum(uint8_t *buf, size_t length);
+
+  static bool isReadonly(const Eeprom *eep, size_t offset);
 
 protected:
   struct MinimalHeader {

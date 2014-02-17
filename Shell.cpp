@@ -81,6 +81,7 @@ void PinoccioShell::setup() {
   addBitlashFunction("backpack.report", (bitlash_function) backpackReport);
   addBitlashFunction("backpack.list", (bitlash_function) backpackList);
   addBitlashFunction("backpack.eeprom", (bitlash_function) backpackEeprom);
+  addBitlashFunction("backpack.eeprom.update", (bitlash_function) backpackUpdateEeprom);
   addBitlashFunction("backpack.detail", (bitlash_function) backpackDetail);
   addBitlashFunction("backpack.resources", (bitlash_function) backpackResources);
 
@@ -928,6 +929,53 @@ static numvar backpackEeprom(void) {
   }
   return 1;
 }
+
+static numvar backpackUpdateEeprom(void) {
+  numvar addr = getarg(1);
+  if (addr < 0 || addr >= Backpacks::num_backpacks) {
+    Serial.println("Invalid backpack number");
+    return 0;
+  }
+
+  numvar offset;
+  const char *str;
+
+  if (getarg(0) == 2) {
+    offset = 0;
+    str = (const char*)getstringarg(2);
+  } else {
+    offset = getarg(2);
+    str = (const char*)getstringarg(3);
+  }
+
+  size_t length = strlen(str);
+  uint8_t bytes[length / 2];
+  PinoccioShell::parseHex(str, length, bytes);
+
+  // Get the current EEPROM contents, but ignore any failure so we can
+  // fix the EEPROM even when it has an invalid checksum (updateEeprom
+  // handles a NULL as expected).
+  BackpackInfo &info = Backpacks::info[addr];
+  info.getEeprom();
+
+  info.freeHeader();
+  info.freeAllDescriptors();
+
+  Pbbe::Eeprom *eep = Pbbe::updateEeprom(info.eep, offset, bytes, length / 2);
+  if (!eep) {
+    Serial.println(F("Failed to update EEPROM"));
+    return 0;
+  }
+  // Update the eep pointer, it might have been realloced
+  info.eep = eep;
+
+  if (!Pbbe::writeEeprom(Backpacks::pbbp, addr, info.eep)) {
+    Serial.println(F("Failed to write EEPROM"));
+    return 0;
+  }
+  return 1;
+}
+
 
 static numvar backpackDetail(void) {
   numvar addr = getarg(1);

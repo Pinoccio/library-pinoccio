@@ -58,15 +58,14 @@ struct BackpackInfo {
    */
   void freeAllDescriptors();
 
+  Pbbe::Eeprom *eep;
+  Pbbe::Header *header;
+  Pbbe::DescriptorList *descriptors;
 protected:
   // Declare a private constructor to prevent people from allocating new
   // BackpackInfo objects outside of Backpacks::info (which would break
   // getAddress).
   BackpackInfo() {}
-
-  Pbbe::Eeprom *eep;
-  Pbbe::Header *header;
-  Pbbe::DescriptorList *descriptors;
 
   friend class Backpacks;
 };

@@ -6,9 +6,14 @@
 
 // Some useful constants for parsing the EEPROM
 
-/** Mask for pin numbers */
+// While these values do not depend on the current layout version, we
+// can just use simple constants for them.
 static const uint8_t PIN_MASK = 0x3f;
 static const uint8_t CHECKSUM_SIZE = 2;
+static const uint8_t LAYOUT_VERSION_OFFSET = 0;
+static const uint8_t TOTAL_SIZE_OFFSET = 1;
+static const uint8_t USED_SIZE_OFFSET = 2;
+static const uint8_t UNIQUE_ID_OFFSET = 3;
 
 #if !defined(lengthof)
 #define lengthof(x) (sizeof(x)/sizeof(*x))
@@ -523,6 +528,79 @@ Pbbe::Eeprom *Pbbe::getEeprom(PBBP &pbbp, uint8_t addr)
   return eep;
 }
 
+bool Pbbe::writeEeprom(PBBP &pbbp, uint8_t addr, const Eeprom *eeprom)
+{
+  if (!pbbp.writeEeprom(addr, 0, eeprom->raw, eeprom->size)) {
+    Serial.println("EEPROM write failed: ");
+    pbbp.printLastError(Serial);
+    return false;
+  }
+  return true;
+}
+
+Pbbe::Eeprom *Pbbe::updateEeprom(Eeprom *eep, size_t offset, const uint8_t *buf, uint8_t length)
+{
+  if (!eep && offset != 0) {
+    Serial.println(F("Cannot write EEPROM from sketch with non-zero offset"));
+    return NULL;
+  }
+  if (eep && offset > eep->size) {
+    Serial.println(F("Cannot update EEPROM starting past the end of the EEPROM"));
+    return NULL;
+  }
+
+  // Enlarge the buffer if we would write past the end or allocate one
+  // in the first place if none was passed in
+  if (!eep || offset + length + CHECKSUM_SIZE > eep->size) {
+    eep = (Eeprom*)realloc(eep, sizeof(*eep) + offset + length + CHECKSUM_SIZE);
+    if (!eep) {
+      Serial.println("Failed to allocate memory for EEPROM update");
+      return NULL;
+    }
+    eep->size = offset + length + CHECKSUM_SIZE;
+  }
+
+  // Update the contents, but skip readonly bytes
+  for (size_t i = 0; i < length; ++i)
+    if (!isReadonly(eep, offset + i))
+      eep->raw[offset + i] = buf[i];
+
+  // See if the new contents still look valid
+  DescriptorList *list = parseDescriptorListA(eep);
+  if (!list) {
+    Serial.println("Could not parse updated EEPROM");
+    return NULL;
+  }
+
+  // Now, find out where the end of the last descriptor is and update
+  // the "used size" in the header accordingly. This can change when
+  // writing 0xff at the end of the EEPROM, or when the EEPROM was
+  // ressized above.
+  size_t last_offset = list->info[list->num_descriptors - 1].offset;
+  MinimalDescriptor min;
+  parseMinimalDescriptor(eep, last_offset, &min);
+  size_t used_size = last_offset + min.descriptor_length + min.name_length + CHECKSUM_SIZE;
+  free(list);
+  list = NULL;
+
+  eep->raw[USED_SIZE_OFFSET] = used_size;
+  // Shrink the buffer if needed
+  if (used_size != eep->size) {
+    Serial.println("Shrinking");
+    Serial.println(eep->size);
+    Serial.println(used_size);
+    eep = (Eeprom *)realloc(eep, sizeof(Eeprom) + used_size);
+    eep->size = used_size;
+  }
+
+  // Update the checksum
+  uint16_t checksum = eepromChecksum(eep->raw, used_size - CHECKSUM_SIZE);
+  eep->raw[used_size - CHECKSUM_SIZE] = checksum >> 8;
+  eep->raw[used_size - CHECKSUM_SIZE + 1] = checksum & 0xff;
+
+  return eep;
+}
+
 uint8_t Pbbe::uniqueIdChecksum(uint8_t *buf)
 {
   return pinoccio_crc_generate<uint8_t>(PBBP::UNIQUE_ID_CRC_POLY, 0, buf, PBBP::UNIQUE_ID_LENGTH - 1);
@@ -531,6 +609,11 @@ uint8_t Pbbe::uniqueIdChecksum(uint8_t *buf)
 uint16_t Pbbe::eepromChecksum(uint8_t *buf, size_t length)
 {
   return pinoccio_crc_generate<uint16_t>(EEPROM_CRC_POLY, 0, buf, length);
+}
+
+bool Pbbe::isReadonly(const Eeprom *eep, size_t offset) {
+  return offset >= UNIQUE_ID_OFFSET &&
+         offset < UNIQUE_ID_OFFSET + PBBP::UNIQUE_ID_LENGTH;
 }
 
 /* vim: set filetype=cpp sw=2 sts=2 expandtab: */
