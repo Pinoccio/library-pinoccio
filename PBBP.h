@@ -51,6 +51,9 @@ public:
   // slave
   uint8_t last_slave_error;
 
+  static const uint8_t UNIQUE_ID_LENGTH = 8;
+  static const uint8_t UNIQUE_ID_CRC_POLY = 0x2f;
+
 protected:
   bool waitForFreeBus();
   bool waitForNextBitStart();
