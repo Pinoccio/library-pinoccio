@@ -117,6 +117,9 @@ void displayBanner(void) {
   // print the banner and copyright notice
   // please note the license requires that you maintain this notice
   execscript(SCRIPT_PROGMEM, (numvar) (builtin_table + strlen(builtin_table)+1), 0);
+  sp(" Build ");
+  sp(PINOCCIO_BUILD);
+  speol();
   if (Scout.isLeadScout()) {
     speol(" Lead Scout ready");
   } else {

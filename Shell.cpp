@@ -239,17 +239,18 @@ static char *uptimeReportHQ(void) {
   char c;
 
   const char *resetString = Scout.getLastResetCause();
+  reset[0] = 0;
   while((c = pgm_read_byte(resetString++))) {
     sprintf(reset+strlen(reset),"%c",c);
   }
 
   // free memory based on http://forum.pololu.com/viewtopic.php?f=10&t=989&view=unread#p4218
-  sprintf(report,"[%d,[%d,%d,%d,%d],[%d,%d,%d,\"%s\"]]",key_map("uptime",0),
+  sprintf(report,"[%d,[%d,%d,%d,%d],[%ld,%d,%d,\"",key_map("uptime",0),
           key_map("millis",0),key_map("free",0),key_map("random",0),key_map("reset",0),
-          millis(),
+          (unsigned long)millis(),
           ((int)&freeMem) - ((int)&__bss_end),
-          (int)random(),
-          reset);
+          (int)random());
+  sprintf(report+strlen(report),"%s\"]]",(char*)reset);
   return Scout.handler.report(report);
 }
 
