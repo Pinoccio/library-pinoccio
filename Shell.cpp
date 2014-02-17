@@ -161,6 +161,36 @@ void PinoccioShell::allReportHQ() {
   ledReportHQ();
 }
 
+uint8_t PinoccioShell::parseHex(char c)
+{
+  if (c >= '0' && c <= '9')
+    return c - '0';
+  if (c >= 'a' && c <= 'z')
+    return c - 'a' + 10;
+  if (c >= 'A' && c <= 'Z')
+    return c - 'A' + 10;
+  // TODO: Better error message
+  unexpected(M_number);
+
+}
+
+void PinoccioShell::parseHex(const char *str, size_t length, uint8_t *out)
+{
+  // TODO: Better error message
+  if (length % 2)
+    unexpected(M_number);
+
+  // Convert each digit in turn. If the string ends before we reach
+  // length, parseHex will error out on the trailling \0
+  for (size_t i = 0; i < length; i += 2)
+    out[i / 2] = parseHex(str[i]) << 4 | parseHex(str[i + 1]);
+
+  // See if the string is really finished
+  // TODO: Better error message
+  if (str[length])
+    unexpected(M_number);
+}
+
 static numvar allReport(void) {
   sp("running all reports");
   speol();
@@ -476,11 +506,17 @@ static numvar ledGetHex(void) {
 
 static numvar ledSetHex(void) {
   if (getarg(1)) {
+    const char *str;
     if (isstringarg(1)) {
-      RgbLed.setHex((char *)getarg(1));
+      str = (const char *)getarg(1);
     } else {
-      RgbLed.setHex(key_get(getarg(1)));
+      str = key_get(getarg(1));
     }
+
+    uint8_t out[3];
+    PinoccioShell::parseHex(str, 6, out);
+    RgbLed.setColor(out[0], out[1], out[2]);
+
     return true;
   } else {
     return false;

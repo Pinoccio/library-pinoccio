@@ -50,7 +50,6 @@ class HalRgbLed {
     void setBlinkValues(short red, short green, short blue);
     void setLEDToBlinkValue();
     void setColor(short red, short green, short blue);
-    void setHex(char* hex);
     void saveTorch(short red, short green, short blue);
     void setTorch(void);
 
