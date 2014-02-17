@@ -511,7 +511,14 @@ Pbbe::Eeprom *Pbbe::getEeprom(PBBP &pbbp, uint8_t addr)
     return NULL;
   }
 
-  // TODO: Verify checksum
+  // Verify checksum
+  uint16_t calc_checksum = eepromChecksum(eep->raw, used_size - CHECKSUM_SIZE);
+  uint16_t read_checksum = eep->raw[used_size - 2] << 8 | eep->raw[used_size - 1];
+  if (read_checksum != calc_checksum) {
+    Serial.println("EEPROM checksum incorrect");
+    free(eep);
+    return NULL;
+  }
 
   return eep;
 }
