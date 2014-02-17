@@ -76,7 +76,7 @@ public:
   /**
    * Autodetect connected backpacks.
    */
-  static void detect();
+  static bool detect();
 
   static void setup();
   static void loop() {}
@@ -99,8 +99,10 @@ protected:
   /**
    * Print a Pbbp error. Prints the given prefix, followed by the
    * last pbbp error.
+   *
+   * @returns false
    */
-  static void printPbbpError(const char *prefix);
+  static bool printPbbpError(const char *prefix);
 
   friend class BackpackInfo;
 };

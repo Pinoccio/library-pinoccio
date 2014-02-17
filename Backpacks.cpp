@@ -14,19 +14,21 @@ void Backpacks::setup()
   detect();
 }
 
-void Backpacks::detect()
+bool Backpacks::detect()
 {
   free(info);
   num_backpacks = 0;
   if (!pbbp.enumerate(addBackpack))
-    printPbbpError("Backpack enumeration failed: ");
+    return printPbbpError("Backpack enumeration failed: ");
+  return true;
 }
 
-void Backpacks::printPbbpError(const char *prefix)
+bool Backpacks::printPbbpError(const char *prefix)
 {
   Serial.print(prefix);
   pbbp.printLastError(Serial);
   Serial.println();
+  return false;
 }
 
 Pbbe::Eeprom *BackpackInfo::getEeprom(size_t *len)
