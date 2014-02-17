@@ -7,6 +7,7 @@
 #include "utility/endian_integer.h"
 #include "PBBP.h"
 #include "Minifloat.h"
+#include "static_assert.h"
 
 class Pbbe {
 public:
@@ -34,6 +35,7 @@ public:
     } __attribute__((packed));
     uint8_t raw_bytes[];
   };
+  static_assert(sizeof(UniqueId) == PBBP::UNIQUE_ID_LENGTH, "Mismatching unique id length?");
 
   /**
    * Struct containing parsed info from the EEPROM header, as returned
