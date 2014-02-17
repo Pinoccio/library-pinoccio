@@ -1,6 +1,7 @@
 #include "Pbbe.h"
 #include <avr/pgmspace.h>
 #include "Arduino.h"
+#include "crc.h"
 
 
 // Some useful constants for parsing the EEPROM
@@ -476,5 +477,14 @@ Pbbe::Eeprom *Pbbe::getEeprom(PBBP &pbbp, uint8_t addr)
   return eep;
 }
 
+uint8_t Pbbe::uniqueIdChecksum(uint8_t *buf)
+{
+  return pinoccio_crc_generate<uint8_t>(PBBP::UNIQUE_ID_CRC_POLY, 0, buf, PBBP::UNIQUE_ID_LENGTH - 1);
+}
+
+uint16_t Pbbe::eepromChecksum(uint8_t *buf, size_t length)
+{
+  return pinoccio_crc_generate<uint16_t>(EEPROM_CRC_POLY, 0, buf, length);
+}
 
 /* vim: set filetype=cpp sw=2 sts=2 expandtab: */

@@ -18,6 +18,8 @@ public:
     uint8_t raw[];
   };
 
+  static const uint16_t EEPROM_CRC_POLY = 0xa7d3;
+
   /**
    * Union describing a unique id.
    * You can either access the raw bytes using the .raw_bytes part, or the
@@ -266,6 +268,30 @@ public:
    * using free().
    */
  static Eeprom *getEeprom(PBBP &pbpp, uint8_t addr);
+
+  /**
+   * Calculate the checksum for a unique ID.
+   *
+   * @param buf      A pointer to the raw bytes of the unique id. Should
+   *                 be (at least) UNIQUE_ID_LENGTH - 1 bytes long.
+   *
+   * @returns The checksum of the unique id passed.
+   */
+  static uint8_t uniqueIdChecksum(uint8_t *buf);
+
+  /**
+   * Calculate the checksum for an EEPROM.
+   *
+   * @param buf      A pointer to the raw bytes of the eeprom. Should
+   *                 be length bytes long.
+   *
+   * @param length   The length of the EEPROM passed. This should not
+   *                 include the checksum bytes itself, since the
+   *                 checksum is calculated using all length bytes.
+   *
+   * @returns The checksum of the eeprom passed.
+   */
+  static uint16_t eepromChecksum(uint8_t *buf, size_t length);
 
 protected:
   struct MinimalHeader {
