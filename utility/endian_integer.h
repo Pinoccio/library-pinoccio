@@ -47,17 +47,14 @@ public:
   // Don't define any constructors here (a constructor casting from T
   // would make sense), since that disallows using this type in an
   // (anonymous) union. Instead, we define an assignment operator which
-  // also seems to do the job.
+  // also seems to do the job. C++11 will remove this restriction
+  // http://stackoverflow.com/questions/5548636/what-are-unrestricted-unions-proposed-in-c11
   big_endian_integer& operator=(const T &v) {
     for (int i = 0; i < bytes; i++)
       val[i] = (v >> (bytes - i - 1) * 8) & 0xff;
   }
 
   // Transparently cast to T
-  // TODO: See if we can optimize this further, gcc doesn't know how to
-  // optimize this to just two mov instructions. The cast from T above
-  // does work as expected.
-  //
   operator T() const {
     /*
     T res = 0;

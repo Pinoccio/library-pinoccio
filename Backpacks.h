@@ -44,14 +44,28 @@ struct BackpackInfo {
    */
   uint8_t getAddress();
 
+  /**
+   * Returns a list of all parsed descriptors, or NULL if not everything
+   * could be parsed.
+   *
+   * All the "parsed" members of teach DescriptorInfo in the list is
+   * already filled.
+   */
+  Pbbe::DescriptorList *getAllDescriptors();
+
+  /**
+   * Free the entire list of descriptors.
+   */
+  void freeAllDescriptors();
+
+  Pbbe::Eeprom *eep;
+  Pbbe::Header *header;
+  Pbbe::DescriptorList *descriptors;
 protected:
   // Declare a private constructor to prevent people from allocating new
   // BackpackInfo objects outside of Backpacks::info (which would break
   // getAddress).
   BackpackInfo() {}
-
-  Pbbe::Eeprom *eep;
-  Pbbe::Header *header;
 
   friend class Backpacks;
 };
@@ -61,7 +75,7 @@ public:
   /**
    * Autodetect connected backpacks.
    */
-  static void detect();
+  static bool detect();
 
   static void setup();
   static void loop() {}
@@ -84,8 +98,10 @@ protected:
   /**
    * Print a Pbbp error. Prints the given prefix, followed by the
    * last pbbp error.
+   *
+   * @returns false
    */
-  static void printPbbpError(const char *prefix);
+  static bool printPbbpError(const char *prefix);
 
   friend class BackpackInfo;
 };

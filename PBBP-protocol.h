@@ -19,9 +19,6 @@ enum {
     CMD_LAST = CMD_WRITE_EEPROM,
 };
 
-uint8_t const UNIQUE_ID_LENGTH = 8;
-uint8_t const UNIQUE_ID_CRC_POLY = 0x2f;
-
 enum {
     ERR_OK = 0,
     ERR_OTHER = 1,

@@ -81,7 +81,9 @@ void PinoccioShell::setup() {
   addBitlashFunction("backpack.report", (bitlash_function) backpackReport);
   addBitlashFunction("backpack.list", (bitlash_function) backpackList);
   addBitlashFunction("backpack.eeprom", (bitlash_function) backpackEeprom);
+  addBitlashFunction("backpack.eeprom.update", (bitlash_function) backpackUpdateEeprom);
   addBitlashFunction("backpack.detail", (bitlash_function) backpackDetail);
+  addBitlashFunction("backpack.resources", (bitlash_function) backpackResources);
 
   addBitlashFunction("scout.report", (bitlash_function) scoutReport);
   addBitlashFunction("scout.isleadscout", (bitlash_function) isScoutLeadScout);
@@ -158,6 +160,36 @@ void PinoccioShell::allReportHQ() {
   meshReportHQ();
   tempReportHQ();
   ledReportHQ();
+}
+
+uint8_t PinoccioShell::parseHex(char c)
+{
+  if (c >= '0' && c <= '9')
+    return c - '0';
+  if (c >= 'a' && c <= 'z')
+    return c - 'a' + 10;
+  if (c >= 'A' && c <= 'Z')
+    return c - 'A' + 10;
+  // TODO: Better error message
+  unexpected(M_number);
+
+}
+
+void PinoccioShell::parseHex(const char *str, size_t length, uint8_t *out)
+{
+  // TODO: Better error message
+  if (length % 2)
+    unexpected(M_number);
+
+  // Convert each digit in turn. If the string ends before we reach
+  // length, parseHex will error out on the trailling \0
+  for (size_t i = 0; i < length; i += 2)
+    out[i / 2] = parseHex(str[i]) << 4 | parseHex(str[i + 1]);
+
+  // See if the string is really finished
+  // TODO: Better error message
+  if (str[length])
+    unexpected(M_number);
 }
 
 static numvar allReport(void) {
@@ -476,11 +508,17 @@ static numvar ledGetHex(void) {
 
 static numvar ledSetHex(void) {
   if (getarg(1)) {
+    const char *str;
     if (isstringarg(1)) {
-      RgbLed.setHex((char *)getarg(1));
+      str = (const char *)getarg(1);
     } else {
-      RgbLed.setHex(key_get(getarg(1)));
+      str = key_get(getarg(1));
     }
+
+    uint8_t out[3];
+    PinoccioShell::parseHex(str, 6, out);
+    RgbLed.setColor(out[0], out[1], out[2]);
+
     return true;
   } else {
     return false;
@@ -893,6 +931,53 @@ static numvar backpackEeprom(void) {
   return 1;
 }
 
+static numvar backpackUpdateEeprom(void) {
+  numvar addr = getarg(1);
+  if (addr < 0 || addr >= Backpacks::num_backpacks) {
+    Serial.println("Invalid backpack number");
+    return 0;
+  }
+
+  numvar offset;
+  const char *str;
+
+  if (getarg(0) == 2) {
+    offset = 0;
+    str = (const char*)getstringarg(2);
+  } else {
+    offset = getarg(2);
+    str = (const char*)getstringarg(3);
+  }
+
+  size_t length = strlen(str);
+  uint8_t bytes[length / 2];
+  PinoccioShell::parseHex(str, length, bytes);
+
+  // Get the current EEPROM contents, but ignore any failure so we can
+  // fix the EEPROM even when it has an invalid checksum (updateEeprom
+  // handles a NULL as expected).
+  BackpackInfo &info = Backpacks::info[addr];
+  info.getEeprom();
+
+  info.freeHeader();
+  info.freeAllDescriptors();
+
+  Pbbe::Eeprom *eep = Pbbe::updateEeprom(info.eep, offset, bytes, length / 2);
+  if (!eep) {
+    Serial.println(F("Failed to update EEPROM"));
+    return 0;
+  }
+  // Update the eep pointer, it might have been realloced
+  info.eep = eep;
+
+  if (!Pbbe::writeEeprom(Backpacks::pbbp, addr, info.eep)) {
+    Serial.println(F("Failed to write EEPROM"));
+    return 0;
+  }
+  return 1;
+}
+
+
 static numvar backpackDetail(void) {
   numvar addr = getarg(1);
   if (addr < 0 || addr >= Backpacks::num_backpacks) {
@@ -935,6 +1020,130 @@ static numvar backpackDetail(void) {
   Serial.print(F("EEPROM used: "));
   Serial.print(h->used_eeprom_size);
   Serial.println(F(" bytes"));
+}
+
+static numvar backpackResources(void) {
+  numvar addr = getarg(1);
+  if (addr < 0 || addr >= Backpacks::num_backpacks) {
+    Serial.println("Invalid backpack number");
+    return 0;
+  }
+
+  Pbbe::DescriptorList *list = Backpacks::info[addr].getAllDescriptors();
+  if (!list) {
+    Serial.println("Failed to fetch or parse resource descriptors");
+    return 0;
+  }
+  for (uint8_t i = 0; i < list->num_descriptors; ++i) {
+    Pbbe::DescriptorInfo &info = list->info[i];
+    if (info.group) {
+      Pbbe::GroupDescriptor& d = static_cast<Pbbe::GroupDescriptor&>(*info.group->parsed);
+      Serial.print(d.name);
+      Serial.print(".");
+    }
+
+    switch (info.type) {
+      case Pbbe::DT_SPI_SLAVE: {
+	Pbbe::SpiSlaveDescriptor& d = static_cast<Pbbe::SpiSlaveDescriptor&>(*info.parsed);
+	Serial.print(d.name);
+	Serial.print(": spi, ss = ");
+	Serial.print(d.ss_pin.name());
+	Serial.print(", max speed = ");
+	if (d.speed.raw()) {
+	  Serial.print((float)d.speed, 2);
+	  Serial.print("Mhz");
+	} else {
+	  Serial.print("unknown");
+	}
+	Serial.println();
+	break;
+      }
+      case Pbbe::DT_UART: {
+	Pbbe::UartDescriptor& d = static_cast<Pbbe::UartDescriptor&>(*info.parsed);
+	Serial.print(d.name);
+	Serial.print(": uart, tx = ");
+	Serial.print(d.tx_pin.name());
+	Serial.print(", rx = ");
+	Serial.print(d.rx_pin.name());
+	Serial.print(", speed = ");
+	if (d.speed) {
+	  Serial.print(d.speed);
+	  Serial.print("bps");
+	} else {
+	  Serial.print("unknown");
+	}
+	Serial.println();
+	break;
+      }
+      case Pbbe::DT_IOPIN: {
+	Pbbe::IoPinDescriptor& d = static_cast<Pbbe::IoPinDescriptor&>(*info.parsed);
+	Serial.print(d.name);
+	Serial.print(": gpio, pin = ");
+	Serial.print(d.pin.name());
+	Serial.println();
+	break;
+      }
+      case Pbbe::DT_GROUP: {
+	// Ignore
+	break;
+      }
+      case Pbbe::DT_POWER_USAGE: {
+	Pbbe::PowerUsageDescriptor& d = static_cast<Pbbe::PowerUsageDescriptor&>(*info.parsed);
+	Serial.print("power: pin = ");
+	Serial.print(d.power_pin.name());
+	Serial.print(", minimum = ");
+	if (d.minimum.raw()) {
+	  Serial.print((float)d.minimum, 2);
+	  Serial.print("uA");
+	} else {
+	  Serial.print("unknown");
+	}
+	Serial.print("typical = ");
+	if (d.typical.raw()) {
+	  Serial.print((float)d.typical, 2);
+	  Serial.print("uA");
+	} else {
+	  Serial.print("unknown");
+	}
+	Serial.print(", maximum = ");
+	if (d.maximum.raw()) {
+	  Serial.print((float)d.maximum, 2);
+	  Serial.print("uA");
+	} else {
+	  Serial.print("unknown");
+	}
+	Serial.println();
+	break;
+      }
+      case Pbbe::DT_I2C_SLAVE: {
+	Pbbe::I2cSlaveDescriptor& d = static_cast<Pbbe::I2cSlaveDescriptor&>(*info.parsed);
+	Serial.print(d.name);
+	Serial.print(": i2c, address = ");
+	Serial.print(d.addr);
+	Serial.print(", max speed = ");
+	Serial.print(d.speed);
+	Serial.print("kbps");
+	Serial.println();
+	break;
+      }
+      case Pbbe::DT_DATA: {
+	Pbbe::DataDescriptor& d = static_cast<Pbbe::DataDescriptor&>(*info.parsed);
+	Serial.print(d.name);
+	Serial.print(": data, length = ");
+	Serial.print(d.length);
+	Serial.print(", content = ");
+	printHexBuffer(Serial, d.data, d.length);
+	Serial.println();
+	break;
+      }
+      default: {
+	// Should not occur
+	break;
+      }
+    }
+  }
+
+  return 1;
 }
 
 /****************************\
