@@ -267,7 +267,7 @@ public:
    * It is the responsibility of the caller to free the returned pointer
    * using free().
    */
- static Eeprom *getEeprom(PBBP &pbpp, uint8_t addr);
+  static Eeprom *getEeprom(PBBP &pbpp, uint8_t addr);
 
   /**
    * Calculate the checksum for a unique ID.
