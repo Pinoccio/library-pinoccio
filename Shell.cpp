@@ -1048,8 +1048,12 @@ static numvar backpackResources(void) {
 	Serial.print(": spi, ss = ");
 	Serial.print(d.ss_pin.name());
 	Serial.print(", max speed = ");
-	Serial.print((float)d.speed, 2);
-	Serial.print("Mhz");
+	if (d.speed.raw()) {
+	  Serial.print((float)d.speed, 2);
+	  Serial.print("Mhz");
+	} else {
+	  Serial.print("unknown");
+	}
 	Serial.println();
 	break;
       }
@@ -1061,8 +1065,12 @@ static numvar backpackResources(void) {
 	Serial.print(", rx = ");
 	Serial.print(d.rx_pin.name());
 	Serial.print(", speed = ");
-	Serial.print(d.speed);
-	Serial.print("bps");
+	if (d.speed) {
+	  Serial.print(d.speed);
+	  Serial.print("bps");
+	} else {
+	  Serial.print("unknown");
+	}
 	Serial.println();
 	break;
       }
@@ -1083,12 +1091,26 @@ static numvar backpackResources(void) {
 	Serial.print("power: pin = ");
 	Serial.print(d.power_pin.name());
 	Serial.print(", minimum = ");
-	Serial.print((float)d.minimum, 2);
-	Serial.print("uA, typical = ");
-	Serial.print((float)d.typical, 2);
-	Serial.print("uA, maximum = ");
-	Serial.print((float)d.maximum, 2);
-	Serial.print("uA");
+	if (d.minimum.raw()) {
+	  Serial.print((float)d.minimum, 2);
+	  Serial.print("uA");
+	} else {
+	  Serial.print("unknown");
+	}
+	Serial.print("typical = ");
+	if (d.typical.raw()) {
+	  Serial.print((float)d.typical, 2);
+	  Serial.print("uA");
+	} else {
+	  Serial.print("unknown");
+	}
+	Serial.print(", maximum = ");
+	if (d.maximum.raw()) {
+	  Serial.print((float)d.maximum, 2);
+	  Serial.print("uA");
+	} else {
+	  Serial.print("unknown");
+	}
 	Serial.println();
 	break;
       }
