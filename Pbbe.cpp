@@ -289,6 +289,42 @@ static const uint32_t uart_speeds[] PROGMEM = {
   [10] = 115200,
 };
 
+const Pbbe::PhysicalPinInfo Pbbe::physical_pin_info[] PROGMEM = {
+  [0]  = {NO_LOGICAL_PIN, "NC"},
+  [1]  = {NO_LOGICAL_PIN, "VUSB"},
+  [2]  = {BACKPACK_BUS, "BKPK"},
+  [3]  = {NO_LOGICAL_PIN, "RST"},
+  [4]  = {SCK, "SCK"},
+  [5]  = {MISO, "MISO"},
+  [6]  = {MOSI, "MOSI"},
+  [7]  = {SS, "SS"},
+  [8]  = {0, "RX0"},
+  [9]  = {1, "TX0"},
+  [10] = {2, "D2"},
+  [11] = {3, "D3"},
+  [12] = {4, "D4"},
+  [13] = {5, "D5"},
+  [14] = {6, "D6"},
+  [15] = {7, "D7"},
+  [16] = {8, "D8"},
+  [17] = {NO_LOGICAL_PIN, "3V3"},
+  [18] = {NO_LOGICAL_PIN, "GND"},
+  [19] = {NO_LOGICAL_PIN, "VBAT"},
+  [20] = {13, "RX1"},
+  [21] = {14, "TX1"},
+  [22] = {SCL, "SCL"},
+  [23] = {SDA, "SDA"},
+  [24] = {NO_LOGICAL_PIN, "REF"},
+  [25] = {A0, "A0"},
+  [26] = {A1, "A1"},
+  [27] = {A2, "A2"},
+  [28] = {A3, "A3"},
+  [29] = {A4, "A4"},
+  [30] = {A5, "A5"},
+  [31] = {A6, "A6"},
+  [32] = {A7, "A7"},
+};
+
 bool Pbbe::parseMinimalDescriptor(const Eeprom *eep, size_t offset, MinimalDescriptor *d) {
   if (offset + CHECKSUM_SIZE + 1 > eep->size) {
     DEBUG_ERR2(F("EEPROM too short for descriptor type. Descriptor start at: "), offset);

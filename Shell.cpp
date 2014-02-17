@@ -1046,7 +1046,7 @@ static numvar backpackResources(void) {
 	Pbbe::SpiSlaveDescriptor& d = static_cast<Pbbe::SpiSlaveDescriptor&>(*info.parsed);
 	Serial.print(d.name);
 	Serial.print(": spi, ss = ");
-	Serial.print(d.ss_pin);
+	Serial.print(d.ss_pin.name());
 	Serial.print(", max speed = ");
 	Serial.print((float)d.speed, 2);
 	Serial.print("Mhz");
@@ -1057,9 +1057,9 @@ static numvar backpackResources(void) {
 	Pbbe::UartDescriptor& d = static_cast<Pbbe::UartDescriptor&>(*info.parsed);
 	Serial.print(d.name);
 	Serial.print(": uart, tx = ");
-	Serial.print(d.tx_pin);
+	Serial.print(d.tx_pin.name());
 	Serial.print(", rx = ");
-	Serial.print(d.rx_pin);
+	Serial.print(d.rx_pin.name());
 	Serial.print(", speed = ");
 	Serial.print(d.speed);
 	Serial.print("bps");
@@ -1070,7 +1070,7 @@ static numvar backpackResources(void) {
 	Pbbe::IoPinDescriptor& d = static_cast<Pbbe::IoPinDescriptor&>(*info.parsed);
 	Serial.print(d.name);
 	Serial.print(": gpio, pin = ");
-	Serial.print(d.pin);
+	Serial.print(d.pin.name());
 	Serial.println();
 	break;
       }
@@ -1081,7 +1081,7 @@ static numvar backpackResources(void) {
       case Pbbe::DT_POWER_USAGE: {
 	Pbbe::PowerUsageDescriptor& d = static_cast<Pbbe::PowerUsageDescriptor&>(*info.parsed);
 	Serial.print("power: pin = ");
-	Serial.print(d.power_pin);
+	Serial.print(d.power_pin.name());
 	Serial.print(", minimum = ");
 	Serial.print((float)d.minimum, 2);
 	Serial.print("uA, typical = ");

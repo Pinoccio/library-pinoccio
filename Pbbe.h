@@ -72,7 +72,29 @@ public:
     DT_EMPTY = 0xff,
   };
 
-  typedef uint8_t PhysicalPin;
+  // TODO: Change to use NOT_A_PIN if that's ever changed from its
+  // current "0" value:
+  // https://groups.google.com/a/arduino.cc/d/msg/developers/zeDXBRwW-mg/9bsG9f7Zp84J
+  static const uint8_t NO_LOGICAL_PIN = 0xff;
+
+  struct PhysicalPinInfo {
+    uint8_t logical_pin;
+    char name[5];
+  };
+
+  static const PhysicalPinInfo physical_pin_info[] PROGMEM;
+
+  struct PhysicalPin {
+    PhysicalPin& operator=(uint8_t val) { this->val = val; }
+    operator uint8_t() {return this->val; }
+    const __FlashStringHelper *name() {
+      return reinterpret_cast<const __FlashStringHelper *>(&physical_pin_info[this->val].name);
+    }
+    uint8_t logical_pin() {
+      return pgm_read_byte(&physical_pin_info[this->val].logical_pin);
+    }
+    uint8_t val;
+  };
 
   struct Descriptor { };
 
