@@ -18,29 +18,49 @@ static const uint8_t CHECKSUM_SIZE = 2;
 #define offsetof(st, m) __builtin_offsetof(st, m)
 #endif
 
+//#define DETAIL_PARSE_ERRORS
+
+#ifdef DETAIL_PARSE_ERRORS
+#define DEBUG_ERR(x) Serial.println(x)
+#define DEBUG_ERR2(x, y) do {Serial.print(x); Serial.println(y);} while(0)
+#else
+#define DEBUG_ERR(x) do {} while(0)
+#define DEBUG_ERR2(x, y) do {} while(0)
+#endif
+
 bool Pbbe::parseMinimalHeader(const Eeprom *eep, MinimalHeader *h)
 {
-  if (!eep || CHECKSUM_SIZE >= eep->size)
+  if (!eep || CHECKSUM_SIZE >= eep->size) {
+    DEBUG_ERR(F("Eeprom too short for checksum"));
     return false;
+  }
   size_t len = eep->size - CHECKSUM_SIZE;
 
-  if (len < 1u)
+  if (len < 1u) {
+    DEBUG_ERR(F("Eeprom too short for layout_version"));
     return false;
+  }
 
   h->layout_version = eep->raw[0];
   h->header_length = 0xc;
 
-  if (h->layout_version == 0 || h->layout_version > 1)
+  if (h->layout_version == 0 || h->layout_version > 1) {
+    DEBUG_ERR(F("Invalid or unsupported layout version"));
     return false;
+  }
 
   // Size should be at least the header + a 1-character name
-  if (len < h->header_length + 1u)
+  if (len < h->header_length + 1u) {
+    DEBUG_ERR(F("Eeprom too short for header"));
     return false;
+  }
 
   h->name_length = stringLength(eep, h->header_length);
 
-  if (!h->name_length)
+  if (!h->name_length) {
+    DEBUG_ERR(F("Invalid backpack name"));
     return false;
+  }
 
   return true;
 }
@@ -67,8 +87,10 @@ Pbbe::Header *Pbbe::parseHeaderA(const Eeprom *eep)
 
 size_t Pbbe::stringLength(const Eeprom *eep, size_t offset) {
   // Check that we have at least one character
-  if (offset + CHECKSUM_SIZE + 1 > eep->size)
+  if (offset + CHECKSUM_SIZE + 1 > eep->size) {
+    DEBUG_ERR2(F("EEPROM too short for string. String start at: "), offset);
     return 0;
+  }
 
   const uint8_t *buf = &eep->raw[offset];
   size_t len = eep->size - offset - CHECKSUM_SIZE;
@@ -82,6 +104,7 @@ size_t Pbbe::stringLength(const Eeprom *eep, size_t offset) {
       return strlen;
   } while(strlen++ <= len);
   // Reached end of EEPROM before end of string - invalid string
+  DEBUG_ERR2(F("End of EEPROM before end of string. String start at: "), offset);
   return 0;
 }
 
@@ -262,29 +285,37 @@ static const uint32_t uart_speeds[] PROGMEM = {
 };
 
 bool Pbbe::parseMinimalDescriptor(const Eeprom *eep, size_t offset, MinimalDescriptor *d) {
-  if (offset + CHECKSUM_SIZE + 1> eep->size)
+  if (offset + CHECKSUM_SIZE + 1 > eep->size) {
+    DEBUG_ERR2(F("EEPROM too short for descriptor type. Descriptor start at: "), offset);
     return false;
+  }
 
   const uint8_t *buf = &eep->raw[offset];
   size_t len = eep->size - offset - CHECKSUM_SIZE;
 
   d->type = (DescriptorType)buf[0];
 
-  if (d->type == DT_RESERVED || d->type > lengthof(descriptor_type_info))
+  if (d->type == DT_RESERVED || d->type > lengthof(descriptor_type_info)) {
+    DEBUG_ERR2(F("Invalid or unknown descriptor type. Descriptor start at: "), offset);
     return false;
+  }
 
   d->descriptor_length = pgm_read_byte(&descriptor_type_info[d->type].descriptor_length);
   bool has_name = pgm_read_byte(&descriptor_type_info[d->type].supports_name);
 
-  if (len < d->descriptor_length)
+  if (len < d->descriptor_length) {
+    DEBUG_ERR2(F("EEPROM too short for descriptor. Descriptor start at: "), offset);
     return false;
+  }
 
   switch (d->type) {
     case DT_DATA:
       // Read the length of the data in the descriptor
       d->descriptor_length += buf[1];
-      if (len < d->descriptor_length)
+      if (len < d->descriptor_length) {
+        DEBUG_ERR2(F("EEPROM too short for data descriptor. Descriptor start at: "), offset);
         return false;
+      }
 
       if (!(buf[1] & 0x80))
         has_name = false;
@@ -305,8 +336,10 @@ bool Pbbe::parseMinimalDescriptor(const Eeprom *eep, size_t offset, MinimalDescr
 
   if (has_name) {
     d->name_length = stringLength(eep, offset + d->descriptor_length);
-    if (!d->name_length)
+    if (!d->name_length) {
+      DEBUG_ERR2(F("Invalid descriptor name. Descriptor start at: "), offset);
       return false;
+    }
   } else {
     d->name_length = 0;
   }
@@ -353,8 +386,10 @@ bool Pbbe::parseDescriptorA(const Eeprom *eep, DescriptorInfo *info)
 
   // Allocate memory
   info->parsed = (Descriptor*)malloc(size);
-  if (!info->parsed)
+  if (!info->parsed) {
+    Serial.println(F("Failed to allocate memory for parsed descriptor"));
     return false;
+  }
 
   // Parse descriptor
   switch (min.type) {
@@ -368,8 +403,10 @@ bool Pbbe::parseDescriptorA(const Eeprom *eep, DescriptorInfo *info)
       UartDescriptor& d = static_cast<UartDescriptor&>(*info->parsed);
       d.tx_pin = buf[1] & PIN_MASK;
       d.tx_pin = buf[2] & PIN_MASK;
-      if ((buf[3] & 0xf) >= lengthof(uart_speeds))
+      if ((buf[3] & 0xf) >= lengthof(uart_speeds)) {
+        DEBUG_ERR2(F("Invalid UART speed. Descriptor start at: "), info->offset);
         goto fail;
+      }
 
       d.speed = pgm_read_dword(&uart_speeds[buf[3] & 0xf]);
       break;
@@ -395,8 +432,10 @@ bool Pbbe::parseDescriptorA(const Eeprom *eep, DescriptorInfo *info)
     case DT_I2C_SLAVE: {
       I2cSlaveDescriptor& d = static_cast<I2cSlaveDescriptor&>(*info->parsed);
       d.addr = buf[1] & 0x7f;
-      if ((buf[2] & 0x3) >= lengthof(i2c_speeds))
+      if ((buf[2] & 0x3) >= lengthof(i2c_speeds)) {
+        DEBUG_ERR2(F("Invalid I2c speed. Descriptor start at: "), info->offset);
         goto fail;
+      }
       d.speed = pgm_read_word(&i2c_speeds[buf[2] & 0x3]);
       break;
     }
