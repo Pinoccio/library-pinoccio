@@ -82,6 +82,7 @@ void PinoccioShell::setup() {
   addBitlashFunction("backpack.list", (bitlash_function) backpackList);
   addBitlashFunction("backpack.eeprom", (bitlash_function) backpackEeprom);
   addBitlashFunction("backpack.detail", (bitlash_function) backpackDetail);
+  addBitlashFunction("backpack.resources", (bitlash_function) backpackResources);
 
   addBitlashFunction("scout.report", (bitlash_function) scoutReport);
   addBitlashFunction("scout.isleadscout", (bitlash_function) isScoutLeadScout);
@@ -934,6 +935,108 @@ static numvar backpackDetail(void) {
   Serial.print(F("EEPROM used: "));
   Serial.print(h->used_eeprom_size);
   Serial.println(F(" bytes"));
+}
+
+static numvar backpackResources(void) {
+  numvar addr = getarg(1);
+  if (addr < 0 || addr >= Backpacks::num_backpacks) {
+    Serial.println("Invalid backpack number");
+    return 0;
+  }
+
+  Pbbe::DescriptorList *list = Backpacks::info[addr].getAllDescriptors();
+  if (!list) {
+    Serial.println("Failed to fetch or parse resource descriptors");
+    return 0;
+  }
+  for (uint8_t i = 0; i < list->num_descriptors; ++i) {
+    Pbbe::DescriptorInfo &info = list->info[i];
+    if (info.group) {
+      Pbbe::GroupDescriptor& d = static_cast<Pbbe::GroupDescriptor&>(*info.group->parsed);
+      Serial.print(d.name);
+      Serial.print(".");
+    }
+
+    switch (info.type) {
+      case Pbbe::DT_SPI_SLAVE: {
+	Pbbe::SpiSlaveDescriptor& d = static_cast<Pbbe::SpiSlaveDescriptor&>(*info.parsed);
+	Serial.print(d.name);
+	Serial.print(": spi, ss = ");
+	Serial.print(d.ss_pin);
+	Serial.print(", max speed = ");
+	Serial.print((float)d.speed, 2);
+	Serial.print("Mhz");
+	Serial.println();
+	break;
+      }
+      case Pbbe::DT_UART: {
+	Pbbe::UartDescriptor& d = static_cast<Pbbe::UartDescriptor&>(*info.parsed);
+	Serial.print(d.name);
+	Serial.print(": uart, tx = ");
+	Serial.print(d.tx_pin);
+	Serial.print(", rx = ");
+	Serial.print(d.rx_pin);
+	Serial.print(", speed = ");
+	Serial.print(d.speed);
+	Serial.print("bps");
+	Serial.println();
+	break;
+      }
+      case Pbbe::DT_IOPIN: {
+	Pbbe::IoPinDescriptor& d = static_cast<Pbbe::IoPinDescriptor&>(*info.parsed);
+	Serial.print(d.name);
+	Serial.print(": gpio, pin = ");
+	Serial.print(d.pin);
+	Serial.println();
+	break;
+      }
+      case Pbbe::DT_GROUP: {
+	// Ignore
+	break;
+      }
+      case Pbbe::DT_POWER_USAGE: {
+	Pbbe::PowerUsageDescriptor& d = static_cast<Pbbe::PowerUsageDescriptor&>(*info.parsed);
+	Serial.print("power: pin = ");
+	Serial.print(d.power_pin);
+	Serial.print(", minimum = ");
+	Serial.print((float)d.minimum, 2);
+	Serial.print("uA, typical = ");
+	Serial.print((float)d.typical, 2);
+	Serial.print("uA, maximum = ");
+	Serial.print((float)d.maximum, 2);
+	Serial.print("uA");
+	Serial.println();
+	break;
+      }
+      case Pbbe::DT_I2C_SLAVE: {
+	Pbbe::I2cSlaveDescriptor& d = static_cast<Pbbe::I2cSlaveDescriptor&>(*info.parsed);
+	Serial.print(d.name);
+	Serial.print(": i2c, address = ");
+	Serial.print(d.addr);
+	Serial.print(", max speed = ");
+	Serial.print(d.speed);
+	Serial.print("kbps");
+	Serial.println();
+	break;
+      }
+      case Pbbe::DT_DATA: {
+	Pbbe::DataDescriptor& d = static_cast<Pbbe::DataDescriptor&>(*info.parsed);
+	Serial.print(d.name);
+	Serial.print(": data, length = ");
+	Serial.print(d.length);
+	Serial.print(", content = ");
+	printHexBuffer(Serial, d.data, d.length);
+	Serial.println();
+	break;
+      }
+      default: {
+	// Should not occur
+	break;
+      }
+    }
+  }
+
+  return 1;
 }
 
 /****************************\

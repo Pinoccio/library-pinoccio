@@ -44,6 +44,20 @@ struct BackpackInfo {
    */
   uint8_t getAddress();
 
+  /**
+   * Returns a list of all parsed descriptors, or NULL if not everything
+   * could be parsed.
+   *
+   * All the "parsed" members of teach DescriptorInfo in the list is
+   * already filled.
+   */
+  Pbbe::DescriptorList *getAllDescriptors();
+
+  /**
+   * Free the entire list of descriptors.
+   */
+  void freeAllDescriptors();
+
 protected:
   // Declare a private constructor to prevent people from allocating new
   // BackpackInfo objects outside of Backpacks::info (which would break
@@ -52,6 +66,7 @@ protected:
 
   Pbbe::Eeprom *eep;
   Pbbe::Header *header;
+  Pbbe::DescriptorList *descriptors;
 
   friend class Backpacks;
 };

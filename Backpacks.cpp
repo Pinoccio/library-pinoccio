@@ -68,6 +68,41 @@ void BackpackInfo::freeHeader()
   this->header = NULL;
 }
 
+Pbbe::DescriptorList *BackpackInfo::getAllDescriptors()
+{
+  if (this->descriptors)
+    return this->descriptors;
+
+  if (!getEeprom())
+    return NULL;
+
+  this->descriptors = Pbbe::parseDescriptorListA(this->eep, this->header);
+  if (!this->descriptors)
+    return NULL;
+
+  for (uint8_t i = 0; i < descriptors->num_descriptors; ++i) {
+    Pbbe::DescriptorInfo &info = this->descriptors->info[i];
+    if (!Pbbe::parseDescriptorA(this->eep, &info)) {
+      //freeAllDescriptors();
+      //return NULL;
+    }
+  }
+  return this->descriptors;
+}
+
+void BackpackInfo::freeAllDescriptors() {
+  if (this->descriptors) {
+    for (uint8_t i = 0; i < this->descriptors->num_descriptors; ++i) {
+      Pbbe::DescriptorInfo &info = this->descriptors->info[i];
+      free(info.parsed);
+      info.parsed = NULL;
+    }
+    free(this->descriptors);
+    this->descriptors = NULL;
+  }
+}
+
+
 void Backpacks::addBackpack(uint8_t *unique_id)
 {
   info = (BackpackInfo*)realloc(info, (num_backpacks + 1) * sizeof(*info));
@@ -78,6 +113,7 @@ void Backpacks::addBackpack(uint8_t *unique_id)
   // (yet) supply. https://github.com/arduino/Arduino/pull/108
   bp.eep = NULL;
   bp.header = NULL;
+  bp.descriptors = NULL;
 
   memcpy(bp.id.raw_bytes, unique_id, sizeof(bp.id));
 }
