@@ -1098,7 +1098,7 @@ static numvar backpackResources(void) {
 	} else {
 	  Serial.print("unknown");
 	}
-	Serial.print("typical = ");
+	Serial.print(", typical = ");
 	if (d.typical.raw()) {
 	  Serial.print((float)d.typical, 2);
 	  Serial.print("uA");
