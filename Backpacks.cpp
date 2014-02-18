@@ -4,6 +4,7 @@
 uint8_t Backpacks::num_backpacks = 0;
 BackpackInfo *Backpacks::info = NULL;
 PBBP Backpacks::pbbp;
+Pbbe::LogicalPin::mask_t Backpacks::used_pins = 0;
 
 void Backpacks::setup()
 {
@@ -18,8 +19,10 @@ bool Backpacks::detect()
 {
   free(info);
   num_backpacks = 0;
+  used_pins = 0;
   if (!pbbp.enumerate(addBackpack))
     return printPbbpError("Backpack enumeration failed: ");
+  updateUsedPins();
   return true;
 }
 
@@ -104,6 +107,64 @@ void BackpackInfo::freeAllDescriptors() {
   }
 }
 
+Pbbe::LogicalPin::mask_t BackpackInfo::getUsedPins() {
+  if (this->used_pins != USED_PINS_UNKNOWN)
+    return this->used_pins;
+
+  Pbbe::LogicalPin::mask_t used = 0;
+
+  Pbbe::DescriptorList *list = getAllDescriptors();
+  for (uint8_t i = 0; i < list->num_descriptors; ++i) {
+    Pbbe::DescriptorInfo& info = list->info[i];
+
+    switch (info.type) {
+      case Pbbe::DT_GROUP: {
+	break;
+      }
+      case Pbbe::DT_POWER_USAGE: {
+	Pbbe::PowerUsageDescriptor& d = static_cast<Pbbe::PowerUsageDescriptor&>(*info.parsed);
+	used |= d.power_pin.logical().mask();
+	break;
+      }
+      case Pbbe::DT_DATA: {
+	break;
+      }
+      case Pbbe::DT_IOPIN: {
+	Pbbe::IoPinDescriptor& d = static_cast<Pbbe::IoPinDescriptor&>(*info.parsed);
+	used |= d.pin.logical().mask();
+	break;
+      }
+      case Pbbe::DT_UART: {
+	Pbbe::UartDescriptor& d = static_cast<Pbbe::UartDescriptor&>(*info.parsed);
+	used |= d.tx_pin.logical().mask();
+	used |= d.rx_pin.logical().mask();
+	break;
+      }
+      case Pbbe::DT_I2C_SLAVE: {
+	used |= Pbbe::LogicalPin(SCL).mask();
+	used |= Pbbe::LogicalPin(SDA).mask();
+	break;
+      }
+      case Pbbe::DT_SPI_SLAVE: {
+	Pbbe::SpiSlaveDescriptor& d = static_cast<Pbbe::SpiSlaveDescriptor&>(*info.parsed);
+	used |= d.ss_pin.logical().mask();
+	used |= Pbbe::LogicalPin(MISO).mask();
+	used |= Pbbe::LogicalPin(MOSI).mask();
+	used |= Pbbe::LogicalPin(SCK).mask();
+	break;
+      }
+      default: {
+	// Should not occur
+	break;
+      }
+    }
+  }
+
+  this->used_pins = used;
+  return used;
+}
+
+
 
 void Backpacks::addBackpack(uint8_t *unique_id)
 {
@@ -116,6 +177,7 @@ void Backpacks::addBackpack(uint8_t *unique_id)
   bp.eep = NULL;
   bp.header = NULL;
   bp.descriptors = NULL;
+  bp.used_pins = BackpackInfo::USED_PINS_UNKNOWN;
 
   memcpy(bp.id.raw_bytes, unique_id, sizeof(bp.id));
 }
@@ -127,6 +189,16 @@ bool Backpacks::isModelPresent(uint16_t modelid)
       return true;
   }
   return false;
+}
+
+void Backpacks::updateUsedPins()
+{
+  Pbbe::LogicalPin::mask_t used = 0;
+  for (uint8_t i = 0; i < num_backpacks; ++i) {
+    used |= info[i].getUsedPins();
+  }
+
+  used_pins = used;
 }
 
 /* vim: set filetype=cpp sw=2 sts=2 expandtab: */

@@ -160,21 +160,23 @@ void PinoccioScout::setStateChangeEventPeriods(uint32_t digitalInterval, uint32_
 }
 
 void PinoccioScout::saveState() {
-  digitalPinState[0] = digitalRead(2);
-  digitalPinState[1] = digitalRead(3);
-  digitalPinState[2] = digitalRead(4);
-  digitalPinState[3] = digitalRead(5);
-  digitalPinState[4] = isLeadScout() ? -1 : digitalRead(6);
-  digitalPinState[5] = isLeadScout() ? -1 : digitalRead(7);
-  digitalPinState[6] = isLeadScout() ? -1 : digitalRead(8);
-  analogPinState[0] = analogRead(0); // pin 24
-  analogPinState[1] = analogRead(1); // pin 25
-  analogPinState[2] = analogRead(2); // pin 26
-  analogPinState[3] = analogRead(3); // pin 27
-  analogPinState[4] = analogRead(4); // pin 28
-  analogPinState[5] = analogRead(5); // pin 29
-  analogPinState[6] = analogRead(6); // pin 30
-  analogPinState[7] = analogRead(7); // pin 31
+  Pbbe::LogicalPin::mask_t used = Backpacks::used_pins;
+
+  digitalPinState[0] = (used & Pbbe::LogicalPin(2).mask()) ? -1 : digitalRead(2);
+  digitalPinState[1] = (used & Pbbe::LogicalPin(3).mask()) ? -1 : digitalRead(3);
+  digitalPinState[2] = (used & Pbbe::LogicalPin(4).mask()) ? -1 : digitalRead(4);
+  digitalPinState[3] = (used & Pbbe::LogicalPin(5).mask()) ? -1 : digitalRead(5);
+  digitalPinState[4] = (used & Pbbe::LogicalPin(6).mask()) ? -1 : digitalRead(6);
+  digitalPinState[5] = (used & Pbbe::LogicalPin(7).mask()) ? -1 : digitalRead(7);
+  digitalPinState[6] = (used & Pbbe::LogicalPin(8).mask()) ? -1 : digitalRead(8);
+  analogPinState[0] = (used & Pbbe::LogicalPin(A0).mask()) ? -1 : analogRead(0);
+  analogPinState[1] = (used & Pbbe::LogicalPin(A1).mask()) ? -1 : analogRead(1);
+  analogPinState[2] = (used & Pbbe::LogicalPin(A2).mask()) ? -1 : analogRead(2);
+  analogPinState[3] = (used & Pbbe::LogicalPin(A3).mask()) ? -1 : analogRead(3);
+  analogPinState[4] = (used & Pbbe::LogicalPin(A4).mask()) ? -1 : analogRead(4);
+  analogPinState[5] = (used & Pbbe::LogicalPin(A5).mask()) ? -1 : analogRead(5);
+  analogPinState[6] = (used & Pbbe::LogicalPin(A6).mask()) ? -1 : analogRead(6);
+  analogPinState[7] = (used & Pbbe::LogicalPin(A7).mask()) ? -1 : analogRead(7);
   batteryPercentage = constrain(HAL_FuelGaugePercent(), 0, 100);
   batteryVoltage = HAL_FuelGaugeVoltage();
   isBattCharging = (digitalRead(CHG_STATUS) == LOW);
@@ -183,8 +185,10 @@ void PinoccioScout::saveState() {
 }
 
 int8_t PinoccioScout::getPinMode(uint8_t pin) {
-  // TODO: add this as a bp.isPinReserved(pin) method instead of hardwired
-  if (Scout.isLeadScout() && pin >= 6 && pin <= 8) {
+  // TODO: This requires a lot of expensive bitshifting, perhaps we can
+  // move this check up into the loop that calls getPinMode to require
+  // only one shift per loop iteration?
+  if (Backpacks::used_pins & Pbbe::LogicalPin(pin).mask()) {
     return -1;
   }
   if ((~(*portModeRegister(digitalPinToPort(pin))) & digitalPinToBitMask(pin)) &&

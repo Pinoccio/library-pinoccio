@@ -72,29 +72,60 @@ public:
     DT_EMPTY = 0xff,
   };
 
-  // TODO: Change to use NOT_A_PIN if that's ever changed from its
-  // current "0" value:
-  // https://groups.google.com/a/arduino.cc/d/msg/developers/zeDXBRwW-mg/9bsG9f7Zp84J
-  static const uint8_t NO_LOGICAL_PIN = 0xff;
-
   struct PhysicalPinInfo {
     uint8_t logical_pin;
     char name[5];
   };
 
-  static const PhysicalPinInfo physical_pin_info[] PROGMEM;
+  /** Physical pin numbers, including pin 0 meaning "not connected" */
+  static const unsigned NUM_PHYSICAL_PINS = 33;
+  static const PhysicalPinInfo physical_pin_info[NUM_PHYSICAL_PINS] PROGMEM;
+
+  struct LogicalPin {
+    LogicalPin(uint8_t val) : val(val) { }
+    operator uint8_t() {return this->val; }
+
+    // TODO: Change to use NOT_A_PIN if that's ever changed from its
+    // current "0" value:
+    // https://groups.google.com/a/arduino.cc/d/msg/developers/zeDXBRwW-mg/9bsG9f7Zp84J
+    static const uint8_t NONE = 0xff;
+
+    /** Bitmask for logical pins */
+    typedef boost::uint_t<NUM_DIGITAL_PINS>::least mask_t;
+    mask_t mask() {
+      if (this->val != NONE)
+        return (mask_t)1 << this->val;
+      else
+        return 0;
+    }
+
+    uint8_t val;
+  };
 
   struct PhysicalPin {
-    PhysicalPin& operator=(uint8_t val) { this->val = val; }
+    PhysicalPin(uint8_t val) : val(val) { }
     operator uint8_t() {return this->val; }
+
     const __FlashStringHelper *name() {
       return reinterpret_cast<const __FlashStringHelper *>(&physical_pin_info[this->val].name);
     }
-    uint8_t logical_pin() {
+
+    LogicalPin logical() {
       return pgm_read_byte(&physical_pin_info[this->val].logical_pin);
+    }
+
+    /** Bitmask for physical pins, except for pin 0 (meaning "not connected") */
+    typedef boost::uint_t<NUM_PHYSICAL_PINS - 1>::least mask_t;
+
+    mask_t mask() {
+      if (this->val != 0)
+        return (mask_t)1 << (this->val - 1);
+      else
+        return 0;
     }
     uint8_t val;
   };
+
 
   struct Descriptor { };
 

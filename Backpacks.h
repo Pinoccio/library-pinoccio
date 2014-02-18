@@ -4,6 +4,7 @@
 
 #include "PBBP.h"
 #include "Pbbe.h"
+#include "integer.h"
 
 /**
  * Structure collecting some info on a backpack. Do not create any of
@@ -15,6 +16,12 @@ struct BackpackInfo {
   Pbbe::Eeprom *eep;
   Pbbe::Header *header;
   Pbbe::DescriptorList *descriptors;
+  Pbbe::LogicalPin::mask_t used_pins;
+
+  /** Special value for used_pins when pins have not been processed yet.
+   ** This assumes that there will never be a backpack that uses _all_
+   ** pins, but that should be a reasonable assumption. */
+  static const Pbbe::LogicalPin::mask_t USED_PINS_UNKNOWN = (Pbbe::LogicalPin::mask_t)-1;
 
   /**
    * Retrieve the Eeprom a backpack, if not already done so.
@@ -61,6 +68,13 @@ struct BackpackInfo {
    */
   void freeAllDescriptors();
 
+  /**
+   * Returns a bitmask of all pins used by this backpack. If the bitmask
+   * is not yet know, this will cause all descriptors to be parsed (so
+   * you might want to call freeAllDescriptors() afterwards).
+   */
+  Pbbe::LogicalPin::mask_t getUsedPins();
+
 protected:
   // Declare a private constructor to prevent people from allocating new
   // BackpackInfo objects outside of Backpacks::info (which would break
@@ -89,6 +103,8 @@ public:
   static BackpackInfo *info;
   static PBBP pbbp;
 
+  static Pbbe::LogicalPin::mask_t used_pins;
+
 protected:
   /**
    * Add a backpack
@@ -102,6 +118,8 @@ protected:
    * @returns false
    */
   static bool printPbbpError(const char *prefix);
+
+  static void updateUsedPins();
 
   friend class BackpackInfo;
 };
