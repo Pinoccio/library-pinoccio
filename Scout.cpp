@@ -206,6 +206,8 @@ int8_t PinoccioScout::getPinMode(uint8_t pin) {
       (*portOutputRegister(digitalPinToPort(pin)) & digitalPinToBitMask(pin))) {
     return INPUT_PULLUP; // 2
   }
+
+  return -1;
 }
 
 bool PinoccioScout::isDigitalPin(uint8_t pin) {
@@ -223,7 +225,7 @@ bool PinoccioScout::isAnalogPin(uint8_t pin) {
 }
 
 static void scoutDigitalStateChangeTimerHandler(SYS_Timer_t *timer) {
-  uint16_t val;
+  int8_t val;
 
   // TODO: This can likely be optimized by hitting the pin registers directly
   if (Scout.digitalPinEventHandler != 0) {
@@ -253,7 +255,7 @@ static void scoutDigitalStateChangeTimerHandler(SYS_Timer_t *timer) {
 }
 
 static void scoutAnalogStateChangeTimerHandler(SYS_Timer_t *timer) {
-  uint16_t val;
+  int16_t val;
 
   if (Scout.analogPinEventHandler != 0) {
     for (int i=0; i<8; i++) {

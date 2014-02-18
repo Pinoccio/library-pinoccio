@@ -34,7 +34,7 @@ static void fieldAnswerChunk();
 static bool fieldAnnouncements(NWK_DataInd_t *ind);
 
 // simple wrapper for the incoming channel announcements up to HQ
-static void leadAnnouncementSend(int chan, int from, char *message);
+static void leadAnnouncementSend(uint16_t chan, uint16_t from, char *message);
 
 // necessities for tracking state when chunking up a large command into mesh requests
 static int leadCommandTo = 0;
@@ -317,7 +317,7 @@ static bool fieldAnnouncements(NWK_DataInd_t *ind) {
 // just store one converted report at a time
 char report_json[256];
 char *report2json(char *in) {
-  char *keys, *vals, *type, report[100];
+  char *keys, *vals, report[100];
   unsigned short ir[16], ik[32], iv[32], i;
 
   // copy cuz we edit it
@@ -350,7 +350,7 @@ char *report2json(char *in) {
 }
 
 
-static void leadAnnouncementSend(int group, int from, char *message) {
+static void leadAnnouncementSend(uint16_t group, uint16_t from, char *message) {
   char sig[256];
   // reports are expected to be json objects
   if(group == 0xBEEF) sprintf(sig,"{\"type\":\"report\",\"from\":%d,\"report\":%s}\n", from, report2json(message));
@@ -388,7 +388,7 @@ void leadHQHandle(void) {
   static char *buffer = NULL;
   uint8_t block[128];
   char *nl;
-  int rsize, len, i;
+  int rsize, len;
   unsigned short index[32]; // <10 keypairs in the incoming json
 
   // only continue if new data to read
@@ -403,7 +403,7 @@ void leadHQHandle(void) {
   }
 
   // get all waiting data and look for packets
-  while(rsize = Scout.wifi.client.read(block, sizeof(block))){
+  while((rsize = Scout.wifi.client.read(block, sizeof(block)))){
     len = strlen(buffer);
 
     // process chunk of incoming data
@@ -445,7 +445,7 @@ void leadHQHandle(void) {
 }
 
 // when we can't process a command for some internal reason
-void leadCommandError(int from, int id, char *reason) {
+void leadCommandError(int from, int id, const char *reason) {
   char *err;
   err = (char*)malloc(strlen(reason)+128);
   sprintf(err,"{\"type\":\"reply\",\"from\":%d,\"id\":%d,\"err\":true,\"reply\":\"%s\"}\n",from,id,reason);
@@ -456,7 +456,7 @@ void leadCommandError(int from, int id, char *reason) {
 // process a packet from HQ
 void leadIncoming(char *packet, unsigned short *index) {
   char *type, *command;
-  int to, ret, len;
+  uint16_t to;
   unsigned long id;
 
   type = j0g_str("type", packet, index);
@@ -492,7 +492,7 @@ void leadIncoming(char *packet, unsigned short *index) {
 
       sprintf(Shell.bitlashOutput,"{\"type\":\"reply\",\"from\":%d,\"id\":%lu,\"end\":true,\"reply\":\"",to,id);
       setOutputHandler(&bitlashBuffer);
-      ret = (int)doCommand(command);
+      doCommand(command);
       strcpy(Shell.bitlashOutput + strlen(Shell.bitlashOutput), "\"}\n");
       setOutputHandler(&bitlashFilter);
       leadSignal(Shell.bitlashOutput);

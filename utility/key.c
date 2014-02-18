@@ -1,6 +1,8 @@
 #include "key.h"
 #include "keys.h" // has KEYS_BUNDLE
 #include "j0g.h"
+#include <string.h>
+#include <stdlib.h>
 
 char *keytable[KEY_MAX];
 char keytable_tmp[KEY_MAX];
@@ -30,7 +32,7 @@ int key_loop(unsigned long now)
   return 1;
 }
 
-int key_map(char *key, unsigned long at)
+int key_map(const char *key, unsigned long at)
 {
   int i;
   if(strlen(key) > KEY_LEN) return 0;
@@ -51,7 +53,7 @@ int key_map(char *key, unsigned long at)
   return i;
 }
 
-char *key_get(int i)
+const char *key_get(int i)
 {
   if(i < 0 || i >= KEY_MAX) return 0;
   return keytable[i];
@@ -66,7 +68,7 @@ void key_free(int i)
 }
 
 // loads json array of strings, outs is optional
-void key_load(char *array, int *outs, unsigned long at)
+void key_load(const char *array, int *outs, unsigned long at)
 {
   unsigned int *index, i, oi=1;
   if(!array || !*array) return;

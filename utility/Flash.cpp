@@ -41,7 +41,7 @@ enum {
 #define FLASH_MFG 0x20
 #define FLASH_ID 0x7115
 
-FlashClass::FlashClass(int chipSelectPin, SPIClass &SPIDriver) : CS(chipSelectPin), SPI(SPIDriver) {
+FlashClass::FlashClass(int chipSelectPin, SPIClass &SPIDriver) : SPI(SPIDriver), CS(chipSelectPin) {
   begin(chipSelectPin, SPIDriver);
 }
 

@@ -80,6 +80,8 @@ bool WiFiBackpack::setup() {
 
   if (HqHandler::cacert_len)
     gs.addCert(CA_CERTNAME_HQ, /* to_flash */ false, HqHandler::cacert, HqHandler::cacert_len);
+
+  return true;
 }
 
 void WiFiBackpack::loop() {

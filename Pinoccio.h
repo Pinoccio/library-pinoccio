@@ -77,7 +77,7 @@ class PinoccioClass {
     void meshSetRadio(const uint16_t theAddress, const uint16_t thePanId=0x4567, const uint8_t theChannel=20);
     void meshSetPower(const uint8_t theTxPower);
     void meshSetDataRate(const uint8_t theRate);
-    void meshSetSecurityKey(const char *key);
+    void meshSetSecurityKey(const uint8_t *key);
     void meshResetSecurityKey(void);
     void meshSendMessage(MeshRequest request);
     void meshListen(uint8_t endpoint, bool (*handler)(NWK_DataInd_t *ind));

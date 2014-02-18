@@ -149,7 +149,7 @@ void PinoccioClass::loadSettingsFromEeprom() {
   for (int i=0; i<16; i++) {
     buffer[i] = eeprom_read_byte((uint8_t *)8162+i);
   }
-  meshSetSecurityKey((char *)buffer);
+  meshSetSecurityKey((uint8_t *)buffer);
   memset(buffer, 0x00, 16);
 
   if (eeprom_read_word((uint16_t *)8182) != 0xFFFF ||
@@ -219,7 +219,7 @@ void PinoccioClass::meshSetDataRate(const uint8_t theRate) {
   eeprom_update_byte((uint8_t *)8126, theRate);
 }
 
-void PinoccioClass::meshSetSecurityKey(const char *key) {
+void PinoccioClass::meshSetSecurityKey(const uint8_t *key) {
   NWK_SetSecurityKey((uint8_t *)key);
 
   for (int i=0; i<16; i++) {
@@ -228,7 +228,7 @@ void PinoccioClass::meshSetSecurityKey(const char *key) {
 }
 
 void PinoccioClass::meshResetSecurityKey(void) {
-  const char buf[16] = {0xFF, 0xFF, 0xFF, 0xFF,0xFF, 0xFF, 0xFF, 0xFF,0xFF, 0xFF, 0xFF, 0xFF,0xFF, 0xFF, 0xFF, 0xFF};
+  const uint8_t buf[16] = {0xFF, 0xFF, 0xFF, 0xFF,0xFF, 0xFF, 0xFF, 0xFF,0xFF, 0xFF, 0xFF, 0xFF,0xFF, 0xFF, 0xFF, 0xFF};
   meshSetSecurityKey(buf);
 }
 

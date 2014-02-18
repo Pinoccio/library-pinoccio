@@ -433,20 +433,20 @@ static numvar keyMap(void)
   {
     return key_map((char*)getstringarg(1), 0);
   }
-  snprintf(num,8,"%d",getarg(1));
+  snprintf(num,8,"%lu",getarg(1));
   return key_map(num, 0);
 }
 
 static numvar keyPrint(void)
 {
-  char *key = key_get(getarg(1));
+  const char *key = key_get(getarg(1));
   if(!key) return 0;
   speol(key);
 }
 
 static numvar keyNumber(void)
 {
-  char *key = key_get(getarg(1));
+  const char *key = key_get(getarg(1));
   if(!key) return 0;
   return atoi(key);
 }
@@ -700,7 +700,7 @@ static numvar meshSetDataRate(void) {
 }
 
 static numvar meshSetKey(void) {
-  Scout.meshSetSecurityKey((const char *)getstringarg(1));
+  Scout.meshSetSecurityKey((const uint8_t *)getstringarg(1));
 }
 
 static numvar meshResetKey(void) {
@@ -1524,7 +1524,7 @@ static numvar wifiVerbose(void) {
 \****************************/
 static void pingScout(int address) {
   pingDataReq.dstAddr = address;
-  char *ping = "ping";
+  const char *ping = "ping";
 
   pingDataReq.dstEndpoint = 1;
   pingDataReq.srcEndpoint = 1;
@@ -1541,7 +1541,7 @@ static void pingScout(int address) {
 
 static void pingGroup(int address) {
   pingDataReq.dstAddr = address;
-  char *ping = "ping";
+  const char *ping = "ping";
 
   pingDataReq.dstEndpoint = 1;
   pingDataReq.srcEndpoint = 1;
