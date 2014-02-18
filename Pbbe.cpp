@@ -622,9 +622,6 @@ Pbbe::Eeprom *Pbbe::updateEeprom(Eeprom *eep, size_t offset, const uint8_t *buf,
   eep->raw[USED_SIZE_OFFSET] = used_size;
   // Shrink the buffer if needed
   if (used_size != eep->size) {
-    Serial.println("Shrinking");
-    Serial.println(eep->size);
-    Serial.println(used_size);
     eep = (Eeprom *)realloc(eep, sizeof(Eeprom) + used_size);
     eep->size = used_size;
   }
