@@ -301,7 +301,6 @@ uint8_t PinoccioShell::parseHex(char c)
     return c - 'A' + 10;
   // TODO: Better error message
   unexpected(M_number);
-
 }
 
 void PinoccioShell::parseHex(const char *str, size_t length, uint8_t *out)
@@ -325,12 +324,14 @@ static numvar allReport(void) {
   sp("running all reports");
   speol();
   Shell.allReportHQ();
+  return 1;
 }
 
 static numvar allVerbose(void) {
   Scout.handler.setVerbose(getarg(1));
   isMeshVerbose = getarg(1);
   Scout.eventVerboseOutput = getarg(1);
+  return 1;
 }
 
 void PinoccioShell::loop() {
@@ -442,6 +443,7 @@ static numvar keyPrint(void)
   const char *key = key_get(getarg(1));
   if(!key) return 0;
   speol(key);
+  return 1;
 }
 
 static numvar keyNumber(void)
@@ -458,6 +460,7 @@ static numvar keySave(void)
   var = (char*)getstringarg(1);
   sprintf(cmd,"function boot.%s {%s=key(\"%s\");}",var,var,key_get(getarg(2)));
   doCommand(cmd);
+  return 1;
 }
 
 
@@ -495,6 +498,7 @@ static numvar disableBackpackVcc(void) {
 static numvar goToSleep(void) {
   // TODO: not implemented yet
   //Pinoccio.goToSleep(getarg(1));
+  return 1;
 }
 
 static char *powerReportHQ(void) {
@@ -533,10 +537,12 @@ static numvar ledBlink(void) {
   } else {
     RgbLed.blinkColor(getarg(1), getarg(2), getarg(3));
   }
+  return 1;
 }
 
 static numvar ledOff(void) {
   RgbLed.turnOff();
+  return 1;
 }
 
 static numvar ledRed(void) {
@@ -547,6 +553,7 @@ static numvar ledRed(void) {
   } else {
     RgbLed.red();
   }
+  return 1;
 }
 
 static numvar ledGreen(void) {
@@ -557,6 +564,7 @@ static numvar ledGreen(void) {
   } else {
     RgbLed.green();
   }
+  return 1;
 }
 
 static numvar ledBlue(void) {
@@ -567,6 +575,7 @@ static numvar ledBlue(void) {
   } else {
     RgbLed.blue();
   }
+  return 1;
 }
 
 static numvar ledCyan(void) {
@@ -577,6 +586,7 @@ static numvar ledCyan(void) {
   } else {
     RgbLed.cyan();
   }
+  return 1;
 }
 
 static numvar ledPurple(void) {
@@ -587,6 +597,7 @@ static numvar ledPurple(void) {
   } else {
     RgbLed.purple();
   }
+  return 1;
 }
 
 static numvar ledMagenta(void) {
@@ -597,6 +608,7 @@ static numvar ledMagenta(void) {
   } else {
     RgbLed.magenta();
   }
+  return 1;
 }
 
 static numvar ledYellow(void) {
@@ -607,6 +619,7 @@ static numvar ledYellow(void) {
   } else {
     RgbLed.yellow();
   }
+  return 1;
 }
 
 static numvar ledOrange(void) {
@@ -617,6 +630,7 @@ static numvar ledOrange(void) {
   } else {
     RgbLed.orange();
   }
+  return 1;
 }
 
 static numvar ledWhite(void) {
@@ -627,6 +641,7 @@ static numvar ledWhite(void) {
   } else {
     RgbLed.white();
   }
+  return 1;
 }
 
 static numvar ledGetHex(void) {
@@ -652,14 +667,17 @@ static numvar ledSetHex(void) {
   } else {
     return false;
   }
+  return 1;
 }
 
 static numvar ledSetRgb(void) {
   RgbLed.setColor(getarg(1), getarg(2), getarg(3));
+  return 1;
 }
 
 static numvar ledSaveTorch(void) {
   RgbLed.saveTorch(getarg(1), getarg(2), getarg(3));
+  return 1;
 }
 
 static numvar ledTorch(void) {
@@ -670,10 +688,12 @@ static numvar ledTorch(void) {
   } else {
     RgbLed.setTorch();
   }
+  return 1;
 }
 
 static numvar ledReport(void) {
   speol(ledReportHQ());
+  return 1;
 }
 
 /****************************\
@@ -689,30 +709,37 @@ static numvar meshConfig(void) {
     channel = getarg(3);
   }
   Scout.meshSetRadio(getarg(1), panId, channel);
+  return 1;
 }
 
 static numvar meshSetPower(void) {
   Scout.meshSetPower(getarg(1));
+  return 1;
 }
 
 static numvar meshSetDataRate(void) {
   Scout.meshSetDataRate(getarg(1));
+  return 1;
 }
 
 static numvar meshSetKey(void) {
   Scout.meshSetSecurityKey((const uint8_t *)getstringarg(1));
+  return 1;
 }
 
 static numvar meshResetKey(void) {
   Scout.meshResetSecurityKey();
+  return 1;
 }
 
 static numvar meshJoinGroup(void) {
   Scout.meshJoinGroup(getarg(1));
+  return 1;
 }
 
 static numvar meshLeaveGroup(void) {
   Scout.meshLeaveGroup(getarg(1));
+  return 1;
 }
 
 static numvar meshIsInGroup(void) {
@@ -721,10 +748,12 @@ static numvar meshIsInGroup(void) {
 
 static numvar meshPing(void) {
   pingScout(getarg(1));
+  return 1;
 }
 
 static numvar meshPingGroup(void) {
   pingGroup(getarg(1));
+  return 1;
 }
 
 char *arg2array(int ver, char *msg)
@@ -770,6 +799,7 @@ static numvar meshLoss(void) {
 
 static numvar meshVerbose(void) {
   isMeshVerbose = getarg(1);
+  return 1;
 }
 
 static char *meshReportHQ(void) {
@@ -801,6 +831,7 @@ static char *meshReportHQ(void) {
 
 static numvar meshReport(void) {
   speol(meshReportHQ());
+  return 1;
 }
 
 static numvar meshRouting(void) {
@@ -829,6 +860,7 @@ static numvar meshRouting(void) {
     sp("    |");
     speol();
   }
+  return 1;
 }
 
 /****************************\
@@ -890,6 +922,7 @@ static numvar pinOn(void) {
     digitalWrite(pin, HIGH);
     analogPinReportHQ();
   }
+  return 1;
 }
 
 static numvar pinOff(void) {
@@ -904,6 +937,7 @@ static numvar pinOff(void) {
     digitalWrite(pin, LOW);
     analogPinReportHQ();
   }
+  return 1;
 }
 
 static numvar pinMakeInput(void) {
@@ -915,6 +949,7 @@ static numvar pinMakeInput(void) {
   if (Scout.isAnalogPin(pin)) {
     analogPinReportHQ();
   }
+  return 1;
 }
 
 static numvar pinMakeInputPullup(void) {
@@ -926,6 +961,7 @@ static numvar pinMakeInputPullup(void) {
   if (Scout.isAnalogPin(pin)) {
     analogPinReportHQ();
   }
+  return 1;
 }
 
 static numvar pinMakeOutput(void) {
@@ -937,6 +973,7 @@ static numvar pinMakeOutput(void) {
   if (Scout.isAnalogPin(pin)) {
     analogPinReportHQ();
   }
+  return 1;
 }
 
 static numvar pinSetMode(void) {
@@ -948,6 +985,7 @@ static numvar pinSetMode(void) {
   if (Scout.isAnalogPin(pin)) {
     analogPinReportHQ();
   }
+  return 1;
 }
 
 static numvar pinRead(void) {
@@ -999,6 +1037,7 @@ static char *backpackReportHQ(void) {
 static numvar backpackReport(void) {
   sp(backpackReportHQ());
   speol();
+  return 1;
 }
 
 static void printHexBuffer(Print &p, const uint8_t *buf, size_t len, const char *sep = NULL)
@@ -1149,6 +1188,7 @@ static numvar backpackDetail(void) {
   Serial.print(F("EEPROM used: "));
   Serial.print(h->used_eeprom_size);
   Serial.println(F(" bytes"));
+  return 1;
 }
 
 static numvar backpackResources(void) {
@@ -1294,6 +1334,7 @@ static char *scoutReportHQ(void) {
 
 static numvar scoutReport(void) {
   speol(scoutReportHQ());
+  return 1;
 }
 
 static numvar isScoutLeadScout(void) {
@@ -1303,6 +1344,7 @@ static numvar isScoutLeadScout(void) {
 
 static numvar setHQToken(void) {
   Pinoccio.setHQToken((const char *)getstringarg(1));
+  return 1;
 }
 
 static numvar getHQToken(void) {
@@ -1310,10 +1352,12 @@ static numvar getHQToken(void) {
   Pinoccio.getHQToken((char *)token);
   token[32] = 0;
   speol(token);
+  return 1;
 }
 
 static numvar scoutDelay(void) {
   Scout.delay(getarg(1));
+  return 1;
 }
 
 static numvar daisyWipe(void) {
@@ -1350,12 +1394,14 @@ static numvar daisyWipe(void) {
     doCommand("rm *");
     doCommand("scout.boot");
   }
+  return 1;
 }
 
 static numvar wdtBoot(void) {
   cli();
   wdt_enable(WDTO_15MS);
   while(1);
+  return 1;
 }
 
 /****************************\
@@ -1364,6 +1410,7 @@ static numvar wdtBoot(void) {
 
 static numvar hqVerbose(void) {
   Scout.handler.setVerbose(getarg(1));
+  return 1;
 }
 
 /****************************\
@@ -1373,19 +1420,23 @@ static numvar hqVerbose(void) {
 static numvar startStateChangeEvents(void) {
   Scout.startDigitalStateChangeEvents();
   Scout.startAnalogStateChangeEvents();
+  return 1;
 }
 
 static numvar stopStateChangeEvents(void) {
   Scout.stopDigitalStateChangeEvents();
   Scout.stopAnalogStateChangeEvents();
+  return 1;
 }
 
 static numvar setEventPeriods(void) {
   Scout.setStateChangeEventPeriods(getarg(1), getarg(2), getarg(3));
+  return 1;
 }
 
 static numvar setEventVerbose(void) {
   Scout.eventVerboseOutput = getarg(1);
+  return 1;
 }
 
 /****************************\
@@ -1405,6 +1456,7 @@ static char *wifiReportHQ(void) {
 
 static numvar wifiReport(void) {
   speol(wifiReportHQ());
+  return 1;
 }
 
 static numvar wifiStatus(void) {
@@ -1415,6 +1467,7 @@ static numvar wifiStatus(void) {
     Scout.wifi.printFirmwareVersions(Serial);
     Scout.wifi.printCurrentNetworkStatus(Serial);
   }
+  return 1;
 }
 
 static numvar wifiList(void) {
@@ -1429,6 +1482,7 @@ static numvar wifiConfig(void) {
   if (!Scout.wifi.wifiConfig((const char *)getstringarg(1), (const char *)getstringarg(2))) {
     Serial.println("Error: saving Scout.wifi.configuration data failed");
   }
+  return 1;
 }
 
 static numvar wifiDhcp(void) {
@@ -1437,6 +1491,7 @@ static numvar wifiDhcp(void) {
   if (!Scout.wifi.wifiDhcp(host)) {
     Serial.println("Error: saving Scout.wifi.configuration data failed");
   }
+  return 1;
 }
 
 static numvar wifiStatic(void) {
@@ -1483,40 +1538,47 @@ static numvar wifiCommand(void) {
   if (!Scout.wifi.runDirectCommand(Serial, (const char *)getstringarg(1))) {
      Serial.println("Error: Wi-Fi direct command failed");
   }
+  return 1;
 }
 
 static numvar wifiPing(void) {
   if (!Scout.wifi.ping(Serial, (const char *)getstringarg(1))) {
      Serial.println("Error: Wi-Fi ping command failed");
   }
+  return 1;
 }
 
 static numvar wifiDNSLookup(void) {
   if (!Scout.wifi.dnsLookup(Serial, (const char *)getstringarg(1))) {
      Serial.println("Error: Wi-Fi DNS lookup command failed");
   }
+  return 1;
 }
 
 static numvar wifiGetTime(void) {
   if (!Scout.wifi.printTime(Serial)) {
      Serial.println("Error: Wi-Fi NTP time lookup command failed");
   }
+  return 1;
 }
 
 static numvar wifiSleep(void) {
   if (!Scout.wifi.goToSleep()) {
      Serial.println("Error: Wi-Fi sleep command failed");
   }
+  return 1;
 }
 
 static numvar wifiWakeup(void) {
   if (!Scout.wifi.wakeUp()) {
      Serial.println("Error: Wi-Fi wakeup command failed");
   }
+  return 1;
 }
 
 static numvar wifiVerbose(void) {
   // TODO
+  return 1;
 }
 
 /****************************\
