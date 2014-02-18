@@ -21,10 +21,7 @@ static numvar disableBackpackVcc(void);
 static numvar goToSleep(void);
 static numvar powerReport(void);
 
-static numvar ledEnableContinuousBlink(void);
-static numvar ledDisableContinuousBlink(void);
 static numvar ledBlink(void);
-static numvar ledBlinkTorch(void);
 static numvar ledOff(void);
 static numvar ledRed(void);
 static numvar ledGreen(void);

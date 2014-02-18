@@ -13,9 +13,6 @@ extern "C" {
 
 static bool hqVerboseOutput;
 
-static void hqConnectHandler(uint8_t cid);
-static void hqDisconnectHandler(uint8_t cid);
-
 static char *fieldCommand = NULL;
 static int fieldCommandLen = 0;
 static int fieldAnswerTo = 0;
@@ -49,8 +46,6 @@ static void leadCommandChunk(void);
 static int leadAnswerID = 0;
 
 static bool leadAnswers(NWK_DataInd_t *ind);
-static void leadAnnouncementSend(int chan, int from, char *message);
-static void leadHQ(void);
 static void leadSignal(char *json);
 static void leadIncoming(char *packet, unsigned short *index);
 
