@@ -5,6 +5,10 @@
 #include <math.h>
 #include <avr/eeprom.h>
 
+static void scoutDigitalStateChangeTimerHandler(SYS_Timer_t *timer);
+static void scoutAnalogStateChangeTimerHandler(SYS_Timer_t *timer);
+static void scoutPeripheralStateChangeTimerHandler(SYS_Timer_t *timer);
+
 PinoccioScout Scout;
 
 PinoccioScout::PinoccioScout() {

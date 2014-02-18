@@ -13,6 +13,8 @@
 #include <avr/eeprom.h>
 #include "utility/sysTimer.h"
 
+static void halRgbLedBlinkTimerHandler(SYS_Timer_t *timer);
+
 HalRgbLed RgbLed;
 
 HalRgbLed::HalRgbLed() {

@@ -86,8 +86,5 @@ class PinoccioScout : public PinoccioClass {
 };
 
 extern PinoccioScout Scout;
-static void scoutDigitalStateChangeTimerHandler(SYS_Timer_t *timer);
-static void scoutAnalogStateChangeTimerHandler(SYS_Timer_t *timer);
-static void scoutPeripheralStateChangeTimerHandler(SYS_Timer_t *timer);
 
 #endif
