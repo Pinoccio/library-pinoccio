@@ -907,7 +907,7 @@ static char *analogPinReportHQ(void) {
           Scout.analogPinState[5],
           Scout.analogPinState[6],
           Scout.analogPinState[7]);
-  Scout.handler.report(report);
+  return Scout.handler.report(report);
 }
 
 static numvar pinOn(void) {
