@@ -148,6 +148,11 @@ bool WiFiBackpack::autoConnectHq() {
 }
 
 void WiFiBackpack::disassociate() {
+  // this delay is important--The Gainspan module with 2.5.1 firmware
+  // will hang if the NCM disassociate is called too soon after boot.
+  if (millis() < 5000) {
+    delay(4000);
+  }
   gs.setNcm(false);
   gs.disassociate();
 }
@@ -179,7 +184,7 @@ bool WiFiBackpack::isAPConnected() {
 }
 
 bool WiFiBackpack::isHQConnected() {
-  return client.connected();
+  return client.connected() && client.sslConnected();
 }
 
 bool WiFiBackpack::dnsLookup(Print& p, const char *host) {
