@@ -296,6 +296,7 @@ public:
   static void extractString(const Eeprom *eep, size_t offset, char *str, size_t strlen);
 
   struct MajorMinor {
+    MajorMinor(uint8_t major, uint8_t minor) : major(major), minor(minor) { }
     uint8_t major : 4;
     uint8_t minor : 4;
   };
@@ -303,7 +304,7 @@ public:
   /**
    * Split a hardware revision into a major and minor part.
    */
-  static MajorMinor extractMajorMinor(uint8_t rev) { return {rev >> 4, rev & 0xf}; }
+  static MajorMinor extractMajorMinor(uint8_t rev) { return MajorMinor(rev >> 4, rev & 0xf); }
 
   /**
    * Read the EEPROM from a slave into a newly allocated buffer.
