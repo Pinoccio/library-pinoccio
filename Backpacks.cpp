@@ -85,8 +85,8 @@ Pbbe::DescriptorList *BackpackInfo::getAllDescriptors()
   for (uint8_t i = 0; i < descriptors->num_descriptors; ++i) {
     Pbbe::DescriptorInfo &info = this->descriptors->info[i];
     if (!Pbbe::parseDescriptorA(this->eep, &info)) {
-      //freeAllDescriptors();
-      //return NULL;
+      freeAllDescriptors();
+      return NULL;
     }
   }
   return this->descriptors;
