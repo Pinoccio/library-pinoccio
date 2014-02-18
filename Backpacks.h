@@ -12,6 +12,9 @@
  */
 struct BackpackInfo {
   Pbbe::UniqueId id;
+  Pbbe::Eeprom *eep;
+  Pbbe::Header *header;
+  Pbbe::DescriptorList *descriptors;
 
   /**
    * Retrieve the Eeprom a backpack, if not already done so.
@@ -58,9 +61,6 @@ struct BackpackInfo {
    */
   void freeAllDescriptors();
 
-  Pbbe::Eeprom *eep;
-  Pbbe::Header *header;
-  Pbbe::DescriptorList *descriptors;
 protected:
   // Declare a private constructor to prevent people from allocating new
   // BackpackInfo objects outside of Backpacks::info (which would break
