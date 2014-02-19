@@ -10,28 +10,6 @@
 #  define D(x)
 #endif
 
-// Begin - Specifics for the LWM library
-// #define NWK_ENABLE_ROUTING
-// #define NWK_ENABLE_SECURITY
-// #define NWK_ENABLE_MULTICAST
-// #define NWK_ENABLE_ROUTE_DISCOVERY
-//
-#define NWK_BUFFERS_AMOUNT                  10
-#define NWK_MAX_ENDPOINTS_AMOUNT            20
-// #define NWK_ACK_WAIT_TIME                   1000  // ms
-#define NWK_GROUPS_AMOUNT                   20
-//
-// #define NWK_DUPLICATE_REJECTION_TABLE_SIZE  10
-// #define NWK_DUPLICATE_REJECTION_TTL         1000 // ms
-//
-// #define NWK_ROUTE_DEFAULT_SCORE             3
-// #define NWK_ROUTE_TABLE_SIZE                100
-// #define NWK_ROUTE_DISCOVERY_TABLE_SIZE      5
-// #define NWK_ROUTE_DISCOVERY_TIMEOUT         1000 // ms
-//
-// #define SYS_SECURITY_MODE                   0
-// End - Specifics for the LWM library
-
 #include <Arduino.h>
 
 #include "utility/sysConfig.h"
