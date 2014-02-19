@@ -104,6 +104,10 @@ void PinoccioClass::resetHQToken() {
   }
 }
 
+void PinoccioClass::setOTAFlag() {
+  eeprom_update_byte((uint8_t *)8125, 0x00);
+}
+
 uint32_t PinoccioClass::getHwSerial() {
   return eeprom_read_dword((uint32_t *)8184);
 }

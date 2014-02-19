@@ -81,7 +81,8 @@ static numvar setHQToken(void);
 static numvar getHQToken(void);
 static numvar scoutDelay(void);
 static numvar daisyWipe(void);
-static numvar wdtBoot(void);
+static numvar boot(void);
+static numvar otaBoot(void);
 
 static numvar hqVerbose(void);
 
@@ -220,7 +221,8 @@ void PinoccioShell::setup() {
   addBitlashFunction("scout.gethqtoken", (bitlash_function) getHQToken);
   addBitlashFunction("scout.delay", (bitlash_function) scoutDelay);
   addBitlashFunction("scout.daisy", (bitlash_function) daisyWipe);
-  addBitlashFunction("scout.boot", (bitlash_function) wdtBoot);
+  addBitlashFunction("scout.boot", (bitlash_function) boot);
+  addBitlashFunction("scout.otaboot", (bitlash_function) otaBoot);
 
   addBitlashFunction("hq.settoken", (bitlash_function) setHQToken);
   addBitlashFunction("hq.gettoken", (bitlash_function) getHQToken);
@@ -1213,101 +1215,101 @@ static numvar backpackResources(void) {
 
     switch (info.type) {
       case Pbbe::DT_SPI_SLAVE: {
-	Pbbe::SpiSlaveDescriptor& d = static_cast<Pbbe::SpiSlaveDescriptor&>(*info.parsed);
-	Serial.print(d.name);
-	Serial.print(": spi, ss = ");
-	Serial.print(d.ss_pin.name());
-	Serial.print(", max speed = ");
-	if (d.speed.raw()) {
-	  Serial.print((float)d.speed, 2);
-	  Serial.print("Mhz");
-	} else {
-	  Serial.print("unknown");
-	}
-	Serial.println();
-	break;
+  Pbbe::SpiSlaveDescriptor& d = static_cast<Pbbe::SpiSlaveDescriptor&>(*info.parsed);
+  Serial.print(d.name);
+  Serial.print(": spi, ss = ");
+  Serial.print(d.ss_pin.name());
+  Serial.print(", max speed = ");
+  if (d.speed.raw()) {
+    Serial.print((float)d.speed, 2);
+    Serial.print("Mhz");
+  } else {
+    Serial.print("unknown");
+  }
+  Serial.println();
+  break;
       }
       case Pbbe::DT_UART: {
-	Pbbe::UartDescriptor& d = static_cast<Pbbe::UartDescriptor&>(*info.parsed);
-	Serial.print(d.name);
-	Serial.print(": uart, tx = ");
-	Serial.print(d.tx_pin.name());
-	Serial.print(", rx = ");
-	Serial.print(d.rx_pin.name());
-	Serial.print(", speed = ");
-	if (d.speed) {
-	  Serial.print(d.speed);
-	  Serial.print("bps");
-	} else {
-	  Serial.print("unknown");
-	}
-	Serial.println();
-	break;
+  Pbbe::UartDescriptor& d = static_cast<Pbbe::UartDescriptor&>(*info.parsed);
+  Serial.print(d.name);
+  Serial.print(": uart, tx = ");
+  Serial.print(d.tx_pin.name());
+  Serial.print(", rx = ");
+  Serial.print(d.rx_pin.name());
+  Serial.print(", speed = ");
+  if (d.speed) {
+    Serial.print(d.speed);
+    Serial.print("bps");
+  } else {
+    Serial.print("unknown");
+  }
+  Serial.println();
+  break;
       }
       case Pbbe::DT_IOPIN: {
-	Pbbe::IoPinDescriptor& d = static_cast<Pbbe::IoPinDescriptor&>(*info.parsed);
-	Serial.print(d.name);
-	Serial.print(": gpio, pin = ");
-	Serial.print(d.pin.name());
-	Serial.println();
-	break;
+  Pbbe::IoPinDescriptor& d = static_cast<Pbbe::IoPinDescriptor&>(*info.parsed);
+  Serial.print(d.name);
+  Serial.print(": gpio, pin = ");
+  Serial.print(d.pin.name());
+  Serial.println();
+  break;
       }
       case Pbbe::DT_GROUP: {
-	// Ignore
-	break;
+  // Ignore
+  break;
       }
       case Pbbe::DT_POWER_USAGE: {
-	Pbbe::PowerUsageDescriptor& d = static_cast<Pbbe::PowerUsageDescriptor&>(*info.parsed);
-	Serial.print("power: pin = ");
-	Serial.print(d.power_pin.name());
-	Serial.print(", minimum = ");
-	if (d.minimum.raw()) {
-	  Serial.print((float)d.minimum, 2);
-	  Serial.print("uA");
-	} else {
-	  Serial.print("unknown");
-	}
-	Serial.print(", typical = ");
-	if (d.typical.raw()) {
-	  Serial.print((float)d.typical, 2);
-	  Serial.print("uA");
-	} else {
-	  Serial.print("unknown");
-	}
-	Serial.print(", maximum = ");
-	if (d.maximum.raw()) {
-	  Serial.print((float)d.maximum, 2);
-	  Serial.print("uA");
-	} else {
-	  Serial.print("unknown");
-	}
-	Serial.println();
-	break;
+  Pbbe::PowerUsageDescriptor& d = static_cast<Pbbe::PowerUsageDescriptor&>(*info.parsed);
+  Serial.print("power: pin = ");
+  Serial.print(d.power_pin.name());
+  Serial.print(", minimum = ");
+  if (d.minimum.raw()) {
+    Serial.print((float)d.minimum, 2);
+    Serial.print("uA");
+  } else {
+    Serial.print("unknown");
+  }
+  Serial.print(", typical = ");
+  if (d.typical.raw()) {
+    Serial.print((float)d.typical, 2);
+    Serial.print("uA");
+  } else {
+    Serial.print("unknown");
+  }
+  Serial.print(", maximum = ");
+  if (d.maximum.raw()) {
+    Serial.print((float)d.maximum, 2);
+    Serial.print("uA");
+  } else {
+    Serial.print("unknown");
+  }
+  Serial.println();
+  break;
       }
       case Pbbe::DT_I2C_SLAVE: {
-	Pbbe::I2cSlaveDescriptor& d = static_cast<Pbbe::I2cSlaveDescriptor&>(*info.parsed);
-	Serial.print(d.name);
-	Serial.print(": i2c, address = ");
-	Serial.print(d.addr);
-	Serial.print(", max speed = ");
-	Serial.print(d.speed);
-	Serial.print("kbps");
-	Serial.println();
-	break;
+  Pbbe::I2cSlaveDescriptor& d = static_cast<Pbbe::I2cSlaveDescriptor&>(*info.parsed);
+  Serial.print(d.name);
+  Serial.print(": i2c, address = ");
+  Serial.print(d.addr);
+  Serial.print(", max speed = ");
+  Serial.print(d.speed);
+  Serial.print("kbps");
+  Serial.println();
+  break;
       }
       case Pbbe::DT_DATA: {
-	Pbbe::DataDescriptor& d = static_cast<Pbbe::DataDescriptor&>(*info.parsed);
-	Serial.print(d.name);
-	Serial.print(": data, length = ");
-	Serial.print(d.length);
-	Serial.print(", content = ");
-	printHexBuffer(Serial, d.data, d.length);
-	Serial.println();
-	break;
+  Pbbe::DataDescriptor& d = static_cast<Pbbe::DataDescriptor&>(*info.parsed);
+  Serial.print(d.name);
+  Serial.print(": data, length = ");
+  Serial.print(d.length);
+  Serial.print(", content = ");
+  printHexBuffer(Serial, d.data, d.length);
+  Serial.println();
+  break;
       }
       default: {
-	// Should not occur
-	break;
+  // Should not occur
+  break;
       }
     }
   }
@@ -1397,7 +1399,15 @@ static numvar daisyWipe(void) {
   return 1;
 }
 
-static numvar wdtBoot(void) {
+static numvar boot(void) {
+  cli();
+  wdt_enable(WDTO_15MS);
+  while(1);
+  return 1;
+}
+
+static numvar otaBoot(void) {
+  Scout.setOTAFlag();
   cli();
   wdt_enable(WDTO_15MS);
   while(1);

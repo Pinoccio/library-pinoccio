@@ -67,6 +67,8 @@ class PinoccioClass {
     void setHQToken(const char *token);
     void getHQToken(char *token);
     void resetHQToken();
+    void setOTAFlag();
+
     uint32_t getHwSerial();
     uint16_t getHwFamily();
     uint8_t getHwVersion();
