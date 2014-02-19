@@ -2,7 +2,6 @@
 #include <Pinoccio.h>
 #include <avr/eeprom.h>
 #include <src/bitlash.h>
-#include <utility/meshRequest.h>
 
 #if defined(__AVR_ATmega128RFA1__)
 #include "atmega128rfa1.h"
@@ -234,16 +233,6 @@ void PinoccioClass::meshSetSecurityKey(const uint8_t *key) {
 void PinoccioClass::meshResetSecurityKey(void) {
   const uint8_t buf[16] = {0xFF, 0xFF, 0xFF, 0xFF,0xFF, 0xFF, 0xFF, 0xFF,0xFF, 0xFF, 0xFF, 0xFF,0xFF, 0xFF, 0xFF, 0xFF};
   meshSetSecurityKey(buf);
-}
-
-void PinoccioClass::meshSendMessage(MeshRequest request) {
-  NWK_DataReq_t* req = request.getRequest();
-  sp("sending message to: ");
-  sp(req->dstAddr);
-  sp(":");
-  sp(req->dstEndpoint);
-  speol();
-  NWK_DataReq(request.getRequest());
 }
 
 void PinoccioClass::meshListen(uint8_t endpoint, bool (*handler)(NWK_DataInd_t *ind)) {

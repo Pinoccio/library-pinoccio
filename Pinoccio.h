@@ -20,7 +20,6 @@
 #include "utility/sysTimer.h"
 #include "utility/halSleep.h"
 #include "utility/halTemperature.h"
-#include "utility/meshRequest.h"
 #include "avr/sleep.h"
 
 class PinoccioClass {
@@ -59,7 +58,6 @@ class PinoccioClass {
     void meshSetDataRate(const uint8_t theRate);
     void meshSetSecurityKey(const uint8_t *key);
     void meshResetSecurityKey(void);
-    void meshSendMessage(MeshRequest request);
     void meshListen(uint8_t endpoint, bool (*handler)(NWK_DataInd_t *ind));
 
     void meshJoinGroup(uint16_t groupAddress);
