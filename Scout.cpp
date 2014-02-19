@@ -50,15 +50,14 @@ void PinoccioScout::setup() {
   enableBackpackVcc();
 
   RgbLed.turnOff();
+  Wire.begin();
+  HAL_FuelGaugeConfig(20);   // Configure the MAX17048G's alert percentage to 20%
+  saveState();
 
   Backpacks::setup();
   Shell.setup();
   handler.setup();
 
-  Wire.begin();
-  HAL_FuelGaugeConfig(20);   // Configure the MAX17048G's alert percentage to 20%
-
-  saveState();
   startDigitalStateChangeEvents();
   startAnalogStateChangeEvents();
   startPeripheralStateChangeEvents();
