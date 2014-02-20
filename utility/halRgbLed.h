@@ -20,6 +20,7 @@ class HalRgbLed {
     void disable();
     bool isEnabled();
     void turnOff();
+    bool isOff();
 
     void red();
     void green();

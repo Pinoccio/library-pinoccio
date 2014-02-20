@@ -36,6 +36,7 @@ static numvar ledTorch(void);
 static numvar ledSetHex(void);
 static numvar ledGetHex(void);
 static numvar ledSetRgb(void);
+static numvar ledIsOff(void);
 static numvar ledSaveTorch(void);
 static numvar ledReport(void);
 
@@ -194,6 +195,7 @@ void PinoccioShell::setup() {
   addBitlashFunction("led.sethex", (bitlash_function) ledSetHex);
   addBitlashFunction("led.gethex", (bitlash_function) ledGetHex);
   addBitlashFunction("led.setrgb", (bitlash_function) ledSetRgb);
+  addBitlashFunction("led.isoff", (bitlash_function) ledIsOff);
   addBitlashFunction("led.savetorch", (bitlash_function) ledSaveTorch);
   addBitlashFunction("led.report", (bitlash_function) ledReport);
 
@@ -675,6 +677,10 @@ static numvar ledSetHex(void) {
 static numvar ledSetRgb(void) {
   RgbLed.setColor(getarg(1), getarg(2), getarg(3));
   return 1;
+}
+
+static numvar ledIsOff(void) {
+  return RgbLed.isOff();
 }
 
 static numvar ledSaveTorch(void) {

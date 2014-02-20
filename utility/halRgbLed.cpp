@@ -52,6 +52,10 @@ void HalRgbLed::turnOff() {
   SYS_TimerStop(&blinkTimer);
 }
 
+bool HalRgbLed::isOff() {
+  return (getRedValue() == 0 && getGreenValue() == 0 && getBlueValue() == 0);
+}
+
 void HalRgbLed::red() {
   setColor(255, 0, 0);
 }
