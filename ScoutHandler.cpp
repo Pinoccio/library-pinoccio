@@ -616,7 +616,7 @@ bool leadAnswers(NWK_DataInd_t *ind) {
     end = true;
     ind->size--;
   }
-  sprintf(sig,"{\"type\":\"reply\",\"id\":%d,\"from\":%d,\"data\":\"", leadAnswerID, ind->srcAddr);
+  sprintf(sig,"{\"type\":\"reply\",\"id\":%d,\"from\":%d,\"reply\":\"", leadAnswerID, ind->srcAddr);
   at = strlen(sig);
   memcpy(sig+at, ind->data, ind->size);
   sprintf(sig+at+ind->size, "\",\"end\":%s}\n",end?"true":"false");
