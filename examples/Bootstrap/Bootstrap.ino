@@ -2,6 +2,7 @@
 #include <Wire.h>
 #include <Scout.h>
 #include <GS.h>
+#include <bitlash.h>
 
 /* MANUAL PROVISIONING BITLASH COMMANDS
 mesh.config(<Scout ID>, <Troop ID>)
