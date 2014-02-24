@@ -70,7 +70,7 @@ const prog_char builtin_table[] PROGMEM = {
     "print 2+2")
 //    "while 1 {print millis;delay(999);}")
 #else
-    "print \"Hello from Pinoccio! \n (Shell based on Bitlash v2.0 (c) 2014 Bill Roy)\n\",free,\"bytes free\"")
+    "print \"bitlash here! v2.0 (c) 2013 Bill Roy -type HELP-\",free,\"bytes free\"")
 #endif
 
   // Add user built-ins here.  Some examples:
@@ -114,15 +114,9 @@ const prog_char *wordlist = builtin_table;
 //  Banner and copyright notice
 //
 void displayBanner(void) {
-  // print the banner and copyright notice
-  // please note the license requires that you maintain this notice
-  execscript(SCRIPT_PROGMEM, (numvar) (builtin_table + strlen(builtin_table)+1), 0);
-  sp(" Build ");
-  sp(PINOCCIO_BUILD);
-  speol();
-  if (Scout.isLeadScout()) {
-    speol(" Lead Scout ready");
-  } else {
-    speol(" Field Scout ready");
-  }
+	// print the banner and copyright notice
+	// please note the license requires that you maintain this notice
+	// TODO: This uses global memory, should use PROGMEM instead (or
+	// possibly be solved differently altogether).
+	doCommand("banner");
 }

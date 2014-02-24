@@ -7,6 +7,8 @@ extern "C" {
 #include "utility/key.h"
 }
 
+static numvar pinoccioBanner(void);
+
 static numvar getTemperature(void);
 static numvar getRandomNumber(void);
 static numvar uptimeReport(void);
@@ -148,6 +150,9 @@ PinoccioShell::~PinoccioShell() { }
 
 void PinoccioShell::setup() {
   key_init();
+  // This overrides the normal banner
+  addBitlashFunction("banner", (bitlash_function) pinoccioBanner);
+
   addBitlashFunction("power.ischarging", (bitlash_function) isBatteryCharging);
   addBitlashFunction("power.percent", (bitlash_function) getBatteryPercentage);
   addBitlashFunction("power.voltage", (bitlash_function) getBatteryVoltage);
@@ -322,6 +327,23 @@ void PinoccioShell::parseHex(const char *str, size_t length, uint8_t *out)
   // TODO: Better error message
   if (str[length])
     unexpected(M_number);
+}
+
+
+static numvar pinoccioBanner(void) {
+  speol("Hello from Pinoccio!");
+  speol(" (Shell based on Bitlash v2.0 (c) 2014 Bill Roy)");
+  sp(func_free());
+  speol(" bytes free");
+  sp(" Build ");
+  sp(PINOCCIO_BUILD);
+  speol();
+  if (Scout.isLeadScout()) {
+    speol(" Lead Scout ready");
+  } else {
+    speol(" Field Scout ready");
+  }
+  return 1;
 }
 
 static numvar allReport(void) {
