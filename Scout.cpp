@@ -148,7 +148,7 @@ void PinoccioScout::stopPeripheralStateChangeEvents() {
   SYS_TimerStop(&peripheralStateChangeTimer);
 }
 
-void PinoccioScout::setStateChangeEventPeriods(uint32_t digitalInterval, uint32_t analogInterval, uint32_t peripheralInterval) {
+void PinoccioScout::setStateChangeEventCycle(uint32_t digitalInterval, uint32_t analogInterval, uint32_t peripheralInterval) {
   stopDigitalStateChangeEvents();
   digitalStateChangeTimer.interval = digitalInterval;
   startDigitalStateChangeEvents();

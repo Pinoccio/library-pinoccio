@@ -89,7 +89,7 @@ static numvar hqVerbose(void);
 
 static numvar startStateChangeEvents(void);
 static numvar stopStateChangeEvents(void);
-static numvar setEventPeriods(void);
+static numvar setEventCycle(void);
 static numvar setEventVerbose(void);
 
 static numvar wifiReport(void);
@@ -232,7 +232,7 @@ void PinoccioShell::setup() {
 
   addBitlashFunction("events.start", (bitlash_function) startStateChangeEvents);
   addBitlashFunction("events.stop", (bitlash_function) stopStateChangeEvents);
-  addBitlashFunction("events.setfreqs", (bitlash_function) setEventPeriods);
+  addBitlashFunction("events.setcycle", (bitlash_function) setEventCycle);
   addBitlashFunction("events.verbose", (bitlash_function) setEventVerbose);
 
   addBitlashFunction("key", (bitlash_function) keyMap);
@@ -1445,8 +1445,8 @@ static numvar stopStateChangeEvents(void) {
   return 1;
 }
 
-static numvar setEventPeriods(void) {
-  Scout.setStateChangeEventPeriods(getarg(1), getarg(2), getarg(3));
+static numvar setEventCycle(void) {
+  Scout.setStateChangeEventCycle(getarg(1), getarg(2), getarg(3));
   return 1;
 }
 

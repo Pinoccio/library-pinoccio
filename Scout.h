@@ -44,7 +44,7 @@ class PinoccioScout : public PinoccioClass {
     void stopAnalogStateChangeEvents();
     void startPeripheralStateChangeEvents();
     void stopPeripheralStateChangeEvents();
-    void setStateChangeEventPeriods(uint32_t digitalInterval, uint32_t analogInterval, uint32_t peripheralInterval);
+    void setStateChangeEventCycle(uint32_t digitalInterval, uint32_t analogInterval, uint32_t peripheralInterval);
     void saveState();
 
     int8_t getPinMode(uint8_t pin);
