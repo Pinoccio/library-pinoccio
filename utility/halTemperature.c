@@ -8,7 +8,6 @@
 \**************************************************************************/
 
 #include <stdbool.h>
-#include "hal.h"
 #include "halTemperature.h"
 #include <avr/sleep.h>
 #include <util/delay.h>

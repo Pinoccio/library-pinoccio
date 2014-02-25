@@ -3,6 +3,7 @@
 #include <Scout.h>
 #include <GS.h>
 #include <bitlash.h>
+#include <lwm.h>
 
 /* MANUAL PROVISIONING BITLASH COMMANDS
 mesh.config(<Scout ID>, <Troop ID>)

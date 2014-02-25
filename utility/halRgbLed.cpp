@@ -11,7 +11,7 @@
 #include "Arduino.h"
 #include "Scout.h"
 #include <avr/eeprom.h>
-#include "utility/sysTimer.h"
+#include "lwm/sys/sysTimer.h"
 
 static void halRgbLedBlinkTimerHandler(SYS_Timer_t *timer);
 

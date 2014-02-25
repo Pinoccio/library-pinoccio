@@ -8,10 +8,10 @@
 #include <utility/WiFiBackpack.h>
 #include <Wire.h>
 
-#include "utility/phy.h"
-#include "utility/hal.h"
-#include "utility/sys.h"
-#include "utility/nwk.h"
+#include "lwm/phy/phy.h"
+#include "lwm/hal/hal.h"
+#include "lwm/sys/sys.h"
+#include "lwm/nwk/nwk.h"
 #include "utility/halFuelGauge.h"
 #include "utility/halRgbLed.h"
 

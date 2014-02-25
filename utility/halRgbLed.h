@@ -10,7 +10,7 @@
 #ifndef _PINOCCIO_HAL_RGB_LED_H
 #define _PINOCCIO_HAL_RGB_LED_H
 
-#include "utility/sysTimer.h"
+#include "lwm/sys/sysTimer.h"
 
 class HalRgbLed {
   public:

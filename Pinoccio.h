@@ -12,13 +12,12 @@
 
 #include <Arduino.h>
 
-#include "utility/sysConfig.h"
-#include "utility/phy.h"
-#include "utility/hal.h"
-#include "utility/sys.h"
-#include "utility/nwk.h"
-#include "utility/sysTimer.h"
-#include "utility/halSleep.h"
+#include "lwm/sys/sysConfig.h"
+#include "lwm/phy/phy.h"
+#include "lwm/hal/hal.h"
+#include "lwm/sys/sys.h"
+#include "lwm/nwk/nwk.h"
+#include "lwm/sys/sysTimer.h"
 #include "utility/halTemperature.h"
 #include "avr/sleep.h"
 

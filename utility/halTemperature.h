@@ -10,6 +10,8 @@
 #ifndef _PINOCCIO_HAL_TEMPERATURE_H_
 #define _PINOCCIO_HAL_TEMPERATURE_H_
 
+#include <stdint.h>
+
 /*****************************************************************************
 *****************************************************************************/
 #ifdef __cplusplus

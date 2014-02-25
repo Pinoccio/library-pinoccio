@@ -8,7 +8,7 @@ extern "C" {
 #include "utility/js0n.h"
 #include "utility/j0g.h"
 #include "utility/key.h"
-#include "utility/sysTimer.h"
+#include "lwm/sys/sysTimer.h"
 }
 
 static bool hqVerboseOutput;
