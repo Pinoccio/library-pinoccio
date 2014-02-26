@@ -4,10 +4,10 @@
 
 #include <stdint.h>
 #include <stdlib.h>
-#include "utility/endian_integer.h"
+#include "../util/endian_integer.h"
 #include "PBBP.h"
 #include "Minifloat.h"
-#include "static_assert.h"
+#include "../util/static_assert.h"
 
 class Pbbe {
 public:

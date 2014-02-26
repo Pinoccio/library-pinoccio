@@ -1,8 +1,8 @@
 #include <Arduino.h>
 #include <SPI.h>
-#include <utility/WiFiBackpack.h>
-#include "../ScoutHandler.h"
-#include "../HqHandler.h"
+#include "WiFiBackpack.h"
+#include "../../ScoutHandler.h"
+#include "../../hq/HqHandler.h"
 
 // Be careful with using non-alphanumerics like '-' here, they might
 // silently cause SSL to fail

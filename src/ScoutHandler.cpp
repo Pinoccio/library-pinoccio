@@ -2,12 +2,12 @@
 #include <ScoutHandler.h>
 #include <Shell.h>
 #include <Scout.h>
-#include <PBBP.h>
-#include <utility/WiFiBackpack.h>
+#include "backpack-bus/PBBP.h"
+#include "backpacks/wifi/WiFiBackpack.h"
 extern "C" {
 #include <js0n.h>
 #include <j0g.h>
-#include "utility/key.h"
+#include "key/key.h"
 #include "lwm/sys/sysTimer.h"
 }
 

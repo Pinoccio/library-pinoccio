@@ -2,9 +2,9 @@
 #ifndef LIB_PINOCCIO_BACKPACKS_H
 #define LIB_PINOCCIO_BACKPACKS_H
 
-#include "PBBP.h"
-#include "Pbbe.h"
-#include "integer.h"
+#include "../backpack-bus/PBBP.h"
+#include "../backpack-bus/Pbbe.h"
+#include "../util/integer.h"
 
 /**
  * Structure collecting some info on a backpack. Do not create any of

@@ -1,7 +1,7 @@
 #include <Arduino.h>
 #include <Wire.h>
 #include <Scout.h>
-#include <Backpacks.h>
+#include "backpacks/Backpacks.h"
 #include <math.h>
 #include <avr/eeprom.h>
 

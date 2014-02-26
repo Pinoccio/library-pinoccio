@@ -10,7 +10,7 @@
 #include "lwm/sys/sys.h"
 #include "lwm/nwk/nwk.h"
 #include "lwm/sys/sysTimer.h"
-#include "utility/halTemperature.h"
+#include "peripherals/halTemperature.h"
 #include "avr/sleep.h"
 
 class PinoccioShell {

@@ -4,16 +4,16 @@
 #include <Pinoccio.h>
 #include <Shell.h>
 #include <ScoutHandler.h>
-#include <PBBP.h>
-#include <utility/WiFiBackpack.h>
+#include "backpack-bus/PBBP.h"
+#include "backpacks/wifi/WiFiBackpack.h"
 #include <Wire.h>
 
 #include "lwm/phy/phy.h"
 #include "lwm/hal/hal.h"
 #include "lwm/sys/sys.h"
 #include "lwm/nwk/nwk.h"
-#include "utility/halFuelGauge.h"
-#include "utility/halRgbLed.h"
+#include "peripherals/halFuelGauge.h"
+#include "peripherals/halRgbLed.h"
 
 
 class PinoccioScout : public PinoccioClass {

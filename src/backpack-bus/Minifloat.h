@@ -3,9 +3,9 @@
 #define LIB_PINOCCIO_MINIFLOAT_H
 
 #include <math.h>
-#include "integer.h"
+#include "../util/integer.h"
 #include "Arduino.h"
-#include "static_assert.h"
+#include "../util/static_assert.h"
 
 // This is jus a bunch of macros that the compiler automatically defines
 // that should be said like this when the "float" type actually uses

@@ -2,7 +2,7 @@
 #define LIB_PINOCCIO_WIFI_BACKPACK_H_
 
 #include <Pinoccio.h>
-#include <utility/Backpack.h>
+#include "../Backpack.h"
 #include <GS.h>
 
 class WiFiBackpack : public Backpack {

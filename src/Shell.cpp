@@ -1,10 +1,10 @@
 #include "Shell.h"
 #include "Scout.h"
-#include "Backpacks.h"
+#include "backpacks/Backpacks.h"
 #include "bitlash.h"
 #include "src/bitlash.h"
 extern "C" {
-#include "utility/key.h"
+#include "key/key.h"
 }
 
 static numvar pinoccioBanner(void);
