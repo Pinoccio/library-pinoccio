@@ -5,8 +5,8 @@
 #include <PBBP.h>
 #include <utility/WiFiBackpack.h>
 extern "C" {
-#include "utility/js0n.h"
-#include "utility/j0g.h"
+#include <js0n.h>
+#include <j0g.h>
 #include "utility/key.h"
 #include "lwm/sys/sysTimer.h"
 }
