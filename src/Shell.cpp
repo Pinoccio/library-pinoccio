@@ -333,6 +333,7 @@ void PinoccioShell::parseHex(const char *str, size_t length, uint8_t *out)
 static numvar pinoccioBanner(void) {
   speol("Hello from Pinoccio!");
   speol(" (Shell based on Bitlash v2.0 (c) 2014 Bill Roy)");
+  sp(" ");
   sp(func_free());
   speol(" bytes free");
   sp(" Build ");
