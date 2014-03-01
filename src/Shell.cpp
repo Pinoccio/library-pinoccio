@@ -1504,12 +1504,14 @@ static numvar hqVerbose(void) {
 static numvar startStateChangeEvents(void) {
   Scout.startDigitalStateChangeEvents();
   Scout.startAnalogStateChangeEvents();
+  Scout.startPeripheralStateChangeEvents();
   return 1;
 }
 
 static numvar stopStateChangeEvents(void) {
   Scout.stopDigitalStateChangeEvents();
   Scout.stopAnalogStateChangeEvents();
+  Scout.stopPeripheralStateChangeEvents();
   return 1;
 }
 
