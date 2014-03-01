@@ -305,7 +305,7 @@ static bool fieldAnnouncements(NWK_DataInd_t *ind) {
   }
 
   int keys[10];
-  key_load((char*)ind->data, keys, millis());
+  keyLoad((char*)ind->data, keys, millis());
 
   // run the Bitlash callback function, if defined
   sprintf(callback, "event.group%d", ind->dstAddr);
@@ -337,7 +337,7 @@ char *report2json(char *in) {
     return NULL;
   }
 
-  sprintf(reportJson, "{\"type\":\"%s\"", key_get(atoi(j0g_safe(0, report, ir))));
+  sprintf(reportJson, "{\"type\":\"%s\"", keyGet(atoi(j0g_safe(0, report, ir))));
   keys = report + ir[2];
   js0n((unsigned char*)keys, ir[3], ik, 32);
   if (!*ik) {
@@ -351,7 +351,7 @@ char *report2json(char *in) {
   }
 
   for (i=0; ik[i]; i+=2) {
-    sprintf(reportJson + strlen(reportJson), ",\"%s\":", key_get(atoi(j0g_safe(i, keys, ik))));
+    sprintf(reportJson + strlen(reportJson), ",\"%s\":", keyGet(atoi(j0g_safe(i, keys, ik))));
     if (vals[iv[i]-1] == '"') {
       iv[i]--;
       iv[i+1]+=2;

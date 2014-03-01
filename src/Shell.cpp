@@ -149,7 +149,7 @@ PinoccioShell::PinoccioShell() {
 PinoccioShell::~PinoccioShell() { }
 
 void PinoccioShell::setup() {
-  key_init();
+  keyInit();
   // This overrides the normal banner
   addBitlashFunction("banner", (bitlash_function) pinoccioBanner);
 
@@ -371,7 +371,7 @@ static numvar allVerbose(void) {
 void PinoccioShell::loop() {
   if (isShellEnabled) {
     runBitlash();
-    key_loop(millis());
+    keyLoop(millis());
   }
 }
 
@@ -406,10 +406,10 @@ static char *tempReportHQ(void) {
   if(temp > tempHigh) tempHigh = temp;
   if(!tempLow || temp < tempLow) tempLow = temp;
   sprintf(report,"[%d,[%d,%d,%d],[%d,%d,%d]]",
-          key_map("temp", 0),
-          key_map("current", 0),
-          key_map("high", 0),
-          key_map("low", 0),
+          keyMap("temp", 0),
+          keyMap("current", 0),
+          keyMap("high", 0),
+          keyMap("low", 0),
           temp,
           tempHigh,
           tempLow);
@@ -444,11 +444,11 @@ static char *uptimeReportHQ(void) {
   }
 
   // free memory based on http://forum.pololu.com/viewtopic.php?f=10&t=989&view=unread#p4218
-  sprintf(report,"[%d,[%d,%d,%d,%d],[%ld,%d,%d,\"",key_map("uptime",0),
-          key_map("millis", 0),
-          key_map("free", 0),
-          key_map("random", 0),
-          key_map("reset", 0),
+  sprintf(report,"[%d,[%d,%d,%d,%d],[%ld,%d,%d,\"",keyMap("uptime",0),
+          keyMap("millis", 0),
+          keyMap("free", 0),
+          keyMap("random", 0),
+          keyMap("reset", 0),
           (unsigned long)millis(),
           ((int)&freeMem) - ((int)&__bss_end),
           (int)random());
@@ -471,14 +471,14 @@ static numvar uptimeReport(void) {
 static numvar keyMap(void) {
   static char num[8];
   if (isstringarg(1)) {
-    return key_map((char*)getstringarg(1), 0);
+    return keyMap((char*)getstringarg(1), 0);
   }
   snprintf(num, 8, "%lu", getarg(1));
-  return key_map(num, 0);
+  return keyMap(num, 0);
 }
 
 static numvar keyPrint(void) {
-  const char *key = key_get(getarg(1));
+  const char *key = keyGet(getarg(1));
   if (!key) {
     return 0;
   }
@@ -487,7 +487,7 @@ static numvar keyPrint(void) {
 }
 
 static numvar keyNumber(void) {
-  const char *key = key_get(getarg(1));
+  const char *key = keyGet(getarg(1));
   if (!key) {
     return 0;
   }
@@ -500,7 +500,7 @@ static numvar keySave(void) {
     return 0;
   }
   var = (char*)getstringarg(1);
-  sprintf(cmd, "function boot.%s {%s=key(\"%s\");}", var, var, key_get(getarg(2)));
+  sprintf(cmd, "function boot.%s {%s=key(\"%s\");}", var, var, keyGet(getarg(2)));
   doCommand(cmd);
   return 1;
 }
@@ -546,11 +546,11 @@ static numvar goToSleep(void) {
 static char *powerReportHQ(void) {
   static char report[100];
   sprintf(report,"[%d,[%d,%d,%d,%d],[%d,%d,%s,%s]]",
-          key_map("power", 0),
-          key_map("battery", 0),
-          key_map("voltage", 0),
-          key_map("charging", 0),
-          key_map("vcc", 0),
+          keyMap("power", 0),
+          keyMap("battery", 0),
+          keyMap("voltage", 0),
+          keyMap("charging", 0),
+          keyMap("vcc", 0),
           (int)Scout.getBatteryPercentage(),
           (int)Scout.getBatteryVoltage(),
           Scout.isBatteryCharging()?"true":"false",
@@ -569,9 +569,9 @@ static numvar powerReport(void) {
 static char *ledReportHQ(void) {
   static char report[100];
   sprintf(report,"[%d,[%d,%d],[[%d,%d,%d],[%d,%d,%d]]]",
-          key_map("led", 0),
-          key_map("led", 0),
-          key_map("torch", 0),
+          keyMap("led", 0),
+          keyMap("led", 0),
+          keyMap("torch", 0),
           RgbLed.getRedValue(),
           RgbLed.getGreenValue(),
           RgbLed.getBlueValue(),
@@ -699,7 +699,7 @@ static numvar ledWhite(void) {
 static numvar ledGetHex(void) {
   char hex[8];
   sprintf(hex,"%02x%02x%02x", RgbLed.getRedValue(), RgbLed.getGreenValue(), RgbLed.getBlueValue());
-  return key_map(hex, millis());
+  return keyMap(hex, millis());
 }
 
 static numvar ledSetHex(void) {
@@ -708,7 +708,7 @@ static numvar ledSetHex(void) {
     if (isstringarg(1)) {
       str = (const char *)getarg(1);
     } else {
-      str = key_get(getarg(1));
+      str = keyGet(getarg(1));
     }
 
     uint8_t out[3];
@@ -820,8 +820,8 @@ char *arg2array(int ver, char *msg) {
   }
   sprintf(msg,"[%d,",ver);
   for (i=2; i<=args; i++) {
-    int key = (isstringarg(i)) ? key_map((char*)getstringarg(i), 0) : getarg(i);
-    sprintf(msg + strlen(msg), "\"%s\",", key_get(key));
+    int key = (isstringarg(i)) ? keyMap((char*)getstringarg(i), 0) : getarg(i);
+    sprintf(msg + strlen(msg), "\"%s\",", keyGet(key));
   }
   sprintf(msg + (strlen(msg)-1), "]");
   return msg;
@@ -869,13 +869,13 @@ static char *meshReportHQ(void) {
     count++;
   }
   sprintf(report, "[%d,[%d,%d,%d,%d,%d,%d],[%d,%d,%d,%d,\"",
-          key_map("mesh", 0),
-          key_map("scoutid", 0),
-          key_map("troopid", 0),
-          key_map("routes", 0),
-          key_map("channel", 0),
-          key_map("rate", 0),
-          key_map("power", 0),
+          keyMap("mesh", 0),
+          keyMap("scoutid", 0),
+          keyMap("troopid", 0),
+          keyMap("routes", 0),
+          keyMap("channel", 0),
+          keyMap("rate", 0),
+          keyMap("power", 0),
           Scout.getAddress(),
           Scout.getPanId(),
           count,
@@ -936,9 +936,9 @@ static numvar meshRouting(void) {
 static char *digitalPinReportHQ(void) {
   static char report[80];
   sprintf(report,"[%d,[%d,%d],[[%d,%d,%d,%d,%d,%d,%d],[%d,%d,%d,%d,%d,%d,%d]]]",
-          key_map("digital", 0),
-          key_map("mode", 0),
-          key_map("state", 0),
+          keyMap("digital", 0),
+          keyMap("mode", 0),
+          keyMap("state", 0),
           Scout.getPinMode(2),
           Scout.getPinMode(3),
           Scout.getPinMode(4),
@@ -959,9 +959,9 @@ static char *digitalPinReportHQ(void) {
 static char *analogPinReportHQ(void) {
   static char report[80];
   sprintf(report,"[%d,[%d,%d],[[%d,%d,%d,%d,%d,%d,%d,%d],[%d,%d,%d,%d,%d,%d,%d,%d]]]",
-          key_map("analog", 0),
-          key_map("mode", 0),
-          key_map("state", 0),
+          keyMap("analog", 0),
+          keyMap("mode", 0),
+          keyMap("state", 0),
           Scout.getPinMode(24),
           Scout.getPinMode(25),
           Scout.getPinMode(26),
@@ -1091,7 +1091,7 @@ static numvar analogPinReport(void) {
 static char *backpackReportHQ(void) {
   static char report[100];
   int comma = 0;
-  sprintf(report, "[%d,[%d],[[", key_map("backpacks", 0), key_map("list", 0));
+  sprintf(report, "[%d,[%d],[[", keyMap("backpacks", 0), keyMap("list", 0));
 
   for (uint8_t i=0; i<Backpacks::num_backpacks; ++i) {
     BackpackInfo &info = Backpacks::info[i];
@@ -1393,13 +1393,13 @@ static numvar backpackResources(void) {
 static char *scoutReportHQ(void) {
   static char report[100];
   sprintf(report,"[%d,[%d,%d,%d,%d,%d,%d],[%s,%d,%d,%d,%ld,%ld]]",
-          key_map("scout", 0),
-          key_map("lead", 0),
-          key_map("version", 0),
-          key_map("hardware", 0),
-          key_map("family", 0),
-          key_map("serial", 0),
-          key_map("build", 0),
+          keyMap("scout", 0),
+          keyMap("lead", 0),
+          keyMap("version", 0),
+          keyMap("hardware", 0),
+          keyMap("family", 0),
+          keyMap("serial", 0),
+          keyMap("build", 0),
           Scout.isLeadScout() ? "true" : "false",
           (int)Scout.getEEPROMVersion(),
           (int)Scout.getHwVersion(),
@@ -1448,7 +1448,7 @@ static numvar daisyWipe(void) {
   }
 
   char report[32];
-  sprintf(report,"[%d,[%d],[\"bye\"]]",key_map("daisy",0),key_map("dave",0));
+  sprintf(report,"[%d,[%d],[\"bye\"]]",keyMap("daisy",0),keyMap("dave",0));
   Scout.handler.report(report);
 
   if (Scout.isLeadScout()) {
@@ -1532,10 +1532,10 @@ static char *wifiReportHQ(void) {
   static char report[100];
   // TODO real wifi status/version
   sprintf(report,"[%d,[%d,%d,%d],[%d,%s,%s]]",
-          key_map("wifi", 0),
-          key_map("version", 0),
-          key_map("connected", 0),
-          key_map("hq", 0),
+          keyMap("wifi", 0),
+          keyMap("version", 0),
+          keyMap("connected", 0),
+          keyMap("hq", 0),
           0,
           Scout.wifi.isAPConnected() ? "true" : "false",
           Scout.wifi.isHQConnected() ? "true" : "false");
@@ -1773,7 +1773,7 @@ static bool receiveMessage(NWK_DataInd_t *ind) {
   }
 
   // parse the array payload into keys, [1, "foo", "bar"]
-  key_load(data, keys, millis());
+  keyLoad(data, keys, millis());
 
   sprintf(buf,"event.message");
   if (findscript(buf)) {
