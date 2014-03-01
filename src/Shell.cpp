@@ -300,33 +300,39 @@ void PinoccioShell::allReportHQ() {
   ledReportHQ();
 }
 
-uint8_t PinoccioShell::parseHex(char c)
-{
-  if (c >= '0' && c <= '9')
+uint8_t PinoccioShell::parseHex(char c) {
+  if (c >= '0' && c <= '9') {
     return c - '0';
-  if (c >= 'a' && c <= 'z')
+  }
+
+  if (c >= 'a' && c <= 'z') {
     return c - 'a' + 10;
-  if (c >= 'A' && c <= 'Z')
+  }
+
+  if (c >= 'A' && c <= 'Z') {
     return c - 'A' + 10;
+  }
   // TODO: Better error message
   unexpected(M_number);
 }
 
-void PinoccioShell::parseHex(const char *str, size_t length, uint8_t *out)
-{
+void PinoccioShell::parseHex(const char *str, size_t length, uint8_t *out) {
   // TODO: Better error message
-  if (length % 2)
+  if (length % 2) {
     unexpected(M_number);
+  }
 
   // Convert each digit in turn. If the string ends before we reach
   // length, parseHex will error out on the trailling \0
-  for (size_t i = 0; i < length; i += 2)
+  for (size_t i = 0; i < length; i += 2) {
     out[i / 2] = parseHex(str[i]) << 4 | parseHex(str[i + 1]);
+  }
 
   // See if the string is really finished
   // TODO: Better error message
-  if (str[length])
+  if (str[length]) {
     unexpected(M_number);
+  }
 }
 
 
@@ -339,6 +345,7 @@ static numvar pinoccioBanner(void) {
   sp(" Build ");
   sp(PINOCCIO_BUILD);
   speol();
+
   if (Scout.isLeadScout()) {
     speol(" Lead Scout ready");
   } else {
@@ -372,10 +379,11 @@ void PinoccioShell::startShell() {
   char boot[32], i;
   isShellEnabled = true;
   initBitlash(115200);
-  for(i='a';i<'z';i++)
-  {
+  for (i='a'; i<'z'; i++) {
     sprintf(boot,"boot.%c",i);
-    if(findscript(boot)) doCommand(boot);
+    if (findscript(boot)) {
+      doCommand(boot);
+    }
   }
 }
 
@@ -383,23 +391,25 @@ void PinoccioShell::disableShell() {
   isShellEnabled = false;
 }
 
-
 static NWK_DataReq_t pingDataReq;
 static NWK_DataReq_t sendDataReq;
 static bool sendDataReqBusy;
-static int tempHigh = 0, tempLow = 0;
+static int tempHigh = 0;
+static int tempLow = 0;
 
 /****************************\
 *      BUILT-IN HANDLERS    *
 \****************************/
-static char *tempReportHQ(void)
-{
+static char *tempReportHQ(void) {
   static char report[100];
   int temp = Scout.getTemperature();
   if(temp > tempHigh) tempHigh = temp;
   if(!tempLow || temp < tempLow) tempLow = temp;
-  sprintf(report,"[%d,[%d,%d,%d],[%d,%d,%d]]",key_map("temp",0),
-          key_map("current",0),key_map("high",0),key_map("low",0),
+  sprintf(report,"[%d,[%d,%d,%d],[%d,%d,%d]]",
+          key_map("temp", 0),
+          key_map("current", 0),
+          key_map("high", 0),
+          key_map("low", 0),
           temp,
           tempHigh,
           tempLow);
@@ -430,16 +440,20 @@ static char *uptimeReportHQ(void) {
   const char *resetString = Scout.getLastResetCause();
   reset[0] = 0;
   while((c = pgm_read_byte(resetString++))) {
-    sprintf(reset+strlen(reset),"%c",c);
+    sprintf(reset + strlen(reset), "%c", c);
   }
 
   // free memory based on http://forum.pololu.com/viewtopic.php?f=10&t=989&view=unread#p4218
   sprintf(report,"[%d,[%d,%d,%d,%d],[%ld,%d,%d,\"",key_map("uptime",0),
-          key_map("millis",0),key_map("free",0),key_map("random",0),key_map("reset",0),
+          key_map("millis", 0),
+          key_map("free", 0),
+          key_map("random", 0),
+          key_map("reset", 0),
           (unsigned long)millis(),
           ((int)&freeMem) - ((int)&__bss_end),
           (int)random());
-  sprintf(report+strlen(report),"%s\"]]",(char*)reset);
+
+  sprintf(report + strlen(report),"%s\"]]", (char*)reset);
   return Scout.handler.report(report);
 }
 
@@ -454,38 +468,39 @@ static numvar uptimeReport(void) {
 /****************************\
 *        KEY HANDLERS        *
 \****************************/
-static numvar keyMap(void)
-{
+static numvar keyMap(void) {
   static char num[8];
-  if(isstringarg(1))
-  {
+  if (isstringarg(1)) {
     return key_map((char*)getstringarg(1), 0);
   }
-  snprintf(num,8,"%lu",getarg(1));
+  snprintf(num, 8, "%lu", getarg(1));
   return key_map(num, 0);
 }
 
-static numvar keyPrint(void)
-{
+static numvar keyPrint(void) {
   const char *key = key_get(getarg(1));
-  if(!key) return 0;
+  if (!key) {
+    return 0;
+  }
   speol(key);
   return 1;
 }
 
-static numvar keyNumber(void)
-{
+static numvar keyNumber(void) {
   const char *key = key_get(getarg(1));
-  if(!key) return 0;
+  if (!key) {
+    return 0;
+  }
   return atoi(key);
 }
 
-static numvar keySave(void)
-{
+static numvar keySave(void) {
   char cmd[42], *var;
-  if(getarg(0) != 2 || !isstringarg(1)) return 0;
+  if (getarg(0) != 2 || !isstringarg(1)) {
+    return 0;
+  }
   var = (char*)getstringarg(1);
-  sprintf(cmd,"function boot.%s {%s=key(\"%s\");}",var,var,key_get(getarg(2)));
+  sprintf(cmd, "function boot.%s {%s=key(\"%s\");}", var, var, key_get(getarg(2)));
   doCommand(cmd);
   return 1;
 }
@@ -530,8 +545,12 @@ static numvar goToSleep(void) {
 
 static char *powerReportHQ(void) {
   static char report[100];
-  sprintf(report,"[%d,[%d,%d,%d,%d],[%d,%d,%s,%s]]",key_map("power",0),
-          key_map("battery",0),key_map("voltage",0),key_map("charging",0),key_map("vcc",0),
+  sprintf(report,"[%d,[%d,%d,%d,%d],[%d,%d,%s,%s]]",
+          key_map("power", 0),
+          key_map("battery", 0),
+          key_map("voltage", 0),
+          key_map("charging", 0),
+          key_map("vcc", 0),
           (int)Scout.getBatteryPercentage(),
           (int)Scout.getBatteryVoltage(),
           Scout.isBatteryCharging()?"true":"false",
@@ -549,10 +568,16 @@ static numvar powerReport(void) {
 \****************************/
 static char *ledReportHQ(void) {
   static char report[100];
-  sprintf(report,"[%d,[%d,%d],[[%d,%d,%d],[%d,%d,%d]]]",key_map("led",0),
-          key_map("led",0),key_map("torch",0),
-          RgbLed.getRedValue(),RgbLed.getGreenValue(),RgbLed.getBlueValue(),
-          RgbLed.getRedTorchValue(),RgbLed.getGreenTorchValue(),RgbLed.getBlueTorchValue());
+  sprintf(report,"[%d,[%d,%d],[[%d,%d,%d],[%d,%d,%d]]]",
+          key_map("led", 0),
+          key_map("led", 0),
+          key_map("torch", 0),
+          RgbLed.getRedValue(),
+          RgbLed.getGreenValue(),
+          RgbLed.getBlueValue(),
+          RgbLed.getRedTorchValue(),
+          RgbLed.getGreenTorchValue(),
+          RgbLed.getBlueTorchValue());
   return Scout.handler.report(report);
 }
 
@@ -787,18 +812,18 @@ static numvar meshPingGroup(void) {
   return 1;
 }
 
-char *arg2array(int ver, char *msg)
-{
+char *arg2array(int ver, char *msg) {
   int i;
   int args = getarg(0);
-  if(args > 8) args = 8;
-  sprintf(msg,"[%d,",ver);
-  for(i=2; i <= args; i++)
-  {
-    int key = (isstringarg(i))?key_map((char*)getstringarg(i), 0):getarg(i);
-    sprintf(msg+strlen(msg),"\"%s\",",key_get(key));
+  if (args > 8) {
+    args = 8;
   }
-  sprintf(msg+(strlen(msg)-1),"]");
+  sprintf(msg,"[%d,",ver);
+  for (i=2; i<=args; i++) {
+    int key = (isstringarg(i)) ? key_map((char*)getstringarg(i), 0) : getarg(i);
+    sprintf(msg + strlen(msg), "\"%s\",", key_get(key));
+  }
+  sprintf(msg + (strlen(msg)-1), "]");
   return msg;
 }
 
@@ -808,15 +833,17 @@ static numvar meshSend(void) {
     return false;
   }
   Serial.println(getarg(1));
-  Serial.println(arg2array(1,msg));
+  Serial.println(arg2array(1, msg));
   sendMessage(getarg(1), arg2array(1, msg));
   return true;
 }
 
 static numvar meshAnnounce(void) {
   char msg[100];
-  if(!getarg(0)) return false;
-  Scout.handler.announce(getarg(1), arg2array(1,msg));
+  if (!getarg(0)) {
+    return false;
+  }
+  Scout.handler.announce(getarg(1), arg2array(1, msg));
   return true;
 }
 
@@ -837,26 +864,35 @@ static char *meshReportHQ(void) {
   static char report[100], c;
   int count = 0;
   NWK_RouteTableEntry_t *table = NWK_RouteTable();
-  for (int i=0; i < NWK_ROUTE_TABLE_SIZE; i++) {
+  for (int i=0; i<NWK_ROUTE_TABLE_SIZE; i++) {
     if (table[i].dstAddr == NWK_ROUTE_UNKNOWN) continue;
     count++;
   }
-  sprintf(report,"[%d,[%d,%d,%d,%d,%d,%d],[%d,%d,%d,%d,\"",key_map("mesh",0),
-          key_map("scoutid",0),key_map("troopid",0),key_map("routes",0),key_map("channel",0),key_map("rate",0),key_map("power",0),
+  sprintf(report, "[%d,[%d,%d,%d,%d,%d,%d],[%d,%d,%d,%d,\"",
+          key_map("mesh", 0),
+          key_map("scoutid", 0),
+          key_map("troopid", 0),
+          key_map("routes", 0),
+          key_map("channel", 0),
+          key_map("rate", 0),
+          key_map("power", 0),
           Scout.getAddress(),
           Scout.getPanId(),
           count,
           Scout.getChannel());
+
   const char *kbString = Scout.getDataRatekbps();
-  while((c = pgm_read_byte(kbString++))) {
-    sprintf(report+strlen(report),"%c",c);
+  while (c = pgm_read_byte(kbString++)) {
+    sprintf(report + strlen(report),"%c", c);
   }
-  sprintf(report+strlen(report),"\",\"");
+
+  sprintf(report + strlen(report), "\",\"");
+
   const char *dbString = Scout.getTxPowerDb();
-  while((c = pgm_read_byte(dbString++))) {
-    sprintf(report+strlen(report),"%c",c);
+  while (c = pgm_read_byte(dbString++)) {
+    sprintf(report + strlen(report), "%c", c);
   }
-  sprintf(report+strlen(report),"\"]]");
+  sprintf(report + strlen(report), "\"]]");
   return Scout.handler.report(report);
 }
 
@@ -899,8 +935,10 @@ static numvar meshRouting(void) {
 \****************************/
 static char *digitalPinReportHQ(void) {
   static char report[80];
-  sprintf(report,"[%d,[%d,%d],[[%d,%d,%d,%d,%d,%d,%d],[%d,%d,%d,%d,%d,%d,%d]]]",key_map("digital",0),
-          key_map("mode",0),key_map("state",0),
+  sprintf(report,"[%d,[%d,%d],[[%d,%d,%d,%d,%d,%d,%d],[%d,%d,%d,%d,%d,%d,%d]]]",
+          key_map("digital", 0),
+          key_map("mode", 0),
+          key_map("state", 0),
           Scout.getPinMode(2),
           Scout.getPinMode(3),
           Scout.getPinMode(4),
@@ -920,8 +958,10 @@ static char *digitalPinReportHQ(void) {
 
 static char *analogPinReportHQ(void) {
   static char report[80];
-  sprintf(report,"[%d,[%d,%d],[[%d,%d,%d,%d,%d,%d,%d,%d],[%d,%d,%d,%d,%d,%d,%d,%d]]]",key_map("analog",0),
-          key_map("mode",0),key_map("state",0),
+  sprintf(report,"[%d,[%d,%d],[[%d,%d,%d,%d,%d,%d,%d,%d],[%d,%d,%d,%d,%d,%d,%d,%d]]]",
+          key_map("analog", 0),
+          key_map("mode", 0),
+          key_map("state", 0),
           Scout.getPinMode(24),
           Scout.getPinMode(25),
           Scout.getPinMode(26),
@@ -1026,7 +1066,6 @@ static numvar pinRead(void) {
   } else {
     i = digitalRead(getarg(1));
   }
-  //sp(i);
   return i;
 }
 
@@ -1049,36 +1088,36 @@ static numvar analogPinReport(void) {
 /****************************\
 *     BACKPACK HANDLERS     *
 \****************************/
-
 static char *backpackReportHQ(void) {
   static char report[100];
   int comma = 0;
-  sprintf(report,"[%d,[%d],[[",key_map("backpacks",0),key_map("list",0));
-  for (uint8_t i = 0; i < Backpacks::num_backpacks; ++i) {
+  sprintf(report, "[%d,[%d],[[", key_map("backpacks", 0), key_map("list", 0));
+
+  for (uint8_t i=0; i<Backpacks::num_backpacks; ++i) {
     BackpackInfo &info = Backpacks::info[i];
-    for (uint8_t j = 0; j < sizeof(info.id); ++j) {
+    for (uint8_t j=0; j<sizeof(info.id); ++j) {
       // TODO this isn't correct, dunno what to do here
       sprintf(report+strlen(report),"%s%d",comma++?",":"",info.id.raw_bytes[j]);
     }
   }
-  sprintf(report+strlen(report),"]]]");
+  sprintf(report + strlen(report), "]]]");
   return Scout.handler.report(report);
 }
 
 static numvar backpackReport(void) {
-  sp(backpackReportHQ());
-  speol();
+  speol(backpackReportHQ());
   return 1;
 }
 
-static void printHexBuffer(Print &p, const uint8_t *buf, size_t len, const char *sep = NULL)
-{
-  for (uint8_t i = 0; i < len; ++i) {
-    if (buf[i] < 0x10)
+static void printHexBuffer(Print &p, const uint8_t *buf, size_t len, const char *sep = NULL) {
+  for (uint8_t i=0; i<len; ++i) {
+    if (buf[i] < 0x10) {
       p.print('0');
+    }
     p.print(buf[i], HEX);
-    if (sep)
+    if (sep) {
       p.print(sep);
+    }
   }
 }
 
@@ -1086,20 +1125,21 @@ static numvar backpackList(void) {
   if (Backpacks::num_backpacks == 0) {
     Serial.println("No backpacks found");
   } else {
-    for (uint8_t i = 0; i < Backpacks::num_backpacks; ++i) {
+    for (uint8_t i=0; i<Backpacks::num_backpacks; ++i) {
       BackpackInfo &info = Backpacks::info[i];
       printHexBuffer(Serial, &i, 1);
-      Serial.print(": ");
+      sp(": ");
 
       Pbbe::Header *h = info.getHeader();
-      if (!h)
-  Serial.print(F("Error parsing name"));
-      else
-  Serial.print(h->backpack_name);
+      if (!h) {
+        sp(F("Error parsing name"));
+      } else {
+        sp(h->backpack_name);
+      }
 
-      Serial.print(" (");
+      sp(" (");
       printHexBuffer(Serial, info.id.raw_bytes, sizeof(info.id));
-      Serial.println(")");
+      speol(")");
     }
   }
   return 0;
@@ -1244,101 +1284,101 @@ static numvar backpackResources(void) {
 
     switch (info.type) {
       case Pbbe::DT_SPI_SLAVE: {
-  Pbbe::SpiSlaveDescriptor& d = static_cast<Pbbe::SpiSlaveDescriptor&>(*info.parsed);
-  Serial.print(d.name);
-  Serial.print(": spi, ss = ");
-  Serial.print(d.ss_pin.name());
-  Serial.print(", max speed = ");
-  if (d.speed.raw()) {
-    Serial.print((float)d.speed, 2);
-    Serial.print("Mhz");
-  } else {
-    Serial.print("unknown");
-  }
-  Serial.println();
-  break;
+        Pbbe::SpiSlaveDescriptor& d = static_cast<Pbbe::SpiSlaveDescriptor&>(*info.parsed);
+        Serial.print(d.name);
+        Serial.print(": spi, ss = ");
+        Serial.print(d.ss_pin.name());
+        Serial.print(", max speed = ");
+        if (d.speed.raw()) {
+          Serial.print((float)d.speed, 2);
+          Serial.print("Mhz");
+        } else {
+          Serial.print("unknown");
+        }
+        Serial.println();
+        break;
       }
       case Pbbe::DT_UART: {
-  Pbbe::UartDescriptor& d = static_cast<Pbbe::UartDescriptor&>(*info.parsed);
-  Serial.print(d.name);
-  Serial.print(": uart, tx = ");
-  Serial.print(d.tx_pin.name());
-  Serial.print(", rx = ");
-  Serial.print(d.rx_pin.name());
-  Serial.print(", speed = ");
-  if (d.speed) {
-    Serial.print(d.speed);
-    Serial.print("bps");
-  } else {
-    Serial.print("unknown");
-  }
-  Serial.println();
-  break;
+        Pbbe::UartDescriptor& d = static_cast<Pbbe::UartDescriptor&>(*info.parsed);
+        Serial.print(d.name);
+        Serial.print(": uart, tx = ");
+        Serial.print(d.tx_pin.name());
+        Serial.print(", rx = ");
+        Serial.print(d.rx_pin.name());
+        Serial.print(", speed = ");
+        if (d.speed) {
+          Serial.print(d.speed);
+          Serial.print("bps");
+        } else {
+          Serial.print("unknown");
+        }
+        Serial.println();
+        break;
       }
       case Pbbe::DT_IOPIN: {
-  Pbbe::IoPinDescriptor& d = static_cast<Pbbe::IoPinDescriptor&>(*info.parsed);
-  Serial.print(d.name);
-  Serial.print(": gpio, pin = ");
-  Serial.print(d.pin.name());
-  Serial.println();
-  break;
+        Pbbe::IoPinDescriptor& d = static_cast<Pbbe::IoPinDescriptor&>(*info.parsed);
+        Serial.print(d.name);
+        Serial.print(": gpio, pin = ");
+        Serial.print(d.pin.name());
+        Serial.println();
+        break;
       }
       case Pbbe::DT_GROUP: {
   // Ignore
-  break;
+        break;
       }
       case Pbbe::DT_POWER_USAGE: {
-  Pbbe::PowerUsageDescriptor& d = static_cast<Pbbe::PowerUsageDescriptor&>(*info.parsed);
-  Serial.print("power: pin = ");
-  Serial.print(d.power_pin.name());
-  Serial.print(", minimum = ");
-  if (d.minimum.raw()) {
-    Serial.print((float)d.minimum, 2);
-    Serial.print("uA");
-  } else {
-    Serial.print("unknown");
-  }
-  Serial.print(", typical = ");
-  if (d.typical.raw()) {
-    Serial.print((float)d.typical, 2);
-    Serial.print("uA");
-  } else {
-    Serial.print("unknown");
-  }
-  Serial.print(", maximum = ");
-  if (d.maximum.raw()) {
-    Serial.print((float)d.maximum, 2);
-    Serial.print("uA");
-  } else {
-    Serial.print("unknown");
-  }
-  Serial.println();
-  break;
+        Pbbe::PowerUsageDescriptor& d = static_cast<Pbbe::PowerUsageDescriptor&>(*info.parsed);
+        Serial.print("power: pin = ");
+        Serial.print(d.power_pin.name());
+        Serial.print(", minimum = ");
+        if (d.minimum.raw()) {
+          Serial.print((float)d.minimum, 2);
+          Serial.print("uA");
+        } else {
+          Serial.print("unknown");
+        }
+        Serial.print(", typical = ");
+        if (d.typical.raw()) {
+          Serial.print((float)d.typical, 2);
+          Serial.print("uA");
+        } else {
+          Serial.print("unknown");
+        }
+        Serial.print(", maximum = ");
+        if (d.maximum.raw()) {
+          Serial.print((float)d.maximum, 2);
+          Serial.print("uA");
+        } else {
+          Serial.print("unknown");
+        }
+        Serial.println();
+        break;
       }
       case Pbbe::DT_I2C_SLAVE: {
-  Pbbe::I2cSlaveDescriptor& d = static_cast<Pbbe::I2cSlaveDescriptor&>(*info.parsed);
-  Serial.print(d.name);
-  Serial.print(": i2c, address = ");
-  Serial.print(d.addr);
-  Serial.print(", max speed = ");
-  Serial.print(d.speed);
-  Serial.print("kbps");
-  Serial.println();
-  break;
+        Pbbe::I2cSlaveDescriptor& d = static_cast<Pbbe::I2cSlaveDescriptor&>(*info.parsed);
+        Serial.print(d.name);
+        Serial.print(": i2c, address = ");
+        Serial.print(d.addr);
+        Serial.print(", max speed = ");
+        Serial.print(d.speed);
+        Serial.print("kbps");
+        Serial.println();
+        break;
       }
       case Pbbe::DT_DATA: {
-  Pbbe::DataDescriptor& d = static_cast<Pbbe::DataDescriptor&>(*info.parsed);
-  Serial.print(d.name);
-  Serial.print(": data, length = ");
-  Serial.print(d.length);
-  Serial.print(", content = ");
-  printHexBuffer(Serial, d.data, d.length);
-  Serial.println();
-  break;
+        Pbbe::DataDescriptor& d = static_cast<Pbbe::DataDescriptor&>(*info.parsed);
+        Serial.print(d.name);
+        Serial.print(": data, length = ");
+        Serial.print(d.length);
+        Serial.print(", content = ");
+        printHexBuffer(Serial, d.data, d.length);
+        Serial.println();
+        break;
       }
       default: {
   // Should not occur
-  break;
+        break;
       }
     }
   }
@@ -1352,9 +1392,15 @@ static numvar backpackResources(void) {
 
 static char *scoutReportHQ(void) {
   static char report[100];
-  sprintf(report,"[%d,[%d,%d,%d,%d,%d,%d],[%s,%d,%d,%d,%ld,%ld]]", key_map("scout",0),
-           key_map("lead",0), key_map("version",0), key_map("hardware",0), key_map("family",0),  key_map("serial",0), key_map("build",0),
-          Scout.isLeadScout()?"true":"false",
+  sprintf(report,"[%d,[%d,%d,%d,%d,%d,%d],[%s,%d,%d,%d,%ld,%ld]]",
+          key_map("scout", 0),
+          key_map("lead", 0),
+          key_map("version", 0),
+          key_map("hardware", 0),
+          key_map("family", 0),
+          key_map("serial", 0),
+          key_map("build", 0),
+          Scout.isLeadScout() ? "true" : "false",
           (int)Scout.getEEPROMVersion(),
           (int)Scout.getHwVersion(),
           Scout.getHwFamily(),
@@ -1418,7 +1464,7 @@ static numvar daisyWipe(void) {
 
   if (ret == true) {
     Scout.meshResetSecurityKey();
-    Scout.meshSetRadio(0,0x0000);
+    Scout.meshSetRadio(0, 0x0000);
     Scout.resetHQToken();
 
     // so long, and thanks for all the fish!
@@ -1485,11 +1531,14 @@ static numvar setEventVerbose(void) {
 static char *wifiReportHQ(void) {
   static char report[100];
   // TODO real wifi status/version
-  sprintf(report,"[%d,[%d,%d,%d],[%d,%s,%s]]",key_map("wifi",0),
-          key_map("version",0),key_map("connected",0),key_map("hq",0),
+  sprintf(report,"[%d,[%d,%d,%d],[%d,%s,%s]]",
+          key_map("wifi", 0),
+          key_map("version", 0),
+          key_map("connected", 0),
+          key_map("hq", 0),
           0,
-          Scout.wifi.isAPConnected()?"true":"false",
-          Scout.wifi.isHQConnected()?"true":"false");
+          Scout.wifi.isAPConnected() ? "true" : "false",
+          Scout.wifi.isHQConnected() ? "true" : "false");
   return Scout.handler.report(report);
 }
 
@@ -1634,7 +1683,6 @@ static void pingScout(int address) {
   pingDataReq.size = strlen(ping);
   pingDataReq.confirm = pingConfirm;
   NWK_DataReq(&pingDataReq);
-  //RgbLed.blinkCyan(200);
 
   Serial.print("PING ");
   Serial.println(address);
@@ -1720,18 +1768,20 @@ static bool receiveMessage(NWK_DataInd_t *ind) {
   lastMeshLqi = ind->lqi;
   NWK_SetAckControl(abs(ind->rssi));
 
-  if(strlen(data) <3 || data[0] != '[') return false;
+  if (strlen(data) <3 || data[0] != '[') {
+    return false;
+  }
 
-  // parse the array payload into keys, [1,"foo","bar"]
-  key_load(data,keys,millis());
-
-  // generate callback
+  // parse the array payload into keys, [1, "foo", "bar"]
+  key_load(data, keys, millis());
 
   sprintf(buf,"event.message");
   if (findscript(buf)) {
-    sprintf(buf,"event.message(%d",ind->srcAddr);
-    for(int i=2;i<=keys[0];i++) sprintf(buf+strlen(buf),",%d",keys[i]);
-    sprintf(buf+strlen(buf),")");
+    sprintf(buf, "event.message(%d", ind->srcAddr);
+    for (int i=2; i<=keys[0]; i++) {
+      sprintf(buf + strlen(buf), ",%d", keys[i]);
+    }
+    sprintf(buf + strlen(buf), ")");
     doCommand(buf);
   }
   return true;
@@ -1743,7 +1793,6 @@ static void sendMessage(int address, char *data) {
   }
 
   sendDataReq.dstAddr = address;
-
   sendDataReq.dstEndpoint = 1;
   sendDataReq.srcEndpoint = 1;
   sendDataReq.options = NWK_OPT_ACK_REQUEST|NWK_OPT_ENABLE_SECURITY;
@@ -1751,7 +1800,6 @@ static void sendMessage(int address, char *data) {
   sendDataReq.size = strlen(data)+1;
   sendDataReq.confirm = sendConfirm;
   NWK_DataReq(&sendDataReq);
-//  RgbLed.blinkCyan(200);
 
   sendDataReqBusy = true;
 
@@ -1807,11 +1855,10 @@ static void sendConfirm(NWK_DataReq_t *req) {
   char buf[32];
   sprintf(buf,"event.ack");
   if (findscript(buf)) {
-    sprintf(buf,"event.ack(%d,%d)",req->dstAddr,(req->status == NWK_SUCCESS_STATUS)?req->control:0);
+    sprintf(buf, "event.ack(%d, %d)", req->dstAddr, (req->status == NWK_SUCCESS_STATUS) ? req->control : 0);
     doCommand(buf);
   }
 }
-
 
 /****************************\
  *      EVENT HANDLERS      *
@@ -1832,9 +1879,8 @@ static void digitalPinEventHandler(uint8_t pin, uint8_t value) {
     doCommand(buf);
   }
   // simplified button trigger
-  if(value == 0)
-  {
-    sprintf(buf,"event.button%d",pin);
+  if (value == 0) {
+    sprintf(buf, "event.button%d", pin);
     if (findscript(buf)) {
       doCommand(buf);
     }
@@ -1918,56 +1964,20 @@ static void ledEventHandler(uint8_t redValue, uint8_t greenValue, uint8_t blueVa
 }
 
 void bitlashFilter(byte b) {
-  Serial.write(b); // cc to serial
+  Serial.write(b);
   return;
-
-  /* this isn't used anymore, but might be useful in the future?
-  static char buf[101];
-  static int offset = 0;
-  if (b == '\r') {
-    return; // skip CR
-  }
-
-  // newline or max len announces and resets
-  if (b == '\n' || offset == 100) {
-    char *message;
-    int chan;
-    buf[offset] = 0;
-    message = strchr(buf, ' ');
-
-    // any lines looking like "CHAN:4 message" will send "message" to channel 4
-    if (strncmp("CH4N:", buf, 5) == 0 && message) {
-      *message = 0;
-      message++;
-      chan = atoi(buf+5);
-      if (chan) {
-        Scout.handler.announce(chan, message);
-      }
-    }
-    offset=0;
-    return;
-  }
-
-  if (b == '"') {
-    buf[offset++] = '\\';
-    b = '"';
-  }
-
-  buf[offset] = b;
-  offset++;
-  */
 }
 
 void bitlashBuffer(byte b) {
   int len;
 
-  Serial.write(b); // cc to serial
+  Serial.write(b);
   if (b == '\r') {
-    return; // skip CR
+    return;
   }
 
   len = strlen(Shell.bitlashOutput);
-  Shell.bitlashOutput = (char*)realloc(Shell.bitlashOutput, len+3); // up to 2 bytes w/ escaping, and the null term
+  Shell.bitlashOutput = (char*)realloc(Shell.bitlashOutput, len + 3); // up to 2 bytes w/ escaping, and the null term
 
   // escape newlines, quotes, and slashes
   if (b == '\n') {

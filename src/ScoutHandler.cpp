@@ -131,7 +131,7 @@ static bool fieldCommands(NWK_DataInd_t *ind) {
     return false; // TODO we need to restart or something, no memory
   }
 
-  memcpy(fieldCommand+fieldCommandLen, ind->data, ind->size);
+  memcpy(fieldCommand + fieldCommandLen, ind->data, ind->size);
   fieldCommandLen = total;
 
   // when null terminated, do the message
@@ -219,7 +219,6 @@ static void fieldAnswerChunk() {
   fieldAnswerReq.confirm = fieldAnswerChunkConfirm;
   NWK_DataReq(&fieldAnswerReq);
 
-  //RgbLed.blinkCyan(200);
   if (hqVerboseOutput) {
     sp(fieldAnswerTo);
     sp(" len ");
@@ -234,12 +233,14 @@ struct announceQ_t {
 } *announceQ = NULL;
 
 static void announceConfirm(NWK_DataReq_t *req) {
-//  if (hqVerboseOutput) speol("announce confirmed");
+//if (hqVerboseOutput) speol("announce confirmed");
   struct announceQ_t *next = announceQ->next;
   free(req->data);
   free(announceQ);
   announceQ = next;
-  if(next) NWK_DataReq(&(next->req));
+  if (next) {
+    NWK_DataReq(&(next->req));
+  }
 }
 
 void PinoccioScoutHandler::announce(uint16_t group, char *message) {
@@ -256,10 +257,14 @@ void PinoccioScoutHandler::announce(uint16_t group, char *message) {
   }
 
   char *data = strdup(message);
-  if(!data) return;
+  if (!data) {
+    return;
+  }
 
   struct announceQ_t *r = (struct announceQ_t*)malloc(sizeof(struct announceQ_t));
-  if(!r) return;
+  if (!r) {
+    return;
+  }
 
   Scout.meshJoinGroup(group); // must be joined to send
   memset(r, 0, sizeof(struct announceQ_t));
@@ -270,11 +275,10 @@ void PinoccioScoutHandler::announce(uint16_t group, char *message) {
   r->req.data = (uint8_t*)data;
   r->req.size = strlen(data)+1;
   r->req.confirm = announceConfirm;
-  if(!announceQ)
-  {
+  if (!announceQ) {
     announceQ = r;
     NWK_DataReq(&(r->req));
-  }else{
+  } else {
     struct announceQ_t *last = announceQ;
     while(last->next) last = last->next;
     last->next = r;
@@ -296,18 +300,22 @@ static bool fieldAnnouncements(NWK_DataInd_t *ind) {
   if (Scout.isLeadScout()) {
     leadAnnouncementSend(ind->dstAddr, ind->srcAddr, data);
   }
-  if(ind->dstAddr == 0xBEEF || strlen(data) <3 || data[0] != '[') return false;
+  if (ind->dstAddr == 0xBEEF || strlen(data) <3 || data[0] != '[') {
+    return false;
+  }
 
   int keys[10];
-  key_load((char*)ind->data,keys,millis());
+  key_load((char*)ind->data, keys, millis());
 
   // run the Bitlash callback function, if defined
-  sprintf(callback,"event.group%d",ind->dstAddr);
+  sprintf(callback, "event.group%d", ind->dstAddr);
   if (findscript(callback)) {
     char buf[128];
-    sprintf(buf,"event.group%d(%d",ind->dstAddr,ind->srcAddr);
-    for(int i=2;i<=keys[0];i++) sprintf(buf+strlen(buf),",%d",keys[i]);
-    sprintf(buf+strlen(buf),")");
+    sprintf(buf, "event.group%d(%d", ind->dstAddr, ind->srcAddr);
+    for (int i=2; i<=keys[0]; i++) {
+      sprintf(buf + strlen(buf), ",%d", keys[i]);
+    }
+    sprintf(buf + strlen(buf), ")");
     doCommand(buf);
   }
 
@@ -315,46 +323,58 @@ static bool fieldAnnouncements(NWK_DataInd_t *ind) {
 }
 
 // just store one converted report at a time
-char report_json[256];
+char reportJson[256];
 char *report2json(char *in) {
   char *keys, *vals, report[100];
   unsigned short ir[16], ik[32], iv[32], i;
 
   // copy cuz we edit it
-  memcpy(report,in,100);
+  memcpy(report, in, 100);
 
   // parse this and humanize
-  js0n((unsigned char*)report,strlen(report),ir,16);
-  if(!*ir) return NULL;
-  sprintf(report_json,"{\"type\":\"%s\"",key_get(atoi(j0g_safe(0,report,ir))));
-  keys = report+ir[2];
-  js0n((unsigned char*)keys,ir[3],ik,32);
-  if(!*ik) return NULL;
-  vals = report+ir[4];
-  js0n((unsigned char*)vals,ir[5],iv,32);
-  if(!*iv) return NULL;
-
-  for(i=0;ik[i];i+=2)
-  {
-    sprintf(report_json+strlen(report_json),",\"%s\":",key_get(atoi(j0g_safe(i,keys,ik))));
-    if(vals[iv[i]-1] == '"')
-    {
-      iv[i]--; iv[i+1]+=2;
-    }
-    *(vals+iv[i]+iv[i+1]) = 0;
-    sprintf(report_json+strlen(report_json),"%s",vals+iv[i]);
+  js0n((unsigned char*)report, strlen(report), ir, 16);
+  if (!*ir) {
+    return NULL;
   }
 
-  sprintf(report_json+strlen(report_json),"}");
-  return report_json;
+  sprintf(reportJson, "{\"type\":\"%s\"", key_get(atoi(j0g_safe(0, report, ir))));
+  keys = report + ir[2];
+  js0n((unsigned char*)keys, ir[3], ik, 32);
+  if (!*ik) {
+    return NULL;
+  }
+  vals = report+ir[4];
+
+  js0n((unsigned char*)vals, ir[5], iv, 32);
+  if (!*iv) {
+    return NULL;
+  }
+
+  for (i=0; ik[i]; i+=2) {
+    sprintf(reportJson + strlen(reportJson), ",\"%s\":", key_get(atoi(j0g_safe(i, keys, ik))));
+    if (vals[iv[i]-1] == '"') {
+      iv[i]--;
+      iv[i+1]+=2;
+    }
+    *(vals+iv[i]+iv[i+1]) = 0;
+    sprintf(reportJson + strlen(reportJson), "%s", vals + iv[i]);
+  }
+
+  sprintf(reportJson + strlen(reportJson), "}");
+  return reportJson;
 }
 
 
 static void leadAnnouncementSend(uint16_t group, uint16_t from, char *message) {
   char sig[256];
   // reports are expected to be json objects
-  if(group == 0xBEEF) sprintf(sig,"{\"type\":\"report\",\"from\":%d,\"report\":%s}\n", from, report2json(message));
-  if(group == 0) sprintf(sig,"{\"type\":\"announce\",\"from\":%d,\"announce\":%s}\n", from, message);
+  if (group == 0xBEEF) {
+    sprintf(sig, "{\"type\":\"report\",\"from\":%d,\"report\":%s}\n", from, report2json(message));
+  }
+
+  if (group == 0) {
+    sprintf(sig, "{\"type\":\"announce\",\"from\":%d,\"announce\":%s}\n", from, message);
+  }
   leadSignal(sig);
 }
 
@@ -363,7 +383,6 @@ char *PinoccioScoutHandler::report(char *report) {
   Scout.handler.announce(0xBEEF, report);
   return report2json(report);
 }
-
 
 ////////////////////
 // lead scout stuff
@@ -374,7 +393,7 @@ void leadHQConnect() {
   if (Scout.wifi.client.connected()) {
     Pinoccio.getHQToken(token);
     token[32] = 0;
-    sprintf(auth,"{\"type\":\"token\",\"token\":\"%s\"}\n", token);
+    sprintf(auth, "{\"type\":\"token\",\"token\":\"%s\"}\n", token);
     leadSignal(auth);
   } else {
     if (hqVerboseOutput) {
@@ -397,22 +416,22 @@ void leadHQHandle(void) {
   }
 
   // check to initialize our read buffer
-  if(!buffer) {
+  if (!buffer) {
     buffer = (char*)malloc(1);
     *buffer = 0;
   }
 
   // get all waiting data and look for packets
-  while((rsize = Scout.wifi.client.read(block, sizeof(block)))){
+  while (rsize = Scout.wifi.client.read(block, sizeof(block))) {
     len = strlen(buffer);
 
     // process chunk of incoming data
-    buffer = (char*)realloc(buffer, len+rsize+1);
+    buffer = (char*)realloc(buffer, len + rsize + 1);
     if (!buffer) {
       return; // TODO, realloc error, need to restart?
     }
-    memcpy(buffer+len, block, rsize);
-    buffer[len+rsize] = 0; // null terminate
+    memcpy(buffer + len, block, rsize);
+    buffer[len + rsize] = 0; // null terminate
 
     // look for a packet
     if (hqVerboseOutput) {
@@ -429,8 +448,7 @@ void leadHQHandle(void) {
     j0g(buffer, index, 32);
     if (*index) {
       leadIncoming(buffer, index);
-    }
-    else {
+    } else {
       if (hqVerboseOutput) {
         speol("JSON parse failed");
       }
@@ -447,8 +465,8 @@ void leadHQHandle(void) {
 // when we can't process a command for some internal reason
 void leadCommandError(int from, int id, const char *reason) {
   char *err;
-  err = (char*)malloc(strlen(reason)+128);
-  sprintf(err,"{\"type\":\"reply\",\"from\":%d,\"id\":%d,\"err\":true,\"reply\":\"%s\"}\n",from,id,reason);
+  err = (char*)malloc(strlen(reason) + 128);
+  sprintf(err,"{\"type\":\"reply\",\"from\":%d,\"id\":%d,\"err\":true,\"reply\":\"%s\"}\n", from, id, reason);
   leadSignal(err);
   free(err);
 }
@@ -465,7 +483,6 @@ void leadIncoming(char *packet, unsigned short *index) {
   }
 
   if (strcmp(type, "online") == 0) {
-    // TODO anything hard-coded to do once confirmed online?
     Shell.allReportHQ();
   }
 
@@ -490,7 +507,7 @@ void leadIncoming(char *packet, unsigned short *index) {
     if (to == Scout.getAddress()) {
       Shell.bitlashOutput = (char*)malloc(255);
 
-      sprintf(Shell.bitlashOutput,"{\"type\":\"reply\",\"from\":%d,\"id\":%lu,\"end\":true,\"reply\":\"",to,id);
+      sprintf(Shell.bitlashOutput,"{\"type\":\"reply\",\"from\":%d,\"id\":%lu,\"end\":true,\"reply\":\"", to, id);
       setOutputHandler(&bitlashBuffer);
       doCommand(command);
       strcpy(Shell.bitlashOutput + strlen(Shell.bitlashOutput), "\"}\n");
@@ -509,8 +526,8 @@ void leadIncoming(char *packet, unsigned short *index) {
     // send over mesh to recipient and cache id for any replies
     leadAnswerID = id;
     leadCommandTo = to;
-    leadCommandChunks = (char*)malloc(strlen(command)+1);
-    strcpy(leadCommandChunks,command);
+    leadCommandChunks = (char*)malloc(strlen(command) + 1);
+    strcpy(leadCommandChunks, command);
     leadCommandChunksAt = 0;
     leadCommandRetries = 0;
     leadCommandChunk();
@@ -553,7 +570,7 @@ static void leadCommandChunkConfirm(NWK_DataReq_t *req) {
 
 // called to send the first/next chunk of a command to another scout
 static void leadCommandChunk() {
-  int len = strlen(leadCommandChunks+leadCommandChunksAt);
+  int len = strlen(leadCommandChunks + leadCommandChunksAt);
   if (len > 100) {
     len = 100;
   } else {
@@ -600,9 +617,8 @@ bool leadAnswers(NWK_DataInd_t *ind) {
   bool end = false;
   int at;
   char sig[256];
-  //RgbLed.blinkGreen(200);
 
-  if (ind->options&NWK_IND_OPT_MULTICAST) {
+  if (ind->options & NWK_IND_OPT_MULTICAST) {
     if (hqVerboseOutput) {
       speol("MULTICAST on wrong endpoint");
     }
@@ -619,7 +635,7 @@ bool leadAnswers(NWK_DataInd_t *ind) {
   sprintf(sig,"{\"type\":\"reply\",\"id\":%d,\"from\":%d,\"reply\":\"", leadAnswerID, ind->srcAddr);
   at = strlen(sig);
   memcpy(sig+at, ind->data, ind->size);
-  sprintf(sig+at+ind->size, "\",\"end\":%s}\n",end?"true":"false");
+  sprintf(sig+at+ind->size, "\",\"end\":%s}\n",end ? "true" : "false");
   leadSignal(sig);
 
   return true;
