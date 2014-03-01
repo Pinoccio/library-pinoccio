@@ -163,16 +163,12 @@ void PinoccioScout::setStateChangeEventCycle(uint32_t digitalInterval, uint32_t 
 }
 
 void PinoccioScout::saveState() {
-  Pbbe::LogicalPin::mask_t used = Backpacks::used_pins;
-
   for (int i=0; i<7; i++) {
-    digitalPinState[i] = (used & Pbbe::LogicalPin(i+2).mask()) ? -1 : digitalRead(i+2);
-    digitalPinMode[i] = -1;
+    makeDisabled(i+2);
   }
 
   for (int i=0; i<8; i++) {
-    analogPinState[i] = (used & Pbbe::LogicalPin(i+A0).mask()) ? -1 : analogRead(i);
-    analogPinMode[i] = -1;
+    makeDisabled(i+A0);
   }
 
   batteryPercentage = constrain(HAL_FuelGaugePercent(), 0, 100);
@@ -211,6 +207,11 @@ int8_t PinoccioScout::getPinMode(uint8_t pin) {
 }
 
 void PinoccioScout::makeInput(uint8_t pin, bool enablePullup) {
+  Pbbe::LogicalPin::mask_t used = Backpacks::used_pins;
+  if (used & Pbbe::LogicalPin(pin).mask()) {
+    return;
+  }
+
   uint8_t mode = enablePullup ? INPUT_PULLUP : INPUT;
   pinMode(pin, mode);
 
@@ -226,6 +227,11 @@ void PinoccioScout::makeInput(uint8_t pin, bool enablePullup) {
 }
 
 void PinoccioScout::makeOutput(uint8_t pin) {
+  Pbbe::LogicalPin::mask_t used = Backpacks::used_pins;
+  if (used & Pbbe::LogicalPin(pin).mask()) {
+    return;
+  }
+
   pinMode(pin, OUTPUT);
 
   if (isDigitalPin(pin)) {
@@ -254,6 +260,11 @@ void PinoccioScout::makeDisabled(uint8_t pin) {
 }
 
 void PinoccioScout::setMode(uint8_t pin, uint8_t mode) {
+  Pbbe::LogicalPin::mask_t used = Backpacks::used_pins;
+  if (used & Pbbe::LogicalPin(pin).mask()) {
+    return;
+  }
+
   pinMode(pin, mode);
 
   if (isDigitalPin(pin)) {
@@ -286,11 +297,6 @@ uint8_t PinoccioScout::getPinFromName(const char* name) {
   strcpy(pin, name+1);
 
   if (name[0] == 'd') {
-    speol("-------");
-    speol(name);
-    speol(pin);
-    speol(atoi(pin));
-    speol("-------");
     return atoi(pin);
   }
 

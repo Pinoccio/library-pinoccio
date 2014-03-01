@@ -67,7 +67,7 @@ class PinoccioScout : public PinoccioClass {
 
     int8_t digitalPinState[7];
     int8_t digitalPinMode[7];
-    int8_t analogPinState[8];
+    int16_t analogPinState[8];
     int8_t analogPinMode[8];
 
     uint8_t batteryPercentage;

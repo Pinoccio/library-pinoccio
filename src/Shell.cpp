@@ -65,8 +65,6 @@ static numvar pinConstLow(void);
 static numvar pinConstInput(void);
 static numvar pinConstOutput(void);
 static numvar pinConstInputPullup(void);
-static numvar pinHigh(void);
-static numvar pinLow(void);
 static numvar pinMakeInput(void);
 static numvar pinMakeOutput(void);
 static numvar pinDisable(void);
@@ -215,8 +213,6 @@ void PinoccioShell::setup() {
   addBitlashFunction("pin.input", (bitlash_function) pinConstInput);
   addBitlashFunction("pin.output", (bitlash_function) pinConstOutput);
   addBitlashFunction("pin.inputpullup", (bitlash_function) pinConstInputPullup);
-  addBitlashFunction("pin.high", (bitlash_function) pinHigh);
-  addBitlashFunction("pin.low", (bitlash_function) pinLow);
   addBitlashFunction("pin.makeinput", (bitlash_function) pinMakeInput);
   addBitlashFunction("pin.makeoutput", (bitlash_function) pinMakeOutput);
   addBitlashFunction("pin.disable", (bitlash_function) pinDisable);
@@ -1038,38 +1034,13 @@ static numvar pinConstInputPullup(void) {
   return 2;
 }
 
-static numvar pinHigh(void) {
-  uint8_t pin = getarg(1);
-  if (Scout.isDigitalPin(pin)) {
-    Scout.makeOutput(pin);
-    digitalWrite(pin, HIGH);
-    digitalPinReportHQ();
-  }
-  if (Scout.isAnalogPin(pin)) {
-    Scout.makeOutput(pin);
-    digitalWrite(pin, HIGH);
-    analogPinReportHQ();
-  }
-  return 1;
-}
-
-static numvar pinLow(void) {
-  uint8_t pin = getarg(1);
-  if (Scout.isDigitalPin(pin)) {
-    Scout.makeOutput(pin);
-    digitalWrite(pin, LOW);
-    digitalPinReportHQ();
-  }
-  if (Scout.isAnalogPin(pin)) {
-    Scout.makeOutput(pin);
-    digitalWrite(pin, LOW);
-    analogPinReportHQ();
-  }
-  return 1;
-}
-
 static numvar pinMakeInput(void) {
   uint8_t pin = getarg(1);
+  if (!Scout.isDigitalPin(pin) && !Scout.isAnalogPin(pin)) {
+    speol("Invalid pin number");
+    return 0;
+  }
+
   if (getarg(0) == 2 && getarg(2) == 0) {
     Scout.makeInput(pin, false);
   } else {
@@ -1087,6 +1058,11 @@ static numvar pinMakeInput(void) {
 
 static numvar pinMakeOutput(void) {
   uint8_t pin = getarg(1);
+  if (!Scout.isDigitalPin(pin) && !Scout.isAnalogPin(pin)) {
+    speol("Invalid pin number");
+    return 0;
+  }
+
   Scout.makeOutput(pin);
   if (Scout.isDigitalPin(pin)) {
     digitalPinReportHQ();
@@ -1099,6 +1075,11 @@ static numvar pinMakeOutput(void) {
 
 static numvar pinDisable(void) {
   uint8_t pin = getarg(1);
+  if (!Scout.isDigitalPin(pin) && !Scout.isAnalogPin(pin)) {
+    speol("Invalid pin number");
+    return 0;
+  }
+
   Scout.makeDisabled(pin);
   if (Scout.isDigitalPin(pin)) {
     digitalPinReportHQ();
@@ -1111,6 +1092,11 @@ static numvar pinDisable(void) {
 
 static numvar pinSetMode(void) {
   uint8_t pin = getarg(1);
+  if (!Scout.isDigitalPin(pin) && !Scout.isAnalogPin(pin)) {
+    speol("Invalid pin number");
+    return 0;
+  }
+
   Scout.setMode(pin, getarg(2));
   if (Scout.isDigitalPin(pin)) {
     digitalPinReportHQ();
@@ -1122,18 +1108,29 @@ static numvar pinSetMode(void) {
 }
 
 static numvar pinRead(void) {
-  int i;
-  if (getarg(0) == 2) {
-    i = analogRead(getarg(1));
-  } else {
-    i = digitalRead(getarg(1));
+  uint8_t pin = getarg(1);
+  if (!Scout.isDigitalPin(pin) && !Scout.isAnalogPin(pin)) {
+    speol("Invalid pin number");
+    return 0;
   }
-  return i;
+
+  if (Scout.isDigitalPin(pin)) {
+    return digitalRead(getarg(1));
+  } else if (Scout.isAnalogPin(pin)) {
+    return analogRead(getarg(1));
+  } else {
+    return 0;
+  }
 }
 
 static numvar pinWrite(void) {
   // TODO: handle PWM pins
   uint8_t pin = getarg(1);
+  if (!Scout.isDigitalPin(pin) && !Scout.isAnalogPin(pin)) {
+    speol("Invalid pin number");
+    return 0;
+  }
+
   if (Scout.isDigitalPin(pin)) {
     Scout.makeOutput(pin);
     digitalWrite(pin, getarg(2));
@@ -1152,10 +1149,8 @@ static numvar pinSave(void) {
   const char *str;
   str = (const char*)getstringarg(1);
   int pin = Scout.getPinFromName(str);
-  speol(pin);
-  speol(getarg(2));
 
-  sprintf(buf, "function startup.%s {pin.setmode(%d,%d)}", getstringarg(1), pin, getarg(2));
+  sprintf(buf, "function startup.%s { pin.setmode(%d,%d) }", str, pin, getarg(2));
   doCommand(buf);
   return true;
 }
