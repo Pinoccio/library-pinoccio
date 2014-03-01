@@ -179,8 +179,7 @@ void PinoccioScout::saveState() {
 }
 
 int8_t PinoccioScout::getRegisterPinMode(uint8_t pin) {
-  // TODO: add this as a bp.isPinReserved(pin) method instead of hardwired
-  if (Scout.isLeadScout() && pin >= 6 && pin <= 8) {
+  if (Backpacks::used_pins & Pbbe::LogicalPin(pin).mask()) {
     return -1;
   }
   if ((~(*portModeRegister(digitalPinToPort(pin))) & digitalPinToBitMask(pin)) &&
@@ -207,8 +206,7 @@ int8_t PinoccioScout::getPinMode(uint8_t pin) {
 }
 
 void PinoccioScout::makeInput(uint8_t pin, bool enablePullup) {
-  Pbbe::LogicalPin::mask_t used = Backpacks::used_pins;
-  if (used & Pbbe::LogicalPin(pin).mask()) {
+  if (Backpacks::used_pins & Pbbe::LogicalPin(pin).mask()) {
     return;
   }
 
@@ -227,8 +225,7 @@ void PinoccioScout::makeInput(uint8_t pin, bool enablePullup) {
 }
 
 void PinoccioScout::makeOutput(uint8_t pin) {
-  Pbbe::LogicalPin::mask_t used = Backpacks::used_pins;
-  if (used & Pbbe::LogicalPin(pin).mask()) {
+  if (Backpacks::used_pins & Pbbe::LogicalPin(pin).mask()) {
     return;
   }
 
@@ -260,8 +257,7 @@ void PinoccioScout::makeDisabled(uint8_t pin) {
 }
 
 void PinoccioScout::setMode(uint8_t pin, uint8_t mode) {
-  Pbbe::LogicalPin::mask_t used = Backpacks::used_pins;
-  if (used & Pbbe::LogicalPin(pin).mask()) {
+  if (Backpacks::used_pins & Pbbe::LogicalPin(pin).mask()) {
     return;
   }
 
