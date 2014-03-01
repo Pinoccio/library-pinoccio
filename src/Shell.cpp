@@ -832,8 +832,7 @@ static numvar meshSend(void) {
   if (!getarg(0)) {
     return false;
   }
-  Serial.println(getarg(1));
-  Serial.println(arg2array(1, msg));
+
   sendMessage(getarg(1), arg2array(1, msg));
   return true;
 }
