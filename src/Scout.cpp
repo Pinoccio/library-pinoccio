@@ -163,23 +163,14 @@ void PinoccioScout::setStateChangeEventCycle(uint32_t digitalInterval, uint32_t 
 }
 
 void PinoccioScout::saveState() {
-  Pbbe::LogicalPin::mask_t used = Backpacks::used_pins;
+  for (int i=0; i<7; i++) {
+    makeDisabled(i+2);
+  }
 
-  digitalPinState[0] = (used & Pbbe::LogicalPin(2).mask()) ? -1 : digitalRead(2);
-  digitalPinState[1] = (used & Pbbe::LogicalPin(3).mask()) ? -1 : digitalRead(3);
-  digitalPinState[2] = (used & Pbbe::LogicalPin(4).mask()) ? -1 : digitalRead(4);
-  digitalPinState[3] = (used & Pbbe::LogicalPin(5).mask()) ? -1 : digitalRead(5);
-  digitalPinState[4] = (used & Pbbe::LogicalPin(6).mask()) ? -1 : digitalRead(6);
-  digitalPinState[5] = (used & Pbbe::LogicalPin(7).mask()) ? -1 : digitalRead(7);
-  digitalPinState[6] = (used & Pbbe::LogicalPin(8).mask()) ? -1 : digitalRead(8);
-  analogPinState[0] = (used & Pbbe::LogicalPin(A0).mask()) ? -1 : analogRead(0);
-  analogPinState[1] = (used & Pbbe::LogicalPin(A1).mask()) ? -1 : analogRead(1);
-  analogPinState[2] = (used & Pbbe::LogicalPin(A2).mask()) ? -1 : analogRead(2);
-  analogPinState[3] = (used & Pbbe::LogicalPin(A3).mask()) ? -1 : analogRead(3);
-  analogPinState[4] = (used & Pbbe::LogicalPin(A4).mask()) ? -1 : analogRead(4);
-  analogPinState[5] = (used & Pbbe::LogicalPin(A5).mask()) ? -1 : analogRead(5);
-  analogPinState[6] = (used & Pbbe::LogicalPin(A6).mask()) ? -1 : analogRead(6);
-  analogPinState[7] = (used & Pbbe::LogicalPin(A7).mask()) ? -1 : analogRead(7);
+  for (int i=0; i<8; i++) {
+    makeDisabled(i+A0);
+  }
+
   batteryPercentage = constrain(HAL_FuelGaugePercent(), 0, 100);
   batteryVoltage = HAL_FuelGaugeVoltage();
   isBattCharging = (digitalRead(CHG_STATUS) == LOW);
@@ -187,10 +178,7 @@ void PinoccioScout::saveState() {
   temperature = this->getTemperature();
 }
 
-int8_t PinoccioScout::getPinMode(uint8_t pin) {
-  // TODO: This requires a lot of expensive bitshifting, perhaps we can
-  // move this check up into the loop that calls getPinMode to require
-  // only one shift per loop iteration?
+int8_t PinoccioScout::getRegisterPinMode(uint8_t pin) {
   if (Backpacks::used_pins & Pbbe::LogicalPin(pin).mask()) {
     return -1;
   }
@@ -205,8 +193,85 @@ int8_t PinoccioScout::getPinMode(uint8_t pin) {
       (*portOutputRegister(digitalPinToPort(pin)) & digitalPinToBitMask(pin))) {
     return INPUT_PULLUP; // 2
   }
+}
 
-  return -1;
+int8_t PinoccioScout::getPinMode(uint8_t pin) {
+  if (isDigitalPin(pin)) {
+    return digitalPinMode[pin-2];
+  }
+
+  if (isAnalogPin(pin)) {
+    return analogPinMode[pin-A0];
+  }
+}
+
+void PinoccioScout::makeInput(uint8_t pin, bool enablePullup) {
+  if (Backpacks::used_pins & Pbbe::LogicalPin(pin).mask()) {
+    return;
+  }
+
+  uint8_t mode = enablePullup ? INPUT_PULLUP : INPUT;
+  pinMode(pin, mode);
+
+  if (isDigitalPin(pin)) {
+    digitalPinMode[pin-2] = mode;
+    digitalPinState[pin-2] = digitalRead(pin);
+  }
+
+  if (isAnalogPin(pin)) {
+    analogPinMode[pin-A0] = mode;
+    analogPinState[pin-A0] = analogRead(pin);
+  }
+}
+
+void PinoccioScout::makeOutput(uint8_t pin) {
+  if (Backpacks::used_pins & Pbbe::LogicalPin(pin).mask()) {
+    return;
+  }
+
+  pinMode(pin, OUTPUT);
+
+  if (isDigitalPin(pin)) {
+    digitalPinMode[pin-2] = OUTPUT;
+    digitalPinState[pin-2] = digitalRead(pin);
+  }
+
+  if (isAnalogPin(pin)) {
+    analogPinMode[pin-A0] = OUTPUT;
+    analogPinState[pin-A0] = analogRead(pin);
+  }
+}
+
+void PinoccioScout::makeDisabled(uint8_t pin) {
+  pinMode(pin, INPUT);  // input-no-pullup, for lowest power draw
+
+  if (isDigitalPin(pin)) {
+    digitalPinMode[pin-2] = -1;
+    digitalPinState[pin-2] = -1;
+  }
+
+  if (isAnalogPin(pin)) {
+    analogPinMode[pin-A0] = -1;
+    analogPinState[pin-A0] = -1;
+  }
+}
+
+void PinoccioScout::setMode(uint8_t pin, uint8_t mode) {
+  if (Backpacks::used_pins & Pbbe::LogicalPin(pin).mask()) {
+    return;
+  }
+
+  pinMode(pin, mode);
+
+  if (isDigitalPin(pin)) {
+    digitalPinMode[pin-2] = mode;
+    digitalPinState[pin-2] = digitalRead(pin);
+  }
+
+  if (isAnalogPin(pin)) {
+    analogPinMode[pin-A0] = mode;
+    analogPinState[pin-A0] = analogRead(pin);
+  }
 }
 
 bool PinoccioScout::isDigitalPin(uint8_t pin) {
@@ -217,37 +282,57 @@ bool PinoccioScout::isDigitalPin(uint8_t pin) {
 }
 
 bool PinoccioScout::isAnalogPin(uint8_t pin) {
-  if (pin >= 24 && pin <= 31) {
+  if (pin >= A0 && pin <= A7) {
     return true;
   }
   return false;
 }
 
+uint8_t PinoccioScout::getPinFromName(const char* name) {
+  char pin[3];
+  strcpy(pin, name+1);
+
+  if (name[0] == 'd') {
+    return atoi(pin);
+  }
+
+  if (name[0] == 'a') {
+    return atoi(pin) + A0;
+  }
+
+  return false;
+}
+
 static void scoutDigitalStateChangeTimerHandler(SYS_Timer_t *timer) {
   int8_t val;
+  int8_t mode;
 
-  // TODO: This can likely be optimized by hitting the pin registers directly
   if (Scout.digitalPinEventHandler != 0) {
     for (int i=0; i<7; i++) {
       int pin = i+2;
 
-      // Skip pins that don't have pull-ups enabled or are reserved by backpacks
-      if (Scout.getPinMode(pin) < 1) {
+      // Skip disabled pins
+      if (Scout.digitalPinMode[i] < 0) {
         Scout.digitalPinState[i] = -1;
         continue;
       }
 
       val = digitalRead(pin);
+      mode = Scout.getRegisterPinMode(pin);
+
       if (Scout.digitalPinState[i] != val) {
         if (Scout.eventVerboseOutput) {
           sp("Running: digitalPinEventHandler(");
           sp(pin);
           sp(",");
           sp(val);
+          sp(",");
+          sp(mode);
           speol(")");
         }
         Scout.digitalPinState[i] = val;
-        Scout.digitalPinEventHandler(pin, val);
+        Scout.digitalPinMode[i] = mode;
+        Scout.digitalPinEventHandler(pin, val, mode);
       }
     }
   }
@@ -255,20 +340,33 @@ static void scoutDigitalStateChangeTimerHandler(SYS_Timer_t *timer) {
 
 static void scoutAnalogStateChangeTimerHandler(SYS_Timer_t *timer) {
   int16_t val;
+  int8_t mode;
 
   if (Scout.analogPinEventHandler != 0) {
     for (int i=0; i<8; i++) {
+
+      // Skip disabled pins
+      if (Scout.analogPinMode[i] < 0) {
+        Scout.analogPinState[i] = -1;
+        continue;
+      }
+
       val = analogRead(i); // explicit digital pins until we can update core
+      mode = Scout.getRegisterPinMode(i+A0);
+
       if (Scout.analogPinState[i] != val) {
         if (Scout.eventVerboseOutput) {
           sp("Running: analogPinEventHandler(");
           sp(i);
           sp(",");
           sp(val);
+          sp(",");
+          sp(mode);
           speol(")");
         }
         Scout.analogPinState[i] = val;
-        Scout.analogPinEventHandler(i, val);
+        Scout.analogPinMode[i] = mode;
+        Scout.analogPinEventHandler(i, val, mode);
       }
     }
   }

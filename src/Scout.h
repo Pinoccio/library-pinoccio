@@ -47,12 +47,18 @@ class PinoccioScout : public PinoccioClass {
     void setStateChangeEventCycle(uint32_t digitalInterval, uint32_t analogInterval, uint32_t peripheralInterval);
     void saveState();
 
+    int8_t getRegisterPinMode(uint8_t pin);
     int8_t getPinMode(uint8_t pin);
+    void makeInput(uint8_t pin, bool enablePullup=true);
+    void makeOutput(uint8_t pin);
+    void makeDisabled(uint8_t pin);
+    void setMode(uint8_t pin, uint8_t mode);
     bool isDigitalPin(uint8_t pin);
     bool isAnalogPin(uint8_t pin);
+    uint8_t getPinFromName(const char* name);
 
-    void (*digitalPinEventHandler)(uint8_t pin, uint8_t value);
-    void (*analogPinEventHandler)(uint8_t pin, uint16_t value);
+    void (*digitalPinEventHandler)(uint8_t pin, int8_t value, int8_t mode);
+    void (*analogPinEventHandler)(uint8_t pin, int16_t value, int8_t mode);
     void (*batteryPercentageEventHandler)(uint8_t value);
     void (*batteryVoltageEventHandler)(uint8_t value);
     void (*batteryChargingEventHandler)(uint8_t value);
@@ -60,7 +66,10 @@ class PinoccioScout : public PinoccioClass {
     void (*temperatureEventHandler)(uint8_t value);
 
     int8_t digitalPinState[7];
+    int8_t digitalPinMode[7];
     int16_t analogPinState[8];
+    int8_t analogPinMode[8];
+
     uint8_t batteryPercentage;
     uint16_t batteryVoltage;
     bool isBattCharging;
