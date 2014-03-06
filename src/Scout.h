@@ -49,10 +49,10 @@ class PinoccioScout : public PinoccioClass {
 
     int8_t getRegisterPinMode(uint8_t pin);
     int8_t getPinMode(uint8_t pin);
-    void makeInput(uint8_t pin, bool enablePullup=true);
-    void makeOutput(uint8_t pin);
-    void makeDisabled(uint8_t pin);
-    void setMode(uint8_t pin, uint8_t mode);
+    bool makeInput(uint8_t pin, bool enablePullup=true);
+    bool makeOutput(uint8_t pin);
+    bool makeDisabled(uint8_t pin);
+    bool setMode(uint8_t pin, uint8_t mode);
     bool isDigitalPin(uint8_t pin);
     bool isAnalogPin(uint8_t pin);
     uint8_t getPinFromName(const char* name);

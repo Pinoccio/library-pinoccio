@@ -1041,10 +1041,14 @@ static numvar pinMakeInput(void) {
     return 0;
   }
 
+  bool pullup = true;
   if (getarg(0) == 2 && getarg(2) == 0) {
-    Scout.makeInput(pin, false);
-  } else {
-    Scout.makeInput(pin);
+    pullup = false;
+  }
+
+  if (!Scout.makeInput(pin, pullup)) {
+    speol("Cannot change mode of reserved pin");
+    return 0;
   }
 
   if (Scout.isDigitalPin(pin)) {
@@ -1063,7 +1067,11 @@ static numvar pinMakeOutput(void) {
     return 0;
   }
 
-  Scout.makeOutput(pin);
+  if (!Scout.makeOutput(pin)) {
+    speol("Cannot change mode of reserved pin");
+    return 0;
+  }
+
   if (Scout.isDigitalPin(pin)) {
     digitalPinReportHQ();
   }
@@ -1080,7 +1088,11 @@ static numvar pinDisable(void) {
     return 0;
   }
 
-  Scout.makeDisabled(pin);
+  if (!Scout.makeDisabled(pin)) {
+    speol("Cannot change mode of reserved pin");
+    return 0;
+  }
+
   if (Scout.isDigitalPin(pin)) {
     digitalPinReportHQ();
   }
@@ -1097,7 +1109,11 @@ static numvar pinSetMode(void) {
     return 0;
   }
 
-  Scout.setMode(pin, getarg(2));
+  if (!Scout.setMode(pin, getarg(2))) {
+    speol("Cannot change mode of reserved pin");
+    return 0;
+  }
+
   if (Scout.isDigitalPin(pin)) {
     digitalPinReportHQ();
   }

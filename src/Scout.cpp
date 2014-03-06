@@ -205,9 +205,9 @@ int8_t PinoccioScout::getPinMode(uint8_t pin) {
   }
 }
 
-void PinoccioScout::makeInput(uint8_t pin, bool enablePullup) {
+bool PinoccioScout::makeInput(uint8_t pin, bool enablePullup) {
   if (Backpacks::used_pins & Pbbe::LogicalPin(pin).mask()) {
-    return;
+    return false;
   }
 
   uint8_t mode = enablePullup ? INPUT_PULLUP : INPUT;
@@ -222,11 +222,13 @@ void PinoccioScout::makeInput(uint8_t pin, bool enablePullup) {
     analogPinMode[pin-A0] = mode;
     analogPinState[pin-A0] = analogRead(pin);
   }
+
+  return true;
 }
 
-void PinoccioScout::makeOutput(uint8_t pin) {
+bool PinoccioScout::makeOutput(uint8_t pin) {
   if (Backpacks::used_pins & Pbbe::LogicalPin(pin).mask()) {
-    return;
+    return false;
   }
 
   pinMode(pin, OUTPUT);
@@ -240,9 +242,15 @@ void PinoccioScout::makeOutput(uint8_t pin) {
     analogPinMode[pin-A0] = OUTPUT;
     analogPinState[pin-A0] = analogRead(pin);
   }
+
+  return true;
 }
 
-void PinoccioScout::makeDisabled(uint8_t pin) {
+bool PinoccioScout::makeDisabled(uint8_t pin) {
+  if (Backpacks::used_pins & Pbbe::LogicalPin(pin).mask()) {
+    return false;
+  }
+
   pinMode(pin, INPUT);  // input-no-pullup, for lowest power draw
 
   if (isDigitalPin(pin)) {
@@ -254,11 +262,13 @@ void PinoccioScout::makeDisabled(uint8_t pin) {
     analogPinMode[pin-A0] = -1;
     analogPinState[pin-A0] = -1;
   }
+
+  return true;
 }
 
-void PinoccioScout::setMode(uint8_t pin, uint8_t mode) {
+bool PinoccioScout::setMode(uint8_t pin, uint8_t mode) {
   if (Backpacks::used_pins & Pbbe::LogicalPin(pin).mask()) {
-    return;
+    return false;
   }
 
   pinMode(pin, mode);
@@ -272,6 +282,8 @@ void PinoccioScout::setMode(uint8_t pin, uint8_t mode) {
     analogPinMode[pin-A0] = mode;
     analogPinState[pin-A0] = analogRead(pin);
   }
+
+  return true;
 }
 
 bool PinoccioScout::isDigitalPin(uint8_t pin) {
@@ -282,22 +294,19 @@ bool PinoccioScout::isDigitalPin(uint8_t pin) {
 }
 
 bool PinoccioScout::isAnalogPin(uint8_t pin) {
-  if (pin >= A0 && pin <= A7) {
+  if (pin >= A0 && pin <= A0 + NUM_ANALOG_INPUTS) {
     return true;
   }
   return false;
 }
 
 uint8_t PinoccioScout::getPinFromName(const char* name) {
-  char pin[3];
-  strcpy(pin, name+1);
-
   if (name[0] == 'd') {
-    return atoi(pin);
+    return atoi(name+1);
   }
 
   if (name[0] == 'a') {
-    return atoi(pin) + A0;
+    return atoi(name+1) + A0;
   }
 
   return false;
@@ -343,7 +352,7 @@ static void scoutAnalogStateChangeTimerHandler(SYS_Timer_t *timer) {
   int8_t mode;
 
   if (Scout.analogPinEventHandler != 0) {
-    for (int i=0; i<8; i++) {
+    for (int i=0; i<NUM_ANALOG_INPUTS; i++) {
 
       // Skip disabled pins
       if (Scout.analogPinMode[i] < 0) {
