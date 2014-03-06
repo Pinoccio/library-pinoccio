@@ -609,10 +609,7 @@ void leadSignal(char *json) {
     speol(json);
   }
 
-  char *str = (char *)malloc(strlen(json)+1);
-  strcpy(str, json);
-  Scout.wifi.client.write(str);
-  free(str);
+  Scout.wifi.client.write(json);
   Scout.wifi.client.flush();
 }
 
