@@ -300,16 +300,22 @@ bool PinoccioScout::isAnalogPin(uint8_t pin) {
   return false;
 }
 
-uint8_t PinoccioScout::getPinFromName(const char* name) {
+int8_t PinoccioScout::getPinFromName(const char* name) {
+  uint8_t pin;
+
   if (name[0] == 'd') {
-    return atoi(name+1);
+    pin = atoi(name+1);
   }
 
   if (name[0] == 'a') {
-    return atoi(name+1) + A0;
+    pin = atoi(name+1) + A0;
   }
 
-  return false;
+  if (!isDigitalPin(pin) && !isAnalogPin(pin)) {
+    return -1;
+  }
+
+  return pin;
 }
 
 static void scoutDigitalStateChangeTimerHandler(SYS_Timer_t *timer) {

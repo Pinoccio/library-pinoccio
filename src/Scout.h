@@ -55,7 +55,7 @@ class PinoccioScout : public PinoccioClass {
     bool setMode(uint8_t pin, uint8_t mode);
     bool isDigitalPin(uint8_t pin);
     bool isAnalogPin(uint8_t pin);
-    uint8_t getPinFromName(const char* name);
+    int8_t getPinFromName(const char* name);
 
     void (*digitalPinEventHandler)(uint8_t pin, int8_t value, int8_t mode);
     void (*analogPinEventHandler)(uint8_t pin, int16_t value, int8_t mode);

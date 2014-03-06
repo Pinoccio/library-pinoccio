@@ -1035,8 +1035,8 @@ static numvar pinConstInputPullup(void) {
 }
 
 static numvar pinMakeInput(void) {
-  uint8_t pin = getarg(1);
-  if (!Scout.isDigitalPin(pin) && !Scout.isAnalogPin(pin)) {
+  int8_t pin = Scout.getPinFromName((const char*)getstringarg(1));
+  if (pin == -1) {
     speol("Invalid pin number");
     return 0;
   }
@@ -1061,8 +1061,8 @@ static numvar pinMakeInput(void) {
 }
 
 static numvar pinMakeOutput(void) {
-  uint8_t pin = getarg(1);
-  if (!Scout.isDigitalPin(pin) && !Scout.isAnalogPin(pin)) {
+  int8_t pin = Scout.getPinFromName((const char*)getstringarg(1));
+  if (pin == -1) {
     speol("Invalid pin number");
     return 0;
   }
@@ -1082,8 +1082,8 @@ static numvar pinMakeOutput(void) {
 }
 
 static numvar pinDisable(void) {
-  uint8_t pin = getarg(1);
-  if (!Scout.isDigitalPin(pin) && !Scout.isAnalogPin(pin)) {
+  int8_t pin = Scout.getPinFromName((const char*)getstringarg(1));
+  if (pin == -1) {
     speol("Invalid pin number");
     return 0;
   }
@@ -1103,8 +1103,8 @@ static numvar pinDisable(void) {
 }
 
 static numvar pinSetMode(void) {
-  uint8_t pin = getarg(1);
-  if (!Scout.isDigitalPin(pin) && !Scout.isAnalogPin(pin)) {
+  int8_t pin = Scout.getPinFromName((const char*)getstringarg(1));
+  if (pin == -1) {
     speol("Invalid pin number");
     return 0;
   }
@@ -1124,8 +1124,8 @@ static numvar pinSetMode(void) {
 }
 
 static numvar pinRead(void) {
-  uint8_t pin = getarg(1);
-  if (!Scout.isDigitalPin(pin) && !Scout.isAnalogPin(pin)) {
+  int8_t pin = Scout.getPinFromName((const char*)getstringarg(1));
+  if (pin == -1) {
     speol("Invalid pin number");
     return 0;
   }
@@ -1141,8 +1141,8 @@ static numvar pinRead(void) {
 
 static numvar pinWrite(void) {
   // TODO: handle PWM pins
-  uint8_t pin = getarg(1);
-  if (!Scout.isDigitalPin(pin) && !Scout.isAnalogPin(pin)) {
+  int8_t pin = Scout.getPinFromName((const char*)getstringarg(1));
+  if (pin == -1) {
     speol("Invalid pin number");
     return 0;
   }
@@ -1162,11 +1162,8 @@ static numvar pinWrite(void) {
 
 static numvar pinSave(void) {
   char buf[64];
-  const char *str;
-  str = (const char*)getstringarg(1);
-  int pin = Scout.getPinFromName(str);
-
-  sprintf(buf, "function startup.%s { pin.setmode(%d,%d) }", str, pin, getarg(2));
+  const char *str = (const char*)getstringarg(1);
+  sprintf(buf, "function startup.%s { pin.setmode(\"%s\",%d) }", str, str, getarg(2));
   doCommand(buf);
   return true;
 }
