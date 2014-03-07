@@ -119,6 +119,8 @@ static numvar keyPrint(void);
 static numvar keyNumber(void);
 static numvar keySave(void);
 
+static int getPinFromArg(int arg);
+
 static char *scoutReportHQ(void);
 static char *uptimeReportHQ(void);
 static char *powerReportHQ(void);
@@ -1035,7 +1037,7 @@ static numvar pinConstInputPullup(void) {
 }
 
 static numvar pinMakeInput(void) {
-  int8_t pin = Scout.getPinFromName((const char*)getstringarg(1));
+  int8_t pin = getPinFromArg(1);
   if (pin == -1) {
     speol("Invalid pin number");
     return 0;
@@ -1061,7 +1063,7 @@ static numvar pinMakeInput(void) {
 }
 
 static numvar pinMakeOutput(void) {
-  int8_t pin = Scout.getPinFromName((const char*)getstringarg(1));
+  int8_t pin = getPinFromArg(1);
   if (pin == -1) {
     speol("Invalid pin number");
     return 0;
@@ -1082,7 +1084,7 @@ static numvar pinMakeOutput(void) {
 }
 
 static numvar pinDisable(void) {
-  int8_t pin = Scout.getPinFromName((const char*)getstringarg(1));
+  int8_t pin = getPinFromArg(1);
   if (pin == -1) {
     speol("Invalid pin number");
     return 0;
@@ -1103,7 +1105,7 @@ static numvar pinDisable(void) {
 }
 
 static numvar pinSetMode(void) {
-  int8_t pin = Scout.getPinFromName((const char*)getstringarg(1));
+  int8_t pin = getPinFromArg(1);
   if (pin == -1) {
     speol("Invalid pin number");
     return 0;
@@ -1124,7 +1126,7 @@ static numvar pinSetMode(void) {
 }
 
 static numvar pinRead(void) {
-  int8_t pin = Scout.getPinFromName((const char*)getstringarg(1));
+  int8_t pin = getPinFromArg(1);
   if (pin == -1) {
     speol("Invalid pin number");
     return 0;
@@ -1141,7 +1143,7 @@ static numvar pinRead(void) {
 
 static numvar pinWrite(void) {
   // TODO: handle PWM pins
-  int8_t pin = Scout.getPinFromName((const char*)getstringarg(1));
+  int8_t pin = getPinFromArg(1);
   if (pin == -1) {
     speol("Invalid pin number");
     return 0;
@@ -1176,6 +1178,16 @@ static numvar digitalPinReport(void) {
 static numvar analogPinReport(void) {
   speol(analogPinReportHQ());
   return true;
+}
+
+static int getPinFromArg(int arg) {
+  if (isstringarg(arg)) {
+    return Scout.getPinFromName((const char*)getstringarg(arg));
+  } else if (Scout.isDigitalPin(getarg(arg)) || Scout.isAnalogPin(getarg(arg))) {
+    return getarg(arg);
+  } else {
+    return -1;
+  }
 }
 
 /****************************\
