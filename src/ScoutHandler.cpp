@@ -162,7 +162,10 @@ static bool fieldCommands(NWK_DataInd_t *ind) {
 
   // send data back in chunks
   fieldAnswerTo = ind->srcAddr;
+  // "Steal" the bitlashOutput buffer and set it to NULL to prevent
+  // double free
   fieldAnswerChunks = Shell.bitlashOutput;
+  Shell.bitlashOutput = NULL;
   fieldAnswerChunksAt = 0;
   fieldAnswerRetries = 0;
   fieldAnswerChunk();
