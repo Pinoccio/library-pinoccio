@@ -143,9 +143,9 @@ static bool fieldCommands(NWK_DataInd_t *ind) {
   }
 
   // run the command and chunk back the results
+  prepareBitlashBuffer();
   setOutputHandler(&bitlashBuffer);
-  Shell.bitlashOutput = (char*)malloc(1);
-  Shell.bitlashOutput[0] = 0;
+
   if (hqVerboseOutput) {
     sp("running command ");
     speol(fieldCommand);
@@ -505,15 +505,17 @@ void leadIncoming(char *packet, unsigned short *index) {
 
     // handle internal ones first
     if (to == Scout.getAddress()) {
-      Shell.bitlashOutput = (char*)malloc(255);
-
-      sprintf(Shell.bitlashOutput,"{\"type\":\"reply\",\"from\":%d,\"id\":%lu,\"end\":true,\"reply\":\"", to, id);
+      prepareBitlashBuffer();
       setOutputHandler(&bitlashBuffer);
       doCommand(command);
-      strcpy(Shell.bitlashOutput + strlen(Shell.bitlashOutput), "\"}\n");
+
+      char *reportOutput = (char*)malloc(128 + strlen(Shell.bitlashOutput));
+      sprintf(reportOutput, "{\"type\":\"reply\",\"from\":%d,\"id\":%lu,\"end\":true,\"reply\":\"%s\"}\n",
+              to, id, Shell.bitlashOutput);
+
       setOutputHandler(&bitlashFilter);
-      leadSignal(Shell.bitlashOutput);
-      free(Shell.bitlashOutput);
+      leadSignal(reportOutput);
+      free(reportOutput);
       return;
     }
 
@@ -641,4 +643,3 @@ bool leadAnswers(NWK_DataInd_t *ind) {
 
   return true;
 }
-

@@ -2115,3 +2115,13 @@ void bitlashBuffer(byte b) {
   Shell.bitlashOutput[len] = b;
   Shell.bitlashOutput[len+1] = 0;
 }
+
+int prepareBitlashBuffer() {
+  if (Shell.bitlashOutput != NULL) {
+    free(Shell.bitlashOutput);
+    Shell.bitlashOutput = NULL;
+  }
+
+  Shell.bitlashOutput = (char*)malloc(1);
+  Shell.bitlashOutput[0] = 0;
+}
