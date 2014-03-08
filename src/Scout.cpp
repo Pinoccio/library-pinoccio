@@ -52,9 +52,9 @@ void PinoccioScout::setup() {
   RgbLed.turnOff();
   Wire.begin();
   HAL_FuelGaugeConfig(20);   // Configure the MAX17048G's alert percentage to 20%
-  saveState();
-
   Backpacks::setup();
+
+  saveState();
   Shell.setup();
   handler.setup();
 
@@ -164,11 +164,21 @@ void PinoccioScout::setStateChangeEventCycle(uint32_t digitalInterval, uint32_t 
 
 void PinoccioScout::saveState() {
   for (int i=0; i<7; i++) {
-    makeDisabled(i+2);
+    if (isPinReserved(i+2)) {
+      digitalPinMode[i] = -2;
+      digitalPinState[i] = -1;
+    } else {
+      makeDisabled(i+2);
+    }
   }
 
   for (int i=0; i<8; i++) {
-    makeDisabled(i+A0);
+    if (isPinReserved(i+A0)) {
+      analogPinMode[i] = -2;
+      analogPinState[i] = -1;
+    } else {
+      makeDisabled(i+A0);
+    }
   }
 
   batteryPercentage = constrain(HAL_FuelGaugePercent(), 0, 100);
@@ -330,7 +340,7 @@ static void scoutDigitalStateChangeTimerHandler(SYS_Timer_t *timer) {
     for (int i=0; i<7; i++) {
       int pin = i+2;
 
-      // Skip disabled pins
+      // Skip disabled/reserved pins
       if (Scout.digitalPinMode[i] < 0) {
         Scout.digitalPinState[i] = -1;
         continue;
@@ -364,7 +374,7 @@ static void scoutAnalogStateChangeTimerHandler(SYS_Timer_t *timer) {
   if (Scout.analogPinEventHandler != 0) {
     for (int i=0; i<NUM_ANALOG_INPUTS; i++) {
 
-      // Skip disabled pins
+      // Skip disabled/reserved pins
       if (Scout.analogPinMode[i] < 0) {
         Scout.analogPinState[i] = -1;
         continue;
