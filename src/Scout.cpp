@@ -179,7 +179,7 @@ void PinoccioScout::saveState() {
 }
 
 int8_t PinoccioScout::getRegisterPinMode(uint8_t pin) {
-  if (Backpacks::used_pins & Pbbe::LogicalPin(pin).mask()) {
+  if (isPinReserved(pin)) {
     return -1;
   }
   if ((~(*portModeRegister(digitalPinToPort(pin))) & digitalPinToBitMask(pin)) &&
@@ -206,7 +206,7 @@ int8_t PinoccioScout::getPinMode(uint8_t pin) {
 }
 
 bool PinoccioScout::makeInput(uint8_t pin, bool enablePullup) {
-  if (Backpacks::used_pins & Pbbe::LogicalPin(pin).mask()) {
+  if (isPinReserved(pin)) {
     return false;
   }
 
@@ -227,7 +227,7 @@ bool PinoccioScout::makeInput(uint8_t pin, bool enablePullup) {
 }
 
 bool PinoccioScout::makeOutput(uint8_t pin) {
-  if (Backpacks::used_pins & Pbbe::LogicalPin(pin).mask()) {
+  if (isPinReserved(pin)) {
     return false;
   }
 
@@ -247,7 +247,7 @@ bool PinoccioScout::makeOutput(uint8_t pin) {
 }
 
 bool PinoccioScout::makeDisabled(uint8_t pin) {
-  if (Backpacks::used_pins & Pbbe::LogicalPin(pin).mask()) {
+  if (isPinReserved(pin)) {
     return false;
   }
 
@@ -267,7 +267,7 @@ bool PinoccioScout::makeDisabled(uint8_t pin) {
 }
 
 bool PinoccioScout::setMode(uint8_t pin, uint8_t mode) {
-  if (Backpacks::used_pins & Pbbe::LogicalPin(pin).mask()) {
+  if (isPinReserved(pin)) {
     return false;
   }
 
@@ -316,6 +316,10 @@ int8_t PinoccioScout::getPinFromName(const char* name) {
   }
 
   return pin;
+}
+
+bool PinoccioScout::isPinReserved(uint8_t pin) {
+  return (Backpacks::used_pins & Pbbe::LogicalPin(pin).mask());
 }
 
 static void scoutDigitalStateChangeTimerHandler(SYS_Timer_t *timer) {

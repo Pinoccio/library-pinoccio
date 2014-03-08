@@ -210,11 +210,12 @@ void PinoccioShell::setup() {
   addBitlashFunction("led.savetorch", (bitlash_function) ledSaveTorch);
   addBitlashFunction("led.report", (bitlash_function) ledReport);
 
-  addBitlashFunction("pin.high", (bitlash_function) pinConstHigh);
-  addBitlashFunction("pin.low", (bitlash_function) pinConstLow);
-  addBitlashFunction("pin.input", (bitlash_function) pinConstInput);
-  addBitlashFunction("pin.output", (bitlash_function) pinConstOutput);
-  addBitlashFunction("pin.inputpullup", (bitlash_function) pinConstInputPullup);
+  addBitlashFunction("const.high", (bitlash_function) pinConstHigh);
+  addBitlashFunction("const.low", (bitlash_function) pinConstLow);
+  addBitlashFunction("const.input", (bitlash_function) pinConstInput);
+  addBitlashFunction("const.output", (bitlash_function) pinConstOutput);
+  addBitlashFunction("const.inputpullup", (bitlash_function) pinConstInputPullup);
+
   addBitlashFunction("pin.makeinput", (bitlash_function) pinMakeInput);
   addBitlashFunction("pin.makeoutput", (bitlash_function) pinMakeOutput);
   addBitlashFunction("pin.disable", (bitlash_function) pinDisable);
@@ -1163,9 +1164,30 @@ static numvar pinWrite(void) {
 }
 
 static numvar pinSave(void) {
-  char buf[64];
+  int8_t pin = getPinFromArg(1);
+  if (pin == -1) {
+    speol("Invalid pin number");
+    return 0;
+  }
+
+  if (Scout.isPinReserved(pin)) {
+    speol("Cannot change mode of reserved pin");
+    return 0;
+  }
+
+  char buf[128];
   const char *str = (const char*)getstringarg(1);
-  sprintf(buf, "function startup.%s { pin.setmode(\"%s\",%d) }", str, str, getarg(2));
+
+  Scout.setMode(pin, getarg(2));
+
+  // if third arg is passed in, and mode is OUTPUT (0), then set pin value
+  if (getarg(0) == 3 && getarg(2) == 1) {
+    digitalWrite(pin, getarg(3));
+    sprintf(buf, "function startup.%s { pin.setmode(\"%s\",%d); %s=%d }", str, str, (int)getarg(2), str, (int)getarg(3));
+  } else {
+    sprintf(buf, "function startup.%s { pin.setmode(\"%s\",%d); }", str, str, (int)getarg(2));
+  }
+
   doCommand(buf);
   return true;
 }
