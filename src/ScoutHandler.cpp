@@ -369,16 +369,18 @@ char *report2json(char *in) {
 
 
 static void leadAnnouncementSend(uint16_t group, uint16_t from, char *message) {
-  char sig[256];
+  char *report;
+  report = (char*)malloc(strlen(message) + 128);
   // reports are expected to be json objects
   if (group == 0xBEEF) {
-    sprintf(sig, "{\"type\":\"report\",\"from\":%d,\"report\":%s}\n", from, report2json(message));
+    sprintf(report, "{\"type\":\"report\",\"from\":%d,\"report\":%s}\n", from, report2json(message));
   }
 
   if (group == 0) {
-    sprintf(sig, "{\"type\":\"announce\",\"from\":%d,\"announce\":%s}\n", from, message);
+    sprintf(report, "{\"type\":\"announce\",\"from\":%d,\"announce\":%s}\n", from, message);
   }
-  leadSignal(sig);
+  leadSignal(report);
+  free(report);
 }
 
 // [3,[0,1,2],[v,v,v]]
@@ -511,14 +513,13 @@ void leadIncoming(char *packet, unsigned short *index) {
       prepareBitlashBuffer();
       setOutputHandler(&bitlashBuffer);
       doCommand(command);
-
-      char *reportOutput = (char*)malloc(128 + strlen(Shell.bitlashOutput));
-      sprintf(reportOutput, "{\"type\":\"reply\",\"from\":%d,\"id\":%lu,\"end\":true,\"reply\":\"%s\"}\n",
-              to, id, Shell.bitlashOutput);
-
       setOutputHandler(&bitlashFilter);
-      leadSignal(reportOutput);
-      free(reportOutput);
+
+      char *report = (char*)malloc(strlen(Shell.bitlashOutput) + 255);
+      sprintf(report, "{\"type\":\"reply\",\"from\":%d,\"id\":%lu,\"end\":true,\"reply\":\"%s\"}\n", to, id, Shell.bitlashOutput);
+      leadSignal(report);
+      free(report);
+
       return;
     }
 
