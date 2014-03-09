@@ -210,11 +210,11 @@ void PinoccioShell::setup() {
   addBitlashFunction("led.savetorch", (bitlash_function) ledSaveTorch);
   addBitlashFunction("led.report", (bitlash_function) ledReport);
 
-  addBitlashFunction("const.high", (bitlash_function) pinConstHigh);
-  addBitlashFunction("const.low", (bitlash_function) pinConstLow);
-  addBitlashFunction("const.input", (bitlash_function) pinConstInput);
-  addBitlashFunction("const.output", (bitlash_function) pinConstOutput);
-  addBitlashFunction("const.inputpullup", (bitlash_function) pinConstInputPullup);
+  addBitlashFunction("high", (bitlash_function) pinConstHigh);
+  addBitlashFunction("low", (bitlash_function) pinConstLow);
+  addBitlashFunction("input", (bitlash_function) pinConstInput);
+  addBitlashFunction("output", (bitlash_function) pinConstOutput);
+  addBitlashFunction("inputpullup", (bitlash_function) pinConstInputPullup);
 
   addBitlashFunction("pin.makeinput", (bitlash_function) pinMakeInput);
   addBitlashFunction("pin.makeoutput", (bitlash_function) pinMakeOutput);
