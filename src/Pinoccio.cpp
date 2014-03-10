@@ -2,6 +2,7 @@
 #include <Pinoccio.h>
 #include <avr/eeprom.h>
 #include <src/bitlash.h>
+#include <lwm/phy/atmegarfr2.h>
 
 PinoccioClass Pinoccio;
 
