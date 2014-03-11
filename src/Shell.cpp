@@ -482,13 +482,8 @@ static char *uptimeReportHQ(void) {
   int freeMem;
 
   char reset[20];
-  char c;
-
-  const char *resetString = Scout.getLastResetCause();
-  reset[0] = 0;
-  while((c = pgm_read_byte(resetString++))) {
-    snprintf(reset + strlen(reset), sizeof(reset) - strlen(reset), "%c", c);
-  }
+  strncpy_P(reset, Scout.getLastResetCause(), sizeof(reset));
+  reset[sizeof(reset) - 1] = 0; // ensure termination, strncpy is weird
 
   // free memory based on http://forum.pololu.com/viewtopic.php?f=10&t=989&view=unread#p4218
   snprintf(report, sizeof(report),"[%d,[%d,%d,%d,%d],[%ld,%d,%d,\"",keyMap("uptime",0),
