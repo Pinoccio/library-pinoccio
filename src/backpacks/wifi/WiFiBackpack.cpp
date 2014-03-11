@@ -68,7 +68,7 @@ bool WiFiBackpack::setup() {
   // return gs.begin(Serial1);
 
   SPI.begin();
-  SPI.setClockDivider(SPI_CLOCK_DIV8);
+  SPI.setClockDivider(SPI_CLOCK_DIV16);
 
   gs.onAssociate = onAssociate;
   gs.onNcmConnect = onNcmConnect;
