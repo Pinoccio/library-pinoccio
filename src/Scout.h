@@ -16,6 +16,20 @@
 #include "peripherals/halRgbLed.h"
 
 
+// This is a temporary hack to check the result of snprintf and print an
+// error
+/*
+#define snprintf(buf, size, ...) do { \
+  if (size <= snprintf(buf, size, __VA_ARGS__)) { \
+    Serial.print("snprintf overflow "); \
+    Serial.print(__FILE__); \
+    Serial.print(":"); \
+    Serial.println(__LINE__); \
+    Serial.flush(); \
+  } \
+} while(0)
+*/
+
 class PinoccioScout : public PinoccioClass {
 
   public:
