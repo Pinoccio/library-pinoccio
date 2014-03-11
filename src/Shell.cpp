@@ -398,21 +398,21 @@ void PinoccioShell::startShell() {
   initBitlash(115200);
 
   for (i='a'; i<'z'; i++) {
-    sprintf(boot, "startup.%c", i);
+    snprintf(boot, sizeof(boot), "startup.%c", i);
     if (findscript(boot)) {
       doCommand(boot);
     }
   }
 
   for (i=2; i<9; i++) {
-    sprintf(boot, "startup.d%d", i);
+    snprintf(boot, sizeof(boot), "startup.d%d", i);
     if (findscript(boot)) {
       doCommand(boot);
     }
   }
 
   for (i=0; i<8; i++) {
-    sprintf(boot, "startup.a%d", i);
+    snprintf(boot, sizeof(boot), "startup.a%d", i);
     if (findscript(boot)) {
       doCommand(boot);
     }
@@ -439,7 +439,7 @@ static char *tempReportHQ(void) {
   int temp = Scout.getTemperature();
   if(temp > tempHigh) tempHigh = temp;
   if(!tempLow || temp < tempLow) tempLow = temp;
-  sprintf(report,"[%d,[%d,%d,%d],[%d,%d,%d]]",
+  snprintf(report, sizeof(report),"[%d,[%d,%d,%d],[%d,%d,%d]]",
           keyMap("temp", 0),
           keyMap("current", 0),
           keyMap("high", 0),
@@ -487,11 +487,11 @@ static char *uptimeReportHQ(void) {
   const char *resetString = Scout.getLastResetCause();
   reset[0] = 0;
   while((c = pgm_read_byte(resetString++))) {
-    sprintf(reset + strlen(reset), "%c", c);
+    snprintf(reset + strlen(reset), sizeof(reset) - strlen(reset), "%c", c);
   }
 
   // free memory based on http://forum.pololu.com/viewtopic.php?f=10&t=989&view=unread#p4218
-  sprintf(report,"[%d,[%d,%d,%d,%d],[%ld,%d,%d,\"",keyMap("uptime",0),
+  snprintf(report, sizeof(report),"[%d,[%d,%d,%d,%d],[%ld,%d,%d,\"",keyMap("uptime",0),
           keyMap("millis", 0),
           keyMap("free", 0),
           keyMap("random", 0),
@@ -500,7 +500,7 @@ static char *uptimeReportHQ(void) {
           ((int)&freeMem) - ((int)&__bss_end),
           (int)random());
 
-  sprintf(report + strlen(report),"%s\"]]", (char*)reset);
+  snprintf(report + strlen(report), sizeof(report) - strlen(report),"%s\"]]", (char*)reset);
   return Scout.handler.report(report);
 }
 
@@ -548,7 +548,7 @@ static numvar keySave(void) {
     return 0;
   }
   var = (char*)getstringarg(1);
-  sprintf(cmd, "function boot.%s {%s=key(\"%s\");}", var, var, keyGet(getarg(2)));
+  snprintf(cmd, sizeof(cmd), "function boot.%s {%s=key(\"%s\");}", var, var, keyGet(getarg(2)));
   doCommand(cmd);
   return 1;
 }
@@ -594,7 +594,7 @@ static numvar goToSleep(void) {
 
 static char *powerReportHQ(void) {
   static char report[100];
-  sprintf(report,"[%d,[%d,%d,%d,%d],[%d,%d,%s,%s]]",
+  snprintf(report, sizeof(report),"[%d,[%d,%d,%d,%d],[%d,%d,%s,%s]]",
           keyMap("power", 0),
           keyMap("battery", 0),
           keyMap("voltage", 0),
@@ -618,7 +618,7 @@ static numvar powerReport(void) {
 
 static char *ledReportHQ(void) {
   static char report[100];
-  sprintf(report,"[%d,[%d,%d],[[%d,%d,%d],[%d,%d,%d]]]",
+  snprintf(report, sizeof(report),"[%d,[%d,%d],[[%d,%d,%d],[%d,%d,%d]]]",
           keyMap("led", 0),
           keyMap("led", 0),
           keyMap("torch", 0),
@@ -748,7 +748,7 @@ static numvar ledWhite(void) {
 
 static numvar ledGetHex(void) {
   char hex[8];
-  sprintf(hex,"%02x%02x%02x", RgbLed.getRedValue(), RgbLed.getGreenValue(), RgbLed.getBlueValue());
+  snprintf(hex, sizeof(hex),"%02x%02x%02x", RgbLed.getRedValue(), RgbLed.getGreenValue(), RgbLed.getBlueValue());
   return keyMap(hex, millis());
 }
 
@@ -869,12 +869,12 @@ char *arg2array(int ver, char *msg) {
   if (args > 8) {
     args = 8;
   }
-  sprintf(msg,"[%d,",ver);
+  snprintf(msg, sizeof(msg),"[%d,",ver);
   for (i=2; i<=args; i++) {
     int key = (isstringarg(i)) ? keyMap((char*)getstringarg(i), 0) : getarg(i);
-    sprintf(msg + strlen(msg), "\"%s\",", keyGet(key));
+    snprintf(msg + strlen(msg), sizeof(msg) - strlen(msg), "\"%s\",", keyGet(key));
   }
-  sprintf(msg + (strlen(msg)-1), "]");
+  snprintf(msg + (strlen(msg)-1), sizeof(msg) - (strlen(msg) - 1), "]");
   return msg;
 }
 
@@ -918,7 +918,7 @@ static char *meshReportHQ(void) {
     if (table[i].dstAddr == NWK_ROUTE_UNKNOWN) continue;
     count++;
   }
-  sprintf(report, "[%d,[%d,%d,%d,%d,%d,%d],[%d,%d,%d,%d,\"",
+  snprintf(report, sizeof(report), "[%d,[%d,%d,%d,%d,%d,%d],[%d,%d,%d,%d,\"",
           keyMap("mesh", 0),
           keyMap("scoutid", 0),
           keyMap("troopid", 0),
@@ -933,16 +933,16 @@ static char *meshReportHQ(void) {
 
   const char *kbString = Scout.getDataRatekbps();
   while (c = pgm_read_byte(kbString++)) {
-    sprintf(report + strlen(report),"%c", c);
+    snprintf(report + strlen(report), sizeof(report) - strlen(report),"%c", c);
   }
 
-  sprintf(report + strlen(report), "\",\"");
+  snprintf(report + strlen(report), sizeof(report) - strlen(report), "\",\"");
 
   const char *dbString = Scout.getTxPowerDb();
   while (c = pgm_read_byte(dbString++)) {
-    sprintf(report + strlen(report), "%c", c);
+    snprintf(report + strlen(report), sizeof(report) - strlen(report), "%c", c);
   }
-  sprintf(report + strlen(report), "\"]]");
+  snprintf(report + strlen(report), sizeof(report) - strlen(report), "\"]]");
   return Scout.handler.report(report);
 }
 
@@ -986,7 +986,7 @@ static numvar meshRouting(void) {
 
 static char *digitalPinReportHQ(void) {
   static char report[80];
-  sprintf(report,"[%d,[%d,%d],[[%d,%d,%d,%d,%d,%d,%d],[%d,%d,%d,%d,%d,%d,%d]]]",
+  snprintf(report, sizeof(report),"[%d,[%d,%d],[[%d,%d,%d,%d,%d,%d,%d],[%d,%d,%d,%d,%d,%d,%d]]]",
           keyMap("digital", 0),
           keyMap("mode", 0),
           keyMap("state", 0),
@@ -1009,7 +1009,7 @@ static char *digitalPinReportHQ(void) {
 
 static char *analogPinReportHQ(void) {
   static char report[80];
-  sprintf(report,"[%d,[%d,%d],[[%d,%d,%d,%d,%d,%d,%d,%d],[%d,%d,%d,%d,%d,%d,%d,%d]]]",
+  snprintf(report, sizeof(report),"[%d,[%d,%d],[[%d,%d,%d,%d,%d,%d,%d,%d],[%d,%d,%d,%d,%d,%d,%d,%d]]]",
           keyMap("analog", 0),
           keyMap("mode", 0),
           keyMap("state", 0),
@@ -1201,15 +1201,15 @@ static numvar pinSave(void) {
   const char *str = (const char*)getstringarg(1);
 
   if (mode == -1) {
-    snprintf(buf, 128, "rm startup.%s", str);
+    snprintf(buf, sizeof(buf), "rm startup.%s", str);
   } else {
     // if third arg is passed in, and mode is OUTPUT, then set pin value
     if (getarg(0) == 3 && mode == OUTPUT) {
       uint8_t value = getarg(3);
       Scout.pinWrite(pin, value);
-      snprintf(buf, 128, "function startup.%s { pin.setmode(\"%s\",%d); pin.write(%d,%d) }", str, str, mode, pin, value);
+      snprintf(buf, sizeof(buf), "function startup.%s { pin.setmode(\"%s\",%d); pin.write(%d,%d) }", str, str, mode, pin, value);
     } else {
-      snprintf(buf, 128, "function startup.%s { pin.setmode(\"%s\",%d); }", str, str, mode);
+      snprintf(buf, sizeof(buf), "function startup.%s { pin.setmode(\"%s\",%d); }", str, str, mode);
     }
   }
 
@@ -1252,16 +1252,16 @@ static int getPinFromArg(int arg) {
 static char *backpackReportHQ(void) {
   static char report[100];
   int comma = 0;
-  sprintf(report, "[%d,[%d],[[", keyMap("backpacks", 0), keyMap("list", 0));
+  snprintf(report, sizeof(report), "[%d,[%d],[[", keyMap("backpacks", 0), keyMap("list", 0));
 
   for (uint8_t i=0; i<Backpacks::num_backpacks; ++i) {
     BackpackInfo &info = Backpacks::info[i];
     for (uint8_t j=0; j<sizeof(info.id); ++j) {
       // TODO this isn't correct, dunno what to do here
-      sprintf(report+strlen(report),"%s%d",comma++?",":"",info.id.raw_bytes[j]);
+      snprintf(report+strlen(report), sizeof(report) - strlen(report), "%s%d",comma++?",":"",info.id.raw_bytes[j]);
     }
   }
-  sprintf(report + strlen(report), "]]]");
+  snprintf(report + strlen(report), sizeof(report) - strlen(report), "]]]");
   return Scout.handler.report(report);
 }
 
@@ -1553,7 +1553,7 @@ static numvar backpackResources(void) {
 
 static char *scoutReportHQ(void) {
   static char report[100];
-  sprintf(report,"[%d,[%d,%d,%d,%d,%d,%d],[%s,%d,%d,%d,%ld,%ld]]",
+  snprintf(report, sizeof(report),"[%d,[%d,%d,%d,%d,%d,%d],[%s,%d,%d,%d,%ld,%ld]]",
           keyMap("scout", 0),
           keyMap("lead", 0),
           keyMap("version", 0),
@@ -1609,7 +1609,7 @@ static numvar daisyWipe(void) {
   }
 
   char report[32];
-  sprintf(report,"[%d,[%d],[\"bye\"]]",keyMap("daisy",0),keyMap("dave",0));
+  snprintf(report, sizeof(report),"[%d,[%d],[\"bye\"]]",keyMap("daisy",0),keyMap("dave",0));
   Scout.handler.report(report);
 
   if (Scout.isLeadScout()) {
@@ -1697,7 +1697,7 @@ static numvar setEventVerbose(void) {
 static char *wifiReportHQ(void) {
   static char report[100];
   // TODO real wifi status/version
-  sprintf(report,"[%d,[%d,%d,%d],[%d,%s,%s]]",
+  snprintf(report, sizeof(report),"[%d,[%d,%d,%d],[%d,%s,%s]]",
           keyMap("wifi", 0),
           keyMap("version", 0),
           keyMap("connected", 0),
@@ -1943,13 +1943,13 @@ static bool receiveMessage(NWK_DataInd_t *ind) {
   // parse the array payload into keys, [1, "foo", "bar"]
   keyLoad(data, keys, millis());
 
-  sprintf(buf,"event.message");
+  snprintf(buf, sizeof(buf),"event.message");
   if (findscript(buf)) {
-    sprintf(buf, "event.message(%d", ind->srcAddr);
+    snprintf(buf, sizeof(buf), "event.message(%d", ind->srcAddr);
     for (int i=2; i<=keys[0]; i++) {
-      sprintf(buf + strlen(buf), ",%d", keys[i]);
+      snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf), ",%d", keys[i]);
     }
-    sprintf(buf + strlen(buf), ")");
+    snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf), ")");
     doCommand(buf);
   }
   return true;
@@ -2021,9 +2021,9 @@ static void sendConfirm(NWK_DataReq_t *req) {
 
   // run the Bitlash callback ack function
   char buf[32];
-  sprintf(buf,"event.ack");
+  snprintf(buf, sizeof(buf),"event.ack");
   if (findscript(buf)) {
-    sprintf(buf, "event.ack(%d, %d)", req->dstAddr, (req->status == NWK_SUCCESS_STATUS) ? req->control : 0);
+    snprintf(buf, sizeof(buf), "event.ack(%d, %d)", req->dstAddr, (req->status == NWK_SUCCESS_STATUS) ? req->control : 0);
     doCommand(buf);
   }
 }
@@ -2044,15 +2044,15 @@ static void digitalPinEventHandler(uint8_t pin, int8_t value, int8_t mode) {
     doCommand(buf);
   }
 
-  sprintf(buf, "event.digital%d", pin);
+  snprintf(buf, sizeof(buf), "event.digital%d", pin);
   if (findscript(buf)) {
-    sprintf(buf, "event.digital%d(%d, %d)", pin, value, mode);
+    snprintf(buf, sizeof(buf), "event.digital%d(%d, %d)", pin, value, mode);
     doCommand(buf);
   }
 
   // simplified button trigger
   if (value == 0 && (mode == INPUT_PULLUP || mode == INPUT)) {
-    sprintf(buf, "event.button%d", pin);
+    snprintf(buf, sizeof(buf), "event.button%d", pin);
     if (findscript(buf)) {
       doCommand(buf);
     }
@@ -2078,9 +2078,9 @@ static void analogPinEventHandler(uint8_t pin, int16_t value, int8_t mode) {
     doCommand(buf);
   }
 
-  sprintf(buf,"event.analog%d", pin);
+  snprintf(buf, sizeof(buf),"event.analog%d", pin);
   if (findscript(buf)) {
-    sprintf(buf, "event.analog%d(%d, %d)", pin, value, mode);
+    snprintf(buf, sizeof(buf), "event.analog%d(%d, %d)", pin, value, mode);
     doCommand(buf);
   }
 

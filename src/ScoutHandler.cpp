@@ -311,14 +311,14 @@ static bool fieldAnnouncements(NWK_DataInd_t *ind) {
   keyLoad((char*)ind->data, keys, millis());
 
   // run the Bitlash callback function, if defined
-  sprintf(callback, "event.group%d", ind->dstAddr);
+  snprintf(callback, sizeof(callback), "event.group%d", ind->dstAddr);
   if (findscript(callback)) {
     char buf[128];
-    sprintf(buf, "event.group%d(%d", ind->dstAddr, ind->srcAddr);
+    snprintf(buf, sizeof(buf), "event.group%d(%d", ind->dstAddr, ind->srcAddr);
     for (int i=2; i<=keys[0]; i++) {
-      sprintf(buf + strlen(buf), ",%d", keys[i]);
+      snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf), ",%d", keys[i]);
     }
-    sprintf(buf + strlen(buf), ")");
+    snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf), ")");
     doCommand(buf);
   }
 
@@ -340,7 +340,7 @@ char *report2json(char *in) {
     return NULL;
   }
 
-  sprintf(reportJson, "{\"type\":\"%s\"", keyGet(atoi(j0g_safe(0, report, ir))));
+  snprintf(reportJson, sizeof(reportJson), "{\"type\":\"%s\"", keyGet(atoi(j0g_safe(0, report, ir))));
   keys = report + ir[2];
   js0n((unsigned char*)keys, ir[3], ik, 32);
   if (!*ik) {
@@ -354,30 +354,34 @@ char *report2json(char *in) {
   }
 
   for (i=0; ik[i]; i+=2) {
-    sprintf(reportJson + strlen(reportJson), ",\"%s\":", keyGet(atoi(j0g_safe(i, keys, ik))));
+    snprintf(reportJson + strlen(reportJson), sizeof(reportJson) - strlen(reportJson), ",\"%s\":", keyGet(atoi(j0g_safe(i, keys, ik))));
     if (vals[iv[i]-1] == '"') {
       iv[i]--;
       iv[i+1]+=2;
     }
     *(vals+iv[i]+iv[i+1]) = 0;
-    sprintf(reportJson + strlen(reportJson), "%s", vals + iv[i]);
+    snprintf(reportJson + strlen(reportJson), sizeof(reportJson) - strlen(reportJson), "%s", vals + iv[i]);
   }
 
-  sprintf(reportJson + strlen(reportJson), "}");
+  snprintf(reportJson + strlen(reportJson), sizeof(reportJson) - strlen(reportJson), "}");
   return reportJson;
 }
 
 
 static void leadAnnouncementSend(uint16_t group, uint16_t from, char *message) {
   char *report;
-  report = (char*)malloc(strlen(message) + 128);
   // reports are expected to be json objects
   if (group == 0xBEEF) {
-    sprintf(report, "{\"type\":\"report\",\"from\":%d,\"report\":%s}\n", from, report2json(message));
-  }
-
-  if (group == 0) {
-    sprintf(report, "{\"type\":\"announce\",\"from\":%d,\"announce\":%s}\n", from, message);
+    const char *json = report2json(message);
+    size_t len = strlen(json) + 128;
+    report = (char*)malloc(len);
+    snprintf(report, len, "{\"type\":\"report\",\"from\":%d,\"report\":%s}\n", from, json);
+  } else if (group == 0) {
+    size_t len = strlen(message) + 128;
+    report = (char*)malloc(len);
+    snprintf(report, len, "{\"type\":\"announce\",\"from\":%d,\"announce\":%s}\n", from, message);
+  } else {
+    return;
   }
   leadSignal(report);
   free(report);
@@ -398,7 +402,7 @@ void leadHQConnect() {
   if (Scout.wifi.client.connected()) {
     Pinoccio.getHQToken(token);
     token[32] = 0;
-    sprintf(auth, "{\"type\":\"token\",\"token\":\"%s\"}\n", token);
+    snprintf(auth, sizeof(auth), "{\"type\":\"token\",\"token\":\"%s\"}\n", token);
     leadSignal(auth);
   } else {
     if (hqVerboseOutput) {
@@ -469,9 +473,9 @@ void leadHQHandle(void) {
 
 // when we can't process a command for some internal reason
 void leadCommandError(int from, int id, const char *reason) {
-  char *err;
-  err = (char*)malloc(strlen(reason) + 128);
-  sprintf(err,"{\"type\":\"reply\",\"from\":%d,\"id\":%d,\"err\":true,\"reply\":\"%s\"}\n", from, id, reason);
+  size_t len = strlen(reason) + 128;
+  char *err = (char*)malloc(len);
+  snprintf(err, len, "{\"type\":\"reply\",\"from\":%d,\"id\":%d,\"err\":true,\"reply\":\"%s\"}\n", from, id, reason);
   leadSignal(err);
   free(err);
 }
@@ -515,8 +519,9 @@ void leadIncoming(char *packet, unsigned short *index) {
       doCommand(command);
       setOutputHandler(&bitlashFilter);
 
-      char *report = (char*)malloc(strlen(Shell.bitlashOutput) + 255);
-      sprintf(report, "{\"type\":\"reply\",\"from\":%d,\"id\":%lu,\"end\":true,\"reply\":\"%s\"}\n", to, id, Shell.bitlashOutput);
+      size_t len = strlen(Shell.bitlashOutput) + 255;
+      char *report = (char*)malloc(len);
+      snprintf(report, len, "{\"type\":\"reply\",\"from\":%d,\"id\":%lu,\"end\":true,\"reply\":\"%s\"}\n", to, id, Shell.bitlashOutput);
       leadSignal(report);
       free(report);
 
@@ -639,10 +644,10 @@ bool leadAnswers(NWK_DataInd_t *ind) {
     end = true;
     ind->size--;
   }
-  sprintf(sig,"{\"type\":\"reply\",\"id\":%d,\"from\":%d,\"reply\":\"", leadAnswerID, ind->srcAddr);
+  snprintf(sig, sizeof(sig),"{\"type\":\"reply\",\"id\":%d,\"from\":%d,\"reply\":\"", leadAnswerID, ind->srcAddr);
   at = strlen(sig);
   memcpy(sig+at, ind->data, ind->size);
-  sprintf(sig+at+ind->size, "\",\"end\":%s}\n",end ? "true" : "false");
+  snprintf(sig+at+ind->size, sizeof(sig) - at - ind->size, "\",\"end\":%s}\n",end ? "true" : "false");
   leadSignal(sig);
 
   return true;
