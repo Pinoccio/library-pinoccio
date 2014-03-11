@@ -225,12 +225,12 @@ bool PinoccioScout::makeInput(uint8_t pin, bool enablePullup) {
 
   if (isDigitalPin(pin)) {
     digitalPinMode[pin-2] = mode;
-    digitalPinState[pin-2] = digitalRead(pin);
+    digitalPinState[pin-2] = Scout.pinRead(pin);
   }
 
   if (isAnalogPin(pin)) {
     analogPinMode[pin-A0] = mode;
-    analogPinState[pin-A0] = analogRead(pin);
+    analogPinState[pin-A0] = Scout.pinRead(pin);
   }
 
   return true;
@@ -245,12 +245,12 @@ bool PinoccioScout::makeOutput(uint8_t pin) {
 
   if (isDigitalPin(pin)) {
     digitalPinMode[pin-2] = OUTPUT;
-    digitalPinState[pin-2] = digitalRead(pin);
+    digitalPinState[pin-2] = Scout.pinRead(pin);
   }
 
   if (isAnalogPin(pin)) {
     analogPinMode[pin-A0] = OUTPUT;
-    analogPinState[pin-A0] = analogRead(pin);
+    analogPinState[pin-A0] = Scout.pinRead(pin);
   }
 
   return true;
@@ -285,12 +285,12 @@ bool PinoccioScout::setMode(uint8_t pin, uint8_t mode) {
 
   if (isDigitalPin(pin)) {
     digitalPinMode[pin-2] = mode;
-    digitalPinState[pin-2] = digitalRead(pin);
+    digitalPinState[pin-2] = Scout.pinRead(pin);
   }
 
   if (isAnalogPin(pin)) {
     analogPinMode[pin-A0] = mode;
-    analogPinState[pin-A0] = analogRead(pin);
+    analogPinState[pin-A0] = Scout.pinRead(pin);
   }
 
   return true;
@@ -308,6 +308,39 @@ bool PinoccioScout::isAnalogPin(uint8_t pin) {
     return true;
   }
   return false;
+}
+
+bool PinoccioScout::pinWrite(uint8_t pin, uint8_t value) {
+  if (isPinReserved(pin)) {
+    return false;
+  }
+
+  if (Scout.isDigitalPin(pin)) {
+    Scout.makeOutput(pin);
+    digitalWrite(pin, value);
+    digitalPinState[pin-2] = value;
+  }
+  if (Scout.isAnalogPin(pin)) {
+    Scout.makeOutput(pin);
+    digitalWrite(pin, value);
+    analogPinState[pin-A0] = value;
+  }
+
+  return true;
+}
+
+uint16_t PinoccioScout::pinRead(uint8_t pin) {
+  if (Scout.isDigitalPin(pin)) {
+    return digitalRead(pin);
+  } else if (Scout.isAnalogPin(pin)) {
+    if (Scout.getPinMode(pin) == INPUT) {
+      return analogRead(pin);
+    } else {
+      return digitalRead(pin);
+    }
+  } else {
+    return 0;
+  }
 }
 
 int8_t PinoccioScout::getPinFromName(const char* name) {
@@ -346,7 +379,7 @@ static void scoutDigitalStateChangeTimerHandler(SYS_Timer_t *timer) {
         continue;
       }
 
-      val = digitalRead(pin);
+      val = Scout.pinRead(pin);
       mode = Scout.getRegisterPinMode(pin);
 
       if (Scout.digitalPinState[i] != val) {
@@ -380,7 +413,7 @@ static void scoutAnalogStateChangeTimerHandler(SYS_Timer_t *timer) {
         continue;
       }
 
-      val = analogRead(i); // explicit digital pins until we can update core
+      val = Scout.pinRead(i); // explicit digital pins until we can update core
       mode = Scout.getRegisterPinMode(i+A0);
 
       if (Scout.analogPinState[i] != val) {

@@ -11,6 +11,7 @@ static numvar pinoccioBanner(void);
 
 static numvar getTemperature(void);
 static numvar getRandomNumber(void);
+static numvar getLastResetCause(void);
 static numvar uptimeReport(void);
 static numvar allReport(void);
 static numvar allVerbose(void);
@@ -187,6 +188,7 @@ void PinoccioShell::setup() {
 
   addBitlashFunction("temperature", (bitlash_function) getTemperature);
   addBitlashFunction("randomnumber", (bitlash_function) getRandomNumber);
+  addBitlashFunction("lastreset", (bitlash_function) getLastResetCause);
   addBitlashFunction("uptime", (bitlash_function) uptimeReport);
   addBitlashFunction("report", (bitlash_function) allReport);
   addBitlashFunction("verbose", (bitlash_function) allVerbose);
@@ -459,6 +461,19 @@ static numvar getRandomNumber(void) {
   int i = random();
   speol(i);
   return i;
+}
+
+static numvar getLastResetCause(void) {
+  char c;
+  char reset[20];
+  const char *resetString = Scout.getLastResetCause();
+  reset[0] = 0;
+  
+  while((c = pgm_read_byte(resetString++))) {
+    sprintf(reset + strlen(reset), "%c", c);
+  }
+  speol(reset);
+  return true;
 }
 
 extern int __bss_end;
@@ -1133,31 +1148,29 @@ static numvar pinRead(void) {
     return 0;
   }
 
-  if (Scout.isDigitalPin(pin)) {
-    return digitalRead(getarg(1));
-  } else if (Scout.isAnalogPin(pin)) {
-    return analogRead(getarg(1));
-  } else {
-    return 0;
-  }
+  return Scout.pinRead(pin);
 }
 
 static numvar pinWrite(void) {
   // TODO: handle PWM pins
   int8_t pin = getPinFromArg(1);
+  uint8_t value = getarg(2);
   if (pin == -1) {
     speol("Invalid pin number");
     return 0;
   }
 
+  if (value < 0 || value > 2) {
+    speol("Invalid pin value");
+    return 0;
+  }
+
   if (Scout.isDigitalPin(pin)) {
-    Scout.makeOutput(pin);
-    digitalWrite(pin, getarg(2));
+    Scout.pinWrite(pin, value);
     digitalPinReportHQ();
   }
   if (Scout.isAnalogPin(pin)) {
-    Scout.makeOutput(pin);
-    digitalWrite(pin, getarg(2));
+    Scout.pinWrite(pin, value);
     analogPinReportHQ();
   }
   return true;
@@ -1183,7 +1196,7 @@ static numvar pinSave(void) {
   // if third arg is passed in, and mode is OUTPUT (1), then set pin value
   if (getarg(0) == 3 && getarg(2) == 1) {
     digitalWrite(pin, getarg(3));
-    sprintf(buf, "function startup.%s { pin.setmode(\"%s\",%d); %s=%d }", str, str, (int)getarg(2), str, (int)getarg(3));
+    sprintf(buf, "function startup.%s { pin.setmode(\"%s\",%d); pin.write(%d,%d) }", str, str, (int)getarg(2), pin, (int)getarg(3));
   } else {
     sprintf(buf, "function startup.%s { pin.setmode(\"%s\",%d); }", str, str, (int)getarg(2));
   }
