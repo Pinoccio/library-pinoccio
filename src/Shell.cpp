@@ -1180,7 +1180,7 @@ static numvar pinSave(void) {
 
   Scout.setMode(pin, getarg(2));
 
-  // if third arg is passed in, and mode is OUTPUT (0), then set pin value
+  // if third arg is passed in, and mode is OUTPUT (1), then set pin value
   if (getarg(0) == 3 && getarg(2) == 1) {
     digitalWrite(pin, getarg(3));
     sprintf(buf, "function startup.%s { pin.setmode(\"%s\",%d); %s=%d }", str, str, (int)getarg(2), str, (int)getarg(3));
@@ -1189,6 +1189,14 @@ static numvar pinSave(void) {
   }
 
   doCommand(buf);
+
+  if (Scout.isDigitalPin(pin)) {
+    digitalPinReportHQ();
+  }
+  if (Scout.isAnalogPin(pin)) {
+    analogPinReportHQ();
+  }
+
   return true;
 }
 
