@@ -214,7 +214,7 @@ void PinoccioShell::setup() {
   addBitlashFunction("low", (bitlash_function) pinConstLow);
   addBitlashFunction("input", (bitlash_function) pinConstInput);
   addBitlashFunction("output", (bitlash_function) pinConstOutput);
-  addBitlashFunction("inputpullup", (bitlash_function) pinConstInputPullup);
+  addBitlashFunction("input_pullup", (bitlash_function) pinConstInputPullup);
 
   addBitlashFunction("pin.makeinput", (bitlash_function) pinMakeInput);
   addBitlashFunction("pin.makeoutput", (bitlash_function) pinMakeOutput);
