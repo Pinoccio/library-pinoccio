@@ -11,6 +11,10 @@ extern "C" {
 #include "lwm/sys/sysTimer.h"
 }
 
+#define container_of(ptr, type, member) ({ \
+                const typeof( ((type *)0)->member ) *__mptr = (ptr); \
+                (type *)( (char *)__mptr - offsetof(type,member) );})
+
 static bool hqVerboseOutput;
 
 static char *fieldCommand = NULL;
@@ -230,20 +234,10 @@ static void fieldAnswerChunk() {
   }
 }
 
-struct announceQ_t {
-  NWK_DataReq_t req;
-  struct announceQ_t *next;
-} *announceQ = NULL;
-
 static void announceConfirm(NWK_DataReq_t *req) {
 //if (hqVerboseOutput) speol("announce confirmed");
-  struct announceQ_t *next = announceQ->next;
   free(req->data);
-  free(announceQ);
-  announceQ = next;
-  if (next) {
-    NWK_DataReq(&(next->req));
-  }
+  free(req);
 }
 
 void PinoccioScoutHandler::announce(uint16_t group, char *message) {
@@ -264,29 +258,22 @@ void PinoccioScoutHandler::announce(uint16_t group, char *message) {
     return;
   }
 
-  struct announceQ_t *r = (struct announceQ_t*)malloc(sizeof(struct announceQ_t));
+  struct NWK_DataReq_t *r = (struct NWK_DataReq_t*)malloc(sizeof(struct NWK_DataReq_t));
   if (!r) {
     free(data);
     return;
   }
 
   Scout.meshJoinGroup(group); // must be joined to send
-  memset(r, 0, sizeof(struct announceQ_t));
-  r->req.dstAddr = group;
-  r->req.dstEndpoint = 4;
-  r->req.srcEndpoint = Scout.getAddress();
-  r->req.options = NWK_OPT_MULTICAST|NWK_OPT_ENABLE_SECURITY;
-  r->req.data = (uint8_t*)data;
-  r->req.size = strlen(data)+1;
-  r->req.confirm = announceConfirm;
-  if (!announceQ) {
-    announceQ = r;
-    NWK_DataReq(&(r->req));
-  } else {
-    struct announceQ_t *last = announceQ;
-    while(last->next) last = last->next;
-    last->next = r;
-  }
+  memset(r, 0, sizeof(struct NWK_DataReq_t));
+  r->dstAddr = group;
+  r->dstEndpoint = 4;
+  r->srcEndpoint = Scout.getAddress();
+  r->options = NWK_OPT_MULTICAST|NWK_OPT_ENABLE_SECURITY;
+  r->data = (uint8_t*)data;
+  r->size = strlen(data)+1;
+  r->confirm = announceConfirm;
+  NWK_DataReq(r);
 }
 
 static bool fieldAnnouncements(NWK_DataInd_t *ind) {
