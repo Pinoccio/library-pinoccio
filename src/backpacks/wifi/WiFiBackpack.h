@@ -45,6 +45,10 @@ class WiFiBackpack : public Backpack {
     bool wakeUp();
 
     GSClient client;
+    
+    uint16_t apConnCount;
+    uint16_t hqConnCount;
+    
   protected:
     GSModule gs;
 

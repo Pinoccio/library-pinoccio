@@ -31,6 +31,8 @@ void WiFiBackpack::onAssociate(void *data) {
       !wifi.gs.timeSync(ip, NTP_INTERVAL)) {
     Serial.println("Time sync failed");
   }
+  
+  wifi.apConnCount++;
 }
 
 void WiFiBackpack::onNcmConnect(void *data, GSCore::cid_t cid) {
@@ -48,6 +50,8 @@ void WiFiBackpack::onNcmConnect(void *data, GSCore::cid_t cid) {
       return;
     }
   }
+  
+  wifi.hqConnCount++;
 
   // TODO: Don't call leadHQConnect directly?
   leadHQConnect();

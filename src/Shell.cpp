@@ -114,6 +114,7 @@ static numvar wifiGetTime(void);
 static numvar wifiSleep(void);
 static numvar wifiWakeup(void);
 static numvar wifiVerbose(void);
+static numvar wifiStats(void);
 
 static numvar keyMap(void);
 static numvar keyPrint(void);
@@ -274,6 +275,7 @@ void PinoccioShell::setup() {
     addBitlashFunction("wifi.sleep", (bitlash_function) wifiSleep);
     addBitlashFunction("wifi.wakeup", (bitlash_function) wifiWakeup);
     addBitlashFunction("wifi.verbose", (bitlash_function) wifiVerbose);
+    addBitlashFunction("wifi.stats", (bitlash_function) wifiStats);
   }
 
   // set up event handlers
@@ -1828,6 +1830,13 @@ static numvar wifiWakeup(void) {
 static numvar wifiVerbose(void) {
   // TODO
   return 1;
+}
+
+static numvar wifiStats(void) {
+  Serial.print("Number of connections to AP since boot: ");
+  Serial.println(Scout.wifi.apConnCount);
+  Serial.print("Number of connections to HQ since boot: ");
+  Serial.println(Scout.wifi.hqConnCount);
 }
 
 
