@@ -235,7 +235,10 @@ static void fieldAnswerChunk() {
 }
 
 static void announceConfirm(NWK_DataReq_t *req) {
-//if (hqVerboseOutput) speol("announce confirmed");
+  if (req->status != NWK_SUCCESS_STATUS && hqVerboseOutput) {
+    sp(F("Mesh announce failed: "));
+    speol(req->status);
+  }
   free(req->data);
   free(req);
 }
