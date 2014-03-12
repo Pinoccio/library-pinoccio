@@ -254,6 +254,7 @@ void PinoccioScoutHandler::announce(uint16_t group, char *message) {
   // when lead scout, shortcut
   if (Scout.isLeadScout()) {
     leadAnnouncementSend(group, Scout.getAddress(), message);
+    return;
   }
 
   char *data = strdup(message);
