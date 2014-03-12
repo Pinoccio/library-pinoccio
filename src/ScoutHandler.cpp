@@ -143,7 +143,7 @@ static bool fieldCommands(NWK_DataInd_t *ind) {
   }
 
   // run the command and chunk back the results
-  prepareBitlashBuffer();
+  if (!prepareBitlashBuffer()) return false;
   setOutputHandler(&bitlashBuffer);
 
   if (hqVerboseOutput) {
@@ -266,6 +266,7 @@ void PinoccioScoutHandler::announce(uint16_t group, char *message) {
 
   struct announceQ_t *r = (struct announceQ_t*)malloc(sizeof(struct announceQ_t));
   if (!r) {
+    free(data);
     return;
   }
 
@@ -375,10 +376,12 @@ static void leadAnnouncementSend(uint16_t group, uint16_t from, char *message) {
     const char *json = report2json(message);
     size_t len = strlen(json) + 128;
     report = (char*)malloc(len);
+    if (!report) return;
     snprintf(report, len, "{\"type\":\"report\",\"from\":%d,\"report\":%s}\n", from, json);
   } else if (group == 0) {
     size_t len = strlen(message) + 128;
     report = (char*)malloc(len);
+    if (!report) return;
     snprintf(report, len, "{\"type\":\"announce\",\"from\":%d,\"announce\":%s}\n", from, message);
   } else {
     return;
@@ -427,6 +430,7 @@ void leadHQHandle(void) {
   // check to initialize our read buffer
   if (!buffer) {
     buffer = (char*)malloc(1);
+    if (!buffer) return;
     *buffer = 0;
   }
 
@@ -475,6 +479,7 @@ void leadHQHandle(void) {
 void leadCommandError(int from, int id, const char *reason) {
   size_t len = strlen(reason) + 128;
   char *err = (char*)malloc(len);
+  if (!err) return;
   snprintf(err, len, "{\"type\":\"reply\",\"from\":%d,\"id\":%d,\"err\":true,\"reply\":\"%s\"}\n", from, id, reason);
   leadSignal(err);
   free(err);
@@ -514,13 +519,14 @@ void leadIncoming(char *packet, unsigned short *index) {
 
     // handle internal ones first
     if (to == Scout.getAddress()) {
-      prepareBitlashBuffer();
+      if (!prepareBitlashBuffer()) return;
       setOutputHandler(&bitlashBuffer);
       doCommand(command);
       setOutputHandler(&bitlashFilter);
 
       size_t len = strlen(Shell.bitlashOutput) + 255;
       char *report = (char*)malloc(len);
+      if (!report) return;
       snprintf(report, len, "{\"type\":\"reply\",\"from\":%d,\"id\":%lu,\"end\":true,\"reply\":\"%s\"}\n", to, id, Shell.bitlashOutput);
       leadSignal(report);
       free(report);

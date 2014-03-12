@@ -91,6 +91,10 @@ void keyLoad(const char *array, int *outs, unsigned long at) {
   }
 
   index = malloc(strlen(array));
+  if (!index) {
+    outs[0] = 0;
+    return;
+  }
   j0g(array, index, strlen(array));
 
   for (i=0; index[i]; i+=2) {

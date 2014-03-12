@@ -2146,6 +2146,7 @@ void bitlashBuffer(byte b) {
 
   len = strlen(Shell.bitlashOutput);
   Shell.bitlashOutput = (char*)realloc(Shell.bitlashOutput, len + 3); // up to 2 bytes w/ escaping, and the null term
+  if (!Shell.bitlashOutput) return;
 
   // escape newlines, quotes, and slashes
   if (b == '\n') {
@@ -2166,12 +2167,14 @@ void bitlashBuffer(byte b) {
   Shell.bitlashOutput[len+1] = 0;
 }
 
-int prepareBitlashBuffer() {
+bool prepareBitlashBuffer() {
   if (Shell.bitlashOutput != NULL) {
     free(Shell.bitlashOutput);
     Shell.bitlashOutput = NULL;
   }
 
   Shell.bitlashOutput = (char*)malloc(1);
+  if (!Shell.bitlashOutput) return false;
   Shell.bitlashOutput[0] = 0;
+  return true;
 }
