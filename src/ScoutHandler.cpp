@@ -537,8 +537,7 @@ void leadIncoming(char *packet, unsigned short *index) {
     // send over mesh to recipient and cache id for any replies
     leadAnswerID = id;
     leadCommandTo = to;
-    leadCommandChunks = (char*)malloc(strlen(command) + 1);
-    strcpy(leadCommandChunks, command);
+    leadCommandChunks = strdup(command);
     leadCommandChunksAt = 0;
     leadCommandRetries = 0;
     leadCommandChunk();
