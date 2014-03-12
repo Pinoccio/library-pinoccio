@@ -413,7 +413,7 @@ static void scoutAnalogStateChangeTimerHandler(SYS_Timer_t *timer) {
         continue;
       }
 
-      val = Scout.pinRead(i); // explicit digital pins until we can update core
+      val = Scout.pinRead(i+A0); // explicit digital pins until we can update core
       mode = Scout.getRegisterPinMode(i+A0);
 
       if (Scout.analogPinState[i] != val) {

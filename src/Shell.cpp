@@ -468,7 +468,7 @@ static numvar getLastResetCause(void) {
   char reset[20];
   const char *resetString = Scout.getLastResetCause();
   reset[0] = 0;
-  
+
   while((c = pgm_read_byte(resetString++))) {
     sprintf(reset + strlen(reset), "%c", c);
   }
@@ -1160,7 +1160,7 @@ static numvar pinWrite(void) {
     return 0;
   }
 
-  if (value < 0 || value > 2) {
+  if (value < 0 || value > 1) {
     speol("Invalid pin value");
     return 0;
   }
@@ -1178,6 +1178,8 @@ static numvar pinWrite(void) {
 
 static numvar pinSave(void) {
   int8_t pin = getPinFromArg(1);
+  int8_t mode = getarg(2);
+
   if (pin == -1) {
     speol("Invalid pin number");
     return 0;
@@ -1188,17 +1190,27 @@ static numvar pinSave(void) {
     return 0;
   }
 
+  if (mode < -1 || mode > 2) {
+    speol("Invalid pin mode");
+    return 0;
+  }
+
+  Scout.setMode(pin, mode);
+
   char buf[128];
   const char *str = (const char*)getstringarg(1);
 
-  Scout.setMode(pin, getarg(2));
-
-  // if third arg is passed in, and mode is OUTPUT (1), then set pin value
-  if (getarg(0) == 3 && getarg(2) == 1) {
-    digitalWrite(pin, getarg(3));
-    sprintf(buf, "function startup.%s { pin.setmode(\"%s\",%d); pin.write(%d,%d) }", str, str, (int)getarg(2), pin, (int)getarg(3));
+  if (mode == -1) {
+    snprintf(buf, 128, "rm startup.%s", str);
   } else {
-    sprintf(buf, "function startup.%s { pin.setmode(\"%s\",%d); }", str, str, (int)getarg(2));
+    // if third arg is passed in, and mode is OUTPUT, then set pin value
+    if (getarg(0) == 3 && mode == OUTPUT) {
+      uint8_t value = getarg(3);
+      Scout.pinWrite(pin, value);
+      snprintf(buf, 128, "function startup.%s { pin.setmode(\"%s\",%d); pin.write(%d,%d) }", str, str, mode, pin, value);
+    } else {
+      snprintf(buf, 128, "function startup.%s { pin.setmode(\"%s\",%d); }", str, str, mode);
+    }
   }
 
   doCommand(buf);
