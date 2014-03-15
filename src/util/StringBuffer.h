@@ -46,12 +46,18 @@ class StringBuffer : public String {
     //
     // If you need to initialize a Stringbuffer with a value, use the
     // assignment operator, e.g.,
-    //   StringBuffer buf(100, 16) = "foo";
+    //   StringBuffer buf(100, 16);
+    //   buf = "foo";
     StringBuffer(size_t initial = 0, size_t block_size = 1);
 
     // Helper methods
     size_t appendSprintf(const char *fmt, ...);
     int readClient(Client& c, size_t size);
+    bool blockReserve(size_t size);
+
+    // Explicitly include String's operator=, since the implicitly
+    // defined one for StringBuffer hides these by default.
+    using String::operator=;
 
   protected:
     size_t block_size_mask;

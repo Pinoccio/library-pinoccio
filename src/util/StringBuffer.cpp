@@ -33,6 +33,23 @@
 #include <Arduino.h>
 #include "StringBuffer.h"
 
+StringBuffer::StringBuffer(size_t initial, size_t block_size) {
+  this->block_size_mask = block_size - 1;
+
+  if (initial)
+    blockReserve(initial);
+}
+
+bool StringBuffer::blockReserve(size_t size) {
+  if (this->capacity > size)
+    return true; // short circuit for the common case
+
+  // Round up to a full block size
+  size = (size + this->block_size_mask) & ~this->block_size_mask;
+  Serial.println(size);
+  return reserve(size);
+}
+
 size_t StringBuffer::appendSprintf(const char *fmt, ...)
 {
   // Keep two copies of the args list, in case we need to call vsnprintf
@@ -63,7 +80,7 @@ size_t StringBuffer::appendSprintf(const char *fmt, ...)
   // excluding the nul byte. If that's more than avail, the buffer was
   // too small and we need to expand.
   if (len > avail) {
-    reserve(this->len + len);
+    blockReserve(this->len + len);
     if (!this->buffer)
       return 0;
     avail = this->capacity - this->len;
@@ -83,7 +100,7 @@ size_t StringBuffer::appendSprintf(const char *fmt, ...)
 
 int StringBuffer::readClient(Client& c, size_t size) {
   // Make sure we have enough room
-  reserve(this->len + size);
+  blockReserve(this->len + size);
   int read = c.read((uint8_t *)this->buffer + this->len, size);
   this->len += read;
   return read;
