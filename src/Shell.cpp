@@ -1250,7 +1250,7 @@ static char *backpackReportHQ(void) {
   static char report[100];
   int comma = 0;
   snprintf(report, sizeof(report), "[%d,[%d],[[", keyMap("backpacks", 0), keyMap("list", 0));
-
+  /*
   for (uint8_t i=0; i<Backpacks::num_backpacks; ++i) {
     BackpackInfo &info = Backpacks::info[i];
     for (uint8_t j=0; j<sizeof(info.id); ++j) {
@@ -1258,6 +1258,7 @@ static char *backpackReportHQ(void) {
       snprintf(report+strlen(report), sizeof(report) - strlen(report), "%s%d",comma++?",":"",info.id.raw_bytes[j]);
     }
   }
+  */
   snprintf(report + strlen(report), sizeof(report) - strlen(report), "]]]");
   return Scout.handler.report(report);
 }
