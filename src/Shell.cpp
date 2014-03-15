@@ -1834,10 +1834,10 @@ static numvar wifiVerbose(void) {
 }
 
 static numvar wifiStats(void) {
-  Serial.print("Number of connections to AP since boot: ");
-  Serial.println(Scout.wifi.apConnCount);
-  Serial.print("Number of connections to HQ since boot: ");
-  Serial.println(Scout.wifi.hqConnCount);
+  sp("Number of connections to AP since boot: ");
+  speol(Scout.wifi.apConnCount);
+  sp("Number of connections to HQ since boot: ");
+  speol(Scout.wifi.hqConnCount);
 }
 
 
