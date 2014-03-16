@@ -54,6 +54,13 @@ class StringBuffer : public String {
 
     // Helper methods
     size_t appendSprintf(const char *fmt, ...);
+    size_t appendJsonString(const char *in, size_t len, bool add_quotes);
+    size_t appendJsonString(const uint8_t *in, size_t len, bool add_quotes) {
+      return appendJsonString((const char *)in, len, add_quotes);
+    }
+    size_t appendJsonString(const char *in, bool add_quotes) {
+      return appendJsonString(in, strlen(in), add_quotes);
+    }
     int readClient(Client& c, size_t size);
     bool blockReserve(size_t size);
 

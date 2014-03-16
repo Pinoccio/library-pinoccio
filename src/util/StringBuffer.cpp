@@ -106,4 +106,89 @@ int StringBuffer::readClient(Client& c, size_t size) {
   return read;
 }
 
+size_t StringBuffer::appendJsonString(const char *in, size_t len, bool add_quotes) {
+  const int ESCAPE_LEN = 6; // \uXXXX escape sequence is 6 bytes
+
+  // First, allocate memory enough for to add the string as-is. This
+  // should be enough if no characters need escaping
+  size_t needed = this->len + len;
+
+  if (add_quotes)
+    needed += 2;
+
+  if (!blockReserve(needed));
+    return 0;
+
+  char *out = this->buffer + this->len;
+
+  if (add_quotes)
+    *out++ = '"';
+
+  // 2 tries should normally always work, but keep a count to guarantee
+  // we can't get into an infinite loop
+  uint8_t tries = 2;
+  while(tries--) {
+    size_t room = this->buffer + this->capacity - out;
+
+    // Reserve space for the closing quote
+    if (add_quotes)
+      room--;
+
+    // Then, copy over characters, replacing the JSON special ones with
+    // \uXXXX escape sequences. Using \\, \", \n etc. where possible would
+    // result in smaller JSON, but would require more code space, so we
+    // just use the \uXXXX sequence for everything
+    while(room && len) {
+      char c = *in;
+      if (c <= 0x1f || c == '\\' || c == '"') {
+        // Escape
+        if (room < ESCAPE_LEN)
+          break;
+        snprintf(out, ESCAPE_LEN + 1, "\\u%04x", c);
+        room -= ESCAPE_LEN;
+        out += ESCAPE_LEN;
+      } else {
+        // Normal
+        *out = c;
+        ++out;
+        --room;
+      }
+      ++in;
+      --len;
+    }
+
+    if (len != 0) {
+      // If there are still bytes left to write, we ran out of room.
+      // Find out how many bytes we'll need.
+
+      // Any bytes left in the input take up at least one byte
+      needed += len;
+      // Any room we have left (can happen when an escape sequence
+      // didn't fit), we don't have to allocate again
+      needed -= room;
+      // Find out how many escape sequences left in the string
+      size_t len2 = len;
+      const char *in2 = in;
+      while (len2--) {
+        char c = *in2++;
+        if (c <= 0x1f || c == '\\' || c == '"')
+          // One byte was already accounted for above
+          needed += ESCAPE_LEN - 1;
+      }
+
+      if (!blockReserve(needed))
+        return 0;
+    }
+  }
+
+  if (add_quotes)
+    *out++ = '"';
+
+  // Update len based on the the output pointer
+  size_t written = out - this->buffer - this->len;
+  this->len += written;
+
+  return written;
+}
+
 // vim: set sw=2 sts=2 expandtab:
