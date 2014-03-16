@@ -49,10 +49,6 @@ static NWK_DataReq_t leadCommandReq;
 static void leadCommandChunk(void);
 static int leadAnswerID = 0;
 
-static bool leadAnswers(NWK_DataInd_t *ind);
-static void leadSignal(char *json);
-static void leadIncoming(char *packet, unsigned short *index);
-
 // this is called on the main loop to try to (re)connect to the HQ
 static void leadHQHandle(void);
 
