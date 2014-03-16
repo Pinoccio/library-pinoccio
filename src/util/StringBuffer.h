@@ -30,6 +30,8 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#ifndef LIB_PINOCCIO_UTIL_STRINGBUFFER_H_
+#define LIB_PINOCCIO_UTIL_STRINGBUFFER_H_
 
 #include <Arduino.h>
 #include <Client.h>
@@ -62,3 +64,5 @@ class StringBuffer : public String {
   protected:
     size_t block_size_mask;
 };
+
+#endif // LIB_PINOCCIO_UTIL_STRINGBUFFER_H_
