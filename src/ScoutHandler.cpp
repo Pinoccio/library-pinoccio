@@ -112,17 +112,17 @@ static bool fieldCommands(NWK_DataInd_t *ind) {
 //  RgbLed.blinkGreen(200);
 
   if (hqVerboseOutput) {
-    sp("Received command");
-    sp("lqi: ");
+    sp(F("Received command"));
+    sp(F("lqi: "));
     sp(ind->lqi);
-    sp("  ");
-    sp("rssi: ");
+    sp(F("  "));
+    sp(F("rssi: "));
     speol(ind->rssi);
   }
 
   if (fieldAnswerTo) {
     if (hqVerboseOutput) {
-      speol("can't receive command while sending answer");
+      speol(F("can't receive command while sending answer"));
     }
     return false;
   }
@@ -141,7 +141,7 @@ static bool fieldCommands(NWK_DataInd_t *ind) {
   // when null terminated, do the message
   if (fieldCommand[fieldCommandLen-1] != 0) {
     if (hqVerboseOutput) {
-      speol("waiting for more");
+      speol(F("waiting for more"));
     }
     return true;
   }
@@ -151,13 +151,13 @@ static bool fieldCommands(NWK_DataInd_t *ind) {
   setOutputHandler(&bitlashBuffer);
 
   if (hqVerboseOutput) {
-    sp("running command ");
+    sp(F("running command "));
     speol(fieldCommand);
   }
 
   ret = (int)doCommand(fieldCommand);
   if (hqVerboseOutput) {
-    sp("got result ");
+    sp(F("got result "));
     speol(ret);
   }
 
@@ -179,11 +179,11 @@ static bool fieldCommands(NWK_DataInd_t *ind) {
 
 static void fieldAnswerChunkConfirm(NWK_DataReq_t *req) {
   if (hqVerboseOutput) {
-    sp("  Message confirmation - ");
+    sp(F("  Message confirmation - "));
   }
   if (req->status == NWK_SUCCESS_STATUS) {
     if (hqVerboseOutput) {
-      speol("success");
+      speol(F("success"));
     }
     if (strlen(fieldAnswerChunks + fieldAnswerChunksAt) > 100) {
       fieldAnswerChunksAt += 100;
@@ -194,12 +194,12 @@ static void fieldAnswerChunkConfirm(NWK_DataReq_t *req) {
     fieldAnswerRetries++;
     if (fieldAnswerRetries > 3) {
       if (hqVerboseOutput) {
-        sp("error: ");
+        sp(F("error: "));
         speol(req->status);
       }
     } else {
       if (hqVerboseOutput) {
-        speol("RETRY");
+        speol(F("RETRY"));
       }
       NWK_DataReq(req);
       return; // don't free yet
@@ -228,9 +228,9 @@ static void fieldAnswerChunk() {
 
   if (hqVerboseOutput) {
     sp(fieldAnswerTo);
-    sp(" len ");
+    sp(F(" len "));
     sp(len);
-    speol("->chunk");
+    speol(F("->chunk"));
   }
 }
 
@@ -245,9 +245,9 @@ static void announceConfirm(NWK_DataReq_t *req) {
 
 void PinoccioScoutHandler::announce(uint16_t group, char *message) {
   if (hqVerboseOutput) {
-    sp("announcing to ");
+    sp(F("announcing to "));
     sp(group);
-    sp(" ");
+    sp(F(" "));
     speol(message);
   }
 
@@ -288,7 +288,7 @@ static bool fieldAnnouncements(NWK_DataInd_t *ind) {
   }
 
   if (hqVerboseOutput) {
-    sp("multicast in ");
+    sp(F("multicast in "));
     sp(ind->dstAddr);
     speol();
   }
@@ -400,7 +400,7 @@ void leadHQConnect() {
     leadSignal(auth);
   } else {
     if (hqVerboseOutput) {
-      speol("server unvailable");
+      speol(F("server unvailable"));
     }
   }
 }
@@ -439,7 +439,7 @@ void leadHQHandle(void) {
 
     // look for a packet
     if (hqVerboseOutput) {
-      sp("looking for packet in: ");
+      sp(F("looking for packet in: "));
       speol(buffer);
     }
     nl = strchr(buffer, '\n');
@@ -454,7 +454,7 @@ void leadHQHandle(void) {
       leadIncoming(buffer, index);
     } else {
       if (hqVerboseOutput) {
-        speol("JSON parse failed");
+        speol(F("JSON parse failed"));
       }
     }
 
@@ -497,12 +497,12 @@ void leadIncoming(char *packet, unsigned short *index) {
     command = j0g_str("command", packet, index);
     if (strlen(j0g_str("to", packet, index)) == 0 || !id || !command) {
       if (hqVerboseOutput) {
-        speol("invalid command, requires to, id, command");
-        sp("to: ");
+        speol(F("invalid command, requires to, id, command"));
+        sp(F("to: "));
         speol(to);
-        sp("id: ");
+        sp(F("id: "));
         speol(id);
-        sp("command: ");
+        sp(F("command: "));
         speol(command);
       }
       return;
@@ -544,11 +544,11 @@ void leadIncoming(char *packet, unsigned short *index) {
 // mesh callback when sending command chunks
 static void leadCommandChunkConfirm(NWK_DataReq_t *req) {
   if (hqVerboseOutput) {
-    sp("  Message confirmation - ");
+    sp(F("  Message confirmation - "));
   }
   if (req->status == NWK_SUCCESS_STATUS) {
     if (hqVerboseOutput) {
-      speol("success");
+      speol(F("success"));
     }
     if (strlen(leadCommandChunks+leadCommandChunksAt) > 100) {
       leadCommandChunksAt += 100;
@@ -559,13 +559,13 @@ static void leadCommandChunkConfirm(NWK_DataReq_t *req) {
     leadCommandRetries++;
     if (leadCommandRetries > 3) {
       if (hqVerboseOutput) {
-        sp("error: ");
+        sp(F("error: "));
         speol(req->status);
       }
       leadCommandError(leadCommandTo, leadAnswerID, "no response");
     } else {
       if (hqVerboseOutput) {
-        speol("RETRY");
+        speol(F("RETRY"));
       }
       NWK_DataReq(req);
       return; // don't free yet
@@ -596,9 +596,9 @@ static void leadCommandChunk() {
 
   if (hqVerboseOutput) {
     sp(leadCommandTo);
-    sp(" len ");
+    sp(F(" len "));
     sp(len);
-    speol("->chunk");
+    speol(F("->chunk"));
   }
 }
 
@@ -606,13 +606,13 @@ static void leadCommandChunk() {
 void leadSignal(char *json) {
   if (!Scout.wifi.client.connected()) {
     if (hqVerboseOutput) {
-      speol("HQ offline, can't signal");
+      speol(F("HQ offline, can't signal"));
       speol(json);
     }
     return;
   }
   if (hqVerboseOutput) {
-    speol("HQ signalling");
+    speol(F("HQ signalling"));
     speol(json);
   }
 
@@ -628,13 +628,13 @@ bool leadAnswers(NWK_DataInd_t *ind) {
 
   if (ind->options & NWK_IND_OPT_MULTICAST) {
     if (hqVerboseOutput) {
-      speol("MULTICAST on wrong endpoint");
+      speol(F("MULTICAST on wrong endpoint"));
     }
     return true;
   }
 
   if (hqVerboseOutput) {
-    speol("Received answer");
+    speol(F("Received answer"));
   }
   if (ind->data[ind->size-1] == 0) {
     end = true;

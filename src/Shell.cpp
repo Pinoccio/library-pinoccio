@@ -356,26 +356,24 @@ void PinoccioShell::parseHex(const char *str, size_t length, uint8_t *out) {
 
 
 static numvar pinoccioBanner(void) {
-  speol("Hello from Pinoccio!");
-  speol(" (Shell based on Bitlash v2.0 (c) 2014 Bill Roy)");
-  sp(" ");
+  speol(F("Hello from Pinoccio!"));
+  speol(F(" (Shell based on Bitlash v2.0 (c) 2014 Bill Roy)"));
+  sp(F(" "));
   sp(func_free());
-  speol(" bytes free");
-  sp(" Build ");
-  sp(PINOCCIO_BUILD);
-  speol();
+  speol(F(" bytes free"));
+  sp(F(" Build "));
+  speol(PINOCCIO_BUILD);
 
   if (Scout.isLeadScout()) {
-    speol(" Lead Scout ready");
+    speol(F(" Lead Scout ready"));
   } else {
-    speol(" Field Scout ready");
+    speol(F(" Field Scout ready"));
   }
   return 1;
 }
 
 static numvar allReport(void) {
-  sp("running all reports");
-  speol();
+  speol(F("running all reports"));
   Shell.allReportHQ();
   return 1;
 }
@@ -455,7 +453,7 @@ static char *tempReportHQ(void) {
 }
 
 static numvar temperatureReport(void) {
-  tempReportHQ(true);
+  tempReportHQ();
   return 1;
 }
 
@@ -956,29 +954,29 @@ static numvar meshReport(void) {
 }
 
 static numvar meshRouting(void) {
-  sp(" - Routing: ");
-  sp("|    Fixed    |  Multicast  |    Score    |    DstAdd   | NextHopAddr |    Rank     |     LQI    |");
+  sp(F(" - Routing: "));
+  sp(F("|    Fixed    |  Multicast  |    Score    |    DstAdd   | NextHopAddr |    Rank     |     LQI    |"));
   speol();
   NWK_RouteTableEntry_t *table = NWK_RouteTable();
   for (int i=0; i < NWK_ROUTE_TABLE_SIZE; i++) {
     if (table[i].dstAddr == NWK_ROUTE_UNKNOWN) {
       continue;
     }
-    sp("|      ");
+    sp(F("|      "));
     sp(table[i].fixed);
-    sp("      |      ");
+    sp(F("      |      "));
     sp(table[i].multicast);
-    sp("      |      ");
+    sp(F("      |      "));
     sp(table[i].score);
-    sp("      |     ");
+    sp(F("      |     "));
     sp(table[i].dstAddr);
-    sp("     |     ");
+    sp(F("     |     "));
     sp(table[i].nextHopAddr);
-    sp("     |     ");
+    sp(F("     |     "));
     sp(table[i].rank);
-    sp("     |     ");
+    sp(F("     |     "));
     sp(table[i].lqi);
-    sp("    |");
+    sp(F("    |"));
     speol();
   }
   return 1;
@@ -1060,7 +1058,7 @@ static numvar pinConstInputPullup(void) {
 static numvar pinMakeInput(void) {
   int8_t pin = getPinFromArg(1);
   if (pin == -1) {
-    speol("Invalid pin number");
+    speol(F("Invalid pin number"));
     return 0;
   }
 
@@ -1070,7 +1068,7 @@ static numvar pinMakeInput(void) {
   }
 
   if (!Scout.makeInput(pin, pullup)) {
-    speol("Cannot change mode of reserved pin");
+    speol(F("Cannot change mode of reserved pin"));
     return 0;
   }
 
@@ -1086,12 +1084,12 @@ static numvar pinMakeInput(void) {
 static numvar pinMakeOutput(void) {
   int8_t pin = getPinFromArg(1);
   if (pin == -1) {
-    speol("Invalid pin number");
+    speol(F("Invalid pin number"));
     return 0;
   }
 
   if (!Scout.makeOutput(pin)) {
-    speol("Cannot change mode of reserved pin");
+    speol(F("Cannot change mode of reserved pin"));
     return 0;
   }
 
@@ -1107,12 +1105,12 @@ static numvar pinMakeOutput(void) {
 static numvar pinDisable(void) {
   int8_t pin = getPinFromArg(1);
   if (pin == -1) {
-    speol("Invalid pin number");
+    speol(F("Invalid pin number"));
     return 0;
   }
 
   if (!Scout.makeDisabled(pin)) {
-    speol("Cannot change mode of reserved pin");
+    speol(F("Cannot change mode of reserved pin"));
     return 0;
   }
 
@@ -1128,12 +1126,12 @@ static numvar pinDisable(void) {
 static numvar pinSetMode(void) {
   int8_t pin = getPinFromArg(1);
   if (pin == -1) {
-    speol("Invalid pin number");
+    speol(F("Invalid pin number"));
     return 0;
   }
 
   if (!Scout.setMode(pin, getarg(2))) {
-    speol("Cannot change mode of reserved pin");
+    speol(F("Cannot change mode of reserved pin"));
     return 0;
   }
 
@@ -1149,7 +1147,7 @@ static numvar pinSetMode(void) {
 static numvar pinRead(void) {
   int8_t pin = getPinFromArg(1);
   if (pin == -1) {
-    speol("Invalid pin number");
+    speol(F("Invalid pin number"));
     return 0;
   }
 
@@ -1161,12 +1159,12 @@ static numvar pinWrite(void) {
   int8_t pin = getPinFromArg(1);
   uint8_t value = getarg(2);
   if (pin == -1) {
-    speol("Invalid pin number");
+    speol(F("Invalid pin number"));
     return 0;
   }
 
   if (value < 0 || value > 1) {
-    speol("Invalid pin value");
+    speol(F("Invalid pin value"));
     return 0;
   }
 
@@ -1186,17 +1184,17 @@ static numvar pinSave(void) {
   int8_t mode = getarg(2);
 
   if (pin == -1) {
-    speol("Invalid pin number");
+    speol(F("Invalid pin number"));
     return 0;
   }
 
   if (Scout.isPinReserved(pin)) {
-    speol("Cannot change mode of reserved pin");
+    speol(F("Cannot change mode of reserved pin"));
     return 0;
   }
 
   if (mode < -1 || mode > 2) {
-    speol("Invalid pin mode");
+    speol(F("Invalid pin mode"));
     return 0;
   }
 
@@ -1290,12 +1288,12 @@ static void printHexBuffer(Print &p, const uint8_t *buf, size_t len, const char 
 
 static numvar backpackList(void) {
   if (Backpacks::num_backpacks == 0) {
-    Serial.println("No backpacks found");
+    speol(F("No backpacks found"));
   } else {
     for (uint8_t i=0; i<Backpacks::num_backpacks; ++i) {
       BackpackInfo &info = Backpacks::info[i];
       printHexBuffer(Serial, &i, 1);
-      sp(": ");
+      sp(F(": "));
 
       Pbbe::Header *h = info.getHeader();
       if (!h) {
@@ -1304,9 +1302,9 @@ static numvar backpackList(void) {
         sp(h->backpack_name);
       }
 
-      sp(" (");
+      sp(F(" ("));
       printHexBuffer(Serial, info.id.raw_bytes, sizeof(info.id));
-      speol(")");
+      speol(F(")"));
     }
   }
   return 0;
@@ -1315,14 +1313,14 @@ static numvar backpackList(void) {
 static numvar backpackEeprom(void) {
   numvar addr = getarg(1);
   if (addr < 0 || addr >= Backpacks::num_backpacks) {
-    Serial.println("Invalid backpack number");
+    speol(F("Invalid backpack number"));
     return 0;
   }
 
   // Get EEPROM contents
   Pbbe::Eeprom *eep = Backpacks::info[addr].getEeprom();
   if (!eep) {
-    Serial.println("Failed to fetch EEPROM");
+    speol(F("Failed to fetch EEPROM"));
     return 0;
   }
 
@@ -1340,7 +1338,7 @@ static numvar backpackEeprom(void) {
 static numvar backpackUpdateEeprom(void) {
   numvar addr = getarg(1);
   if (addr < 0 || addr >= Backpacks::num_backpacks) {
-    Serial.println("Invalid backpack number");
+    speol(F("Invalid backpack number"));
     return 0;
   }
 
@@ -1370,14 +1368,14 @@ static numvar backpackUpdateEeprom(void) {
 
   Pbbe::Eeprom *eep = Pbbe::updateEeprom(info.eep, offset, bytes, length / 2);
   if (!eep) {
-    Serial.println(F("Failed to update EEPROM"));
+    speol(F("Failed to update EEPROM"));
     return 0;
   }
   // Update the eep pointer, it might have been realloced
   info.eep = eep;
 
   if (!Pbbe::writeEeprom(Backpacks::pbbp, addr, info.eep)) {
-    Serial.println(F("Failed to write EEPROM"));
+    speol(F("Failed to write EEPROM"));
     return 0;
   }
   return 1;
@@ -1387,42 +1385,42 @@ static numvar backpackUpdateEeprom(void) {
 static numvar backpackDetail(void) {
   numvar addr = getarg(1);
   if (addr < 0 || addr >= Backpacks::num_backpacks) {
-    Serial.println("Invalid backpack number");
+    Serial.println(F("Invalid backpack number"));
     return 0;
   }
   Pbbe::Header *h = Backpacks::info[addr].getHeader();
   Pbbe::UniqueId &id = Backpacks::info[addr].id;
-
+  
   Serial.print(F("Backpack name: "));
   Serial.println(h->backpack_name);
-
+  
   Serial.print(F("Model number: 0x"));
   Serial.println(id.model, HEX); // TODO: zero pad
-
+  
   Serial.print(F("Board revision: "));
   Pbbe::MajorMinor rev = Pbbe::extractMajorMinor(id.revision);
   Serial.print(rev.major);
   Serial.print(F("."));
   Serial.println(rev.minor);
-
+  
   Serial.print(F("Serial number: 0x"));
   Serial.println(id.serial, HEX); // TODO: zero pad
-
+  
   Serial.print(F("Backpack Bus Protocol version: "));
   Serial.print(id.protocol_version);
   Serial.println(F(".x")); // Only the major version is advertised
-
+  
   Serial.print(F("Backpack Bus firmware version: "));
   Serial.println(h->firmware_version);
-
+  
   Serial.print(F("EEPROM layout version: "));
   Serial.print(h->layout_version);
   Serial.println(F(".x")); // Only the major version is advertised
-
+  
   Serial.print(F("EEPROM size: "));
   Serial.print(h->total_eeprom_size);
   Serial.println(F(" bytes"));
-
+  
   Serial.print(F("EEPROM used: "));
   Serial.print(h->used_eeprom_size);
   Serial.println(F(" bytes"));
@@ -1432,13 +1430,13 @@ static numvar backpackDetail(void) {
 static numvar backpackResources(void) {
   numvar addr = getarg(1);
   if (addr < 0 || addr >= Backpacks::num_backpacks) {
-    Serial.println("Invalid backpack number");
+    Serial.println(F("Invalid backpack number"));
     return 0;
   }
 
   Pbbe::DescriptorList *list = Backpacks::info[addr].getAllDescriptors();
   if (!list) {
-    Serial.println("Failed to fetch or parse resource descriptors");
+    Serial.println(F("Failed to fetch or parse resource descriptors"));
     return 0;
   }
   for (uint8_t i = 0; i < list->num_descriptors; ++i) {
@@ -1453,14 +1451,14 @@ static numvar backpackResources(void) {
       case Pbbe::DT_SPI_SLAVE: {
         Pbbe::SpiSlaveDescriptor& d = static_cast<Pbbe::SpiSlaveDescriptor&>(*info.parsed);
         Serial.print(d.name);
-        Serial.print(": spi, ss = ");
+        Serial.print(F(": spi, ss = "));
         Serial.print(d.ss_pin.name());
-        Serial.print(", max speed = ");
+        Serial.print(F(", max speed = "));
         if (d.speed.raw()) {
           Serial.print((float)d.speed, 2);
-          Serial.print("Mhz");
+          Serial.print(F("Mhz"));
         } else {
-          Serial.print("unknown");
+          Serial.print(F("unknown"));
         }
         Serial.println();
         break;
@@ -1468,16 +1466,16 @@ static numvar backpackResources(void) {
       case Pbbe::DT_UART: {
         Pbbe::UartDescriptor& d = static_cast<Pbbe::UartDescriptor&>(*info.parsed);
         Serial.print(d.name);
-        Serial.print(": uart, tx = ");
+        Serial.print(F(": uart, tx = "));
         Serial.print(d.tx_pin.name());
-        Serial.print(", rx = ");
+        Serial.print(F(", rx = "));
         Serial.print(d.rx_pin.name());
-        Serial.print(", speed = ");
+        Serial.print(F(", speed = "));
         if (d.speed) {
           Serial.print(d.speed);
-          Serial.print("bps");
+          Serial.print(F("bps"));
         } else {
-          Serial.print("unknown");
+          Serial.print(F("unknown"));
         }
         Serial.println();
         break;
@@ -1485,7 +1483,7 @@ static numvar backpackResources(void) {
       case Pbbe::DT_IOPIN: {
         Pbbe::IoPinDescriptor& d = static_cast<Pbbe::IoPinDescriptor&>(*info.parsed);
         Serial.print(d.name);
-        Serial.print(": gpio, pin = ");
+        Serial.print(F(": gpio, pin = "));
         Serial.print(d.pin.name());
         Serial.println();
         break;
@@ -1496,28 +1494,28 @@ static numvar backpackResources(void) {
       }
       case Pbbe::DT_POWER_USAGE: {
         Pbbe::PowerUsageDescriptor& d = static_cast<Pbbe::PowerUsageDescriptor&>(*info.parsed);
-        Serial.print("power: pin = ");
+        Serial.print(F("power: pin = "));
         Serial.print(d.power_pin.name());
-        Serial.print(", minimum = ");
+        Serial.print(F(", minimum = "));
         if (d.minimum.raw()) {
           Serial.print((float)d.minimum, 2);
-          Serial.print("uA");
+          Serial.print(F("uA"));
         } else {
-          Serial.print("unknown");
+          Serial.print(F("unknown"));
         }
-        Serial.print(", typical = ");
+        Serial.print(F(", typical = "));
         if (d.typical.raw()) {
           Serial.print((float)d.typical, 2);
-          Serial.print("uA");
+          Serial.print(F("uA"));
         } else {
-          Serial.print("unknown");
+          Serial.print(F("unknown"));
         }
-        Serial.print(", maximum = ");
+        Serial.print(F(", maximum = "));
         if (d.maximum.raw()) {
           Serial.print((float)d.maximum, 2);
-          Serial.print("uA");
+          Serial.print(F("uA"));
         } else {
-          Serial.print("unknown");
+          Serial.print(F("unknown"));
         }
         Serial.println();
         break;
@@ -1525,20 +1523,20 @@ static numvar backpackResources(void) {
       case Pbbe::DT_I2C_SLAVE: {
         Pbbe::I2cSlaveDescriptor& d = static_cast<Pbbe::I2cSlaveDescriptor&>(*info.parsed);
         Serial.print(d.name);
-        Serial.print(": i2c, address = ");
+        Serial.print(F(": i2c, address = "));
         Serial.print(d.addr);
-        Serial.print(", max speed = ");
+        Serial.print(F(", max speed = "));
         Serial.print(d.speed);
-        Serial.print("kbps");
+        Serial.print(F("kbps"));
         Serial.println();
         break;
       }
       case Pbbe::DT_DATA: {
         Pbbe::DataDescriptor& d = static_cast<Pbbe::DataDescriptor&>(*info.parsed);
         Serial.print(d.name);
-        Serial.print(": data, length = ");
+        Serial.print(F(": data, length = "));
         Serial.print(d.length);
-        Serial.print(", content = ");
+        Serial.print(F(", content = "));
         printHexBuffer(Serial, d.data, d.length);
         Serial.println();
         break;
@@ -1608,10 +1606,10 @@ static numvar daisyWipe(void) {
   bool ret = true;
 
   if (Scout.factoryReset() == false) {
-    speol("Factory reset requested. Send command again to confirm.");
+    speol(F("Factory reset requested. Send command again to confirm."));
     return false;
   } else {
-    speol("Ok, terminating. Goodbye Dave.");
+    speol(F("Ok, terminating. Goodbye Dave."));
   }
 
   char report[32];
@@ -1620,11 +1618,11 @@ static numvar daisyWipe(void) {
 
   if (Scout.isLeadScout()) {
     if (!Scout.wifi.runDirectCommand(Serial, "AT&F")) {
-       sp("Error: Wi-Fi direct command failed");
+       sp(F("Error: Wi-Fi direct command failed"));
        ret = false;
     }
     if (!Scout.wifi.runDirectCommand(Serial, "AT&W0")) {
-       sp("Error: Wi-Fi direct command failed");
+       sp(F("Error: Wi-Fi direct command failed"));
        ret = false;
     }
   }
@@ -1723,7 +1721,7 @@ static numvar wifiStatus(void) {
   if (getarg(0) > 0 && getarg(1) == 1) {
     Scout.wifi.printProfiles(Serial);
   } else {
-    Serial.print("Wi-Fi Versions: ");
+    sp(F("Wi-Fi Versions: "));
     Scout.wifi.printFirmwareVersions(Serial);
     Scout.wifi.printCurrentNetworkStatus(Serial);
   }
@@ -1732,7 +1730,7 @@ static numvar wifiStatus(void) {
 
 static numvar wifiList(void) {
   if (!Scout.wifi.printAPs(Serial)) {
-    Serial.println("Error: Scan failed");
+    speol(F("Error: Scan failed"));
     return 0;
   }
   return 1;
@@ -1740,7 +1738,7 @@ static numvar wifiList(void) {
 
 static numvar wifiConfig(void) {
   if (!Scout.wifi.wifiConfig((const char *)getstringarg(1), (const char *)getstringarg(2))) {
-    Serial.println("Error: saving Scout.wifi.configuration data failed");
+    speol(F("Error: saving Scout.wifi.configuration data failed"));
   }
   return 1;
 }
@@ -1749,7 +1747,7 @@ static numvar wifiDhcp(void) {
   const char *host = (getarg(0) >= 1 ? (const char*)getstringarg(1) : NULL);
 
   if (!Scout.wifi.wifiDhcp(host)) {
-    Serial.println("Error: saving Scout.wifi.configuration data failed");
+    speol(F("Error: saving Scout.wifi.configuration data failed"));
   }
   return 1;
 }
@@ -1758,27 +1756,27 @@ static numvar wifiStatic(void) {
   IPAddress ip, nm, gw, dns;
 
   if (!GSCore::parseIpAddress(&ip, (const char *)getstringarg(1))) {
-    Serial.println("Error: Invalid IP address");
+    speol(F("Error: Invalid IP address"));
     return 0;
   }
 
   if (!GSCore::parseIpAddress(&nm, (const char *)getstringarg(2))) {
-    Serial.println("Error: Invalid netmask");
+    speol(F("Error: Invalid netmask"));
     return 0;
   }
 
   if (!GSCore::parseIpAddress(&gw, (const char *)getstringarg(3))) {
-    Serial.println("Error: Invalid gateway");
+    speol(F("Error: Invalid gateway"));
     return 0;
   }
 
   if (!GSCore::parseIpAddress(&dns, (const char *)getstringarg(3))) {
-    Serial.println("Error: Invalid dns server");
+    speol(F("Error: Invalid dns server"));
     return 0;
   }
 
   if (!Scout.wifi.wifiStatic(ip, nm, gw, dns)) {
-    Serial.println("Error: saving Scout.wifi.configuration data failed");
+    speol(F("Error: saving Scout.wifi.configuration data failed"));
     return 0;
   }
   return 1;
@@ -1796,42 +1794,42 @@ static numvar wifiReassociate(void) {
 
 static numvar wifiCommand(void) {
   if (!Scout.wifi.runDirectCommand(Serial, (const char *)getstringarg(1))) {
-     Serial.println("Error: Wi-Fi direct command failed");
+     speol(F("Error: Wi-Fi direct command failed"));
   }
   return 1;
 }
 
 static numvar wifiPing(void) {
   if (!Scout.wifi.ping(Serial, (const char *)getstringarg(1))) {
-     Serial.println("Error: Wi-Fi ping command failed");
+     speol(F("Error: Wi-Fi ping command failed"));
   }
   return 1;
 }
 
 static numvar wifiDNSLookup(void) {
   if (!Scout.wifi.dnsLookup(Serial, (const char *)getstringarg(1))) {
-     Serial.println("Error: Wi-Fi DNS lookup command failed");
+     speol(F("Error: Wi-Fi DNS lookup command failed"));
   }
   return 1;
 }
 
 static numvar wifiGetTime(void) {
   if (!Scout.wifi.printTime(Serial)) {
-     Serial.println("Error: Wi-Fi NTP time lookup command failed");
+     speol(F("Error: Wi-Fi NTP time lookup command failed"));
   }
   return 1;
 }
 
 static numvar wifiSleep(void) {
   if (!Scout.wifi.goToSleep()) {
-     Serial.println("Error: Wi-Fi sleep command failed");
+     speol(F("Error: Wi-Fi sleep command failed"));
   }
   return 1;
 }
 
 static numvar wifiWakeup(void) {
   if (!Scout.wifi.wakeUp()) {
-     Serial.println("Error: Wi-Fi wakeup command failed");
+     speol(F("Error: Wi-Fi wakeup command failed"));
   }
   return 1;
 }
@@ -1842,9 +1840,9 @@ static numvar wifiVerbose(void) {
 }
 
 static numvar wifiStats(void) {
-  sp("Number of connections to AP since boot: ");
+  sp(F("Number of connections to AP since boot: "));
   speol(Scout.wifi.apConnCount);
-  sp("Number of connections to HQ since boot: ");
+  sp(F("Number of connections to HQ since boot: "));
   speol(Scout.wifi.hqConnCount);
 }
 
@@ -1865,7 +1863,7 @@ static void pingScout(int address) {
   pingDataReq.confirm = pingConfirm;
   NWK_DataReq(&pingDataReq);
 
-  Serial.print("PING ");
+  Serial.print(F("PING "));
   Serial.println(address);
 }
 
@@ -1881,51 +1879,51 @@ static void pingGroup(int address) {
   pingDataReq.confirm = pingConfirm;
   NWK_DataReq(&pingDataReq);
 
-  Serial.print("PING ");
+  Serial.print(F("PING "));
   Serial.println(address, HEX);
 }
 
 static void pingConfirm(NWK_DataReq_t *req) {
-  Serial.print("dstAddr: ");
+  Serial.print(F("dstAddr: "));
   Serial.println(req->dstAddr, HEX);
-  Serial.print("dstEndpoint: ");
+  Serial.print(F("dstEndpoint: "));
   Serial.println(req->dstEndpoint);
-  Serial.print("srcEndpoint: ");
+  Serial.print(F("srcEndpoint: "));
   Serial.println(req->srcEndpoint);
-  Serial.print("options: ");
+  Serial.print(F("options: "));
   Serial.println(req->options, BIN);
-  Serial.print("size: ");
+  Serial.print(F("size: "));
   Serial.println(req->size);
-  Serial.print("status: ");
+  Serial.print(F("status: "));
   Serial.println(req->status, HEX);
 
   if (req->status == NWK_SUCCESS_STATUS) {
-    Serial.print("1 byte from ");
+    Serial.print(F("1 byte from "));
     Serial.print(req->dstAddr);
-    Serial.print(" RSSI=-");
+    Serial.print(F(" RSSI=-"));
     Serial.println(req->control);
   } else {
-    Serial.print("Error: ");
+    Serial.print(F("Error: "));
     switch (req->status) {
       case NWK_OUT_OF_MEMORY_STATUS:
-        Serial.print("Out of memory: ");
+        Serial.print(F("Out of memory: "));
         break;
       case NWK_NO_ACK_STATUS:
       case NWK_PHY_NO_ACK_STATUS:
-        Serial.print("No acknowledgement received: ");
+        Serial.print(F("No acknowledgement received: "));
         break;
       case NWK_NO_ROUTE_STATUS:
-        Serial.print("No route to destination: ");
+        Serial.print(F("No route to destination: "));
         break;
       case NWK_PHY_CHANNEL_ACCESS_FAILURE_STATUS:
-        Serial.print("Physical channel access failure: ");
+        Serial.print(F("Physical channel access failure: "));
         break;
       default:
-        Serial.print("unknown failure: ");
+        Serial.print(F("unknown failure: "));
     }
-    Serial.print("(");
+    Serial.print(F("("));
     Serial.print(req->status, HEX);
-    Serial.println(")");
+    Serial.println(F(")"));
   }
 }
 
@@ -1935,15 +1933,14 @@ static bool receiveMessage(NWK_DataInd_t *ind) {
   int keys[10];
 
   if (isMeshVerbose) {
-    Serial.print("Received message of ");
+    Serial.print(F("Received message of "));
     Serial.print(data);
-    Serial.print(" from ");
+    Serial.print(F(" from "));
     Serial.print(ind->srcAddr, DEC);
-    Serial.print(" lqi ");
+    Serial.print(F(" lqi "));
     Serial.print(ind->lqi, DEC);
-    Serial.print(" rssi ");
-    Serial.print(abs(ind->rssi), DEC);
-    Serial.println("");
+    Serial.print(F(" rssi "));
+    Serial.println(abs(ind->rssi), DEC);
   }
   lastMeshRssi = abs(ind->rssi);
   lastMeshLqi = ind->lqi;
@@ -1985,10 +1982,10 @@ static void sendMessage(int address, char *data) {
   sendDataReqBusy = true;
 
   if (isMeshVerbose) {
-    sp("Sent message to Scout ");
-    sp(address);
-    sp(": ");
-    speol(data);
+    Serial.print(F("Sent message to Scout "));
+    Serial.print(address);
+    Serial.print(F(": "));
+    Serial.println(data);
   }
 }
 
@@ -1998,36 +1995,36 @@ static void sendConfirm(NWK_DataReq_t *req) {
 
    if (isMeshVerbose) {
     if (req->status == NWK_SUCCESS_STATUS) {
-      Serial.print("-  Message successfully sent to Scout ");
+      Serial.print(F("-  Message successfully sent to Scout "));
       Serial.print(req->dstAddr);
       if (req->control) {
-        Serial.print(" (Confirmed with control byte: ");
+        Serial.print(F(" (Confirmed with control byte: "));
         Serial.print(req->control);
-        Serial.print(")");
+        Serial.print(F(")"));
       }
       Serial.println();
     } else {
-      Serial.print("Error: ");
+      Serial.print(F("Error: "));
       switch (req->status) {
         case NWK_OUT_OF_MEMORY_STATUS:
-          Serial.print("Out of memory: ");
+          Serial.print(F("Out of memory: "));
           break;
         case NWK_NO_ACK_STATUS:
         case NWK_PHY_NO_ACK_STATUS:
-          Serial.print("No acknowledgement received: ");
+          Serial.print(F("No acknowledgement received: "));
           break;
         case NWK_NO_ROUTE_STATUS:
-          Serial.print("No route to destination: ");
+          Serial.print(F("No route to destination: "));
           break;
         case NWK_PHY_CHANNEL_ACCESS_FAILURE_STATUS:
-          Serial.print("Physical channel access failure: ");
+          Serial.print(F("Physical channel access failure: "));
           break;
         default:
-          Serial.print("unknown failure: ");
+          Serial.print(F("unknown failure: "));
       }
-      Serial.print("(");
+      Serial.print(F("("));
       Serial.print(req->status, HEX);
-      Serial.println(")");
+      Serial.println(F(")"));
     }
   }
   lastMeshRssi = req->control;
@@ -2072,10 +2069,9 @@ static void digitalPinEventHandler(uint8_t pin, int8_t value, int8_t mode) {
   }
 
   if (Scout.eventVerboseOutput) {
-    Serial.print("Digital pin event handler took ");
-    Serial.print(millis() - time);
-    Serial.println("ms");
-    Serial.println();
+    sp(F("Digital pin event handler took "));
+    sp(millis() - time);
+    speol(F("ms"));
   }
 }
 
@@ -2098,10 +2094,9 @@ static void analogPinEventHandler(uint8_t pin, int16_t value, int8_t mode) {
   }
 
   if (Scout.eventVerboseOutput) {
-    Serial.print("Analog pin event handler took ");
-    Serial.print(millis() - time);
-    Serial.println("ms");
-    Serial.println();
+    sp(F("Analog pin event handler took "));
+    sp(millis() - time);
+    speol(F("ms"));
   }
 }
 

@@ -384,13 +384,13 @@ static void scoutDigitalStateChangeTimerHandler(SYS_Timer_t *timer) {
 
       if (Scout.digitalPinState[i] != val) {
         if (Scout.eventVerboseOutput) {
-          sp("Running: digitalPinEventHandler(");
+          sp(F("Running: digitalPinEventHandler("));
           sp(pin);
-          sp(",");
+          sp(F(","));
           sp(val);
-          sp(",");
+          sp(F(","));
           sp(mode);
-          speol(")");
+          speol(F(")"));
         }
         Scout.digitalPinState[i] = val;
         Scout.digitalPinMode[i] = mode;
@@ -418,13 +418,13 @@ static void scoutAnalogStateChangeTimerHandler(SYS_Timer_t *timer) {
 
       if (Scout.analogPinState[i] != val) {
         if (Scout.eventVerboseOutput) {
-          sp("Running: analogPinEventHandler(");
+          sp(F("Running: analogPinEventHandler("));
           sp(i);
-          sp(",");
+          sp(F(","));
           sp(val);
-          sp(",");
+          sp(F(","));
           sp(mode);
-          speol(")");
+          speol(F(")"));
         }
         Scout.analogPinState[i] = val;
         Scout.analogPinMode[i] = mode;
@@ -441,9 +441,9 @@ static void scoutPeripheralStateChangeTimerHandler(SYS_Timer_t *timer) {
     val = constrain(HAL_FuelGaugePercent(), 0, 100);
     if (Scout.batteryPercentage != val) {
       if (Scout.eventVerboseOutput) {
-        sp("Running: batteryPercentageEventHandler(");
+        sp(F("Running: batteryPercentageEventHandler("));
         sp(val);
-        speol(")");
+        speol(F(")"));
       }
       Scout.batteryPercentage = val;
       Scout.batteryPercentageEventHandler(val);
@@ -454,9 +454,9 @@ static void scoutPeripheralStateChangeTimerHandler(SYS_Timer_t *timer) {
     val = HAL_FuelGaugeVoltage();
     if (Scout.batteryVoltage != val) {
       if (Scout.eventVerboseOutput) {
-        sp("Running: batteryVoltageEventHandler(");
+        sp(F("Running: batteryVoltageEventHandler("));
         sp(val);
-        speol(")");
+        speol(F(")"));
       }
       Scout.batteryVoltage = val;
       Scout.batteryVoltageEventHandler(val);
@@ -467,9 +467,9 @@ static void scoutPeripheralStateChangeTimerHandler(SYS_Timer_t *timer) {
     val = (digitalRead(CHG_STATUS) == LOW);
     if (Scout.isBattCharging != val) {
       if (Scout.eventVerboseOutput) {
-        sp("Running: batteryChargingEventHandler(");
+        sp(F("Running: batteryChargingEventHandler("));
         sp(val);
-        speol(")");
+        speol(F(")"));
       }
       Scout.isBattCharging = val;
       Scout.batteryChargingEventHandler(val);
@@ -480,9 +480,9 @@ static void scoutPeripheralStateChangeTimerHandler(SYS_Timer_t *timer) {
     val = (digitalRead(BATT_ALARM) == LOW);
     if (Scout.isBattAlarmTriggered != val) {
       if (Scout.eventVerboseOutput) {
-        sp("Running: batteryAlarmTriggeredEventHandler(");
+        sp(F("Running: batteryAlarmTriggeredEventHandler("));
         sp(val);
-        speol(")");
+        speol(F(")"));
       }
       Scout.isBattAlarmTriggered = val;
       Scout.batteryAlarmTriggeredEventHandler(val);
@@ -493,9 +493,9 @@ static void scoutPeripheralStateChangeTimerHandler(SYS_Timer_t *timer) {
     val = Scout.getTemperature();
     if (Scout.temperature != val) {
       if (Scout.eventVerboseOutput) {
-        sp("Running: temperatureEventHandler(");
+        sp(F("Running: temperatureEventHandler("));
         sp(val);
-        speol(")");
+        speol(F(")"));
       }
       Scout.temperature = val;
       Scout.temperatureEventHandler(val);
