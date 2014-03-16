@@ -107,4 +107,6 @@ void keyLoad(const char *array, int *outs, unsigned long at) {
   if (outs) {
     outs[0] = oi-1;
   }
+
+  free(index);
 }

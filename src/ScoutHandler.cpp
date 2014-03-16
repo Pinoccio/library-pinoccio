@@ -481,8 +481,6 @@ void leadIncoming(const char *packet, size_t len, unsigned short *index) {
       return;
     }
 
-    free(buffer);
-
     // handle internal ones first
     if (to == Scout.getAddress()) {
       setOutputHandler(&printToString<&leadCommandOutput>);
@@ -494,12 +492,14 @@ void leadIncoming(const char *packet, size_t len, unsigned short *index) {
       leadSignal(report.c_str());
       leadCommandOutput = (char*)NULL;
 
+      free(buffer);
       return;
     }
 
     // we can only send one command at a time
     if (leadCommandTo) {
       // TODO we could stop reading the HQ socket in this mode and then never get a busy?
+      free(buffer);
       return leadCommandError(to,id,"busy");
     }
 
@@ -511,6 +511,8 @@ void leadIncoming(const char *packet, size_t len, unsigned short *index) {
     leadCommandRetries = 0;
     leadCommandChunk();
   }
+
+  free(buffer);
 }
 
 // mesh callback when sending command chunks
