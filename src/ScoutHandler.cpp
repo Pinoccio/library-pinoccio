@@ -292,8 +292,7 @@ static bool fieldAnnouncements(NWK_DataInd_t *ind) {
 
   if (hqVerboseOutput) {
     sp(F("multicast in "));
-    sp(ind->dstAddr);
-    speol();
+    speol(ind->dstAddr);
   }
   if (Scout.isLeadScout()) {
     leadAnnouncementSend(ind->dstAddr, ind->srcAddr, data);
@@ -615,7 +614,7 @@ void leadSignal(char *json) {
     return;
   }
   if (hqVerboseOutput) {
-    speol(F("HQ signalling"));
+    speol(F("Signalling HQ: "));
     speol(json);
   }
 
@@ -637,7 +636,9 @@ bool leadAnswers(NWK_DataInd_t *ind) {
   }
 
   if (hqVerboseOutput) {
-    speol(F("Received answer"));
+    sp(F("Received answer from Scout "));
+    sp(ind->srcAddr);
+    speol(F(":"));
   }
   if (ind->data[ind->size-1] == 0) {
     end = true;
