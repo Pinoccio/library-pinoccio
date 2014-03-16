@@ -10,6 +10,7 @@ extern "C" {
 static numvar pinoccioBanner(void);
 
 static numvar getTemperature(void);
+static numvar temperatureReport(void);
 static numvar getRandomNumber(void);
 static numvar getLastResetCause(void);
 static numvar uptimeReport(void);
@@ -188,6 +189,7 @@ void PinoccioShell::setup() {
   addBitlashFunction("mesh.loss", (bitlash_function) meshLoss);
 
   addBitlashFunction("temperature", (bitlash_function) getTemperature);
+  addBitlashFunction("temperature.report", (bitlash_function) temperatureReport);
   addBitlashFunction("randomnumber", (bitlash_function) getRandomNumber);
   addBitlashFunction("lastreset", (bitlash_function) getLastResetCause);
   addBitlashFunction("uptime", (bitlash_function) uptimeReport);
@@ -450,6 +452,11 @@ static char *tempReportHQ(void) {
           tempHigh,
           tempLow);
   return Scout.handler.report(report);
+}
+
+static numvar temperatureReport(void) {
+  tempReportHQ(true);
+  return 1;
 }
 
 static numvar getTemperature(void) {
@@ -976,6 +983,7 @@ static numvar meshRouting(void) {
   }
   return 1;
 }
+
 
 /****************************\
 *        I/O HANDLERS       *
