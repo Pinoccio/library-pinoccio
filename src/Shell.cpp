@@ -6,6 +6,7 @@
 extern "C" {
 #include "key/key.h"
 #include "util/memdebug.h"
+#include "util/StringBuffer.h"
 }
 
 static numvar pinoccioBanner(void);
@@ -126,21 +127,21 @@ static numvar keySave(void);
 
 static int getPinFromArg(int arg);
 
-static char *scoutReportHQ(void);
-static char *uptimeReportHQ(void);
-static char *powerReportHQ(void);
-static char *backpackReportHQ(void);
-static char *digitalPinReportHQ(void);
-static char *analogPinReportHQ(void);
-static char *meshReportHQ(void);
-static char *tempReportHQ(void);
-static char *ledReportHQ(void);
+static StringBuffer scoutReportHQ(void);
+static StringBuffer uptimeReportHQ(void);
+static StringBuffer powerReportHQ(void);
+static StringBuffer backpackReportHQ(void);
+static StringBuffer digitalPinReportHQ(void);
+static StringBuffer analogPinReportHQ(void);
+static StringBuffer meshReportHQ(void);
+static StringBuffer tempReportHQ(void);
+static StringBuffer ledReportHQ(void);
 
 static void pingScout(int address);
 static void pingGroup(int address);
 static void pingConfirm(NWK_DataReq_t *req);
 static bool receiveMessage(NWK_DataInd_t *ind);
-static void sendMessage(int address, char *data);
+static void sendMessage(int address, const String&);
 static void sendConfirm(NWK_DataReq_t *req);
 
 static void digitalPinEventHandler(uint8_t pin, int8_t value, int8_t mode);
@@ -439,12 +440,12 @@ static int tempLow = 0;
 *      BUILT-IN HANDLERS    *
 \****************************/
 
-static char *tempReportHQ(void) {
-  static char report[100];
+static StringBuffer tempReportHQ(void) {
+  StringBuffer report(100);
   int temp = Scout.getTemperature();
   if(temp > tempHigh) tempHigh = temp;
   if(!tempLow || temp < tempLow) tempLow = temp;
-  snprintf(report, sizeof(report),"[%d,[%d,%d,%d],[%d,%d,%d]]",
+  report.appendSprintf("[%d,[%d,%d,%d],[%d,%d,%d]]",
           keyMap("temp", 0),
           keyMap("current", 0),
           keyMap("high", 0),
@@ -487,8 +488,8 @@ static numvar getLastResetCause(void) {
 }
 
 extern int __bss_end;
-static char *uptimeReportHQ(void) {
-  static char report[100];
+static StringBuffer uptimeReportHQ(void) {
+  StringBuffer report(100);
   int freeMem;
 
   char reset[20];
@@ -496,7 +497,7 @@ static char *uptimeReportHQ(void) {
   reset[sizeof(reset) - 1] = 0; // ensure termination, strncpy is weird
 
   // free memory based on http://forum.pololu.com/viewtopic.php?f=10&t=989&view=unread#p4218
-  snprintf(report, sizeof(report),"[%d,[%d,%d,%d,%d],[%ld,%d,%d,\"",keyMap("uptime",0),
+  report.appendSprintf("[%d,[%d,%d,%d,%d],[%ld,%d,%d,",keyMap("uptime",0),
           keyMap("millis", 0),
           keyMap("free", 0),
           keyMap("random", 0),
@@ -505,7 +506,8 @@ static char *uptimeReportHQ(void) {
           ((int)&freeMem) - ((int)&__bss_end),
           (int)random());
 
-  snprintf(report + strlen(report), sizeof(report) - strlen(report),"%s\"]]", (char*)reset);
+  report.appendJsonString(reset, true);
+  report += "]]";
   return Scout.handler.report(report);
 }
 
@@ -597,9 +599,9 @@ static numvar goToSleep(void) {
   return 1;
 }
 
-static char *powerReportHQ(void) {
-  static char report[100];
-  snprintf(report, sizeof(report),"[%d,[%d,%d,%d,%d],[%d,%d,%s,%s]]",
+static StringBuffer powerReportHQ(void) {
+  StringBuffer report(100);
+  report.appendSprintf("[%d,[%d,%d,%d,%d],[%d,%d,%s,%s]]",
           keyMap("power", 0),
           keyMap("battery", 0),
           keyMap("voltage", 0),
@@ -621,9 +623,9 @@ static numvar powerReport(void) {
 *      RGB LED HANDLERS     *
 \****************************/
 
-static char *ledReportHQ(void) {
-  static char report[100];
-  snprintf(report, sizeof(report),"[%d,[%d,%d],[[%d,%d,%d],[%d,%d,%d]]]",
+static StringBuffer ledReportHQ(void) {
+  StringBuffer report(100);
+  report.appendSprintf("[%d,[%d,%d],[[%d,%d,%d],[%d,%d,%d]]]",
           keyMap("led", 0),
           keyMap("led", 0),
           keyMap("torch", 0),
@@ -868,37 +870,37 @@ static numvar meshPingGroup(void) {
   return 1;
 }
 
-char *arg2array(int ver, char *msg) {
+StringBuffer arg2array(int ver) {
+  StringBuffer buf(100);
   int i;
   int args = getarg(0);
   if (args > 8) {
     args = 8;
   }
-  snprintf(msg, sizeof(msg),"[%d,",ver);
+  buf.appendSprintf("[%d,", ver);
   for (i=2; i<=args; i++) {
     int key = (isstringarg(i)) ? keyMap((char*)getstringarg(i), 0) : getarg(i);
-    snprintf(msg + strlen(msg), sizeof(msg) - strlen(msg), "\"%s\",", keyGet(key));
+    buf.appendJsonString(keyGet(key), true);
+    buf += ",";
   }
-  snprintf(msg + (strlen(msg)-1), sizeof(msg) - (strlen(msg) - 1), "]");
-  return msg;
+  buf += "]";
+  return buf;
 }
 
 static numvar meshSend(void) {
-  char msg[100];
   if (!getarg(0)) {
     return false;
   }
 
-  sendMessage(getarg(1), arg2array(1, msg));
+  sendMessage(getarg(1), arg2array(1));
   return true;
 }
 
 static numvar meshAnnounce(void) {
-  char msg[100];
   if (!getarg(0)) {
     return false;
   }
-  Scout.handler.announce(getarg(1), arg2array(1, msg));
+  Scout.handler.announce(getarg(1), arg2array(1));
   return true;
 }
 
@@ -915,15 +917,15 @@ static numvar meshVerbose(void) {
   return 1;
 }
 
-static char *meshReportHQ(void) {
-  static char report[100], c;
+static StringBuffer meshReportHQ(void) {
+  StringBuffer report(100);
   int count = 0;
   NWK_RouteTableEntry_t *table = NWK_RouteTable();
   for (int i=0; i<NWK_ROUTE_TABLE_SIZE; i++) {
     if (table[i].dstAddr == NWK_ROUTE_UNKNOWN) continue;
     count++;
   }
-  snprintf(report, sizeof(report), "[%d,[%d,%d,%d,%d,%d,%d],[%d,%d,%d,%d,\"",
+  report.appendSprintf("[%d,[%d,%d,%d,%d,%d,%d],[%d,%d,%d,%d,\"",
           keyMap("mesh", 0),
           keyMap("scoutid", 0),
           keyMap("troopid", 0),
@@ -937,17 +939,18 @@ static char *meshReportHQ(void) {
           Scout.getChannel());
 
   const char *kbString = Scout.getDataRatekbps();
-  while (c = pgm_read_byte(kbString++)) {
-    snprintf(report + strlen(report), sizeof(report) - strlen(report),"%c", c);
+  while (char c = pgm_read_byte(kbString++)) {
+    report += c;
   }
 
-  snprintf(report + strlen(report), sizeof(report) - strlen(report), "\",\"");
+  report += "\",\"";
 
   const char *dbString = Scout.getTxPowerDb();
-  while (c = pgm_read_byte(dbString++)) {
-    snprintf(report + strlen(report), sizeof(report) - strlen(report), "%c", c);
+  while (char c = pgm_read_byte(dbString++)) {
+    report += c;
   }
-  snprintf(report + strlen(report), sizeof(report) - strlen(report), "\"]]");
+  report += "\"]]";
+
   return Scout.handler.report(report);
 }
 
@@ -990,9 +993,9 @@ static numvar meshRouting(void) {
 *        I/O HANDLERS       *
 \****************************/
 
-static char *digitalPinReportHQ(void) {
-  static char report[80];
-  snprintf(report, sizeof(report),"[%d,[%d,%d],[[%d,%d,%d,%d,%d,%d,%d],[%d,%d,%d,%d,%d,%d,%d]]]",
+static StringBuffer digitalPinReportHQ(void) {
+  StringBuffer report(100);
+  report.appendSprintf("[%d,[%d,%d],[[%d,%d,%d,%d,%d,%d,%d],[%d,%d,%d,%d,%d,%d,%d]]]",
           keyMap("digital", 0),
           keyMap("mode", 0),
           keyMap("state", 0),
@@ -1013,9 +1016,9 @@ static char *digitalPinReportHQ(void) {
   return Scout.handler.report(report);
 }
 
-static char *analogPinReportHQ(void) {
-  static char report[80];
-  snprintf(report, sizeof(report),"[%d,[%d,%d],[[%d,%d,%d,%d,%d,%d,%d,%d],[%d,%d,%d,%d,%d,%d,%d,%d]]]",
+static StringBuffer analogPinReportHQ(void) {
+  StringBuffer report(100);
+  report.appendSprintf("[%d,[%d,%d],[[%d,%d,%d,%d,%d,%d,%d,%d],[%d,%d,%d,%d,%d,%d,%d,%d]]]",
           keyMap("analog", 0),
           keyMap("mode", 0),
           keyMap("state", 0),
@@ -1255,10 +1258,10 @@ static int getPinFromArg(int arg) {
 *     BACKPACK HANDLERS     *
 \****************************/
 
-static char *backpackReportHQ(void) {
-  static char report[100];
+static StringBuffer backpackReportHQ(void) {
+  StringBuffer report(100);
   int comma = 0;
-  snprintf(report, sizeof(report), "[%d,[%d],[[", keyMap("backpacks", 0), keyMap("list", 0));
+  report.appendSprintf("[%d,[%d],[[", keyMap("backpacks", 0), keyMap("list", 0));
   /*
   for (uint8_t i=0; i<Backpacks::num_backpacks; ++i) {
     BackpackInfo &info = Backpacks::info[i];
@@ -1268,7 +1271,7 @@ static char *backpackReportHQ(void) {
     }
   }
   */
-  snprintf(report + strlen(report), sizeof(report) - strlen(report), "]]]");
+  report += "]]]";
   return Scout.handler.report(report);
 }
 
@@ -1558,9 +1561,9 @@ static numvar backpackResources(void) {
  *   SCOUT REPORT HANDLERS  *
 \****************************/
 
-static char *scoutReportHQ(void) {
-  static char report[100];
-  snprintf(report, sizeof(report),"[%d,[%d,%d,%d,%d,%d,%d],[%s,%d,%d,%d,%ld,%ld]]",
+static StringBuffer scoutReportHQ(void) {
+  StringBuffer report(100);
+  report.appendSprintf("[%d,[%d,%d,%d,%d,%d,%d],[%s,%d,%d,%d,%ld,%ld]]",
           keyMap("scout", 0),
           keyMap("lead", 0),
           keyMap("version", 0),
@@ -1706,10 +1709,10 @@ static numvar setEventVerbose(void) {
  *   SCOUT.WIFI.HANDLERS    *
 \****************************/
 
-static char *wifiReportHQ(void) {
-  static char report[100];
+static StringBuffer wifiReportHQ(void) {
+  StringBuffer report(100);
   // TODO real wifi status/version
-  snprintf(report, sizeof(report),"[%d,[%d,%d,%d],[%d,%s,%s]]",
+  report.appendSprintf("[%d,[%d,%d,%d],[%d,%s,%s]]",
           keyMap("wifi", 0),
           keyMap("version", 0),
           keyMap("connected", 0),
@@ -1973,7 +1976,7 @@ static bool receiveMessage(NWK_DataInd_t *ind) {
   return true;
 }
 
-static void sendMessage(int address, char *data) {
+static void sendMessage(int address, const String &data) {
   if (sendDataReqBusy) {
     return;
   }
@@ -1982,8 +1985,8 @@ static void sendMessage(int address, char *data) {
   sendDataReq.dstEndpoint = 1;
   sendDataReq.srcEndpoint = 1;
   sendDataReq.options = NWK_OPT_ACK_REQUEST|NWK_OPT_ENABLE_SECURITY;
-  sendDataReq.data = (uint8_t*)strdup(data);
-  sendDataReq.size = strlen(data)+1;
+  sendDataReq.data = (uint8_t*)strdup(data.c_str());
+  sendDataReq.size = data.length() + 1;
   sendDataReq.confirm = sendConfirm;
   NWK_DataReq(&sendDataReq);
 
@@ -2188,14 +2191,3 @@ void bitlashBuffer(byte b) {
   Shell.bitlashOutput[len+1] = 0;
 }
 
-bool prepareBitlashBuffer() {
-  if (Shell.bitlashOutput != NULL) {
-    free(Shell.bitlashOutput);
-    Shell.bitlashOutput = NULL;
-  }
-
-  Shell.bitlashOutput = (char*)malloc(1);
-  if (!Shell.bitlashOutput) return false;
-  Shell.bitlashOutput[0] = 0;
-  return true;
-}

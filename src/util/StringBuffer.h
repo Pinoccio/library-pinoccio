@@ -63,6 +63,7 @@ class StringBuffer : public String {
     }
     int readClient(Client& c, size_t size);
     bool blockReserve(size_t size);
+    unsigned char concat(const char *s, size_t len);
 
     // Explicitly include String's operator=, since the implicitly
     // defined one for StringBuffer hides these by default.
