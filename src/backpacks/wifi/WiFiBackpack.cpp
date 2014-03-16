@@ -3,6 +3,7 @@
 #include "WiFiBackpack.h"
 #include "../../ScoutHandler.h"
 #include "../../hq/HqHandler.h"
+#include "src/bitlash.h"
 
 // Be careful with using non-alphanumerics like '-' here, they might
 // silently cause SSL to fail
@@ -12,8 +13,9 @@
 #define NTP_INTERVAL (3600L * 24)
 
 static void print_line(const uint8_t *buf, uint16_t len, void *data) {
-  static_cast<Print*>(data)->write(buf, len);
-  static_cast<Print*>(data)->println();
+  while (len--)
+    sp(*buf++);
+  speol();
 }
 
 WiFiBackpack::WiFiBackpack() : client(gs) { }
@@ -205,7 +207,7 @@ bool WiFiBackpack::ping(Print &p, const char *host) {
 
 bool WiFiBackpack::runDirectCommand(Print &p, const char *command) {
   gs.writeCommand("%s", command);
-  return (gs.readResponse(print_line, &p) == GSCore::GS_SUCCESS);
+  return (gs.readResponse(print_line, NULL) == GSCore::GS_SUCCESS);
 }
 
 bool WiFiBackpack::goToSleep() {
