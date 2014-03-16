@@ -297,7 +297,7 @@ static bool fieldAnnouncements(NWK_DataInd_t *ind) {
   if (Scout.isLeadScout()) {
     leadAnnouncementSend(ind->dstAddr, ind->srcAddr, data);
   }
-  if (ind->dstAddr == 0xBEEF || strlen(data) <3 || data[0] != '[') {
+  if (ind->dstAddr == 0xBEEF || strlen(data) < 3 || data[0] != '[') {
     return false;
   }
 
