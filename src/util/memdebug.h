@@ -54,6 +54,8 @@ extern int getNumberOfBlocksInFreeList();
 extern size_t getFreeListSize();
 extern size_t getLargestNonFreeListBlock();
 
+extern void showMemory();
+
 #ifdef __cplusplus
 }
 #endif

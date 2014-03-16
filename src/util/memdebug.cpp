@@ -34,9 +34,14 @@
  *  USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
  *  DAMAGE.
  */
+
+#include <Arduino.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include <avr/io.h>
 #include "memdebug.h"
+#include <src/bitlash.h>
+
 /**
  * This must match the definition in "stdlib_private.h"
  */
@@ -176,4 +181,16 @@ size_t getLargestNonFreeListBlock()
     return 0;
 
   return cp-brkval;
+}
+
+void showMemory(void) {
+  char buffer[100];
+
+  snprintf(buffer, sizeof(buffer), "%04u %04u %04u : used/free/large",
+      getMemoryUsed(),
+      getFreeMemory(),
+      getLargestAvailableMemoryBlock()
+    );
+
+  speol(buffer);
 }

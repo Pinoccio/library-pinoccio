@@ -5,6 +5,7 @@
 #include "src/bitlash.h"
 extern "C" {
 #include "key/key.h"
+#include "util/memdebug.h"
 }
 
 static numvar pinoccioBanner(void);
@@ -89,6 +90,7 @@ static numvar isScoutLeadScout(void);
 static numvar setHQToken(void);
 static numvar getHQToken(void);
 static numvar scoutDelay(void);
+static numvar scoutFree(void);
 static numvar daisyWipe(void);
 static numvar boot(void);
 static numvar otaBoot(void);
@@ -243,6 +245,7 @@ void PinoccioShell::setup() {
   addBitlashFunction("scout.sethqtoken", (bitlash_function) setHQToken);
   addBitlashFunction("scout.gethqtoken", (bitlash_function) getHQToken);
   addBitlashFunction("scout.delay", (bitlash_function) scoutDelay);
+  addBitlashFunction("scout.free", (bitlash_function) scoutFree);
   addBitlashFunction("scout.daisy", (bitlash_function) daisyWipe);
   addBitlashFunction("scout.boot", (bitlash_function) boot);
   addBitlashFunction("scout.otaboot", (bitlash_function) otaBoot);
@@ -1599,6 +1602,11 @@ static numvar getHQToken(void) {
 
 static numvar scoutDelay(void) {
   Scout.delay(getarg(1));
+  return 1;
+}
+
+static numvar scoutFree(void) {
+  showMemory();
   return 1;
 }
 
