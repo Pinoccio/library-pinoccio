@@ -94,7 +94,6 @@ void PinoccioScoutHandler::setup() {
   }
 
   Scout.meshListen(4, fieldAnnouncements);
-  setOutputHandler(&bitlashFilter);
 }
 
 void PinoccioScoutHandler::loop() {
@@ -155,7 +154,7 @@ static bool fieldCommands(NWK_DataInd_t *ind) {
     speol(ret);
   }
 
-  setOutputHandler(&bitlashFilter);
+  resetOutputHandler();
 
   // send data back in chunks
   fieldAnswerTo = ind->srcAddr;
@@ -495,7 +494,7 @@ void leadIncoming(const char *packet, size_t len, unsigned short *index) {
     if (to == Scout.getAddress()) {
       setOutputHandler(&printToString<&leadCommandOutput>);
       doCommand(command);
-      setOutputHandler(&bitlashFilter);
+      resetOutputHandler();
 
       StringBuffer report;
       report.appendSprintf("{\"type\":\"reply\",\"from\":%d,\"id\":%lu,\"end\":true,\"reply\":", to, id);

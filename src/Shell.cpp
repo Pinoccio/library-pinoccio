@@ -2154,8 +2154,3 @@ static void temperatureEventHandler(uint8_t value) {
 static void ledEventHandler(uint8_t redValue, uint8_t greenValue, uint8_t blueValue) {
   ledReportHQ();
 }
-
-void bitlashFilter(byte b) {
-  Serial.write(b);
-  return;
-}
