@@ -35,6 +35,7 @@
 
 #include <Arduino.h>
 #include <Client.h>
+#include "String.h"
 
 /**
  * Extend the Arduino String class with some operations that make using
@@ -58,8 +59,8 @@ class StringBuffer : public String {
     size_t appendJsonString(const uint8_t *in, size_t len, bool add_quotes) {
       return appendJsonString((const char *)in, len, add_quotes);
     }
-    size_t appendJsonString(const char *in, bool add_quotes) {
-      return appendJsonString(in, strlen(in), add_quotes);
+    size_t appendJsonString(const ConstBuf& buf, bool add_quotes) {
+      return appendJsonString(buf, buf.length(), add_quotes);
     }
     int readClient(Client& c, size_t size);
     bool blockReserve(size_t size);
