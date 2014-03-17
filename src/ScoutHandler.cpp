@@ -497,7 +497,9 @@ void leadIncoming(const char *packet, size_t len, unsigned short *index) {
       setOutputHandler(&bitlashFilter);
 
       StringBuffer report;
-      report.appendSprintf("{\"type\":\"reply\",\"from\":%d,\"id\":%lu,\"end\":true,\"reply\":\"%s\"}\n", to, id, leadCommandOutput.c_str());
+      report.appendSprintf("{\"type\":\"reply\",\"from\":%d,\"id\":%lu,\"end\":true,\"reply\":", to, id);
+      report.appendJsonString(leadCommandOutput, true);
+      report += "}\n";
       leadSignal(report);
       leadCommandOutput = (char*)NULL;
 
