@@ -191,8 +191,6 @@ size_t StringBuffer::appendJsonString(const char *in, size_t len, bool add_quote
   return written;
 }
 
-// Until https://github.com/arduino/Arduino/pull/1936 is merged, supply our own
-// version of this method.
 unsigned char StringBuffer::concat(const char *cstr, unsigned int length)
 {
         unsigned int newlen = len + length;
