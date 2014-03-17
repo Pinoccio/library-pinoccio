@@ -65,7 +65,7 @@ static void leadCommandChunkConfirm(NWK_DataReq_t *req);
 static void leadCommandChunk();
 
 // wrapper to send a chunk of JSON to the HQ
-static void leadSignal(const char *json);
+static void leadSignal(const String& json);
 
 // called whenever another scout sends an answer back to us
 static bool leadAnswers(NWK_DataInd_t *ind);
@@ -371,7 +371,7 @@ static void leadAnnouncementSend(uint16_t group, uint16_t from, const char *mess
   } else {
     return;
   }
-  leadSignal(report.c_str());
+  leadSignal(report);
 }
 
 // [3,[0,1,2],[v,v,v]]
@@ -391,7 +391,7 @@ void leadHQConnect() {
     Pinoccio.getHQToken(token);
     token[32] = 0;
     auth.appendSprintf("{\"type\":\"token\",\"token\":\"%s\"}\n", token);
-    leadSignal(auth.c_str());
+    leadSignal(auth);
   } else {
     if (hqVerboseOutput) {
       speol(F("server unvailable"));
@@ -439,7 +439,7 @@ void leadHQHandle(void) {
 void leadCommandError(int from, int id, const char *reason) {
   StringBuffer err(128);
   err.appendSprintf("{\"type\":\"reply\",\"from\":%d,\"id\":%d,\"err\":true,\"reply\":\"%s\"}\n", from, id, reason);
-  leadSignal(err.c_str());
+  leadSignal(err);
 }
 
 StringBuffer leadCommandOutput;
@@ -489,7 +489,7 @@ void leadIncoming(const char *packet, size_t len, unsigned short *index) {
 
       StringBuffer report;
       report.appendSprintf("{\"type\":\"reply\",\"from\":%d,\"id\":%lu,\"end\":true,\"reply\":\"%s\"}\n", to, id, leadCommandOutput.c_str());
-      leadSignal(report.c_str());
+      leadSignal(report);
       leadCommandOutput = (char*)NULL;
 
       free(buffer);
@@ -577,7 +577,7 @@ static void leadCommandChunk() {
 }
 
 // wrapper to send a chunk of JSON to the HQ
-void leadSignal(const char *json) {
+void leadSignal(const String &json) {
   if (!Scout.wifi.client.connected()) {
     if (hqVerboseOutput) {
       speol(F("HQ offline, can't signal"));
@@ -590,7 +590,7 @@ void leadSignal(const char *json) {
     speol(json);
   }
 
-  Scout.wifi.client.write(json);
+  Scout.wifi.client.print(json);
   Scout.wifi.client.flush();
 }
 
@@ -618,7 +618,7 @@ bool leadAnswers(NWK_DataInd_t *ind) {
   buf.appendSprintf("{\"type\":\"reply\",\"id\":%d,\"from\":%d,\"reply\":", leadAnswerID, ind->srcAddr);
   buf.appendJsonString(ind->data, ind->size, true);
   buf.appendSprintf(",\"end\":%s}\n",end ? "true" : "false");
-  leadSignal(buf.c_str());
+  leadSignal(buf);
 
   return true;
 }
