@@ -254,7 +254,10 @@ void PinoccioScoutHandler::announce(uint16_t group, char *message) {
   // when lead scout, shortcut
   if (Scout.isLeadScout()) {
     leadAnnouncementSend(group, Scout.getAddress(), message);
-    return;
+    // Don't broadcast HQ commands over the network if we are a lead
+    // scout
+    if (group == 0xBEEF)
+      return;
   }
 
   char *data = strdup(message);
