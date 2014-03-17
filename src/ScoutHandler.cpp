@@ -148,6 +148,7 @@ static bool fieldCommands(NWK_DataInd_t *ind) {
   // TODO: Once bitlash fixes const-correctness, this and similar casts
   // should be removed.
   ret = (int)doCommand(const_cast<char *>(fieldCommand.c_str()));
+  fieldCommand = (char*)NULL;
 
   if (hqVerboseOutput) {
     sp(F("got result "));
