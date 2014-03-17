@@ -5,6 +5,7 @@
 #include "backpack-bus/PBBP.h"
 #include "backpacks/wifi/WiFiBackpack.h"
 #include "util/StringBuffer.h"
+#include "util/String.h"
 #include "util/PrintToString.h"
 extern "C" {
 #include <js0n.h>
@@ -41,7 +42,7 @@ static void fieldAnswerChunk();
 static bool fieldAnnouncements(NWK_DataInd_t *ind);
 
 // simple wrapper for the incoming channel announcements up to HQ
-static void leadAnnouncementSend(uint16_t chan, uint16_t from, const char *message);
+static void leadAnnouncementSend(uint16_t chan, uint16_t from, const ConstBuf& message);
 
 // necessities for tracking state when chunking up a large command into mesh requests
 static int leadCommandTo = 0;
@@ -241,7 +242,7 @@ void PinoccioScoutHandler::announce(uint16_t group, const String& message) {
 
   // when lead scout, shortcut
   if (Scout.isLeadScout()) {
-    leadAnnouncementSend(group, Scout.getAddress(), message.c_str());
+    leadAnnouncementSend(group, Scout.getAddress(), message);
     // Don't broadcast HQ commands over the network if we are a lead
     // scout
     if (group == 0xBEEF)
@@ -284,7 +285,7 @@ static bool fieldAnnouncements(NWK_DataInd_t *ind) {
     speol(ind->dstAddr);
   }
   if (Scout.isLeadScout()) {
-    leadAnnouncementSend(ind->dstAddr, ind->srcAddr, data);
+    leadAnnouncementSend(ind->dstAddr, ind->srcAddr, ConstBuf(data, ind->size));
   }
   if (ind->dstAddr == 0xBEEF || strlen(data) < 3 || data[0] != '[') {
     return false;
@@ -310,13 +311,14 @@ static bool fieldAnnouncements(NWK_DataInd_t *ind) {
 }
 
 // just store one converted report at a time
-StringBuffer report2json(const char *in) {
+StringBuffer report2json(const ConstBuf& in) {
   char *keys, *vals;
   unsigned short ir[16], ik[32], iv[32], i;
   StringBuffer reportJson(100, 8);
 
   // copy cuz we edit it
-  char *report = strdup(in);
+  char *report = (char*)malloc(in.length());
+  memcpy(report, in, in.length());
 
   // parse this and humanize
   js0n((unsigned char*)report, strlen(report), ir, 16);
@@ -360,14 +362,16 @@ StringBuffer report2json(const char *in) {
 }
 
 
-static void leadAnnouncementSend(uint16_t group, uint16_t from, const char *message) {
+static void leadAnnouncementSend(uint16_t group, uint16_t from, const ConstBuf& message) {
   StringBuffer report(100, 8);
 
   // reports are expected to be json objects
   if (group == 0xBEEF) {
     report.appendSprintf("{\"type\":\"report\",\"from\":%d,\"report\":%s}\n", from, (report2json(message)).c_str());
   } else if (group == 0) {
-    report.appendSprintf("{\"type\":\"announce\",\"from\":%d,\"announce\":%s}\n", from, message);
+    report.appendSprintf("{\"type\":\"announce\",\"from\":%d,\"announce\":", from);
+    report.concat(message, message.length());
+    report += "\n";
   } else {
     return;
   }
@@ -377,7 +381,7 @@ static void leadAnnouncementSend(uint16_t group, uint16_t from, const char *mess
 // [3,[0,1,2],[v,v,v]]
 StringBuffer PinoccioScoutHandler::report(const String &report) {
   Scout.handler.announce(0xBEEF, report);
-  return report2json(report.c_str());
+  return report2json(report);
 }
 
 ////////////////////
