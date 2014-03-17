@@ -118,16 +118,19 @@ size_t StringBuffer::appendJsonString(const char *in, size_t len, bool add_quote
   if (!blockReserve(needed))
     return 0;
 
-  char *out = this->buffer + this->len;
+  size_t written = 0;
 
-  if (add_quotes)
-    *out++ = '"';
+  if (add_quotes) {
+    this->buffer[this->len] = '"';
+    ++written;
+  }
 
   // 2 tries should normally always work, but keep a count to guarantee
   // we can't get into an infinite loop
   uint8_t tries = 2;
   while(tries--) {
-    size_t room = this->buffer + this->capacity - out;
+    char *out = this->buffer + this->len + written;
+    size_t room = this->capacity - this->len - written;
 
     // Reserve space for the closing quote
     if (add_quotes)
@@ -146,17 +149,19 @@ size_t StringBuffer::appendJsonString(const char *in, size_t len, bool add_quote
         snprintf(out, ESCAPE_LEN + 1, "\\u%04x", c);
         room -= ESCAPE_LEN;
         out += ESCAPE_LEN;
+        written += ESCAPE_LEN;
       } else {
         // Normal
         *out = c;
         ++out;
         --room;
+        ++written;
       }
       ++in;
       --len;
     }
 
-    if (len != 0) {
+    if (len != 0 && tries) {
       // If there are still bytes left to write, we ran out of room.
       // Find out how many bytes we'll need.
 
@@ -180,13 +185,12 @@ size_t StringBuffer::appendJsonString(const char *in, size_t len, bool add_quote
     }
   }
 
-  if (add_quotes)
-    *out++ = '"';
+  if (add_quotes) {
+    this->buffer[this->len + written] = '"';
+    ++written;
+  }
 
-  // Update len based on the the output pointer
-  size_t written = out - this->buffer - this->len;
   this->len += written;
-
   return written;
 }
 
