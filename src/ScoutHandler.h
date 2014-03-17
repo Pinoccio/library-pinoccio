@@ -3,6 +3,7 @@
 
 #include <Pinoccio.h>
 #include <ScoutHandler.h>
+#include "util/StringBuffer.h"
 
 class PinoccioScoutHandler {
 
@@ -12,9 +13,9 @@ class PinoccioScoutHandler {
 
     void setup();
     void loop();
-    void announce(uint16_t group, char *message);
+    void announce(uint16_t group, const String& message);
     void setVerbose(bool flag);
-    char *report(char *report);
+    StringBuffer report(const String& report);
 
   protected:
 };

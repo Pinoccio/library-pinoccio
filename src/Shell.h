@@ -56,7 +56,5 @@ class PinoccioShell {
 extern PinoccioShell Shell;
 
 void bitlashFilter(byte b); // watches bitlash output for channel announcements
-void bitlashBuffer(byte b); // buffers bitlash output from a command
-bool prepareBitlashBuffer(); // manage dynamic memory for bitlash buffer output
 
 #endif

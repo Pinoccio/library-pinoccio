@@ -4,6 +4,9 @@
 #include <Scout.h>
 #include "backpack-bus/PBBP.h"
 #include "backpacks/wifi/WiFiBackpack.h"
+#include "util/StringBuffer.h"
+#include "util/String.h"
+#include "util/PrintToString.h"
 extern "C" {
 #include <js0n.h>
 #include <j0g.h>
@@ -17,13 +20,14 @@ extern "C" {
 
 static bool hqVerboseOutput;
 
-static char *fieldCommand = NULL;
-static int fieldCommandLen = 0;
+static StringBuffer fieldCommand(0, 16);
 static int fieldAnswerTo = 0;
 static char *fieldAnswerChunks;
 static int fieldAnswerChunksAt;
 static int fieldAnswerRetries;
 static NWK_DataReq_t fieldAnswerReq;
+
+StringBuffer fieldCommandOutput;
 
 // mesh callback for handling incoming commands
 static bool fieldCommands(NWK_DataInd_t *ind);
@@ -38,26 +42,22 @@ static void fieldAnswerChunk();
 static bool fieldAnnouncements(NWK_DataInd_t *ind);
 
 // simple wrapper for the incoming channel announcements up to HQ
-static void leadAnnouncementSend(uint16_t chan, uint16_t from, char *message);
+static void leadAnnouncementSend(uint16_t chan, uint16_t from, const ConstBuf& message);
 
 // necessities for tracking state when chunking up a large command into mesh requests
 static int leadCommandTo = 0;
-static char *leadCommandChunks;
+StringBuffer leadCommandChunks;
 static int leadCommandChunksAt;
 static int leadCommandRetries;
 static NWK_DataReq_t leadCommandReq;
 static void leadCommandChunk(void);
 static int leadAnswerID = 0;
 
-static bool leadAnswers(NWK_DataInd_t *ind);
-static void leadSignal(char *json);
-static void leadIncoming(char *packet, unsigned short *index);
-
 // this is called on the main loop to try to (re)connect to the HQ
 static void leadHQHandle(void);
 
 // process a packet from HQ
-static void leadIncoming(char *packet, unsigned short *index);
+static void leadIncoming(const char *packet, size_t len, unsigned short *index);
 
 // mesh callback when sending command chunks
 static void leadCommandChunkConfirm(NWK_DataReq_t *req);
@@ -66,7 +66,7 @@ static void leadCommandChunkConfirm(NWK_DataReq_t *req);
 static void leadCommandChunk();
 
 // wrapper to send a chunk of JSON to the HQ
-static void leadSignal(char *json);
+static void leadSignal(const String& json);
 
 // called whenever another scout sends an answer back to us
 static bool leadAnswers(NWK_DataInd_t *ind);
@@ -94,7 +94,6 @@ void PinoccioScoutHandler::setup() {
   }
 
   Scout.meshListen(4, fieldAnnouncements);
-  setOutputHandler(&bitlashFilter);
 }
 
 void PinoccioScoutHandler::loop() {
@@ -108,9 +107,7 @@ void PinoccioScoutHandler::setVerbose(bool flag) {
 }
 
 static bool fieldCommands(NWK_DataInd_t *ind) {
-  int total, ret;
-//  RgbLed.blinkGreen(200);
-
+  int ret;
   if (hqVerboseOutput) {
     sp(F("Received command"));
     sp(F("lqi: "));
@@ -127,19 +124,12 @@ static bool fieldCommands(NWK_DataInd_t *ind) {
     return false;
   }
 
-  // commands may be larger than one packet, copy and buffer up
-  total = fieldCommandLen + ind->size;
-
-  fieldCommand = (char*)realloc(fieldCommand, total);
-  if (!fieldCommand) {
+  if (!fieldCommand.concat((const char*)ind->data, ind->size)) {
     return false; // TODO we need to restart or something, no memory
   }
 
-  memcpy(fieldCommand + fieldCommandLen, ind->data, ind->size);
-  fieldCommandLen = total;
-
   // when null terminated, do the message
-  if (fieldCommand[fieldCommandLen-1] != 0) {
+  if (fieldCommand[fieldCommand.length() - 1] != '\0') {
     if (hqVerboseOutput) {
       speol(F("waiting for more"));
     }
@@ -147,29 +137,27 @@ static bool fieldCommands(NWK_DataInd_t *ind) {
   }
 
   // run the command and chunk back the results
-  if (!prepareBitlashBuffer()) return false;
-  setOutputHandler(&bitlashBuffer);
+  setOutputHandler(&printToString<&fieldCommandOutput>);
 
   if (hqVerboseOutput) {
     sp(F("running command "));
     speol(fieldCommand);
   }
 
-  ret = (int)doCommand(fieldCommand);
+  // TODO: Once bitlash fixes const-correctness, this and similar casts
+  // should be removed.
+  ret = (int)doCommand(const_cast<char *>(fieldCommand.c_str()));
+  fieldCommand = (char*)NULL;
+
   if (hqVerboseOutput) {
     sp(F("got result "));
     speol(ret);
   }
 
-  setOutputHandler(&bitlashFilter);
-  fieldCommandLen = 0;
+  resetOutputHandler();
 
   // send data back in chunks
   fieldAnswerTo = ind->srcAddr;
-  // "Steal" the bitlashOutput buffer and set it to NULL to prevent
-  // double free
-  fieldAnswerChunks = Shell.bitlashOutput;
-  Shell.bitlashOutput = NULL;
   fieldAnswerChunksAt = 0;
   fieldAnswerRetries = 0;
   fieldAnswerChunk();
@@ -185,7 +173,7 @@ static void fieldAnswerChunkConfirm(NWK_DataReq_t *req) {
     if (hqVerboseOutput) {
       speol(F("success"));
     }
-    if (strlen(fieldAnswerChunks + fieldAnswerChunksAt) > 100) {
+    if (fieldCommandOutput.length() - fieldAnswerChunksAt > 100) {
       fieldAnswerChunksAt += 100;
       fieldAnswerChunk();
       return; // don't free yet
@@ -206,11 +194,12 @@ static void fieldAnswerChunkConfirm(NWK_DataReq_t *req) {
     }
   }
   fieldAnswerTo = 0;
-  free(fieldAnswerChunks);
+  // Free memory used by Stringbuffer
+  fieldCommandOutput = (char*)NULL;
 }
 
 static void fieldAnswerChunk() {
-  int len = strlen(fieldAnswerChunks+fieldAnswerChunksAt);
+  int len = fieldCommandOutput.length() - fieldAnswerChunksAt;
   if (len > 100) {
     len = 100;
   } else {
@@ -221,7 +210,7 @@ static void fieldAnswerChunk() {
   fieldAnswerReq.dstEndpoint = 3;
   fieldAnswerReq.srcEndpoint = 2;
   fieldAnswerReq.options = NWK_OPT_ENABLE_SECURITY;
-  fieldAnswerReq.data = (uint8_t*)(fieldAnswerChunks + fieldAnswerChunksAt);
+  fieldAnswerReq.data = (uint8_t*)fieldCommandOutput.c_str() + fieldAnswerChunksAt;
   fieldAnswerReq.size = len;
   fieldAnswerReq.confirm = fieldAnswerChunkConfirm;
   NWK_DataReq(&fieldAnswerReq);
@@ -243,12 +232,17 @@ static void announceConfirm(NWK_DataReq_t *req) {
   free(req);
 }
 
-void PinoccioScoutHandler::announce(uint16_t group, char *message) {
+void PinoccioScoutHandler::announce(uint16_t group, const String& message) {
   if (hqVerboseOutput) {
-    sp(F("announcing to "));
-    sp(group);
-    sp(F(" "));
-    speol(message);
+    // TODO: This writes to Serial directly, but if we use the bitlash
+    // sp functions while we're called from inside a command, this debug
+    // output is added to the  command output, which isn't quite what we
+    // want. There should be a better way to emit this kind of "log"
+    // message.
+    Serial.print(F("announcing to "));
+    Serial.print(group);
+    Serial.print(F(" "));
+    Serial.println(message);
   }
 
   // when lead scout, shortcut
@@ -260,7 +254,8 @@ void PinoccioScoutHandler::announce(uint16_t group, char *message) {
       return;
   }
 
-  char *data = strdup(message);
+  // TODO: Allocate the data and request pointers in a single malloc?
+  char *data = strdup(message.c_str());
   if (!data) {
     return;
   }
@@ -278,13 +273,13 @@ void PinoccioScoutHandler::announce(uint16_t group, char *message) {
   r->srcEndpoint = Scout.getAddress();
   r->options = NWK_OPT_MULTICAST|NWK_OPT_ENABLE_SECURITY;
   r->data = (uint8_t*)data;
-  r->size = strlen(data)+1;
+  r->size = message.length() + 1; // include NUL byte
   r->confirm = announceConfirm;
   NWK_DataReq(r);
 }
 
 static bool fieldAnnouncements(NWK_DataInd_t *ind) {
-  char callback[32], *data = (char*)ind->data;
+  char *data = (char*)ind->data;
   // be safe
   if (!ind->options & NWK_IND_OPT_MULTICAST) {
     return true;
@@ -292,13 +287,12 @@ static bool fieldAnnouncements(NWK_DataInd_t *ind) {
 
   if (hqVerboseOutput) {
     sp(F("multicast in "));
-    sp(ind->dstAddr);
-    speol();
+    speol(ind->dstAddr);
   }
   if (Scout.isLeadScout()) {
-    leadAnnouncementSend(ind->dstAddr, ind->srcAddr, data);
+    leadAnnouncementSend(ind->dstAddr, ind->srcAddr, ConstBuf(data, ind->size));
   }
-  if (ind->dstAddr == 0xBEEF || strlen(data) <3 || data[0] != '[') {
+  if (ind->dstAddr == 0xBEEF || strlen(data) < 3 || data[0] != '[') {
     return false;
   }
 
@@ -306,86 +300,91 @@ static bool fieldAnnouncements(NWK_DataInd_t *ind) {
   keyLoad((char*)ind->data, keys, millis());
 
   // run the Bitlash callback function, if defined
-  snprintf(callback, sizeof(callback), "event.group%d", ind->dstAddr);
-  if (findscript(callback)) {
-    char buf[128];
-    snprintf(buf, sizeof(buf), "event.group%d(%d", ind->dstAddr, ind->srcAddr);
+  StringBuffer callback(20);
+  callback.appendSprintf("event.group%d", ind->dstAddr);
+  if (findscript(const_cast<char*>(callback.c_str()))) {
+    StringBuffer buf(64, 16);
+    buf.appendSprintf("event.group%d(%d", ind->dstAddr, ind->srcAddr);
     for (int i=2; i<=keys[0]; i++) {
-      snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf), ",%d", keys[i]);
+      buf.appendSprintf(",%d", keys[i]);
     }
-    snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf), ")");
-    doCommand(buf);
+    buf += "}";
+    doCommand(const_cast<char*>(buf.c_str()));
   }
 
   return true;
 }
 
 // just store one converted report at a time
-char reportJson[256];
-char *report2json(char *in) {
-  char *keys, *vals, report[100];
+StringBuffer report2json(const ConstBuf& in) {
+  char *keys, *vals;
   unsigned short ir[16], ik[32], iv[32], i;
+  StringBuffer reportJson(100, 8);
 
   // copy cuz we edit it
-  memcpy(report, in, 100);
+  char *report = (char*)malloc(in.length());
+  memcpy(report, in, in.length());
 
   // parse this and humanize
   js0n((unsigned char*)report, strlen(report), ir, 16);
   if (!*ir) {
-    return NULL;
+    free(report);
   }
 
-  snprintf(reportJson, sizeof(reportJson), "{\"type\":\"%s\"", keyGet(atoi(j0g_safe(0, report, ir))));
+  // TODO: Proper JSON escaping in this function
+  reportJson.appendSprintf("{\"type\":\"%s\"", keyGet(atoi(j0g_safe(0, report, ir))));
+
   keys = report + ir[2];
   js0n((unsigned char*)keys, ir[3], ik, 32);
   if (!*ik) {
-    return NULL;
+    free(report);
+    reportJson = (char*)NULL;
+    return reportJson;
   }
   vals = report+ir[4];
 
   js0n((unsigned char*)vals, ir[5], iv, 32);
   if (!*iv) {
-    return NULL;
+    free(report);
+    reportJson = (char*)NULL;
+    return reportJson;
   }
 
   for (i=0; ik[i]; i+=2) {
-    snprintf(reportJson + strlen(reportJson), sizeof(reportJson) - strlen(reportJson), ",\"%s\":", keyGet(atoi(j0g_safe(i, keys, ik))));
+    reportJson.appendSprintf(",\"%s\":", keyGet(atoi(j0g_safe(i, keys, ik))));
+
     if (vals[iv[i]-1] == '"') {
       iv[i]--;
       iv[i+1]+=2;
     }
     *(vals+iv[i]+iv[i+1]) = 0;
-    snprintf(reportJson + strlen(reportJson), sizeof(reportJson) - strlen(reportJson), "%s", vals + iv[i]);
+    reportJson.appendSprintf("%s", vals + iv[i]);
   }
 
-  snprintf(reportJson + strlen(reportJson), sizeof(reportJson) - strlen(reportJson), "}");
+  reportJson += "}";
+  free(report);
   return reportJson;
 }
 
 
-static void leadAnnouncementSend(uint16_t group, uint16_t from, char *message) {
-  char *report;
+static void leadAnnouncementSend(uint16_t group, uint16_t from, const ConstBuf& message) {
+  StringBuffer report(100, 8);
+
   // reports are expected to be json objects
   if (group == 0xBEEF) {
-    const char *json = report2json(message);
-    size_t len = strlen(json) + 128;
-    report = (char*)malloc(len);
-    if (!report) return;
-    snprintf(report, len, "{\"type\":\"report\",\"from\":%d,\"report\":%s}\n", from, json);
+    report.appendSprintf("{\"type\":\"report\",\"from\":%d,\"report\":%s}\n", from, (report2json(message)).c_str());
   } else if (group == 0) {
-    size_t len = strlen(message) + 128;
-    report = (char*)malloc(len);
-    if (!report) return;
-    snprintf(report, len, "{\"type\":\"announce\",\"from\":%d,\"announce\":%s}\n", from, message);
+    report.appendSprintf("{\"type\":\"announce\",\"from\":%d,\"announce\":", from);
+    report.concat(message, message.length());
+    report += "\n";
   } else {
     return;
   }
   leadSignal(report);
-  free(report);
 }
 
 // [3,[0,1,2],[v,v,v]]
-char *PinoccioScoutHandler::report(char *report) {
+StringBuffer PinoccioScoutHandler::report(const String &report) {
   Scout.handler.announce(0xBEEF, report);
   return report2json(report);
 }
@@ -394,12 +393,13 @@ char *PinoccioScoutHandler::report(char *report) {
 // lead scout stuff
 
 void leadHQConnect() {
-  char auth[256], token[33];
 
   if (Scout.wifi.client.connected()) {
+    char token[33];
+    StringBuffer auth(64);
     Pinoccio.getHQToken(token);
     token[32] = 0;
-    snprintf(auth, sizeof(auth), "{\"type\":\"token\",\"token\":\"%s\"}\n", token);
+    auth.appendSprintf("{\"type\":\"token\",\"token\":\"%s\"}\n", token);
     leadSignal(auth);
   } else {
     if (hqVerboseOutput) {
@@ -408,12 +408,10 @@ void leadHQConnect() {
   }
 }
 
-// this is called on the main loop to try to (re)connect to the HQ
+// this is called on the main loop to process incoming data from HQ
+static StringBuffer hqIncoming;
 void leadHQHandle(void) {
-  static char *buffer = NULL;
-  uint8_t block[128];
-  char *nl;
-  int rsize, len;
+  int rsize;
   unsigned short index[32]; // <10 keypairs in the incoming json
 
   // only continue if new data to read
@@ -421,71 +419,51 @@ void leadHQHandle(void) {
     return;
   }
 
-  // check to initialize our read buffer
-  if (!buffer) {
-    buffer = (char*)malloc(1);
-    if (!buffer) return;
-    *buffer = 0;
-  }
-
-  // get all waiting data and look for packets
-  while (rsize = Scout.wifi.client.read(block, sizeof(block))) {
-    len = strlen(buffer);
-
-    // process chunk of incoming data
-    buffer = (char*)realloc(buffer, len + rsize + 1);
-    if (!buffer) {
-      return; // TODO, realloc error, need to restart?
-    }
-    memcpy(buffer + len, block, rsize);
-    buffer[len + rsize] = 0; // null terminate
-
-    // look for a packet
-    if (hqVerboseOutput) {
-      sp(F("looking for packet in: "));
-      speol(buffer);
-    }
-    nl = strchr(buffer, '\n');
-    if (!nl) {
-      continue;
-    }
-
-    // null terminate just the packet and process it
-    *nl = 0;
-    j0g(buffer, index, 32);
-    if (*index) {
-      leadIncoming(buffer, index);
-    } else {
+  // Read a block of data and look for packets
+  while ((rsize = hqIncoming.readClient(Scout.wifi.client, 128))) {
+    int nl;
+    while((nl = hqIncoming.indexOf('\n')) >= 0) {
+     // look for a packet
       if (hqVerboseOutput) {
-        speol(F("JSON parse failed"));
+        sp(F("looking for packet in: "));
+        speol(hqIncoming);
       }
-    }
 
-    // advance buffer and resize, minimum is just the buffer end null
-    nl++;
-    len = strlen(nl);
-    memmove(buffer, nl, len+1);
-    buffer = (char*)realloc(buffer, len+1); // shrink
+      // Parse JSON up to the first newline
+      if (!js0n((const unsigned char*)hqIncoming.c_str(), nl, index, 32)) {
+        leadIncoming(hqIncoming.c_str(), nl, index);
+      } else {
+        if (hqVerboseOutput) {
+          speol(F("JSON parse failed"));
+        }
+      }
+
+      // Remove up to and including the newline
+      hqIncoming.remove(0, nl + 1);
+    }
   }
 }
 
 // when we can't process a command for some internal reason
 void leadCommandError(int from, int id, const char *reason) {
-  size_t len = strlen(reason) + 128;
-  char *err = (char*)malloc(len);
-  if (!err) return;
-  snprintf(err, len, "{\"type\":\"reply\",\"from\":%d,\"id\":%d,\"err\":true,\"reply\":\"%s\"}\n", from, id, reason);
+  StringBuffer err(128);
+  err.appendSprintf("{\"type\":\"reply\",\"from\":%d,\"id\":%d,\"err\":true,\"reply\":\"%s\"}\n", from, id, reason);
   leadSignal(err);
-  free(err);
 }
 
+StringBuffer leadCommandOutput;
+
 // process a packet from HQ
-void leadIncoming(char *packet, unsigned short *index) {
-  char *type, *command;
+void leadIncoming(const char *packet, size_t len, unsigned short *index) {
+  char *type, *command, *buffer;
+
+  buffer = (char*)malloc(len);
+  memcpy(buffer, packet, len);
+
   uint16_t to;
   unsigned long id;
 
-  type = j0g_str("type", packet, index);
+  type = j0g_str("type", buffer, index);
   if (hqVerboseOutput) {
     speol(type);
   }
@@ -495,10 +473,10 @@ void leadIncoming(char *packet, unsigned short *index) {
   }
 
   if (strcmp(type, "command") == 0) {
-    to = atoi(j0g_str("to", packet, index));
-    id = strtoul(j0g_str("id", packet, index), NULL, 10);
-    command = j0g_str("command", packet, index);
-    if (strlen(j0g_str("to", packet, index)) == 0 || !id || !command) {
+    to = atoi(j0g_str("to", buffer, index));
+    id = strtoul(j0g_str("id", buffer, index), NULL, 10);
+    command = j0g_str("command", buffer, index);
+    if (strlen(j0g_str("to", buffer, index)) == 0 || !id || !command) {
       if (hqVerboseOutput) {
         speol(F("invalid command, requires to, id, command"));
         sp(F("to: "));
@@ -508,40 +486,44 @@ void leadIncoming(char *packet, unsigned short *index) {
         sp(F("command: "));
         speol(command);
       }
+      free(buffer);
       return;
     }
 
     // handle internal ones first
     if (to == Scout.getAddress()) {
-      if (!prepareBitlashBuffer()) return;
-      setOutputHandler(&bitlashBuffer);
+      setOutputHandler(&printToString<&leadCommandOutput>);
       doCommand(command);
-      setOutputHandler(&bitlashFilter);
+      resetOutputHandler();
 
-      size_t len = strlen(Shell.bitlashOutput) + 255;
-      char *report = (char*)malloc(len);
-      if (!report) return;
-      snprintf(report, len, "{\"type\":\"reply\",\"from\":%d,\"id\":%lu,\"end\":true,\"reply\":\"%s\"}\n", to, id, Shell.bitlashOutput);
+      StringBuffer report;
+      report.appendSprintf("{\"type\":\"reply\",\"from\":%d,\"id\":%lu,\"end\":true,\"reply\":", to, id);
+      report.appendJsonString(leadCommandOutput, true);
+      report += "}\n";
       leadSignal(report);
-      free(report);
+      leadCommandOutput = (char*)NULL;
 
+      free(buffer);
       return;
     }
 
     // we can only send one command at a time
     if (leadCommandTo) {
       // TODO we could stop reading the HQ socket in this mode and then never get a busy?
+      free(buffer);
       return leadCommandError(to,id,"busy");
     }
 
     // send over mesh to recipient and cache id for any replies
     leadAnswerID = id;
     leadCommandTo = to;
-    leadCommandChunks = strdup(command);
+    leadCommandChunks = command;
     leadCommandChunksAt = 0;
     leadCommandRetries = 0;
     leadCommandChunk();
   }
+
+  free(buffer);
 }
 
 // mesh callback when sending command chunks
@@ -553,7 +535,7 @@ static void leadCommandChunkConfirm(NWK_DataReq_t *req) {
     if (hqVerboseOutput) {
       speol(F("success"));
     }
-    if (strlen(leadCommandChunks+leadCommandChunksAt) > 100) {
+    if (leadCommandChunks.length() - leadCommandChunksAt > 100) {
       leadCommandChunksAt += 100;
       leadCommandChunk();
       return; // don't free yet
@@ -575,12 +557,12 @@ static void leadCommandChunkConfirm(NWK_DataReq_t *req) {
     }
   }
   leadCommandTo = 0;
-  free(leadCommandChunks);
+  leadCommandChunks = (char*)NULL;
 }
 
 // called to send the first/next chunk of a command to another scout
 static void leadCommandChunk() {
-  int len = strlen(leadCommandChunks + leadCommandChunksAt);
+  int len = leadCommandChunks.length() - leadCommandChunksAt;
   if (len > 100) {
     len = 100;
   } else {
@@ -591,7 +573,7 @@ static void leadCommandChunk() {
   leadCommandReq.dstEndpoint = 2;
   leadCommandReq.srcEndpoint = 3;
   leadCommandReq.options = NWK_OPT_ENABLE_SECURITY;
-  leadCommandReq.data = (uint8_t*)(leadCommandChunks+leadCommandChunksAt);
+  leadCommandReq.data = (uint8_t*)leadCommandChunks.c_str() + leadCommandChunksAt;
   leadCommandReq.size = len;
   leadCommandReq.confirm = leadCommandChunkConfirm;
   NWK_DataReq(&leadCommandReq);
@@ -606,7 +588,7 @@ static void leadCommandChunk() {
 }
 
 // wrapper to send a chunk of JSON to the HQ
-void leadSignal(char *json) {
+void leadSignal(const String &json) {
   if (!Scout.wifi.client.connected()) {
     if (hqVerboseOutput) {
       speol(F("HQ offline, can't signal"));
@@ -615,19 +597,18 @@ void leadSignal(char *json) {
     return;
   }
   if (hqVerboseOutput) {
-    speol(F("HQ signalling"));
+    speol(F("Signalling HQ: "));
     speol(json);
   }
 
-  Scout.wifi.client.write(json);
+  Scout.wifi.client.print(json);
   Scout.wifi.client.flush();
 }
 
 // called whenever another scout sends an answer back to us
 bool leadAnswers(NWK_DataInd_t *ind) {
   bool end = false;
-  int at;
-  char sig[256];
+  StringBuffer buf(256);
 
   if (ind->options & NWK_IND_OPT_MULTICAST) {
     if (hqVerboseOutput) {
@@ -637,17 +618,18 @@ bool leadAnswers(NWK_DataInd_t *ind) {
   }
 
   if (hqVerboseOutput) {
-    speol(F("Received answer"));
+    sp(F("Received answer from Scout "));
+    sp(ind->srcAddr);
+    speol(F(":"));
   }
   if (ind->data[ind->size-1] == 0) {
     end = true;
     ind->size--;
   }
-  snprintf(sig, sizeof(sig),"{\"type\":\"reply\",\"id\":%d,\"from\":%d,\"reply\":\"", leadAnswerID, ind->srcAddr);
-  at = strlen(sig);
-  memcpy(sig+at, ind->data, ind->size);
-  snprintf(sig+at+ind->size, sizeof(sig) - at - ind->size, "\",\"end\":%s}\n",end ? "true" : "false");
-  leadSignal(sig);
+  buf.appendSprintf("{\"type\":\"reply\",\"id\":%d,\"from\":%d,\"reply\":", leadAnswerID, ind->srcAddr);
+  buf.appendJsonString(ind->data, ind->size, true);
+  buf.appendSprintf(",\"end\":%s}\n",end ? "true" : "false");
+  leadSignal(buf);
 
   return true;
 }
