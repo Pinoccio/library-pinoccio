@@ -308,7 +308,7 @@ static bool fieldAnnouncements(NWK_DataInd_t *ind) {
     for (int i=2; i<=keys[0]; i++) {
       buf.appendSprintf(",%d", keys[i]);
     }
-    buf += "}";
+    buf += ")";
     doCommand(const_cast<char*>(buf.c_str()));
   }
 
