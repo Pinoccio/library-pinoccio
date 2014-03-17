@@ -46,7 +46,6 @@ bool StringBuffer::blockReserve(size_t size) {
 
   // Round up to a full block size
   size = (size + this->block_size_mask) & ~this->block_size_mask;
-  Serial.println(size);
   return reserve(size);
 }
 
