@@ -115,7 +115,7 @@ size_t StringBuffer::appendJsonString(const char *in, size_t len, bool add_quote
   if (add_quotes)
     needed += 2;
 
-  if (!blockReserve(needed));
+  if (!blockReserve(needed))
     return 0;
 
   char *out = this->buffer + this->len;
