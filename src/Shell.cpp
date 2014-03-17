@@ -2159,35 +2159,3 @@ void bitlashFilter(byte b) {
   Serial.write(b);
   return;
 }
-
-void bitlashBuffer(byte b) {
-  int len;
-
-  Serial.write(b);
-  if (b == '\r') {
-    return;
-  }
-
-  len = strlen(Shell.bitlashOutput);
-  Shell.bitlashOutput = (char*)realloc(Shell.bitlashOutput, len + 3); // up to 2 bytes w/ escaping, and the null term
-  if (!Shell.bitlashOutput) return;
-
-  // escape newlines, quotes, and slashes
-  if (b == '\n') {
-    Shell.bitlashOutput[len++] = '\\';
-    b = 'n';
-  }
-
-  if (b == '"') {
-    Shell.bitlashOutput[len++] = '\\';
-    b = '"';
-  }
-
-  if (b == '\\') {
-    Shell.bitlashOutput[len++] = '\\';
-    b = '\\';
-  }
-  Shell.bitlashOutput[len] = b;
-  Shell.bitlashOutput[len+1] = 0;
-}
-
