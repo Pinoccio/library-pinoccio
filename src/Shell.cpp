@@ -881,7 +881,7 @@ StringBuffer arg2array(int ver) {
   for (i=2; i<=args; i++) {
     int key = (isstringarg(i)) ? keyMap((char*)getstringarg(i), 0) : getarg(i);
     buf.appendJsonString(keyGet(key), true);
-    buf += ",";
+    if(i+1 <= args) buf += ",";
   }
   buf += "]";
   return buf;

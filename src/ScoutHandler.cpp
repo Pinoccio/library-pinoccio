@@ -376,7 +376,7 @@ static void leadAnnouncementSend(uint16_t group, uint16_t from, const ConstBuf& 
   } else if (group == 0) {
     report.appendSprintf("{\"type\":\"announce\",\"from\":%d,\"announce\":", from);
     report.concat(message, message.length());
-    report += "\n";
+    report += "}\n";
   } else {
     return;
   }
