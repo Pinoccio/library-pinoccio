@@ -14,7 +14,7 @@
 
 static void print_line(const uint8_t *buf, uint16_t len, void *data) {
   while (len--)
-    sp(*buf++);
+    spb(*buf++);
   speol();
 }
 
