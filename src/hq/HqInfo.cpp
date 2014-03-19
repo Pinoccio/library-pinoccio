@@ -3,7 +3,7 @@
 #define USE_TLS
 
 
-const char HqHandler::host[] = "api.pinocc.io";
+const char HqHandler::host[] = "pool.base.pinocc.io"
 #ifndef USE_TLS
 // 22757 for TLS, 22756 for plain
 const uint16_t HqHandler::port = 22756;
