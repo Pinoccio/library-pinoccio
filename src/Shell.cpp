@@ -97,6 +97,7 @@ static numvar boot(void);
 static numvar otaBoot(void);
 
 static numvar hqVerbose(void);
+static numvar hqPrint(void);
 
 static numvar startStateChangeEvents(void);
 static numvar stopStateChangeEvents(void);
@@ -254,6 +255,7 @@ void PinoccioShell::setup() {
   addBitlashFunction("hq.settoken", (bitlash_function) setHQToken);
   addBitlashFunction("hq.gettoken", (bitlash_function) getHQToken);
   addBitlashFunction("hq.verbose", (bitlash_function) hqVerbose);
+  addBitlashFunction("hq.print", (bitlash_function) hqPrint);
 
   addBitlashFunction("events.start", (bitlash_function) startStateChangeEvents);
   addBitlashFunction("events.stop", (bitlash_function) stopStateChangeEvents);
@@ -878,6 +880,7 @@ static numvar meshPingGroup(void) {
   return 1;
 }
 
+// ver = 0 means all args, ver > 1 means ignore first arg
 StringBuffer arg2array(int ver) {
   StringBuffer buf(100);
   int i;
@@ -886,7 +889,7 @@ StringBuffer arg2array(int ver) {
     args = 8;
   }
   buf.appendSprintf("[%d,", ver);
-  for (i=2; i<=args; i++) {
+  for (i=ver?2:1; i<=args; i++) {
     int key = (isstringarg(i)) ? keyMap((char*)getstringarg(i), 0) : getarg(i);
     buf.appendJsonString(keyGet(key), true);
     if(i+1 <= args) buf += ",";
@@ -1680,6 +1683,14 @@ static numvar otaBoot(void) {
 static numvar hqVerbose(void) {
   Scout.handler.setVerbose(getarg(1));
   return 1;
+}
+
+static numvar hqPrint(void) {
+  if (!getarg(0)) {
+    return false;
+  }
+  Scout.handler.announce(0, arg2array(0));
+  return true;
 }
 
 
