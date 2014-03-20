@@ -905,7 +905,7 @@ static numvar meshAnnounce(void) {
 }
 
 static numvar meshSignal(void) {
-  return lastMeshRssi;
+  return lastMeshRssi * -1;
 }
 
 static numvar meshLoss(void) {
