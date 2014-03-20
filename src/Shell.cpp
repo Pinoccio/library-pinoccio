@@ -960,8 +960,7 @@ static numvar meshReport(void) {
 }
 
 static numvar meshRouting(void) {
-  sp(F(" - Routing: "));
-  sp(F("|    Fixed    |  Multicast  |    Score    |    DstAdd   | NextHopAddr |    Rank     |     LQI    |"));
+  sp(F("|    Fixed    |  Multicast  |    Score    |    DstAdd   | NextHopAddr |    Rank     |     LQI     |"));
   speol();
   NWK_RouteTableEntry_t *table = NWK_RouteTable();
   for (int i=0; i < NWK_ROUTE_TABLE_SIZE; i++) {
@@ -974,15 +973,15 @@ static numvar meshRouting(void) {
     sp(table[i].multicast);
     sp(F("      |      "));
     sp(table[i].score);
-    sp(F("      |     "));
+    sp(F("      |      "));
     sp(table[i].dstAddr);
-    sp(F("     |     "));
+    sp(F("      |      "));
     sp(table[i].nextHopAddr);
-    sp(F("     |     "));
+    sp(F("      |     "));
     sp(table[i].rank);
     sp(F("     |     "));
     sp(table[i].lqi);
-    sp(F("    |"));
+    sp(F("     |"));
     speol();
   }
   return 1;
