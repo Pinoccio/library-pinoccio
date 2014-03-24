@@ -1717,13 +1717,10 @@ static numvar setEventVerbose(void) {
 
 static StringBuffer wifiReportHQ(void) {
   StringBuffer report(100);
-  // TODO real wifi status/version
-  report.appendSprintf("[%d,[%d,%d,%d],[%d,%s,%s]]",
+  report.appendSprintf("[%d,[%d,%d],[%s,%s]]",
           keyMap("wifi", 0),
-          keyMap("version", 0),
           keyMap("connected", 0),
           keyMap("hq", 0),
-          0,
           Scout.wifi.isAPConnected() ? "true" : "false",
           Scout.wifi.isHQConnected() ? "true" : "false");
   return Scout.handler.report(report);
