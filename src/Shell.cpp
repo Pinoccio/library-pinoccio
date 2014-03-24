@@ -1735,7 +1735,6 @@ static numvar wifiStatus(void) {
   if (getarg(0) > 0 && getarg(1) == 1) {
     Scout.wifi.printProfiles(Serial);
   } else {
-    sp(F("Wi-Fi Versions: "));
     Scout.wifi.printFirmwareVersions(Serial);
     Scout.wifi.printCurrentNetworkStatus(Serial);
   }
