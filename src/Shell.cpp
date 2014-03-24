@@ -244,8 +244,6 @@ void PinoccioShell::setup() {
 
   addBitlashFunction("scout.report", (bitlash_function) scoutReport);
   addBitlashFunction("scout.isleadscout", (bitlash_function) isScoutLeadScout);
-  addBitlashFunction("scout.sethqtoken", (bitlash_function) setHQToken);
-  addBitlashFunction("scout.gethqtoken", (bitlash_function) getHQToken);
   addBitlashFunction("scout.delay", (bitlash_function) scoutDelay);
   addBitlashFunction("scout.free", (bitlash_function) scoutFree);
   addBitlashFunction("scout.daisy", (bitlash_function) daisyWipe);
