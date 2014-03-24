@@ -27,9 +27,7 @@ void WiFiBackpack::onAssociate(void *data) {
 
   // Do a timesync
   IPAddress ip = wifi.gs.dnsLookup(NTP_SERVER);
-  // TODO: Until https://github.com/arduino/Arduino/pull/1798 is merged,
-  // we have to remove the constness here.
-  if (ip == const_cast<IPAddress&>(INADDR_NONE) ||
+  if (ip == INADDR_NONE ||
       !wifi.gs.timeSync(ip, NTP_INTERVAL)) {
     Serial.println("Time sync failed");
   }
