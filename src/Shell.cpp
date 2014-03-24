@@ -210,6 +210,7 @@ void PinoccioShell::setup() {
   addBitlashFunction("led.orange", (bitlash_function) ledOrange);
   addBitlashFunction("led.white", (bitlash_function) ledWhite);
   addBitlashFunction("led.torch", (bitlash_function) ledTorch);
+  addBitlashFunction("led.on", (bitlash_function) ledTorch); // alias
   addBitlashFunction("led.blink", (bitlash_function) ledBlink);
   addBitlashFunction("led.sethex", (bitlash_function) ledSetHex);
   addBitlashFunction("led.gethex", (bitlash_function) ledGetHex);
