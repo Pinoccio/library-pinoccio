@@ -44,7 +44,7 @@ class WiFiBackpack : public Backpack {
     bool goToSleep();
     bool wakeUp();
 
-    GSClient client;
+    GSTcpClient client;
     
     uint16_t apConnCount;
     uint16_t hqConnCount;
