@@ -1750,7 +1750,8 @@ static numvar wifiList(void) {
 }
 
 static numvar wifiConfig(void) {
-  if (!Scout.wifi.wifiConfig((const char *)getstringarg(1), (const char *)getstringarg(2))) {
+  int securityType = (getarg(0) == 3) ? getarg(3) : 0;
+  if (!Scout.wifi.wifiConfig((const char *)getstringarg(1), (const char *)getstringarg(2)), securityType) {
     speol(F("Error: saving Scout.wifi.configuration data failed"));
   }
   return 1;
