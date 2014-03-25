@@ -334,7 +334,7 @@ uint16_t PinoccioScout::pinRead(uint8_t pin) {
     return digitalRead(pin);
   } else if (Scout.isAnalogPin(pin)) {
     if (Scout.getPinMode(pin) == INPUT) {
-      return analogRead(pin);
+      return analogRead(pin-A0);
     } else {
       return digitalRead(pin);
     }
