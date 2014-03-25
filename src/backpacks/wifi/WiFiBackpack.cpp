@@ -96,11 +96,17 @@ void WiFiBackpack::loop() {
   client = gs.getNcmCid();
 }
 
-bool WiFiBackpack::wifiConfig(const char *ssid, const char *passphrase) {
+bool WiFiBackpack::wifiConfig(const char *ssid, const char *passphrase, GSModule::GSSecurity security) {
   bool ok = true;
-  ok = ok && gs.setSecurity(GSModule::GS_SECURITY_AUTO);
-  if (passphrase && *passphrase)
-    ok = ok && gs.setWpaPassphrase(passphrase);
+  ok = ok && gs.setSecurity(security);
+  if (passphrase && *passphrase) {
+    switch(security) {
+      case GSModule::GS_SECURITY_WEP:
+        ok = ok && gs.setWepPassphrase(passphrase);
+      default:
+        ok = ok && gs.setWpaPassphrase(passphrase);
+    }
+  }
   ok = ok && gs.setAutoAssociate(ssid);
   // Remember these settings through a reboot
   ok = ok && gs.saveProfile(0);
