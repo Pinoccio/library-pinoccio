@@ -78,8 +78,6 @@ static numvar pinWrite(void);
 static numvar pinSave(void);
 static numvar digitalPinReport(void);
 static numvar analogPinReport(void);
-static numvar enableExternalAref(void);
-static numvar disableExternalAref(void);
 
 static numvar backpackReport(void);
 static numvar backpackList(void);
