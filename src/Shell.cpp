@@ -78,6 +78,8 @@ static numvar pinWrite(void);
 static numvar pinSave(void);
 static numvar digitalPinReport(void);
 static numvar analogPinReport(void);
+static numvar enableExternalAref(void);
+static numvar disableExternalAref(void);
 
 static numvar backpackReport(void);
 static numvar backpackList(void);
@@ -1750,8 +1752,7 @@ static numvar wifiList(void) {
 }
 
 static numvar wifiConfig(void) {
-  int securityType = (getarg(0) == 3) ? getarg(3) : 0;
-  if (!Scout.wifi.wifiConfig((const char *)getstringarg(1), (const char *)getstringarg(2)), securityType) {
+  if (!Scout.wifi.wifiConfig((const char *)getstringarg(1), (const char *)getstringarg(2))) {
     speol(F("Error: saving Scout.wifi.configuration data failed"));
   }
   return 1;

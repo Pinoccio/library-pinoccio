@@ -16,7 +16,7 @@ class WiFiBackpack : public Backpack {
     void loop();
 
     // Does not take effect until autoConnectHq() is called
-    bool wifiConfig(const char *ssid, const char *passphrase, GSModule::GSSecurity security=GSModule::GS_SECURITY_AUTO);
+    bool wifiConfig(const char *ssid, const char *passphrase);
     // Takes effect immediately
     bool wifiDhcp(const char *hostname);
     // Takes effect immediately
