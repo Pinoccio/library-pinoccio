@@ -384,13 +384,13 @@ static void scoutDigitalStateChangeTimerHandler(SYS_Timer_t *timer) {
 
       if (Scout.digitalPinState[i] != val) {
         if (Scout.eventVerboseOutput) {
-          sp(F("Running: digitalPinEventHandler("));
-          sp(pin);
-          sp(F(","));
-          sp(val);
-          sp(F(","));
-          sp(mode);
-          speol(F(")"));
+          Serial.print(F("Running: digitalPinEventHandler("));
+          Serial.print(pin);
+          Serial.print(F(","));
+          Serial.print(val);
+          Serial.print(F(","));
+          Serial.print(mode);
+          Serial.println(F(")"));
         }
         Scout.digitalPinState[i] = val;
         Scout.digitalPinMode[i] = mode;
@@ -418,13 +418,13 @@ static void scoutAnalogStateChangeTimerHandler(SYS_Timer_t *timer) {
 
       if (Scout.analogPinState[i] != val) {
         if (Scout.eventVerboseOutput) {
-          sp(F("Running: analogPinEventHandler("));
-          sp(i);
-          sp(F(","));
-          sp(val);
-          sp(F(","));
-          sp(mode);
-          speol(F(")"));
+          Serial.print(F("Running: analogPinEventHandler("));
+          Serial.print(i);
+          Serial.print(F(","));
+          Serial.print(val);
+          Serial.print(F(","));
+          Serial.print(mode);
+          Serial.println(F(")"));
         }
         Scout.analogPinState[i] = val;
         Scout.analogPinMode[i] = mode;
@@ -441,9 +441,9 @@ static void scoutPeripheralStateChangeTimerHandler(SYS_Timer_t *timer) {
     val = constrain(HAL_FuelGaugePercent(), 0, 100);
     if (Scout.batteryPercentage != val) {
       if (Scout.eventVerboseOutput) {
-        sp(F("Running: batteryPercentageEventHandler("));
-        sp(val);
-        speol(F(")"));
+        Serial.print(F("Running: batteryPercentageEventHandler("));
+        Serial.print(val);
+        Serial.println(F(")"));
       }
       Scout.batteryPercentage = val;
       Scout.batteryPercentageEventHandler(val);
@@ -454,9 +454,9 @@ static void scoutPeripheralStateChangeTimerHandler(SYS_Timer_t *timer) {
     val = HAL_FuelGaugeVoltage();
     if (Scout.batteryVoltage != val) {
       if (Scout.eventVerboseOutput) {
-        sp(F("Running: batteryVoltageEventHandler("));
-        sp(val);
-        speol(F(")"));
+        Serial.print(F("Running: batteryVoltageEventHandler("));
+        Serial.print(val);
+        Serial.println(F(")"));
       }
       Scout.batteryVoltage = val;
       Scout.batteryVoltageEventHandler(val);
@@ -467,9 +467,9 @@ static void scoutPeripheralStateChangeTimerHandler(SYS_Timer_t *timer) {
     val = (digitalRead(CHG_STATUS) == LOW);
     if (Scout.isBattCharging != val) {
       if (Scout.eventVerboseOutput) {
-        sp(F("Running: batteryChargingEventHandler("));
-        sp(val);
-        speol(F(")"));
+        Serial.print(F("Running: batteryChargingEventHandler("));
+        Serial.print(val);
+        Serial.println(F(")"));
       }
       Scout.isBattCharging = val;
       Scout.batteryChargingEventHandler(val);
@@ -480,9 +480,9 @@ static void scoutPeripheralStateChangeTimerHandler(SYS_Timer_t *timer) {
     val = (digitalRead(BATT_ALARM) == LOW);
     if (Scout.isBattAlarmTriggered != val) {
       if (Scout.eventVerboseOutput) {
-        sp(F("Running: batteryAlarmTriggeredEventHandler("));
-        sp(val);
-        speol(F(")"));
+        Serial.print(F("Running: batteryAlarmTriggeredEventHandler("));
+        Serial.print(val);
+        Serial.println(F(")"));
       }
       Scout.isBattAlarmTriggered = val;
       Scout.batteryAlarmTriggeredEventHandler(val);
@@ -493,9 +493,9 @@ static void scoutPeripheralStateChangeTimerHandler(SYS_Timer_t *timer) {
     val = Scout.getTemperature();
     if (Scout.temperature != val) {
       if (Scout.eventVerboseOutput) {
-        sp(F("Running: temperatureEventHandler("));
-        sp(val);
-        speol(F(")"));
+        Serial.print(F("Running: temperatureEventHandler("));
+        Serial.print(val);
+        Serial.println(F(")"));
       }
       Scout.temperature = val;
       Scout.temperatureEventHandler(val);
