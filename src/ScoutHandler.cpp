@@ -246,18 +246,6 @@ static void announceConfirm(NWK_DataReq_t *req) {
 }
 
 void PinoccioScoutHandler::announce(uint16_t group, const String& message) {
-  if (hqVerboseOutput) {
-    // TODO: This writes to Serial directly, but if we use the bitlash
-    // sp functions while we're called from inside a command, this debug
-    // output is added to the  command output, which isn't quite what we
-    // want. There should be a better way to emit this kind of "log"
-    // message.
-    Serial.print(F("announcing to "));
-    Serial.print(group);
-    Serial.print(F(" "));
-    Serial.println(message);
-  }
-
   // when lead scout, shortcut
   if (Scout.isLeadScout()) {
     leadAnnouncementSend(group, Scout.getAddress(), message);
@@ -265,6 +253,18 @@ void PinoccioScoutHandler::announce(uint16_t group, const String& message) {
     // scout
     if (group == 0xBEEF)
       return;
+  }
+
+  if (hqVerboseOutput) {
+    // TODO: This writes to Serial directly, but if we use the bitlash
+    // sp functions while we're called from inside a command, this debug
+    // output is added to the  command output, which isn't quite what we
+    // want. There should be a better way to emit this kind of "log"
+    // message.
+    Serial.print(F("mesh announcing to "));
+    Serial.print(group);
+    Serial.print(F(" "));
+    Serial.println(message);
   }
 
   // TODO: Allocate the data and request pointers in a single malloc?
