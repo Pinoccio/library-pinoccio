@@ -118,17 +118,17 @@ void PinoccioScoutHandler::setVerbose(bool flag) {
 static bool fieldCommands(NWK_DataInd_t *ind) {
   int ret;
   if (hqVerboseOutput) {
-    sp(F("Received command"));
-    sp(F("lqi: "));
-    sp(ind->lqi);
-    sp(F("  "));
-    sp(F("rssi: "));
-    speol(ind->rssi);
+    Serial.print(F("Received command"));
+    Serial.print(F("lqi: "));
+    Serial.print(ind->lqi);
+    Serial.print(F("  "));
+    Serial.print(F("rssi: "));
+    Serial.println(ind->rssi);
   }
 
   if (fieldAnswerTo) {
     if (hqVerboseOutput) {
-      speol(F("can't receive command while sending answer"));
+      Serial.println(F("can't receive command while sending answer"));
     }
     return false;
   }
@@ -140,14 +140,14 @@ static bool fieldCommands(NWK_DataInd_t *ind) {
   // when null terminated, do the message
   if (fieldCommand[fieldCommand.length() - 1] != '\0') {
     if (hqVerboseOutput) {
-      speol(F("waiting for more"));
+      Serial.println(F("waiting for more"));
     }
     return true;
   }
 
   if (hqVerboseOutput) {
-    sp(F("running command "));
-    speol(fieldCommand);
+    Serial.print(F("running command "));
+    Serial.println(fieldCommand);
   }
 
   // run the command and chunk back the results
@@ -161,8 +161,8 @@ static bool fieldCommands(NWK_DataInd_t *ind) {
   resetOutputHandler();
 
   if (hqVerboseOutput) {
-    sp(F("got result "));
-    speol(ret);
+    Serial.print(F("got result "));
+    Serial.println(ret);
   }
 
   // send data back in chunks
@@ -176,11 +176,11 @@ static bool fieldCommands(NWK_DataInd_t *ind) {
 
 static void fieldAnswerChunkConfirm(NWK_DataReq_t *req) {
   if (hqVerboseOutput) {
-    sp(F("  Message confirmation - "));
+    Serial.print(F("  Message confirmation - "));
   }
   if (req->status == NWK_SUCCESS_STATUS) {
     if (hqVerboseOutput) {
-      speol(F("success"));
+      Serial.println(F("success"));
     }
     if (fieldCommandOutput.length() - fieldAnswerChunksAt > 100) {
       fieldAnswerChunksAt += 100;
@@ -191,12 +191,12 @@ static void fieldAnswerChunkConfirm(NWK_DataReq_t *req) {
     fieldAnswerRetries++;
     if (fieldAnswerRetries > 3) {
       if (hqVerboseOutput) {
-        sp(F("error: "));
-        speol(req->status);
+        Serial.print(F("error: "));
+        Serial.println(req->status);
       }
     } else {
       if (hqVerboseOutput) {
-        speol(F("RETRY"));
+        Serial.println(F("RETRY"));
       }
       NWK_DataReq(req);
       return; // don't free yet
@@ -225,17 +225,17 @@ static void fieldAnswerChunk() {
   NWK_DataReq(&fieldAnswerReq);
 
   if (hqVerboseOutput) {
-    sp(fieldAnswerTo);
-    sp(F(" len "));
-    sp(len);
-    speol(F("->chunk"));
+    Serial.print(fieldAnswerTo);
+    Serial.print(F(" len "));
+    Serial.print(len);
+    Serial.println(F("->chunk"));
   }
 }
 
 static void announceConfirm(NWK_DataReq_t *req) {
   if (req->status != NWK_SUCCESS_STATUS && hqVerboseOutput) {
-    sp(F("Mesh announce failed: "));
-    speol(req->status);
+    Serial.print(F("Mesh announce failed: "));
+    Serial.println(req->status);
   }
   free(req->data);
   // slide queue over
@@ -308,8 +308,8 @@ static bool fieldAnnouncements(NWK_DataInd_t *ind) {
   }
 
   if (hqVerboseOutput) {
-    sp(F("multicast in "));
-    speol(ind->dstAddr);
+    Serial.print(F("multicast in "));
+    Serial.println(ind->dstAddr);
   }
   if (Scout.isLeadScout()) {
     leadAnnouncementSend(ind->dstAddr, ind->srcAddr, ConstBuf(data, ind->size));
@@ -425,7 +425,7 @@ void leadHQConnect() {
     leadSignal(auth);
   } else {
     if (hqVerboseOutput) {
-      speol(F("server unvailable"));
+      Serial.println(F("server unvailable"));
     }
   }
 }
@@ -447,8 +447,8 @@ void leadHQHandle(void) {
     while((nl = hqIncoming.indexOf('\n')) >= 0) {
      // look for a packet
       if (hqVerboseOutput) {
-        sp(F("looking for packet in: "));
-        speol(hqIncoming);
+        Serial.print(F("looking for packet in: "));
+        Serial.println(hqIncoming);
       }
 
       // Parse JSON up to the first newline
@@ -456,7 +456,7 @@ void leadHQHandle(void) {
         leadIncoming(hqIncoming.c_str(), nl, index);
       } else {
         if (hqVerboseOutput) {
-          speol(F("JSON parse failed"));
+          Serial.println(F("JSON parse failed"));
         }
       }
 
@@ -487,7 +487,7 @@ void leadIncoming(const char *packet, size_t len, unsigned short *index) {
 
   type = j0g_str("type", buffer, index);
   if (hqVerboseOutput) {
-    speol(type);
+    Serial.println(type);
   }
 
   if (strcmp(type, "online") == 0) {
@@ -500,13 +500,13 @@ void leadIncoming(const char *packet, size_t len, unsigned short *index) {
     command = j0g_str("command", buffer, index);
     if (strlen(j0g_str("to", buffer, index)) == 0 || !id || !command) {
       if (hqVerboseOutput) {
-        speol(F("invalid command, requires to, id, command"));
-        sp(F("to: "));
-        speol(to);
-        sp(F("id: "));
-        speol(id);
-        sp(F("command: "));
-        speol(command);
+        Serial.println(F("invalid command, requires to, id, command"));
+        Serial.print(F("to: "));
+        Serial.println(to);
+        Serial.print(F("id: "));
+        Serial.println(id);
+        Serial.print(F("command: "));
+        Serial.println(command);
       }
       free(buffer);
       return;
@@ -551,11 +551,11 @@ void leadIncoming(const char *packet, size_t len, unsigned short *index) {
 // mesh callback when sending command chunks
 static void leadCommandChunkConfirm(NWK_DataReq_t *req) {
   if (hqVerboseOutput) {
-    sp(F("  Message confirmation - "));
+    Serial.print(F("  Message confirmation - "));
   }
   if (req->status == NWK_SUCCESS_STATUS) {
     if (hqVerboseOutput) {
-      speol(F("success"));
+      Serial.println(F("success"));
     }
     if (leadCommandChunks.length() - leadCommandChunksAt > 100) {
       leadCommandChunksAt += 100;
@@ -566,13 +566,13 @@ static void leadCommandChunkConfirm(NWK_DataReq_t *req) {
     leadCommandRetries++;
     if (leadCommandRetries > 3) {
       if (hqVerboseOutput) {
-        sp(F("error: "));
-        speol(req->status);
+        Serial.print(F("error: "));
+        Serial.println(req->status);
       }
       leadCommandError(leadCommandTo, leadAnswerID, "no response");
     } else {
       if (hqVerboseOutput) {
-        speol(F("RETRY"));
+        Serial.println(F("RETRY"));
       }
       NWK_DataReq(req);
       return; // don't free yet
@@ -602,10 +602,10 @@ static void leadCommandChunk() {
   //RgbLed.blinkCyan(200);
 
   if (hqVerboseOutput) {
-    sp(leadCommandTo);
-    sp(F(" len "));
-    sp(len);
-    speol(F("->chunk"));
+    Serial.print(leadCommandTo);
+    Serial.print(F(" len "));
+    Serial.print(len);
+    Serial.println(F("->chunk"));
   }
 }
 
@@ -613,14 +613,14 @@ static void leadCommandChunk() {
 void leadSignal(const String &json) {
   if (!Scout.wifi.client.connected()) {
     if (hqVerboseOutput) {
-      speol(F("HQ offline, can't signal"));
-      speol(json);
+      Serial.println(F("HQ offline, can't signal"));
+      Serial.println(json);
     }
     return;
   }
   if (hqVerboseOutput) {
-    speol(F("Signalling HQ: "));
-    speol(json);
+    Serial.println(F("Signalling HQ: "));
+    Serial.println(json);
   }
 
   Scout.wifi.client.print(json);
@@ -634,15 +634,15 @@ bool leadAnswers(NWK_DataInd_t *ind) {
 
   if (ind->options & NWK_IND_OPT_MULTICAST) {
     if (hqVerboseOutput) {
-      speol(F("MULTICAST on wrong endpoint"));
+      Serial.println(F("MULTICAST on wrong endpoint"));
     }
     return true;
   }
 
   if (hqVerboseOutput) {
-    sp(F("Received answer from Scout "));
-    sp(ind->srcAddr);
-    speol(F(":"));
+    Serial.print(F("Received answer from Scout "));
+    Serial.print(ind->srcAddr);
+    Serial.println(F(":"));
   }
   if (ind->data[ind->size-1] == 0) {
     end = true;

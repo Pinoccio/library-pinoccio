@@ -237,13 +237,13 @@ short HalRgbLed::getBlueTorchValue(void) {
 void HalRgbLed::triggerEvent(void) {
   if (RgbLed.ledEventHandler != 0) {
     if (Scout.eventVerboseOutput) {
-      sp(F("Running: ledEventHandler("));
-      sp(redValue);
-      sp(F(","));
-      sp(greenValue);
-      sp(F(","));
-      sp(blueValue);
-      speol(F(")"));
+      Serial.print(F("Running: ledEventHandler("));
+      Serial.print(redValue);
+      Serial.print(F(","));
+      Serial.print(greenValue);
+      Serial.print(F(","));
+      Serial.print(blueValue);
+      Serial.println(F(")"));
     }
     RgbLed.ledEventHandler(redValue, greenValue, blueValue);
   }

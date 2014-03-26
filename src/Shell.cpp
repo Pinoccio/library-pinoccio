@@ -2085,9 +2085,9 @@ static void digitalPinEventHandler(uint8_t pin, int8_t value, int8_t mode) {
   }
 
   if (Scout.eventVerboseOutput) {
-    sp(F("Digital pin event handler took "));
-    sp(millis() - time);
-    speol(F("ms"));
+    Serial.print(F("Digital pin event handler took "));
+    Serial.print(millis() - time);
+    Serial.println(F("ms"));
   }
 }
 
@@ -2110,9 +2110,9 @@ static void analogPinEventHandler(uint8_t pin, int16_t value, int8_t mode) {
   }
 
   if (Scout.eventVerboseOutput) {
-    sp(F("Analog pin event handler took "));
-    sp(millis() - time);
-    speol(F("ms"));
+    Serial.print(F("Analog pin event handler took "));
+    Serial.print(millis() - time);
+    Serial.println(F("ms"));
   }
 }
 
