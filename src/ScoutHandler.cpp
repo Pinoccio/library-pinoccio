@@ -29,6 +29,13 @@ static NWK_DataReq_t fieldAnswerReq;
 
 StringBuffer fieldCommandOutput;
 
+// queue for mesh announcements
+#define announceQsize 10
+static char *announceQ[announceQsize];
+static uint16_t announceQG[announceQsize];
+static NWK_DataReq_t announceReq;
+void announceQSend(void);
+
 // mesh callback for handling incoming commands
 static bool fieldCommands(NWK_DataInd_t *ind);
 
@@ -94,6 +101,8 @@ void PinoccioScoutHandler::setup() {
   }
 
   Scout.meshListen(4, fieldAnnouncements);
+  
+  memset(announceQ,0,announceQsize*sizeof(char*));
 }
 
 void PinoccioScoutHandler::loop() {
@@ -136,25 +145,25 @@ static bool fieldCommands(NWK_DataInd_t *ind) {
     return true;
   }
 
-  // run the command and chunk back the results
-  setOutputHandler(&printToString<&fieldCommandOutput>);
-
   if (hqVerboseOutput) {
     Serial.print(F("running command "));
     Serial.println(fieldCommand);
   }
+
+  // run the command and chunk back the results
+  setOutputHandler(&printToString<&fieldCommandOutput>);
 
   // TODO: Once bitlash fixes const-correctness, this and similar casts
   // should be removed.
   ret = (int)doCommand(const_cast<char *>(fieldCommand.c_str()));
   fieldCommand = (char*)NULL;
 
+  resetOutputHandler();
+
   if (hqVerboseOutput) {
     Serial.print(F("got result "));
     Serial.println(ret);
   }
-
-  resetOutputHandler();
 
   // send data back in chunks
   fieldAnswerTo = ind->srcAddr;
@@ -229,22 +238,14 @@ static void announceConfirm(NWK_DataReq_t *req) {
     Serial.println(req->status);
   }
   free(req->data);
-  free(req);
+  // slide queue over
+  memmove(announceQ,announceQ+1,sizeof (char*)*(announceQsize-1));
+  memmove(announceQG,announceQG+1,sizeof (uint16_t)*(announceQsize-1));
+  announceQ[announceQsize-1] = 0;
+  announceQSend();
 }
 
 void PinoccioScoutHandler::announce(uint16_t group, const String& message) {
-  if (hqVerboseOutput) {
-    // TODO: This writes to Serial directly, but if we use the bitlash
-    // sp functions while we're called from inside a command, this debug
-    // output is added to the  command output, which isn't quite what we
-    // want. There should be a better way to emit this kind of "log"
-    // message.
-    Serial.print(F("announcing to "));
-    Serial.print(group);
-    Serial.print(F(" "));
-    Serial.println(message);
-  }
-
   // when lead scout, shortcut
   if (Scout.isLeadScout()) {
     leadAnnouncementSend(group, Scout.getAddress(), message);
@@ -254,28 +255,49 @@ void PinoccioScoutHandler::announce(uint16_t group, const String& message) {
       return;
   }
 
+  if (hqVerboseOutput) {
+    // TODO: This writes to Serial directly, but if we use the bitlash
+    // sp functions while we're called from inside a command, this debug
+    // output is added to the  command output, which isn't quite what we
+    // want. There should be a better way to emit this kind of "log"
+    // message.
+    Serial.print(F("mesh announcing to "));
+    Serial.print(group);
+    Serial.print(F(" "));
+    Serial.println(message);
+  }
+
   // TODO: Allocate the data and request pointers in a single malloc?
   char *data = strdup(message.c_str());
   if (!data) {
     return;
   }
 
-  struct NWK_DataReq_t *r = (struct NWK_DataReq_t*)malloc(sizeof(struct NWK_DataReq_t));
-  if (!r) {
-    free(data);
+  if(announceQ[0])
+  {
+    int i = 1;
+    while(i < announceQsize && announceQ[i]) i++;
+    if(i == announceQsize) return (void)free(data);
+    announceQ[i] = data;
+    announceQG[i] = group;
     return;
   }
+  announceQ[0] = data;
+  announceQG[0] = group;
+  announceQSend();
+}
 
-  Scout.meshJoinGroup(group); // must be joined to send
-  memset(r, 0, sizeof(struct NWK_DataReq_t));
-  r->dstAddr = group;
-  r->dstEndpoint = 4;
-  r->srcEndpoint = Scout.getAddress();
-  r->options = NWK_OPT_MULTICAST|NWK_OPT_ENABLE_SECURITY;
-  r->data = (uint8_t*)data;
-  r->size = message.length() + 1; // include NUL byte
-  r->confirm = announceConfirm;
-  NWK_DataReq(r);
+void announceQSend(void){
+  if(!announceQ[0]) return;
+  Scout.meshJoinGroup(announceQG[0]);
+  announceReq.dstAddr = announceQG[0];
+  announceReq.dstEndpoint = 4;
+  announceReq.srcEndpoint = Scout.getAddress();
+  announceReq.options = NWK_OPT_MULTICAST|NWK_OPT_ENABLE_SECURITY;
+  announceReq.data = (uint8_t*)announceQ[0];
+  announceReq.size = strlen(announceQ[0]) + 1; // include NUL byte
+  announceReq.confirm = announceConfirm;
+  NWK_DataReq(&announceReq);
 }
 
 static bool fieldAnnouncements(NWK_DataInd_t *ind) {
