@@ -100,8 +100,11 @@ bool WiFiBackpack::wifiConfig(const char *ssid, const char *passphrase) {
   bool ok = true;
   ok = ok && gs.setSecurity(GSModule::GS_SECURITY_AUTO);
   if (passphrase && *passphrase) {
+    // Setting WEP passphrase will return error if phrase isn't exactly 10 or 26 bytes
+    if (strlen(passphrase) == 26 || strlen(passphrase) == 10) {
+      ok = ok && gs.setWepPassphrase(passphrase);
+    }
     ok = ok && gs.setWpaPassphrase(passphrase);
-    ok = ok && gs.setWepPassphrase(passphrase);
   }
   ok = ok && gs.setAutoAssociate(ssid);
   // Remember these settings through a reboot
