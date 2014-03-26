@@ -29,6 +29,13 @@ static NWK_DataReq_t fieldAnswerReq;
 
 StringBuffer fieldCommandOutput;
 
+// queue for mesh announcements
+#define announceQsize 10
+static char *announceQ[announceQsize];
+static uint16_t announceQG[announceQsize];
+static NWK_DataReq_t announceReq;
+void announceQSend(void);
+
 // mesh callback for handling incoming commands
 static bool fieldCommands(NWK_DataInd_t *ind);
 
@@ -94,6 +101,8 @@ void PinoccioScoutHandler::setup() {
   }
 
   Scout.meshListen(4, fieldAnnouncements);
+  
+  memset(announceQ,0,announceQsize*sizeof(char*));
 }
 
 void PinoccioScoutHandler::loop() {
@@ -136,25 +145,25 @@ static bool fieldCommands(NWK_DataInd_t *ind) {
     return true;
   }
 
-  // run the command and chunk back the results
-  setOutputHandler(&printToString<&fieldCommandOutput>);
-
   if (hqVerboseOutput) {
     sp(F("running command "));
     speol(fieldCommand);
   }
+
+  // run the command and chunk back the results
+  setOutputHandler(&printToString<&fieldCommandOutput>);
 
   // TODO: Once bitlash fixes const-correctness, this and similar casts
   // should be removed.
   ret = (int)doCommand(const_cast<char *>(fieldCommand.c_str()));
   fieldCommand = (char*)NULL;
 
+  resetOutputHandler();
+
   if (hqVerboseOutput) {
     sp(F("got result "));
     speol(ret);
   }
-
-  resetOutputHandler();
 
   // send data back in chunks
   fieldAnswerTo = ind->srcAddr;
@@ -229,7 +238,11 @@ static void announceConfirm(NWK_DataReq_t *req) {
     speol(req->status);
   }
   free(req->data);
-  free(req);
+  // slide queue over
+  memmove(announceQ,announceQ+1,sizeof (char*)*(announceQsize-1));
+  memmove(announceQG,announceQG+1,sizeof (uint16_t)*(announceQsize-1));
+  announceQ[announceQsize-1] = 0;
+  announceQSend();
 }
 
 void PinoccioScoutHandler::announce(uint16_t group, const String& message) {
@@ -260,22 +273,31 @@ void PinoccioScoutHandler::announce(uint16_t group, const String& message) {
     return;
   }
 
-  struct NWK_DataReq_t *r = (struct NWK_DataReq_t*)malloc(sizeof(struct NWK_DataReq_t));
-  if (!r) {
-    free(data);
+  if(announceQ[0])
+  {
+    int i = 1;
+    while(i < announceQsize && announceQ[i]) i++;
+    if(i == announceQsize) return (void)free(data);
+    announceQ[i] = data;
+    announceQG[i] = group;
     return;
   }
+  announceQ[0] = data;
+  announceQG[0] = group;
+  announceQSend();
+}
 
-  Scout.meshJoinGroup(group); // must be joined to send
-  memset(r, 0, sizeof(struct NWK_DataReq_t));
-  r->dstAddr = group;
-  r->dstEndpoint = 4;
-  r->srcEndpoint = Scout.getAddress();
-  r->options = NWK_OPT_MULTICAST|NWK_OPT_ENABLE_SECURITY;
-  r->data = (uint8_t*)data;
-  r->size = message.length() + 1; // include NUL byte
-  r->confirm = announceConfirm;
-  NWK_DataReq(r);
+void announceQSend(void){
+  if(!announceQ[0]) return;
+  Scout.meshJoinGroup(announceQG[0]);
+  announceReq.dstAddr = announceQG[0];
+  announceReq.dstEndpoint = 4;
+  announceReq.srcEndpoint = Scout.getAddress();
+  announceReq.options = NWK_OPT_MULTICAST|NWK_OPT_ENABLE_SECURITY;
+  announceReq.data = (uint8_t*)announceQ[0];
+  announceReq.size = strlen(announceQ[0]) + 1; // include NUL byte
+  announceReq.confirm = announceConfirm;
+  NWK_DataReq(&announceReq);
 }
 
 static bool fieldAnnouncements(NWK_DataInd_t *ind) {
