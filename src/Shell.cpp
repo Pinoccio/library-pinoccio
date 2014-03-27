@@ -314,21 +314,13 @@ static int lastMeshLqi = 0;
 // report all transient settings when asked
 void PinoccioShell::allReportHQ() {
   scoutReportHQ();
-  Scout.delay(50);
   uptimeReportHQ();
-  Scout.delay(50);
   powerReportHQ();
-  Scout.delay(50);
   backpackReportHQ();
-  Scout.delay(50);
   digitalPinReportHQ();
-  Scout.delay(50);
   analogPinReportHQ();
-  Scout.delay(50);
   meshReportHQ();
-  Scout.delay(50);
   tempReportHQ();
-  Scout.delay(50);
   ledReportHQ();
 }
 
