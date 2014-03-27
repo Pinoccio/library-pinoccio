@@ -102,6 +102,7 @@ int StringBuffer::readClient(Client& c, size_t size) {
   blockReserve(this->len + size);
   int read = c.read((uint8_t *)this->buffer + this->len, size);
   this->len += read;
+  this->buffer[this->len] = 0;
   return read;
 }
 
@@ -191,6 +192,7 @@ size_t StringBuffer::appendJsonString(const char *in, size_t len, bool add_quote
   }
 
   this->len += written;
+  this->buffer[this->len] = 0;
   return written;
 }
 
