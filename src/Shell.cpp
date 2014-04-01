@@ -50,6 +50,7 @@ static numvar meshConfig(void);
 static numvar meshSetPower(void);
 static numvar meshSetDataRate(void);
 static numvar meshSetKey(void);
+static numvar meshGetKey(void);
 static numvar meshResetKey(void);
 static numvar meshJoinGroup(void);
 static numvar meshLeaveGroup(void);
@@ -178,6 +179,8 @@ void PinoccioShell::setup() {
   addBitlashFunction("mesh.setpower", (bitlash_function) meshSetPower);
   addBitlashFunction("mesh.setdatarate", (bitlash_function) meshSetDataRate);
   addBitlashFunction("mesh.key", (bitlash_function) meshSetKey);
+  addBitlashFunction("mesh.setkey", (bitlash_function) meshSetKey);
+  addBitlashFunction("mesh.getkey", (bitlash_function) meshGetKey);
   addBitlashFunction("mesh.resetkey", (bitlash_function) meshResetKey);
   addBitlashFunction("mesh.joingroup", (bitlash_function) meshJoinGroup);
   addBitlashFunction("mesh.leavegroup", (bitlash_function) meshLeaveGroup);
@@ -842,6 +845,14 @@ static numvar meshSetKey(void) {
   return 1;
 }
 
+static numvar meshGetKey(void) {
+  char token[17];
+  Scout.meshGetSecurityKey((char *)token);
+  token[16] = 0;
+  speol(token);
+  return 1;
+}
+
 static numvar meshResetKey(void) {
   Scout.meshResetSecurityKey();
   return 1;
@@ -858,7 +869,9 @@ static numvar meshLeaveGroup(void) {
 }
 
 static numvar meshIsInGroup(void) {
-  return Scout.meshIsInGroup(getarg(1));
+  bool inGroup = Scout.meshIsInGroup(getarg(1));
+  speol(inGroup);
+  return inGroup;
 }
 
 static numvar meshPing(void) {
@@ -907,10 +920,12 @@ static numvar meshAnnounce(void) {
 }
 
 static numvar meshSignal(void) {
+  speol(lastMeshRssi * -1);
   return lastMeshRssi * -1;
 }
 
 static numvar meshLoss(void) {
+  speol(lastMeshLqi);
   return lastMeshLqi;
 }
 

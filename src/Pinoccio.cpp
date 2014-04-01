@@ -225,6 +225,12 @@ void PinoccioClass::meshSetSecurityKey(const uint8_t *key) {
   }
 }
 
+void PinoccioClass::meshGetSecurityKey(char *key) {
+  for (int i=0; i<16; i++) {
+    key[i] = eeprom_read_byte((uint8_t *)8162+i);
+  }
+}
+
 void PinoccioClass::meshResetSecurityKey(void) {
   const uint8_t buf[16] = {0xFF, 0xFF, 0xFF, 0xFF,0xFF, 0xFF, 0xFF, 0xFF,0xFF, 0xFF, 0xFF, 0xFF,0xFF, 0xFF, 0xFF, 0xFF};
   meshSetSecurityKey(buf);

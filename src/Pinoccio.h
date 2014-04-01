@@ -56,6 +56,7 @@ class PinoccioClass {
     void meshSetPower(const uint8_t theTxPower);
     void meshSetDataRate(const uint8_t theRate);
     void meshSetSecurityKey(const uint8_t *key);
+    void meshGetSecurityKey(char *key);
     void meshResetSecurityKey(void);
     void meshListen(uint8_t endpoint, bool (*handler)(NWK_DataInd_t *ind));
 
