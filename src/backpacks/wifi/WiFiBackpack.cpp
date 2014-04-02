@@ -95,14 +95,25 @@ void WiFiBackpack::loop() {
   client = gs.getNcmCid();
 }
 
+static bool isWepKey(const char *key) {
+  int len = 0;
+  while (key[len] && len <= 26) {
+    if (!isxdigit(key[len]))
+      return false;
+    ++len;
+  }
+
+  return len == 10 || len == 26;
+}
+
 bool WiFiBackpack::wifiConfig(const char *ssid, const char *passphrase) {
   bool ok = true;
   ok = ok && gs.setSecurity(GSModule::GS_SECURITY_AUTO);
   if (passphrase && *passphrase) {
-    // Setting WEP passphrase will return error if phrase isn't exactly 10 or 26 bytes
-    if (strlen(passphrase) == 26 || strlen(passphrase) == 10) {
+    // Setting WEP passphrase will return error if phrase isn't exactly
+    // 10 or 26 hex bytes
+    if (isWepKey(passphrase))
       ok = ok && gs.setWepPassphrase(passphrase);
-    }
     ok = ok && gs.setWpaPassphrase(passphrase);
   }
   ok = ok && gs.setAutoAssociate(ssid);
