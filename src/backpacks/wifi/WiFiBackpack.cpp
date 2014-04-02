@@ -29,7 +29,8 @@ void WiFiBackpack::onAssociate(void *data) {
   IPAddress ip = wifi.gs.dnsLookup(NTP_SERVER);
   if (ip == INADDR_NONE ||
       !wifi.gs.timeSync(ip, NTP_INTERVAL)) {
-    Serial.println("Time sync failed");
+    Serial.println("Time sync failed, reassociating to retry");
+    wifi.autoConnectHq();
   }
   
   wifi.apConnCount++;
