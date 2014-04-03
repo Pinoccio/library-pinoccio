@@ -460,13 +460,11 @@ static numvar temperatureReport(void) {
 static numvar getTemperature(void) {
   tempReportHQ();
   int i = Scout.getTemperature();
-  speol(i);
   return i;
 }
 
 static numvar getRandomNumber(void) {
   int i = random();
-  speol(i);
   return i;
 }
 
@@ -563,19 +561,16 @@ static numvar keySave(void) {
 
 static numvar isBatteryCharging(void) {
   int i = Scout.isBatteryCharging();
-  speol(i);
   return i;
 }
 
 static numvar getBatteryPercentage(void) {
   int i = Scout.getBatteryPercentage();
-  speol(i);
   return i;
 }
 
 static numvar getBatteryVoltage(void) {
   int i = Scout.getBatteryVoltage();
-  speol(i);
   return i;
 }
 
@@ -862,7 +857,6 @@ static numvar meshLeaveGroup(void) {
 
 static numvar meshIsInGroup(void) {
   bool inGroup = Scout.meshIsInGroup(getarg(1));
-  speol(inGroup);
   return inGroup;
 }
 
@@ -902,12 +896,10 @@ static numvar meshAnnounce(void) {
 }
 
 static numvar meshSignal(void) {
-  speol(lastMeshRssi * -1);
   return lastMeshRssi * -1;
 }
 
 static numvar meshLoss(void) {
-  speol(lastMeshLqi);
   return lastMeshLqi;
 }
 
@@ -1584,7 +1576,6 @@ static numvar scoutReport(void) {
 }
 
 static numvar isScoutLeadScout(void) {
-  speol(Scout.isLeadScout() ? 1 : 0);
   return Scout.isLeadScout();
 }
 
