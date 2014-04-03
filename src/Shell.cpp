@@ -837,7 +837,7 @@ static numvar meshGetKey(void) {
   Scout.meshGetSecurityKey((char *)token);
   token[16] = 0;
   speol(token);
-  return 1;
+  return keyMap(token, millis());
 }
 
 static numvar meshResetKey(void) {
@@ -1589,7 +1589,7 @@ static numvar getHQToken(void) {
   Pinoccio.getHQToken((char *)token);
   token[32] = 0;
   speol(token);
-  return 1;
+  return keyMap(token, millis());
 }
 
 static numvar scoutDelay(void) {
