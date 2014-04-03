@@ -1599,7 +1599,7 @@ static numvar scoutDelay(void) {
 
 static numvar scoutFree(void) {
   showMemory();
-  return 1;
+  return getFreeMemory();
 }
 
 static numvar daisyWipe(void) {
