@@ -55,8 +55,6 @@ static numvar meshResetKey(void);
 static numvar meshJoinGroup(void);
 static numvar meshLeaveGroup(void);
 static numvar meshIsInGroup(void);
-static numvar meshPing(void);
-static numvar meshPingGroup(void);
 static numvar meshSend(void);
 static numvar meshVerbose(void);
 static numvar meshReport(void);
@@ -139,9 +137,6 @@ static StringBuffer meshReportHQ(void);
 static StringBuffer tempReportHQ(void);
 static StringBuffer ledReportHQ(void);
 
-static void pingScout(int address);
-static void pingGroup(int address);
-static void pingConfirm(NWK_DataReq_t *req);
 static bool receiveMessage(NWK_DataInd_t *ind);
 static void sendMessage(int address, const String&);
 static void sendConfirm(NWK_DataReq_t *req);
@@ -185,8 +180,6 @@ void PinoccioShell::setup() {
   addBitlashFunction("mesh.joingroup", (bitlash_function) meshJoinGroup);
   addBitlashFunction("mesh.leavegroup", (bitlash_function) meshLeaveGroup);
   addBitlashFunction("mesh.ingroup", (bitlash_function) meshIsInGroup);
-  addBitlashFunction("mesh.ping", (bitlash_function) meshPing);
-  addBitlashFunction("mesh.pinggroup", (bitlash_function) meshPingGroup);
   addBitlashFunction("mesh.send", (bitlash_function) meshSend);
   addBitlashFunction("mesh.verbose", (bitlash_function) meshVerbose);
   addBitlashFunction("mesh.report", (bitlash_function) meshReport);
@@ -433,7 +426,6 @@ void PinoccioShell::disableShell() {
   isShellEnabled = false;
 }
 
-static NWK_DataReq_t pingDataReq;
 static NWK_DataReq_t sendDataReq;
 static bool sendDataReqBusy;
 static int tempHigh = 0;
@@ -872,16 +864,6 @@ static numvar meshIsInGroup(void) {
   bool inGroup = Scout.meshIsInGroup(getarg(1));
   speol(inGroup);
   return inGroup;
-}
-
-static numvar meshPing(void) {
-  pingScout(getarg(1));
-  return 1;
-}
-
-static numvar meshPingGroup(void) {
-  pingGroup(getarg(1));
-  return 1;
 }
 
 // ver = 0 means all args, ver > 1 means ignore first arg
@@ -1882,81 +1864,6 @@ static numvar wifiStats(void) {
  *     HELPER FUNCTIONS     *
 \****************************/
 
-static void pingScout(int address) {
-  pingDataReq.dstAddr = address;
-  const char *ping = "ping";
-
-  pingDataReq.dstEndpoint = 1;
-  pingDataReq.srcEndpoint = 1;
-  pingDataReq.options = NWK_OPT_ACK_REQUEST|NWK_OPT_ENABLE_SECURITY;
-  pingDataReq.data = (byte *)ping;
-  pingDataReq.size = strlen(ping);
-  pingDataReq.confirm = pingConfirm;
-  NWK_DataReq(&pingDataReq);
-
-  Serial.print(F("PING "));
-  Serial.println(address);
-}
-
-static void pingGroup(int address) {
-  pingDataReq.dstAddr = address;
-  const char *ping = "ping";
-
-  pingDataReq.dstEndpoint = 1;
-  pingDataReq.srcEndpoint = 1;
-  pingDataReq.options = NWK_OPT_MULTICAST|NWK_OPT_ENABLE_SECURITY;
-  pingDataReq.data = (byte *)ping;
-  pingDataReq.size = strlen(ping);
-  pingDataReq.confirm = pingConfirm;
-  NWK_DataReq(&pingDataReq);
-
-  Serial.print(F("PING "));
-  Serial.println(address, HEX);
-}
-
-static void pingConfirm(NWK_DataReq_t *req) {
-  Serial.print(F("dstAddr: "));
-  Serial.println(req->dstAddr, HEX);
-  Serial.print(F("dstEndpoint: "));
-  Serial.println(req->dstEndpoint);
-  Serial.print(F("srcEndpoint: "));
-  Serial.println(req->srcEndpoint);
-  Serial.print(F("options: "));
-  Serial.println(req->options, BIN);
-  Serial.print(F("size: "));
-  Serial.println(req->size);
-  Serial.print(F("status: "));
-  Serial.println(req->status, HEX);
-
-  if (req->status == NWK_SUCCESS_STATUS) {
-    Serial.print(F("1 byte from "));
-    Serial.print(req->dstAddr);
-    Serial.print(F(" RSSI=-"));
-    Serial.println(req->control);
-  } else {
-    Serial.print(F("Error: "));
-    switch (req->status) {
-      case NWK_OUT_OF_MEMORY_STATUS:
-        Serial.print(F("Out of memory: "));
-        break;
-      case NWK_NO_ACK_STATUS:
-      case NWK_PHY_NO_ACK_STATUS:
-        Serial.print(F("No acknowledgement received: "));
-        break;
-      case NWK_NO_ROUTE_STATUS:
-        Serial.print(F("No route to destination: "));
-        break;
-      case NWK_PHY_CHANNEL_ACCESS_FAILURE_STATUS:
-        Serial.print(F("Physical channel access failure: "));
-        break;
-      default:
-        Serial.print(F("unknown failure: "));
-    }
-    Serial.print(F("("));
-    Serial.print(req->status, HEX);
-    Serial.println(F(")"));
-  }
-}
 
 static bool receiveMessage(NWK_DataInd_t *ind) {
   char buf[64];
