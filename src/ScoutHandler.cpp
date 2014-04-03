@@ -251,7 +251,7 @@ void PinoccioScoutHandler::announce(uint16_t group, const String& message) {
     leadAnnouncementSend(group, Scout.getAddress(), message);
     // Don't broadcast HQ commands over the network if we are a lead
     // scout
-    if (group == 0xBEEF)
+    if (!group || group == 0xBEEF)
       return;
   }
 
@@ -312,9 +312,9 @@ static bool fieldAnnouncements(NWK_DataInd_t *ind) {
     Serial.println(ind->dstAddr);
   }
   if (Scout.isLeadScout()) {
-    leadAnnouncementSend(ind->dstAddr, ind->srcAddr, ConstBuf(data, ind->size));
+    leadAnnouncementSend(ind->dstAddr, ind->srcAddr, ConstBuf(data, ind->size-1)); // no null
   }
-  if (ind->dstAddr == 0xBEEF || strlen(data) < 3 || data[0] != '[') {
+  if (!ind->dstAddr || ind->dstAddr == 0xBEEF || strlen(data) < 3 || data[0] != '[') {
     return false;
   }
 
