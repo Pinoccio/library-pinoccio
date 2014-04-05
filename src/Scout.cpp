@@ -55,12 +55,13 @@ void PinoccioScout::setup() {
   Backpacks::setup();
 
   saveState();
-  Shell.setup();
   handler.setup();
 
   startDigitalStateChangeEvents();
   startAnalogStateChangeEvents();
   startPeripheralStateChangeEvents();
+
+  Shell.setup();
 }
 
 void PinoccioScout::loop() {
