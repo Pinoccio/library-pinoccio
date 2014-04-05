@@ -77,7 +77,12 @@ void PinoccioScout::loop() {
 void PinoccioScout::delay(unsigned long ms) {
   unsigned long target = millis() + ms;
   while ((long)(millis() - target) < 0) {
-    loop();
+    PinoccioClass::loop();
+    handler.loop();
+
+    if (isLeadScout()) {
+      wifi.loop();
+    }
   }
 }
 
