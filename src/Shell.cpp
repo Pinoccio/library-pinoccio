@@ -362,8 +362,13 @@ static numvar pinoccioBanner(void) {
   sp(F(" "));
   sp(func_free());
   speol(F(" bytes free"));
+  sp(F(" "));
+  sp(Scout.getSketchName());
   sp(F(" Build "));
-  speol(PINOCCIO_BUILD);
+  sp(Scout.getSketchBuild());
+  sp(F(" (rev "));
+  sp(Scout.getSketchRevision());
+  speol(F(")"));
 
   if (Scout.isLeadScout()) {
     speol(F(" Lead Scout ready"));
@@ -1553,20 +1558,24 @@ static numvar backpackResources(void) {
 
 static StringBuffer scoutReportHQ(void) {
   StringBuffer report(100);
-  report.appendSprintf("[%d,[%d,%d,%d,%d,%d,%d],[%s,%d,%d,%d,%ld,%ld]]",
+  report.appendSprintf("[%d,[%d,%d,%d,%d,%d,%d,%d,%d],[%s,%d,%d,%d,%ld,\"%s\",%ld,\"%s\"]]",
           keyMap("scout", 0),
           keyMap("lead", 0),
           keyMap("version", 0),
           keyMap("hardware", 0),
           keyMap("family", 0),
           keyMap("serial", 0),
+          keyMap("sketch", 0),
           keyMap("build", 0),
+          keyMap("revision", 0),
           Scout.isLeadScout() ? "true" : "false",
           (int)Scout.getEEPROMVersion(),
           (int)Scout.getHwVersion(),
           Scout.getHwFamily(),
           Scout.getHwSerial(),
-          PINOCCIO_BUILD);
+          Scout.getSketchName(),
+          Scout.getSketchBuild(),
+          Scout.getSketchRevision());
   return Scout.handler.report(report);
 }
 

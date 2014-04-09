@@ -1,8 +1,6 @@
 #ifndef LIB_PINOCCIO_H_
 #define LIB_PINOCCIO_H_
 
-#define PINOCCIO_BUILD 2014040301
-
 //#define PINOCCIO_DEBUG
 #ifdef PINOCCIO_DEBUG
 #  define D(x) x
@@ -27,7 +25,7 @@ class PinoccioClass {
     PinoccioClass();
     ~PinoccioClass();
 
-    void setup();
+    void setup(const char *sketchName, const char *sketchRevision, int32_t sketchBuild);
     void loop();
 
     void goToSleep(uint32_t sleepForMs);
@@ -72,6 +70,10 @@ class PinoccioClass {
     uint8_t getDataRate();
     const char* getDataRatekbps();
 
+    const char* getSketchName();
+    const char* getSketchRevision();
+    int32_t getSketchBuild();
+
   protected:
     void convertLongToBytes(byte *convBytes, uint32_t target);
     uint32_t convertBytesToLong(byte *convBytes);
@@ -83,6 +85,13 @@ class PinoccioClass {
     uint8_t channel;
     uint8_t txPower;
     uint8_t dataRate;
+
+    // Name of the sketch (e.g. "Bootstrap")
+    const char* sketchName;
+    // Detailed revision of the sketch (e.g. "2014031902-1-g5579a21-dirty")
+    const char* sketchRevision;
+    // Released build number, or -1 for custom builds
+    int32_t sketchBuild;
 };
 
 extern PinoccioClass Pinoccio;

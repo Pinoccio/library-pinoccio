@@ -13,7 +13,11 @@ PinoccioClass::PinoccioClass() {
 
 PinoccioClass::~PinoccioClass() { }
 
-void PinoccioClass::setup() {
+void PinoccioClass::setup(const char *sketchName, const char *sketchRevision, int32_t sketchBuild) {
+  this->sketchName = sketchName;
+  this->sketchRevision = sketchRevision;
+  this->sketchBuild = sketchBuild;
+
   SYS_Init();
   PHY_RandomReq();
 
@@ -270,6 +274,18 @@ uint8_t PinoccioClass::getChannel() {
 
 uint8_t PinoccioClass::getTxPower() {
   return txPower;
+}
+
+const char* PinoccioClass::getSketchName() {
+  return sketchName;
+}
+
+const char* PinoccioClass::getSketchRevision() {
+  return sketchRevision;
+}
+
+int32_t PinoccioClass::getSketchBuild() {
+  return sketchBuild;
 }
 
 const char* PinoccioClass::getTxPowerDb() {

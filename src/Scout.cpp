@@ -38,8 +38,8 @@ PinoccioScout::PinoccioScout() {
 
 PinoccioScout::~PinoccioScout() { }
 
-void PinoccioScout::setup() {
-  PinoccioClass::setup();
+void PinoccioScout::setup(const char *sketchName, const char *sketchRevision, int32_t sketchBuild) {
+  PinoccioClass::setup(sketchName, sketchRevision, sketchBuild);
 
   pinMode(CHG_STATUS, INPUT_PULLUP);
   pinMode(BATT_ALARM, INPUT_PULLUP);

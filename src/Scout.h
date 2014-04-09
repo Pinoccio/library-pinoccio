@@ -36,7 +36,7 @@ class PinoccioScout : public PinoccioClass {
     PinoccioScout();
     ~PinoccioScout();
 
-    void setup();
+    void setup(const char *sketchName = "Custom", const char *sketchRevision = "unknown", int32_t sketchBuild = -1);
     void loop();
     void delay(unsigned long ms);
 
