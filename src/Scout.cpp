@@ -75,15 +75,7 @@ void PinoccioScout::loop() {
 }
 
 void PinoccioScout::delay(unsigned long ms) {
-  unsigned long target = millis() + ms;
-  while ((long)(millis() - target) < 0) {
-    PinoccioClass::loop();
-    handler.loop();
-
-    if (isLeadScout()) {
-      wifi.loop();
-    }
-  }
+  Serial.println("not safe, disabled");
 }
 
 bool PinoccioScout::isBatteryCharging() {

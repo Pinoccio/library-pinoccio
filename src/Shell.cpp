@@ -1601,8 +1601,39 @@ static numvar getHQToken(void) {
   return keyMap(token, millis());
 }
 
+
+SYS_Timer_t delayTimer;
+char *delayCommand = NULL;
+static void delayTimerHandler(SYS_Timer_t *timer) {
+  doCommand(delayCommand);
+  free(delayCommand);
+  delayCommand = NULL;
+}
+
 static numvar scoutDelay(void) {
-  Scout.delay(getarg(1));
+  char *str;
+  if(getarg(0) != 2)
+  {
+    speol("usage: delay(ms,\"function\")");
+    return 0;
+  }
+  if (isstringarg(2)) {
+    str = (char *)getarg(2);
+  } else {
+    str = (char *)keyGet(getarg(2));
+  }
+  // TODO, fix SYS_Timer_t to have a .arg void * instead of this single global BS
+  if(delayCommand)
+  {
+    SYS_TimerStop(&delayTimer);
+    free(delayCommand);
+  }
+  delayTimer.mode = SYS_TIMER_INTERVAL_MODE;
+  delayTimer.handler = delayTimerHandler;
+  delayTimer.interval = getarg(1);
+  delayCommand = strdup(str);
+  SYS_TimerStart(&delayTimer);
+
   return 1;
 }
 
