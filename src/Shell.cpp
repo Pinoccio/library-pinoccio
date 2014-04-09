@@ -483,7 +483,7 @@ static numvar getLastResetCause(void) {
     sprintf(reset + strlen(reset), "%c", c);
   }
   speol(reset);
-  return true;
+  return keyMap(reset, 0);
 }
 
 extern int __bss_end;
