@@ -1612,8 +1612,7 @@ static void delayTimerHandler(SYS_Timer_t *timer) {
 
 static numvar scoutDelay(void) {
   char *str;
-  if(getarg(0) != 2)
-  {
+  if (getarg(0) != 2) {
     speol("usage: delay(ms,\"function\")");
     return 0;
   }
@@ -1623,8 +1622,7 @@ static numvar scoutDelay(void) {
     str = (char *)keyGet(getarg(2));
   }
   // TODO, fix SYS_Timer_t to have a .arg void * instead of this single global BS
-  if(delayCommand)
-  {
+  if (delayCommand) {
     SYS_TimerStop(&delayTimer);
     free(delayCommand);
   }
