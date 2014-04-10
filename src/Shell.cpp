@@ -617,18 +617,15 @@ static numvar keySave(void) {
 \****************************/
 
 static numvar isBatteryCharging(void) {
-  int i = Scout.isBatteryCharging();
-  return i;
+  return Scout.isBatteryCharging();
 }
 
 static numvar getBatteryPercentage(void) {
-  int i = Scout.getBatteryPercentage();
-  return i;
+  return Scout.getBatteryPercentage();
 }
 
 static numvar getBatteryVoltage(void) {
-  int i = Scout.getBatteryVoltage();
-  return i;
+  return Scout.getBatteryVoltage();
 }
 
 static numvar enableBackpackVcc(void) {
@@ -664,7 +661,7 @@ static StringBuffer powerReportHQ(void) {
 
 static numvar powerReport(void) {
   speol(powerReportHQ());
-  return true;
+  return 1;
 }
 
 /****************************\
