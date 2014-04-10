@@ -129,6 +129,7 @@ static numvar wifiVerbose(void);
 static numvar wifiStats(void);
 
 static numvar keyMap(void);
+static numvar keyFree(void);
 static numvar keyPrint(void);
 static numvar keyNumber(void);
 static numvar keySave(void);
@@ -182,7 +183,6 @@ void PinoccioShell::setup() {
   addBitlashFunction("mesh.config", (bitlash_function) meshConfig);
   addBitlashFunction("mesh.setpower", (bitlash_function) meshSetPower);
   addBitlashFunction("mesh.setdatarate", (bitlash_function) meshSetDataRate);
-  addBitlashFunction("mesh.key", (bitlash_function) meshSetKey);
   addBitlashFunction("mesh.setkey", (bitlash_function) meshSetKey);
   addBitlashFunction("mesh.getkey", (bitlash_function) meshGetKey);
   addBitlashFunction("mesh.resetkey", (bitlash_function) meshResetKey);
@@ -275,6 +275,7 @@ void PinoccioShell::setup() {
   addBitlashFunction("events.verbose", (bitlash_function) setEventVerbose);
 
   addBitlashFunction("key", (bitlash_function) keyMap);
+  addBitlashFunction("key.free", (bitlash_function) keyFree);
   addBitlashFunction("key.print", (bitlash_function) keyPrint);
   addBitlashFunction("key.number", (bitlash_function) keyNumber);
   addBitlashFunction("key.save", (bitlash_function) keySave);
