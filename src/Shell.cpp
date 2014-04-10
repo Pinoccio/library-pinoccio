@@ -1503,37 +1503,38 @@ static numvar backpackDetail(void) {
   }
   Pbbe::Header *h = Backpacks::info[addr].getHeader();
   Pbbe::UniqueId &id = Backpacks::info[addr].id;
-  
+
+  // FIXME: Convert these to sp()'s so we can see them in HQ?
   Serial.print(F("Backpack name: "));
   Serial.println(h->backpack_name);
-  
+
   Serial.print(F("Model number: 0x"));
   Serial.println(id.model, HEX); // TODO: zero pad
-  
+
   Serial.print(F("Board revision: "));
   Pbbe::MajorMinor rev = Pbbe::extractMajorMinor(id.revision);
   Serial.print(rev.major);
   Serial.print(F("."));
   Serial.println(rev.minor);
-  
+
   Serial.print(F("Serial number: 0x"));
   Serial.println(id.serial, HEX); // TODO: zero pad
-  
+
   Serial.print(F("Backpack Bus Protocol version: "));
   Serial.print(id.protocol_version);
   Serial.println(F(".x")); // Only the major version is advertised
-  
+
   Serial.print(F("Backpack Bus firmware version: "));
   Serial.println(h->firmware_version);
-  
+
   Serial.print(F("EEPROM layout version: "));
   Serial.print(h->layout_version);
   Serial.println(F(".x")); // Only the major version is advertised
-  
+
   Serial.print(F("EEPROM size: "));
   Serial.print(h->total_eeprom_size);
   Serial.println(F(" bytes"));
-  
+
   Serial.print(F("EEPROM used: "));
   Serial.print(h->used_eeprom_size);
   Serial.println(F(" bytes"));
