@@ -1721,9 +1721,10 @@ static numvar getHQToken(void) {
 SYS_Timer_t delayTimer;
 char *delayCommand = NULL;
 static void delayTimerHandler(SYS_Timer_t *timer) {
-  doCommand(delayCommand);
-  free(delayCommand);
+  char *cmd = delayCommand;
   delayCommand = NULL;
+  doCommand(cmd);
+  free(cmd);
 }
 
 static numvar scoutDelay(void) {
