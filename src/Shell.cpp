@@ -11,13 +11,20 @@ extern "C" {
 
 static numvar pinoccioBanner(void);
 
-static numvar getTemperature(void);
+static numvar getTemperatureC(void);
+static numvar getTemperatureF(void);
 static numvar temperatureReport(void);
 static numvar getRandomNumber(void);
-static numvar getLastResetCause(void);
-static numvar uptimeReport(void);
+
 static numvar allReport(void);
 static numvar allVerbose(void);
+
+static numvar getLastResetCause(void);
+static numvar uptimeMillis(void);
+static numvar uptimeSeconds(void);
+static numvar uptimeMinutes(void);
+static numvar uptimeHours(void);
+static numvar uptimeReport(void);
 
 static numvar isBatteryCharging(void);
 static numvar getBatteryPercentage(void);
@@ -189,13 +196,20 @@ void PinoccioShell::setup() {
   addBitlashFunction("mesh.signal", (bitlash_function) meshSignal);
   addBitlashFunction("mesh.loss", (bitlash_function) meshLoss);
 
-  addBitlashFunction("temperature", (bitlash_function) getTemperature);
+  addBitlashFunction("temperature.c", (bitlash_function) getTemperatureC);
+  addBitlashFunction("temperature.f", (bitlash_function) getTemperatureF);
   addBitlashFunction("temperature.report", (bitlash_function) temperatureReport);
   addBitlashFunction("randomnumber", (bitlash_function) getRandomNumber);
-  addBitlashFunction("lastreset", (bitlash_function) getLastResetCause);
-  addBitlashFunction("uptime", (bitlash_function) uptimeReport);
+
   addBitlashFunction("report", (bitlash_function) allReport);
   addBitlashFunction("verbose", (bitlash_function) allVerbose);
+
+  addBitlashFunction("uptime.getlastreset", (bitlash_function) getLastResetCause);
+  addBitlashFunction("uptime.millis", (bitlash_function) uptimeMillis);
+  addBitlashFunction("uptime.seconds", (bitlash_function) uptimeSeconds);
+  addBitlashFunction("uptime.minutes", (bitlash_function) uptimeMinutes);
+  addBitlashFunction("uptime.hours", (bitlash_function) uptimeHours);
+  addBitlashFunction("uptime.report", (bitlash_function) uptimeReport);
 
   addBitlashFunction("led.off", (bitlash_function) ledOff);
   addBitlashFunction("led.red", (bitlash_function) ledRed);
@@ -464,10 +478,14 @@ static numvar temperatureReport(void) {
   return 1;
 }
 
-static numvar getTemperature(void) {
-  tempReportHQ();
-  int i = Scout.getTemperature();
-  return i;
+static numvar getTemperatureC(void) {
+  return Scout.getTemperature();
+}
+
+static numvar getTemperatureF(void) {
+  float f;
+  f = round((1.8 * Scout.getTemperature()) + 32);
+  return (uint32_t)f;
 }
 
 static numvar getRandomNumber(void) {
@@ -512,10 +530,24 @@ static StringBuffer uptimeReportHQ(void) {
   return Scout.handler.report(report);
 }
 
+static numvar uptimeMillis(void) {
+  return millis();
+}
+
+static numvar uptimeSeconds(void) {
+  return millis()/1000;
+}
+
+static numvar uptimeMinutes(void) {
+  return millis()/1000/60;
+}
+
+static numvar uptimeHours(void) {
+  return millis()/1000/60/60;
+}
+
 static numvar uptimeReport(void) {
   uptimeReportHQ();
-  sp(millis());
-  speol();
   return true;
 }
 
