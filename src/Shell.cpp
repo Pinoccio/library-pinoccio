@@ -2092,6 +2092,7 @@ static bool receiveMessage(NWK_DataInd_t *ind) {
   // parse the array payload into keys, [1, "foo", "bar"]
   keyLoad(data, keys, millis());
 
+  // REVIEW: proper function name?
   snprintf(buf, sizeof(buf),"event.message");
   if (findscript(buf)) {
     snprintf(buf, sizeof(buf), "event.message(%d", ind->srcAddr);
@@ -2170,6 +2171,7 @@ static void sendConfirm(NWK_DataReq_t *req) {
 
   // run the Bitlash callback ack function
   char buf[32];
+  // REVIEW: proper function name?
   snprintf(buf, sizeof(buf),"event.ack");
   if (findscript(buf)) {
     snprintf(buf, sizeof(buf), "event.ack(%d, %d)", req->dstAddr, (req->status == NWK_SUCCESS_STATUS) ? req->control : 0);
@@ -2187,12 +2189,14 @@ static void digitalPinEventHandler(uint8_t pin, int8_t value, int8_t mode) {
   char buf[32];
 
   digitalPinReportHQ();
+  // REVIEW: proper function name?
   if (findscript("event.digital")) {
     String callback = "event.digital(" + String(pin) + "," + String(value) + "," + String(mode) + ")";
     callback.toCharArray(buf, callback.length() + 1);
     doCommand(buf);
   }
 
+  // REVIEW: proper function name?
   snprintf(buf, sizeof(buf), "event.digital%d", pin);
   if (findscript(buf)) {
     snprintf(buf, sizeof(buf), "event.digital%d(%d, %d)", pin, value, mode);
@@ -2201,6 +2205,7 @@ static void digitalPinEventHandler(uint8_t pin, int8_t value, int8_t mode) {
 
   // simplified button trigger
   if (value == 0 && (mode == INPUT_PULLUP || mode == INPUT)) {
+    // REVIEW: proper function name?
     snprintf(buf, sizeof(buf), "event.button%d", pin);
     if (findscript(buf)) {
       doCommand(buf);
@@ -2219,6 +2224,7 @@ static void analogPinEventHandler(uint8_t pin, int16_t value, int8_t mode) {
   char buf[32];
 
   analogPinReportHQ();
+  // REVIEW: proper function name?
   if (findscript("event.analog")) {
     String callback = "event.analog(" + String(pin) + "," + String(value) + "," + String(mode) + ")";
     char buf[32];
@@ -2226,6 +2232,7 @@ static void analogPinEventHandler(uint8_t pin, int16_t value, int8_t mode) {
     doCommand(buf);
   }
 
+  // REVIEW: proper function name?
   snprintf(buf, sizeof(buf),"event.analog%d", pin);
   if (findscript(buf)) {
     snprintf(buf, sizeof(buf), "event.analog%d(%d, %d)", pin, value, mode);
@@ -2241,6 +2248,7 @@ static void analogPinEventHandler(uint8_t pin, int16_t value, int8_t mode) {
 
 static void batteryPercentageEventHandler(uint8_t value) {
   powerReportHQ();
+  // REVIEW: proper function name?
   if (findscript("event.percent")) {
     String callback = "event.percent(" + String(value) + ")";
     char buf[32];
@@ -2251,6 +2259,7 @@ static void batteryPercentageEventHandler(uint8_t value) {
 
 static void batteryVoltageEventHandler(uint8_t value) {
   powerReportHQ();
+  // REVIEW: proper function name?
   if (findscript("event.voltage")) {
     String callback = "event.voltage(" + String(value) + ")";
     char buf[32];
@@ -2261,6 +2270,7 @@ static void batteryVoltageEventHandler(uint8_t value) {
 
 static void batteryChargingEventHandler(uint8_t value) {
   powerReportHQ();
+  // REVIEW: proper function name?
   if (findscript("event.charging")) {
     String callback = "event.charging(" + String(value) + ")";
     char buf[32];
@@ -2271,6 +2281,7 @@ static void batteryChargingEventHandler(uint8_t value) {
 
 static void temperatureEventHandler(uint8_t value) {
   tempReportHQ();
+  // REVIEW: proper function name?
   if (findscript("event.temperature")) {
     String callback = "event.temperature(" + String(value) + ")";
     char buf[32];
