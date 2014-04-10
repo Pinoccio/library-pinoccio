@@ -508,10 +508,9 @@ static numvar getLastResetCause(void) {
   return keyMap(reset, 0);
 }
 
-extern int __bss_end;
 static StringBuffer uptimeReportHQ(void) {
   StringBuffer report(100);
-  int freeMem;
+  int freeMem = getFreeMemory();
 
   char reset[20];
   strncpy_P(reset, Scout.getLastResetCause(), sizeof(reset));
@@ -524,7 +523,7 @@ static StringBuffer uptimeReportHQ(void) {
           keyMap("random", 0),
           keyMap("reset", 0),
           (unsigned long)millis(),
-          ((int)&freeMem) - ((int)&__bss_end),
+          freeMem,
           (int)random());
 
   report.appendJsonString(reset, true);
@@ -1766,8 +1765,7 @@ static numvar scoutDelay(void) {
 }
 
 static numvar scoutFree(void) {
-  showMemory();
-  return getFreeMemory();
+  return showMemory();
 }
 
 static numvar daisyWipe(void) {

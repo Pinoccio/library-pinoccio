@@ -183,14 +183,18 @@ size_t getLargestNonFreeListBlock()
   return cp-brkval;
 }
 
-void showMemory(void) {
+int showMemory(void) {
   char buffer[100];
+  int usedMem = getMemoryUsed();
+  int freeMem = getFreeMemory();
+  int largeMem = getLargestAvailableMemoryBlock();
 
   snprintf(buffer, sizeof(buffer), "%04u %04u %04u : used/free/large",
-      getMemoryUsed(),
-      getFreeMemory(),
-      getLargestAvailableMemoryBlock()
+      usedMem,
+      freeMem,
+      largeMem
     );
 
   speol(buffer);
+  return freeMem;
 }
