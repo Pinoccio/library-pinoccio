@@ -419,7 +419,6 @@ void leadHQConnect() {
   if (Scout.wifi.client.connected()) {
     char token[33];
     StringBuffer auth(64);
-    Pinoccio.getHQToken(token);
     token[32] = 0;
     auth.appendSprintf("{\"type\":\"token\",\"token\":\"%s\"}\n", token);
     leadSignal(auth);
