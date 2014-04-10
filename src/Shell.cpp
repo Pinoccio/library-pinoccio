@@ -1589,13 +1589,13 @@ static numvar isScoutLeadScout(void) {
 }
 
 static numvar setHQToken(void) {
-  Pinoccio.setHQToken((const char *)getstringarg(1));
+  Scout.setHQToken((const char *)getstringarg(1));
   return 1;
 }
 
 static numvar getHQToken(void) {
   char token[33];
-  Pinoccio.getHQToken((char *)token);
+  Scout.getHQToken((char *)token);
   token[32] = 0;
   speol(token);
   return keyMap(token, millis());

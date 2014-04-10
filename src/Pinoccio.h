@@ -94,6 +94,4 @@ class PinoccioClass {
     int32_t sketchBuild;
 };
 
-extern PinoccioClass Pinoccio;
-
 #endif
