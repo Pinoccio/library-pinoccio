@@ -133,6 +133,7 @@ static numvar keyNumber(void);
 static numvar keySave(void);
 
 static int getPinFromArg(int arg);
+static bool checkArgs(uint8_t required, const __FlashStringHelper *errorMsg, bool minRequired=false);
 
 static StringBuffer scoutReportHQ(void);
 static StringBuffer uptimeReportHQ(void);
@@ -555,6 +556,9 @@ static numvar uptimeReport(void) {
 \****************************/
 
 static numvar keyMap(void) {
+  if (checkArgs(1, F("usage: key(\"string\")"))) {
+    return 0;
+  }
   static char num[8];
   if (isstringarg(1)) {
     return keyMap((char*)getstringarg(1), 0);
@@ -563,7 +567,18 @@ static numvar keyMap(void) {
   return keyMap(num, 0);
 }
 
+static numvar keyFree(void) {
+  if (checkArgs(1, F("usage: key.free(key)"))) {
+    return 0;
+  }
+  keyFree(getarg(1));
+  return 1;
+}
+
 static numvar keyPrint(void) {
+  if (checkArgs(1, F("usage: key.print(key)"))) {
+    return 0;
+  }
   const char *key = keyGet(getarg(1));
   if (!key) {
     return 0;
@@ -573,6 +588,9 @@ static numvar keyPrint(void) {
 }
 
 static numvar keyNumber(void) {
+  if (checkArgs(1, F("usage: key.number(key)"))) {
+    return 0;
+  }
   const char *key = keyGet(getarg(1));
   if (!key) {
     return 0;
@@ -581,10 +599,10 @@ static numvar keyNumber(void) {
 }
 
 static numvar keySave(void) {
-  char cmd[42], *var;
-  if (getarg(0) != 2 || !isstringarg(1)) {
+  if (checkArgs(2, F("usage: key.save(\"string\", at)")) || !isstringarg(1)) {
     return 0;
   }
+  char cmd[42], *var;
   var = (char*)getstringarg(1);
   snprintf(cmd, sizeof(cmd), "function boot.%s {%s=key(\"%s\");}", var, var, keyGet(getarg(2)));
   doCommand(cmd);
@@ -667,6 +685,9 @@ static StringBuffer ledReportHQ(void) {
 }
 
 static numvar ledBlink(void) {
+  if (checkArgs(3, F("usage: ledBlink(red, green, blue, ms=500, continuous=0)"), true)) {
+    return 0;
+  }
   if (getarg(0) == 5) {
     RgbLed.blinkColor(getarg(1), getarg(2), getarg(3), getarg(4), getarg(5));
   } else if (getarg(0) == 4) {
@@ -788,26 +809,28 @@ static numvar ledGetHex(void) {
 }
 
 static numvar ledSetHex(void) {
-  if (getarg(1)) {
-    const char *str;
-    if (isstringarg(1)) {
-      str = (const char *)getarg(1);
-    } else {
-      str = keyGet(getarg(1));
-    }
-
-    uint8_t out[3];
-    PinoccioShell::parseHex(str, 6, out);
-    RgbLed.setColor(out[0], out[1], out[2]);
-
-    return true;
-  } else {
-    return false;
+  if (checkArgs(1, F("usage: led.sethex(\"hexvalue\")"))) {
+    return 0;
   }
+
+  const char *str;
+  if (isstringarg(1)) {
+    str = (const char *)getarg(1);
+  } else {
+    str = keyGet(getarg(1));
+  }
+
+  uint8_t out[3];
+  PinoccioShell::parseHex(str, 6, out);
+  RgbLed.setColor(out[0], out[1], out[2]);
+
   return 1;
 }
 
 static numvar ledSetRgb(void) {
+  if (checkArgs(3, F("usage: led.setrgb(red, green, blue)"))) {
+    return 0;
+  }
   RgbLed.setColor(getarg(1), getarg(2), getarg(3));
   return 1;
 }
@@ -817,6 +840,9 @@ static numvar ledIsOff(void) {
 }
 
 static numvar ledSaveTorch(void) {
+  if (checkArgs(3, F("usage: led.savetorch(red, green, blue)"))) {
+    return 0;
+  }
   RgbLed.saveTorch(getarg(1), getarg(2), getarg(3));
   return 1;
 }
@@ -842,29 +868,38 @@ static numvar ledReport(void) {
 \****************************/
 
 static numvar meshConfig(void) {
-  uint16_t panId = 0x4567;
-  uint8_t channel = 20;
-  if (getarg(0) >= 2) {
-    panId = getarg(2);
+  if (checkArgs(2, F("usage: mesh.config(scoutId, troopId, channel=20)"), true)) {
+    return 0;
   }
+  uint8_t channel = 20;
+
   if (getarg(0) >= 3) {
     channel = getarg(3);
   }
-  Scout.meshSetRadio(getarg(1), panId, channel);
+  Scout.meshSetRadio(getarg(1), getarg(2), channel);
   return 1;
 }
 
 static numvar meshSetPower(void) {
+  if (checkArgs(1, F("usage: mesh.setpower(powerLevel)"))) {
+    return 0;
+  }
   Scout.meshSetPower(getarg(1));
   return 1;
 }
 
 static numvar meshSetDataRate(void) {
+  if (checkArgs(1, F("usage: mesh.setdatarate(dataRate)"))) {
+    return 0;
+  }
   Scout.meshSetDataRate(getarg(1));
   return 1;
 }
 
 static numvar meshSetKey(void) {
+  if (checkArgs(1, F("usage: mesh.setkey(\"key\")"))) {
+    return 0;
+  }
   Scout.meshSetSecurityKey((const uint8_t *)getstringarg(1));
   return 1;
 }
@@ -883,18 +918,26 @@ static numvar meshResetKey(void) {
 }
 
 static numvar meshJoinGroup(void) {
+  if (checkArgs(1, F("usage: mesh.joingroup(groupId)"))) {
+    return 0;
+  }
   Scout.meshJoinGroup(getarg(1));
   return 1;
 }
 
 static numvar meshLeaveGroup(void) {
+  if (checkArgs(1, F("usage: mesh.leavegroup(groupId)"))) {
+    return 0;
+  }
   Scout.meshLeaveGroup(getarg(1));
   return 1;
 }
 
 static numvar meshIsInGroup(void) {
-  bool inGroup = Scout.meshIsInGroup(getarg(1));
-  return inGroup;
+  if (checkArgs(1, F("usage: mesh.ingroup(groupId)"))) {
+    return 0;
+  }
+  return Scout.meshIsInGroup(getarg(1));
 }
 
 // ver = 0 means all args, ver > 1 means ignore first arg
@@ -916,20 +959,19 @@ StringBuffer arg2array(int ver) {
 }
 
 static numvar meshSend(void) {
-  if (!getarg(0)) {
-    return false;
+  if (checkArgs(1, F("usage: mesh.send(scoutId, \"message\")"), true)) {
+    return 0;
   }
-
   sendMessage(getarg(1), arg2array(1));
-  return true;
+  return 1;
 }
 
 static numvar meshAnnounce(void) {
-  if (!getarg(0)) {
-    return false;
+  if (checkArgs(1, F("usage: mesh.announce(groupId, \"message\")"), true)) {
+    return 0;
   }
   Scout.handler.announce(getarg(1), arg2array(1));
-  return true;
+  return 1;
 }
 
 static numvar meshSignal(void) {
@@ -941,6 +983,9 @@ static numvar meshLoss(void) {
 }
 
 static numvar meshVerbose(void) {
+  if (checkArgs(1, F("usage: mesh.verbose(flag)"))) {
+    return 0;
+  }
   isMeshVerbose = getarg(1);
   return 1;
 }
@@ -1089,6 +1134,9 @@ static numvar pinConstInputPullup(void) {
 }
 
 static numvar pinMakeInput(void) {
+  if (checkArgs(1, F("usage: pin.makeinput(\"pinName\", inputType=INPUT_PULLUP)"), true)) {
+    return 0;
+  }
   int8_t pin = getPinFromArg(1);
   if (pin == -1) {
     speol(F("Invalid pin number"));
@@ -1115,6 +1163,10 @@ static numvar pinMakeInput(void) {
 }
 
 static numvar pinMakeOutput(void) {
+  if (checkArgs(1, F("usage: pin.makeoutput(\"pinName\")"))) {
+    return 0;
+  }
+
   int8_t pin = getPinFromArg(1);
   if (pin == -1) {
     speol(F("Invalid pin number"));
@@ -1136,6 +1188,10 @@ static numvar pinMakeOutput(void) {
 }
 
 static numvar pinDisable(void) {
+  if (checkArgs(1, F("usage: pin.disable(\"pinName\")"))) {
+    return 0;
+  }
+
   int8_t pin = getPinFromArg(1);
   if (pin == -1) {
     speol(F("Invalid pin number"));
@@ -1157,6 +1213,10 @@ static numvar pinDisable(void) {
 }
 
 static numvar pinSetMode(void) {
+  if (checkArgs(2, F("usage: pin.setmode(\"pinName\", pinMode)"))) {
+    return 0;
+  }
+
   int8_t pin = getPinFromArg(1);
   if (pin == -1) {
     speol(F("Invalid pin number"));
@@ -1178,6 +1238,9 @@ static numvar pinSetMode(void) {
 }
 
 static numvar pinRead(void) {
+  if (checkArgs(1, F("usage: pin.read(\"pinName\")"))) {
+    return 0;
+  }
   int8_t pin = getPinFromArg(1);
   if (pin == -1) {
     speol(F("Invalid pin number"));
@@ -1189,6 +1252,10 @@ static numvar pinRead(void) {
 
 static numvar pinWrite(void) {
   // TODO: handle PWM pins
+  if (checkArgs(1, F("usage: pin.write(\"pinName\", pinValue)"))) {
+    return 0;
+  }
+
   int8_t pin = getPinFromArg(1);
   uint8_t value = getarg(2);
   if (pin == -1) {
@@ -1213,6 +1280,10 @@ static numvar pinWrite(void) {
 }
 
 static numvar pinSave(void) {
+  if (checkArgs(2, F("usage: pin.save(\"pinName\", pinMode)"))) {
+    return 0;
+  }
+
   int8_t pin = getPinFromArg(1);
   int8_t mode = getarg(2);
 
@@ -1279,6 +1350,18 @@ static int getPinFromArg(int arg) {
   } else {
     return -1;
   }
+}
+
+static bool checkArgs(uint8_t required, const __FlashStringHelper *errorMsg, bool minRequired) {
+  if (minRequired == true && getarg(0) < required) {
+    speol(errorMsg);
+    return false;
+  }
+  if (getarg(0) != required) {
+      speol(errorMsg);
+      return false;
+  }
+  return true;
 }
 
 /****************************\
@@ -1621,6 +1704,9 @@ static numvar isScoutLeadScout(void) {
 }
 
 static numvar setHQToken(void) {
+  if (checkArgs(1, F("usage: hq.settoken(\"token\""))) {
+    return 0;
+  }
   Pinoccio.setHQToken((const char *)getstringarg(1));
   return 1;
 }
@@ -1643,11 +1729,11 @@ static void delayTimerHandler(SYS_Timer_t *timer) {
 }
 
 static numvar scoutDelay(void) {
-  char *str;
-  if (getarg(0) != 2) {
-    speol("usage: delay(ms,\"function\")");
+  if (checkArgs(2, F("usage: scout.delay(ms, \"scoutscriptCommand\")"))) {
     return 0;
   }
+
+  char *str;
   if (isstringarg(2)) {
     str = (char *)getarg(2);
   } else {
@@ -1735,8 +1821,8 @@ static numvar hqVerbose(void) {
 }
 
 static numvar hqPrint(void) {
-  if (!getarg(0)) {
-    return false;
+  if (checkArgs(1, F("usage: hq.print(\"string\""))) {
+    return 0;
   }
   Scout.handler.announce(0, arg2array(0));
   return true;
@@ -1811,6 +1897,10 @@ static numvar wifiList(void) {
 }
 
 static numvar wifiConfig(void) {
+  if (checkArgs(2, F("usage: wifi.config(\"wifiAPName\", \"wifiAPPassword\")"))) {
+    return 0;
+  }
+
   if (!Scout.wifi.wifiConfig((const char *)getstringarg(1), (const char *)getstringarg(2))) {
     speol(F("Error: saving Scout.wifi.configuration data failed"));
   }
@@ -1827,6 +1917,10 @@ static numvar wifiDhcp(void) {
 }
 
 static numvar wifiStatic(void) {
+  if (checkArgs(4, F("usage: wifi.static(\"ip\", \"netmask\", \"gateway\", \"dns\")"))) {
+    return 0;
+  }
+
   IPAddress ip, nm, gw, dns;
 
   if (!GSCore::parseIpAddress(&ip, (const char *)getstringarg(1))) {
@@ -1867,6 +1961,9 @@ static numvar wifiReassociate(void) {
 }
 
 static numvar wifiCommand(void) {
+  if (checkArgs(1, F("usage: wifi.command(\"command\")"))) {
+    return 0;
+  }
   if (!Scout.wifi.runDirectCommand(Serial, (const char *)getstringarg(1))) {
      speol(F("Error: Wi-Fi direct command failed"));
   }
@@ -1874,6 +1971,9 @@ static numvar wifiCommand(void) {
 }
 
 static numvar wifiPing(void) {
+  if (checkArgs(1, F("usage: wifi.ping(\"hostname\")"))) {
+    return 0;
+  }
   if (!Scout.wifi.ping(Serial, (const char *)getstringarg(1))) {
      speol(F("Error: Wi-Fi ping command failed"));
   }
@@ -1881,6 +1981,9 @@ static numvar wifiPing(void) {
 }
 
 static numvar wifiDNSLookup(void) {
+  if (checkArgs(1, F("usage: wifi.dnslookup(\"hostname\")"))) {
+    return 0;
+  }
   if (!Scout.wifi.dnsLookup(Serial, (const char *)getstringarg(1))) {
      speol(F("Error: Wi-Fi DNS lookup command failed"));
   }
