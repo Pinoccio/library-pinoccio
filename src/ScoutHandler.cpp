@@ -420,6 +420,7 @@ void leadHQConnect() {
     char token[33];
     StringBuffer auth(64);
     token[32] = 0;
+    Scout.getHQToken(token);
     auth.appendSprintf("{\"type\":\"token\",\"token\":\"%s\"}\n", token);
     leadSignal(auth);
   } else {
