@@ -50,6 +50,7 @@ void readPacket()
 }
 
 void setup() {
+  char seedjs[] = "{\"paths\":[{\"type\":\"ipv4\",\"ip\":\"192.168.0.36\",\"port\":42424}],\"parts\":{\"3a\":\"f0d2bfc8590a7e0016ce85dbf0f8f1883fb4f3dcc4701eab12ef83f972a2b87f\",\"2a\":\"0cb4f6137a745f1af2d31707550c03b99083180f6e69ec37918c220ecfa2972f\",\"1a\":\"821e083c2b788c75bf4608e66a52ef2d911590f6\"},\"keys\":{\"3a\":\"MC5dfSfrAVCSugX75JbgVWtvCbxPqwLDUkc9TcS/qxE=\",\"2a\":\"MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAqr12tXnpn707llkZfEcspB/D6KTcZM765+SnI5Z8JWkjc0Mrz9qZBB2YFLr2NmgCx0oLfSetmuHBNTT54sIAxQ/vxyykcMNGsSFg4WKhbsQXSrX4qChbhpIqMJkKa4mYZIb6qONA76G5/431u4+1sBRvfY0ewHChqGh0oThcaa50nT68f8ohIs1iUFm+SL8L9UL/oKN3Yg6drBYwpJi2Ex5Idyu4YQJwZ9sAQU49Pfs+LqhkHOascTmaa3+kTyTnp2iJ9wEuPg+AR3PJwxXnwYoWbH+Wr8gY6iLe0FQe8jXk6eLw9mqOhUcah8338MC83zSQcZriGVMq8qaQz0L9nwIDAQAB\",\"1a\":\"z6yCAC7r5XIr6C4xdxeX7RlSmGu9Xe73L1gv8qecm4/UEZAKR5iCxA==\"}}";
   Scout.setup();  
   Scout.wifi.onOn = onOn;
   platform_debugging(1);
@@ -58,10 +59,13 @@ void setup() {
   crypt_keygen(0x1a,keys);
   DEBUG_PRINTF("keys %d %s",keys->json_len,keys->json);
   ths = switch_new();
-  switch_init(ths,keys);
+  if(switch_init(ths,keys)) Serial.println("switch init failed");
   Serial.println((char*)ths->id->hexname);
-  DEBUG_PRINTF("loaded hashname %d %s",strlen(ths->id->hexname),ths->id->hexname);
-  DEBUG_PRINTF("parts %d %s",ths->parts->json_len,ths->parts->json);
+  DEBUG_PRINTF("loaded hashname %s",ths->id->hexname);
+  packet_t p = packet_new();
+  packet_json(p,(unsigned char*)seedjs,strlen(seedjs));
+  hn_t seed = hn_fromjson(ths->index,p);
+  DEBUG_PRINTF("loaded seed %s",seed->hexname);
 }
 
 void loop() {
