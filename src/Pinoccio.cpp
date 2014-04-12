@@ -4,8 +4,6 @@
 #include <src/bitlash.h>
 #include <lwm/phy/atmegarfr2.h>
 
-PinoccioClass Pinoccio;
-
 PinoccioClass::PinoccioClass() {
   // this has to be called as early as possible before other code uses the register
   lastResetCause = GPIOR0;
