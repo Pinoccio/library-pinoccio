@@ -18,12 +18,14 @@ static void print_line(const uint8_t *buf, uint16_t len, void *data) {
   speol();
 }
 
-WiFiBackpack::WiFiBackpack() : client(gs) { }
+WiFiBackpack::WiFiBackpack() : client(gs), server(gs) { }
 
 WiFiBackpack::~WiFiBackpack() { }
 
 void WiFiBackpack::onAssociate(void *data) {
   WiFiBackpack& wifi = *(WiFiBackpack*)data;
+
+  if(wifi.onOn) wifi.onOn();
 
   // Do a timesync
   IPAddress ip = wifi.gs.dnsLookup(NTP_SERVER);
