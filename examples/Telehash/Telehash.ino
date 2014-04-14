@@ -16,41 +16,64 @@ void println(char *x) { Serial.println(x); }
 }
 
 switch_t ths;
+hn_t seed;
+
+void writePacket(char *ip, uint16_t port, unsigned char *msg, int len)
+{
+  DEBUG_PRINTF("writing %s:%hu %d",ip,port,len);
+  Scout.wifi.server.beginPacket(ip,port);
+  Scout.wifi.server.write(msg,len);
+  Scout.wifi.server.endPacket();
+}
 
 void onOn()
 {
+  IPAddress ip;
   Serial.println("online");
   if(!Scout.wifi.server.begin(42424))
     Serial.println("Bind failed");
+
+  // create/send a ping packet  
+  chan_t c = chan_new(ths, seed, "seek", 0);
+  packet_t p = chan_packet(c);
+  packet_set_str(p,"seek",ths->id->hexname);
+  DEBUG_PRINTF("seek %s",p->json);
+  chan_send(c, p);
+
+  while((p = switch_sending(ths)))
+  {
+    if(util_cmp(p->out->type,"ipv4")!=0)
+    {
+      packet_free(p);
+      continue;
+    }
+    DEBUG_PRINTF("sending %s packet %d %s\n",p->json_len?"open":"line",packet_len(p),path_json(p->out));
+    writePacket(path_ip(p->out,0),path_port(p->out,0),packet_raw(p),packet_len(p));
+    packet_free(p);
+  }
+
 }
 
 void readPacket()
 {
+  unsigned char *buf;
   // read a single UDP packet
   size_t len = Scout.wifi.server.parsePacket();
   if(!len) return;
+  buf = (unsigned char*)malloc(len);
 
-  Serial.print("packet len ");
-  Serial.print(len);
-  Serial.print(" from ");
-  Serial.print(Scout.wifi.server.remoteIP());
-  Serial.print(":");
-  Serial.print(Scout.wifi.server.remotePort());
-  Serial.println();
-
-  while (Scout.wifi.server.available()) {
-    int c = Scout.wifi.server.read();
-    Serial.write(c);
-  }
-
-  Scout.wifi.server.beginPacket(Scout.wifi.server.remoteIP(),Scout.wifi.server.remotePort());
-  Scout.wifi.server.write("sup\n",4);
-  Scout.wifi.server.endPacket();
-  
+  path_t from = path_new("ipv4");
+  path_ip4(from,Scout.wifi.server.remoteIP());
+  path_port(from,Scout.wifi.server.remotePort());
+  Scout.wifi.server.read(buf,1500);
+  packet_t p = packet_parse(buf,len);
+  free(buf);
+  printf("received %s packet %d %s\n", p->json_len?"open":"line", len, path_json(from));
+  switch_receive(ths,p,from);
 }
 
 void setup() {
-  char seedjs[] = "{\"paths\":[{\"type\":\"ipv4\",\"ip\":\"192.168.0.36\",\"port\":42424}],\"parts\":{\"3a\":\"f0d2bfc8590a7e0016ce85dbf0f8f1883fb4f3dcc4701eab12ef83f972a2b87f\",\"2a\":\"0cb4f6137a745f1af2d31707550c03b99083180f6e69ec37918c220ecfa2972f\",\"1a\":\"821e083c2b788c75bf4608e66a52ef2d911590f6\"},\"keys\":{\"3a\":\"MC5dfSfrAVCSugX75JbgVWtvCbxPqwLDUkc9TcS/qxE=\",\"2a\":\"MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAqr12tXnpn707llkZfEcspB/D6KTcZM765+SnI5Z8JWkjc0Mrz9qZBB2YFLr2NmgCx0oLfSetmuHBNTT54sIAxQ/vxyykcMNGsSFg4WKhbsQXSrX4qChbhpIqMJkKa4mYZIb6qONA76G5/431u4+1sBRvfY0ewHChqGh0oThcaa50nT68f8ohIs1iUFm+SL8L9UL/oKN3Yg6drBYwpJi2Ex5Idyu4YQJwZ9sAQU49Pfs+LqhkHOascTmaa3+kTyTnp2iJ9wEuPg+AR3PJwxXnwYoWbH+Wr8gY6iLe0FQe8jXk6eLw9mqOhUcah8338MC83zSQcZriGVMq8qaQz0L9nwIDAQAB\",\"1a\":\"z6yCAC7r5XIr6C4xdxeX7RlSmGu9Xe73L1gv8qecm4/UEZAKR5iCxA==\"}}";
+  char seedjs[] = "{\"paths\":[{\"type\":\"ipv4\",\"ip\":\"192.168.0.36\",\"port\":42424}],\"parts\":{\"1a\":\"821e083c2b788c75bf4608e66a52ef2d911590f6\"},\"keys\":{\"1a\":\"z6yCAC7r5XIr6C4xdxeX7RlSmGu9Xe73L1gv8qecm4/UEZAKR5iCxA==\"}}";
   Scout.setup();  
   Scout.wifi.onOn = onOn;
   platform_debugging(1);
@@ -60,12 +83,13 @@ void setup() {
   DEBUG_PRINTF("keys %d %s",keys->json_len,keys->json);
   ths = switch_new();
   if(switch_init(ths,keys)) Serial.println("switch init failed");
-  Serial.println((char*)ths->id->hexname);
   DEBUG_PRINTF("loaded hashname %s",ths->id->hexname);
   packet_t p = packet_new();
   packet_json(p,(unsigned char*)seedjs,strlen(seedjs));
-  hn_t seed = hn_fromjson(ths->index,p);
-  DEBUG_PRINTF("loaded seed %s",seed->hexname);
+  seed = hn_fromjson(ths->index,p);
+  DEBUG_PRINTF("loaded seed %d %s %s %d",packet_len(p),seed->hexname,seed->hexid,seed->c);
+  DEBUG_PRINTF("loaded %d",xht_get(ths->index,"1a"));
+
 }
 
 void loop() {
