@@ -25,8 +25,6 @@ WiFiBackpack::~WiFiBackpack() { }
 void WiFiBackpack::onAssociate(void *data) {
   WiFiBackpack& wifi = *(WiFiBackpack*)data;
 
-  if(wifi.onOn) wifi.onOn();
-  return;
   // Do a timesync
   IPAddress ip = wifi.gs.dnsLookup(NTP_SERVER);
   if (ip == INADDR_NONE ||
@@ -35,7 +33,6 @@ void WiFiBackpack::onAssociate(void *data) {
     wifi.autoConnectHq();
   }
 
-  
   wifi.apConnCount++;
 }
 
@@ -57,6 +54,8 @@ void WiFiBackpack::onNcmConnect(void *data, GSCore::cid_t cid) {
   
   wifi.hqConnCount++;
 
+  if(wifi.onOn) wifi.onOn();
+  
   // TODO: Don't call leadHQConnect directly?
   leadHQConnect();
 }
@@ -79,16 +78,15 @@ bool WiFiBackpack::setup() {
   SPI.setClockDivider(SPI_CLOCK_DIV16);
 
   gs.onAssociate = onAssociate;
-//  gs.onNcmConnect = onNcmConnect;
-//  gs.onNcmDisconnect = onNcmDisconnect;
+  gs.onNcmConnect = onNcmConnect;
+  gs.onNcmDisconnect = onNcmDisconnect;
   gs.eventData = this;
-  gs.setNcm(false);
 
   if (!gs.begin(7))
     return false;
 
-//  if (HqHandler::cacert_len)
-//    gs.addCert(CA_CERTNAME_HQ, /* to_flash */ false, HqHandler::cacert, HqHandler::cacert_len);
+  if (HqHandler::cacert_len)
+    gs.addCert(CA_CERTNAME_HQ, /* to_flash */ false, HqHandler::cacert, HqHandler::cacert_len);
 
   return true;
 }
