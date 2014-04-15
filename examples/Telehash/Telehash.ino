@@ -16,6 +16,7 @@ extern "C" {
 
 switch_t ths;
 hn_t seed;
+uint8_t isOn = 0;
 
 void writePacket(char *ip, uint16_t port, unsigned char *msg, int len)
 {
@@ -32,6 +33,7 @@ void onOn()
   if(!Scout.wifi.server.begin(42424))
     Serial.println("Bind failed");
 
+  isOn = true;
   // create/send a ping packet  
   chan_t c = chan_new(ths, seed, "seek", 0);
   packet_t p = chan_packet(c);
@@ -56,6 +58,7 @@ void onOn()
 
 void readPacket()
 {
+  if(!isOn) return;
   unsigned char *buf;
   // read a single UDP packet
   size_t len = Scout.wifi.server.parsePacket();
@@ -83,7 +86,7 @@ void setup() {
   DEBUG_PRINTF("keys %d",keys->json_len);
   ths = switch_new();
   if(switch_init(ths,keys)) Serial.println("switch init failed");
-  DEBUG_PRINTF("loaded hashname %s",ths->id->hexname);
+  DEBUG_PRINTF("loaded hashname %s parts %d",ths->id->hexname,ths->parts->json_len);
   packet_t p = packet_new();
   packet_json(p,(unsigned char*)seedjs,strlen(seedjs));
   seed = hn_fromjson(ths->index,p);
