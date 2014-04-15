@@ -37,9 +37,10 @@ void onOn()
   chan_t c = chan_new(ths, seed, "seek", 0);
   packet_t p = chan_packet(c);
   packet_set_str(p,"seek",ths->id->hexname);
-  DEBUG_PRINTF("seek %s",p->json);
+  DEBUG_PRINTF("seek %d",p->json_len);
   chan_send(c, p);
 
+  DEBUG_PRINTF("looking for packets to send");
   while((p = switch_sending(ths)))
   {
     if(util_cmp(p->out->type,"ipv4")!=0)
@@ -80,7 +81,7 @@ void setup() {
   packet_t keys = packet_new();
   crypt_init();
   crypt_keygen(0x1a,keys);
-  DEBUG_PRINTF("keys %d %s",keys->json_len,keys->json);
+  DEBUG_PRINTF("keys %d",keys->json_len);
   ths = switch_new();
   if(switch_init(ths,keys)) Serial.println("switch init failed");
   DEBUG_PRINTF("loaded hashname %s",ths->id->hexname);
