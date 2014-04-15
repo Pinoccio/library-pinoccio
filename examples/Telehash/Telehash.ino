@@ -11,8 +11,7 @@ extern "C" {
 #define CS_1a 1
 #include <avr.h>
 #include <switch.h>
-#include <ecc.h>
-void println(char *x) { Serial.println(x); }
+  void println(char *x) { Serial.println(x); }
 }
 
 switch_t ths;
