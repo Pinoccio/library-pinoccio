@@ -97,7 +97,7 @@ static numvar isScoutLeadScout(void);
 static numvar setHQToken(void);
 static numvar getHQToken(void);
 static numvar scoutDelay(void);
-static numvar scoutFree(void);
+static numvar memoryReport(void);
 static numvar daisyWipe(void);
 static numvar boot(void);
 static numvar otaBoot(void);
@@ -258,10 +258,11 @@ void PinoccioShell::setup() {
   addBitlashFunction("scout.report", (bitlash_function) scoutReport);
   addBitlashFunction("scout.isleadscout", (bitlash_function) isScoutLeadScout);
   addBitlashFunction("scout.delay", (bitlash_function) scoutDelay);
-  addBitlashFunction("scout.free", (bitlash_function) scoutFree);
   addBitlashFunction("scout.daisy", (bitlash_function) daisyWipe);
   addBitlashFunction("scout.boot", (bitlash_function) boot);
   addBitlashFunction("scout.otaboot", (bitlash_function) otaBoot);
+  
+  addBitlashFunction("memory.report", (bitlash_function) memoryReport);
 
   addBitlashFunction("hq.settoken", (bitlash_function) setHQToken);
   addBitlashFunction("hq.gettoken", (bitlash_function) getHQToken);
@@ -1750,7 +1751,7 @@ static numvar scoutDelay(void) {
   return 1;
 }
 
-static numvar scoutFree(void) {
+static numvar memoryReport(void) {
   StringBuffer report(100);
   int freeMem = getFreeMemory();
   report.appendSprintf("[%d,[%d,%d,%d],[%d,%d,%d]]",
