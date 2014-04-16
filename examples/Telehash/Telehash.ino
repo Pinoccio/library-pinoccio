@@ -76,10 +76,11 @@ void readPacket()
 }
 
 void setup() {
-  char seedjs[] = "{\"paths\":[{\"type\":\"ipv4\",\"ip\":\"192.168.0.36\",\"port\":42424}],\"parts\":{\"1a\":\"821e083c2b788c75bf4608e66a52ef2d911590f6\"},\"keys\":{\"1a\":\"z6yCAC7r5XIr6C4xdxeX7RlSmGu9Xe73L1gv8qecm4/UEZAKR5iCxA==\"}}";
   Scout.setup();  
   Scout.wifi.onOn = onOn;
   platform_debugging(1);
+  
+  char seedjs[] = "{\"paths\":[{\"type\":\"ipv4\",\"ip\":\"192.168.0.36\",\"port\":42424}],\"parts\":{\"1a\":\"821e083c2b788c75bf4608e66a52ef2d911590f6\"},\"keys\":{\"1a\":\"z6yCAC7r5XIr6C4xdxeX7RlSmGu9Xe73L1gv8qecm4/UEZAKR5iCxA==\"}}";
   packet_t keys = packet_new();
   crypt_init();
   crypt_keygen(0x1a,keys);
@@ -90,25 +91,6 @@ void setup() {
   packet_json(p,(unsigned char*)seedjs,strlen(seedjs));
   seed = hn_fromjson(ths->index,p);
   DEBUG_PRINTF("loaded seed %s",seed->hexname);
-
-	uint8_t key[16] = { 0x2b, 0x7e, 0x15, 0x16,
-	                    0x28, 0xae, 0xd2, 0xa6,
-	                    0xab, 0xf7, 0x15, 0x88,
-	                    0x09, 0xcf, 0x4f, 0x3c };
-	uint8_t data[16] = { 0x32, 0x43, 0xf6, 0xa8,
-	                     0x88, 0x5a, 0x30, 0x8d,
-	                     0x31, 0x31, 0x98, 0xa2,
-	                     0xe0, 0x37, 0x07, 0x34 };
-  bcal_ctr_ctx_t ctx;
-  DEBUG_PRINTF("aes_ctr init %d",sizeof(ctx));
-//  bcal_ctr_init(&aes128_desc, key, 16*8, NULL, &ctx);
-  DEBUG_PRINTF("init %d",ctx.blocksize_B);
-//  bcal_ctr_loadIV(key,&ctx);
-  DEBUG_PRINTF("init");
-//  bcal_ctr_encNext(data,&ctx);
-//  bcal_ctr_encMsg(key, data, 16*8, &ctx);
-  DEBUG_PRINTF("enc");
-//  bcal_ctr_free(&ctx);
   
 }
 
