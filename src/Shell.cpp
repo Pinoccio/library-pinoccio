@@ -504,7 +504,6 @@ static StringBuffer uptimeReportHQ(void) {
   strncpy_P(reset, Scout.getLastResetCause(), sizeof(reset));
   reset[sizeof(reset) - 1] = 0; // ensure termination, strncpy is weird
 
-  // free memory based on http://forum.pololu.com/viewtopic.php?f=10&t=989&view=unread#p4218
   report.appendSprintf("[%d,[%d,%d,%d,%d],[%ld,%d,%d,",keyMap("uptime",0),
           keyMap("millis", 0),
           keyMap("free", 0),
