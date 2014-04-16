@@ -83,16 +83,13 @@ void setup() {
   packet_t keys = packet_new();
   crypt_init();
   crypt_keygen(0x1a,keys);
-  DEBUG_PRINTF("keys %d",keys->json_len);
-  ths = switch_new();
+  ths = switch_new(41);
   if(switch_init(ths,keys)) Serial.println("switch init failed");
-  DEBUG_PRINTF("loaded hashname %s parts %d",ths->id->hexname,ths->parts->json_len);
+  DEBUG_PRINTF("loaded hashname %s",ths->id->hexname);
   packet_t p = packet_new();
   packet_json(p,(unsigned char*)seedjs,strlen(seedjs));
   seed = hn_fromjson(ths->index,p);
-  DEBUG_PRINTF("loaded seed %d %s %s %d",packet_len(p),seed->hexname,seed->hexid,seed->c);
-  DEBUG_PRINTF("loaded %d",xht_get(ths->index,"1a"));
-
+  DEBUG_PRINTF("loaded seed %s",seed->hexname);
 }
 
 void loop() {
