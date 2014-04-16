@@ -1742,7 +1742,18 @@ static numvar scoutDelay(void) {
 }
 
 static numvar scoutFree(void) {
-  return showMemory();
+  StringBuffer report(100);
+  int freeMem = getFreeMemory();
+  report.appendSprintf("[%d,[%d,%d,%d],[%d,%d,%d]]",
+          keyMap("memory", 0),
+          keyMap("used", 0),
+          keyMap("free", 0),
+          keyMap("large", 0),
+          getMemoryUsed(),
+          freeMem,
+          getLargestAvailableMemoryBlock());
+  speol(Scout.handler.report(report));
+  return freeMem;
 }
 
 static numvar daisyWipe(void) {
