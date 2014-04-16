@@ -449,9 +449,6 @@ void PinoccioShell::disableShell() {
 
 static NWK_DataReq_t sendDataReq;
 static bool sendDataReqBusy;
-static int tempHigh = 0;
-static int tempLow = 0;
-
 
 /****************************\
 *      BUILT-IN HANDLERS    *
@@ -460,16 +457,10 @@ static int tempLow = 0;
 static StringBuffer tempReportHQ(void) {
   StringBuffer report(100);
   int temp = Scout.getTemperature();
-  if(temp > tempHigh) tempHigh = temp;
-  if(!tempLow || temp < tempLow) tempLow = temp;
-  report.appendSprintf("[%d,[%d,%d,%d],[%d,%d,%d]]",
+  report.appendSprintf("[%d,[%d],[%d]]",
           keyMap("temp", 0),
           keyMap("current", 0),
-          keyMap("high", 0),
-          keyMap("low", 0),
-          temp,
-          tempHigh,
-          tempLow);
+          temp);
   return Scout.handler.report(report);
 }
 
