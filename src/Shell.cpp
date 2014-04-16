@@ -495,7 +495,6 @@ static numvar getLastResetCause(void) {
   while((c = pgm_read_byte(resetString++))) {
     sprintf(reset + strlen(reset), "%c", c);
   }
-  speol(reset);
   return keyMap(reset, 0);
 }
 
