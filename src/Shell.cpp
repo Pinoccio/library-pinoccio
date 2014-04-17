@@ -1342,13 +1342,17 @@ static int getPinFromArg(int arg) {
 }
 
 static bool checkArgs(uint8_t required, const __FlashStringHelper *errorMsg, bool minRequired) {
-  if (minRequired == true && getarg(0) < required) {
-    speol(errorMsg);
-    return false;
-  }
-  if (getarg(0) != required) {
+  if (minRequired == true) {
+    if (getarg(0) < required) {
       speol(errorMsg);
       return false;
+    } else {
+      return true;
+    }
+  }
+  if (getarg(0) != required) {
+    speol(errorMsg);
+    return false;
   }
   return true;
 }
