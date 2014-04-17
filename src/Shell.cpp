@@ -91,10 +91,12 @@ static numvar pinConstOutput(void);
 static numvar pinConstInputPullup(void);
 static numvar pinMakeInput(void);
 static numvar pinMakeOutput(void);
+static numvar pinMakePWM(void);
 static numvar pinDisable(void);
 static numvar pinSetMode(void);
 static numvar pinRead(void);
 static numvar pinWrite(void);
+static numvar pinWritePWM(void);
 static numvar pinSave(void);
 static numvar digitalPinReport(void);
 static numvar analogPinReport(void);
@@ -260,10 +262,12 @@ void PinoccioShell::setup() {
 
   addBitlashFunction("pin.makeinput", (bitlash_function) pinMakeInput);
   addBitlashFunction("pin.makeoutput", (bitlash_function) pinMakeOutput);
+  addBitlashFunction("pin.makepwm", (bitlash_function) pinMakePWM);
   addBitlashFunction("pin.disable", (bitlash_function) pinDisable);
   addBitlashFunction("pin.setmode", (bitlash_function) pinSetMode);
   addBitlashFunction("pin.read", (bitlash_function) pinRead);
   addBitlashFunction("pin.write", (bitlash_function) pinWrite);
+  addBitlashFunction("pin.writepwm", (bitlash_function) pinWritePWM);
   addBitlashFunction("pin.save", (bitlash_function) pinSave);
   addBitlashFunction("pin.report.digital", (bitlash_function) digitalPinReport);
   addBitlashFunction("pin.report.analog", (bitlash_function) analogPinReport);
@@ -1227,6 +1231,22 @@ static numvar pinMakeOutput(void) {
   return 1;
 }
 
+static numvar pinMakePWM(void) {
+  int8_t pin = getPinFromArg(1);
+  if (pin == -1) {
+    speol(F("Invalid pin number"));
+    return 0;
+  }
+
+  if (!Scout.makePWM(pin)) {
+    speol(F("Cannot change mode of reserved pin"));
+    return 0;
+  }
+
+  digitalPinReportHQ();
+  return 1;
+}
+
 static numvar pinDisable(void) {
   if (!checkArgs(1, F("usage: pin.disable(\"pinName\")"))) {
     return 0;
@@ -1291,7 +1311,6 @@ static numvar pinRead(void) {
 }
 
 static numvar pinWrite(void) {
-  // TODO: handle PWM pins
   if (!checkArgs(2, F("usage: pin.write(\"pinName\", pinValue)"))) {
     return 0;
   }
@@ -1303,7 +1322,7 @@ static numvar pinWrite(void) {
     return 0;
   }
 
-  if (value < 0 || value > 1) {
+  if (getarg(2) < 0 || getarg(2) > 1) {
     speol(F("Invalid pin value"));
     return 0;
   }
@@ -1316,6 +1335,27 @@ static numvar pinWrite(void) {
     Scout.pinWrite(pin, value);
     analogPinReportHQ();
   }
+  return true;
+}
+
+static numvar pinWritePWM(void) {
+  int8_t pin = getPinFromArg(1);
+  uint8_t value = getarg(2);
+  if (pin == -1) {
+    speol(F("Invalid pin number"));
+    return 0;
+  }
+
+  if (getarg(2) < 0 || getarg(2) > 255) {
+    speol(F("Invalid pin value"));
+    return 0;
+  }
+
+  if (Scout.isDigitalPin(pin)) {
+    Scout.pinWritePWM(pin, value);
+    digitalPinReportHQ();
+  }
+
   return true;
 }
 

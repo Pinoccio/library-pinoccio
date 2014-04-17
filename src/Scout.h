@@ -23,6 +23,8 @@
 #include "peripherals/halFuelGauge.h"
 #include "peripherals/halRgbLed.h"
 
+#define DISABLED -1
+#define PWM 3
 
 // This is a temporary hack to check the result of snprintf and print an
 // error
@@ -76,11 +78,14 @@ class PinoccioScout : public PinoccioClass {
     int8_t getPinMode(uint8_t pin);
     bool makeInput(uint8_t pin, bool enablePullup=true);
     bool makeOutput(uint8_t pin);
+    bool makePWM(uint8_t pin);
     bool makeDisabled(uint8_t pin);
     bool setMode(uint8_t pin, uint8_t mode);
     bool isDigitalPin(uint8_t pin);
     bool isAnalogPin(uint8_t pin);
+    bool isPWMPin(uint8_t pin);
     bool pinWrite(uint8_t pin, uint8_t value);
+    bool pinWritePWM(uint8_t pin, uint8_t value);
     uint16_t pinRead(uint8_t pin);
     int8_t getPinFromName(const char* name);
     bool isPinReserved(uint8_t pin);
@@ -92,10 +97,11 @@ class PinoccioScout : public PinoccioClass {
     void (*batteryAlarmTriggeredEventHandler)(uint8_t value);
     void (*temperatureEventHandler)(int8_t tempC, int8_t tempF);
 
-    int8_t digitalPinState[7];
+    int16_t digitalPinState[7];
     int8_t digitalPinMode[7];
     int16_t analogPinState[8];
     int8_t analogPinMode[8];
+    uint8_t pwmPinValue[4];
 
     uint8_t batteryPercentage;
     uint16_t batteryVoltage;
