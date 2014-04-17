@@ -15,7 +15,6 @@ PinoccioScout::PinoccioScout() {
   digitalPinEventHandler = 0;
   analogPinEventHandler = 0;
   batteryPercentageEventHandler = 0;
-  batteryVoltageEventHandler = 0;
   batteryChargingEventHandler = 0;
   batteryAlarmTriggeredEventHandler = 0;
   temperatureEventHandler = 0;
@@ -445,19 +444,6 @@ static void scoutPeripheralStateChangeTimerHandler(SYS_Timer_t *timer) {
       }
       Scout.batteryPercentage = val;
       Scout.batteryPercentageEventHandler(val);
-    }
-  }
-
-  if (Scout.batteryVoltageEventHandler != 0) {
-    val = HAL_FuelGaugeVoltage();
-    if (Scout.batteryVoltage != val) {
-      if (Scout.eventVerboseOutput) {
-        Serial.print(F("Running: batteryVoltageEventHandler("));
-        Serial.print(val);
-        Serial.println(F(")"));
-      }
-      Scout.batteryVoltage = val;
-      Scout.batteryVoltageEventHandler(val);
     }
   }
 
