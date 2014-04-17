@@ -153,7 +153,6 @@ static void sendConfirm(NWK_DataReq_t *req);
 static void digitalPinEventHandler(uint8_t pin, int8_t value, int8_t mode);
 static void analogPinEventHandler(uint8_t pin, int16_t value, int8_t mode);
 static void batteryPercentageEventHandler(uint8_t value);
-static void batteryVoltageEventHandler(uint8_t value);
 static void batteryChargingEventHandler(uint8_t value);
 static void temperatureEventHandler(uint8_t value);
 static void ledEventHandler(uint8_t redValue, uint8_t greenValue, uint8_t blueValue);
@@ -302,7 +301,6 @@ void PinoccioShell::setup() {
   Scout.digitalPinEventHandler = digitalPinEventHandler;
   Scout.analogPinEventHandler = analogPinEventHandler;
   Scout.batteryPercentageEventHandler = batteryPercentageEventHandler;
-  Scout.batteryVoltageEventHandler = batteryVoltageEventHandler;
   Scout.batteryChargingEventHandler = batteryChargingEventHandler;
   Scout.temperatureEventHandler = temperatureEventHandler;
   RgbLed.ledEventHandler = ledEventHandler;
@@ -2219,11 +2217,8 @@ static void batteryPercentageEventHandler(uint8_t value) {
   }
 }
 
-static void batteryVoltageEventHandler(uint8_t value) {
-  powerReportHQ();
-  // REVIEW: proper function name?
-  if (findscript("event.voltage")) {
-    String callback = "event.voltage(" + String(value) + ")";
+  if (findscript("on.battery.level")) {
+    String callback = "on.battery.level(" + String(value) + ")";
     char buf[32];
     callback.toCharArray(buf, callback.length()+1);
     doCommand(buf);
