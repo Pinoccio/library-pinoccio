@@ -323,10 +323,10 @@ static bool fieldAnnouncements(NWK_DataInd_t *ind) {
 
   // run the Bitlash callback function, if defined
   StringBuffer callback(20);
-  callback.appendSprintf("event.group%d", ind->dstAddr);
+  callback.appendSprintf("on.message.group", ind->dstAddr);
   if (findscript(const_cast<char*>(callback.c_str()))) {
     StringBuffer buf(64, 16);
-    buf.appendSprintf("event.group%d(%d", ind->dstAddr, ind->srcAddr);
+    buf.appendSprintf("on.message.group(%d,%d", ind->dstAddr, ind->srcAddr);
     for (int i=2; i<=keys[0]; i++) {
       buf.appendSprintf(",%d", keys[i]);
     }

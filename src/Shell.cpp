@@ -62,13 +62,14 @@ static numvar meshResetKey(void);
 static numvar meshJoinGroup(void);
 static numvar meshLeaveGroup(void);
 static numvar meshIsInGroup(void);
-static numvar meshSend(void);
 static numvar meshVerbose(void);
 static numvar meshReport(void);
 static numvar meshRouting(void);
-static numvar meshAnnounce(void);
 static numvar meshSignal(void);
 static numvar meshLoss(void);
+
+static numvar messageScout(void);
+static numvar messageGroup(void);
 
 static numvar pinConstHigh(void);
 static numvar pinConstLow(void);
@@ -187,13 +188,14 @@ void PinoccioShell::setup() {
   addBitlashFunction("mesh.joingroup", (bitlash_function) meshJoinGroup);
   addBitlashFunction("mesh.leavegroup", (bitlash_function) meshLeaveGroup);
   addBitlashFunction("mesh.ingroup", (bitlash_function) meshIsInGroup);
-  addBitlashFunction("mesh.send", (bitlash_function) meshSend);
   addBitlashFunction("mesh.verbose", (bitlash_function) meshVerbose);
   addBitlashFunction("mesh.report", (bitlash_function) meshReport);
   addBitlashFunction("mesh.routing", (bitlash_function) meshRouting);
-  addBitlashFunction("mesh.announce", (bitlash_function) meshAnnounce);
   addBitlashFunction("mesh.signal", (bitlash_function) meshSignal);
   addBitlashFunction("mesh.loss", (bitlash_function) meshLoss);
+
+  addBitlashFunction("message.scout", (bitlash_function) messageScout);
+  addBitlashFunction("message.group", (bitlash_function) messageGroup);
 
   addBitlashFunction("temperature.c", (bitlash_function) getTemperatureC);
   addBitlashFunction("temperature.f", (bitlash_function) getTemperatureF);
@@ -259,7 +261,7 @@ void PinoccioShell::setup() {
   addBitlashFunction("scout.daisy", (bitlash_function) daisyWipe);
   addBitlashFunction("scout.boot", (bitlash_function) boot);
   addBitlashFunction("scout.otaboot", (bitlash_function) otaBoot);
-  
+
   addBitlashFunction("memory.report", (bitlash_function) memoryReport);
 
   addBitlashFunction("hq.settoken", (bitlash_function) setHQToken);
@@ -943,22 +945,6 @@ StringBuffer arg2array(int ver) {
   return buf;
 }
 
-static numvar meshSend(void) {
-  if (!checkArgs(1, F("usage: mesh.send(scoutId, \"message\")"), true)) {
-    return 0;
-  }
-  sendMessage(getarg(1), arg2array(1));
-  return 1;
-}
-
-static numvar meshAnnounce(void) {
-  if (!checkArgs(1, F("usage: mesh.announce(groupId, \"message\")"), true)) {
-    return 0;
-  }
-  Scout.handler.announce(getarg(1), arg2array(1));
-  return 1;
-}
-
 static numvar meshSignal(void) {
   return lastMeshRssi * -1;
 }
@@ -1045,6 +1031,21 @@ static numvar meshRouting(void) {
   return 1;
 }
 
+static numvar messageScout(void) {
+  if (!checkArgs(1, F("usage: message.scout(scoutId, \"message\")"), true)) {
+    return 0;
+  }
+  sendMessage(getarg(1), arg2array(1));
+  return 1;
+}
+
+static numvar messageGroup(void) {
+  if (!checkArgs(1, F("usage: message.group(groupId, \"message\")"), true)) {
+    return 0;
+  }
+  Scout.handler.announce(getarg(1), arg2array(1));
+  return 1;
+}
 
 /****************************\
 *        I/O HANDLERS       *
@@ -2053,9 +2054,9 @@ static bool receiveMessage(NWK_DataInd_t *ind) {
   keyLoad(data, keys, millis());
 
   // REVIEW: proper function name?
-  snprintf(buf, sizeof(buf),"event.message");
+  snprintf(buf, sizeof(buf),"on.message.scout");
   if (findscript(buf)) {
-    snprintf(buf, sizeof(buf), "event.message(%d", ind->srcAddr);
+    snprintf(buf, sizeof(buf), "on.message.scout(%d", ind->srcAddr);
     for (int i=2; i<=keys[0]; i++) {
       snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf), ",%d", keys[i]);
     }
@@ -2131,10 +2132,10 @@ static void sendConfirm(NWK_DataReq_t *req) {
 
   // run the Bitlash callback ack function
   char buf[32];
-  // REVIEW: proper function name?
-  snprintf(buf, sizeof(buf),"event.ack");
+
+  snprintf(buf, sizeof(buf),"on.message.signal");
   if (findscript(buf)) {
-    snprintf(buf, sizeof(buf), "event.ack(%d, %d)", req->dstAddr, (req->status == NWK_SUCCESS_STATUS) ? req->control : 0);
+    snprintf(buf, sizeof(buf), "on.message.signal(%d, %d)", req->dstAddr, (req->status == NWK_SUCCESS_STATUS) ? req->control : 0);
     doCommand(buf);
   }
 }
@@ -2149,24 +2150,20 @@ static void digitalPinEventHandler(uint8_t pin, int8_t value, int8_t mode) {
   char buf[32];
 
   digitalPinReportHQ();
-  // REVIEW: proper function name?
-  if (findscript("event.digital")) {
-    String callback = "event.digital(" + String(pin) + "," + String(value) + "," + String(mode) + ")";
-    callback.toCharArray(buf, callback.length() + 1);
-    doCommand(buf);
-  }
 
-  // REVIEW: proper function name?
-  snprintf(buf, sizeof(buf), "event.digital%d", pin);
+  snprintf(buf, sizeof(buf), "on.d%d", pin);
   if (findscript(buf)) {
-    snprintf(buf, sizeof(buf), "event.digital%d(%d, %d)", pin, value, mode);
+    snprintf(buf, sizeof(buf), "on.d%d(%d, %d)", pin, value, mode);
     doCommand(buf);
   }
 
   // simplified button trigger
-  if (value == 0 && (mode == INPUT_PULLUP || mode == INPUT)) {
-    // REVIEW: proper function name?
-    snprintf(buf, sizeof(buf), "event.button%d", pin);
+  if (mode == INPUT_PULLUP || mode == INPUT) {
+    if (value == 0) {
+      snprintf(buf, sizeof(buf), "on.d%d.low", pin);
+    } else {
+      snprintf(buf, sizeof(buf), "on.d%d.high", pin);
+    }
     if (findscript(buf)) {
       doCommand(buf);
     }
@@ -2184,18 +2181,10 @@ static void analogPinEventHandler(uint8_t pin, int16_t value, int8_t mode) {
   char buf[32];
 
   analogPinReportHQ();
-  // REVIEW: proper function name?
-  if (findscript("event.analog")) {
-    String callback = "event.analog(" + String(pin) + "," + String(value) + "," + String(mode) + ")";
-    char buf[32];
-    callback.toCharArray(buf, callback.length()+1);
-    doCommand(buf);
-  }
 
-  // REVIEW: proper function name?
-  snprintf(buf, sizeof(buf),"event.analog%d", pin);
+  snprintf(buf, sizeof(buf),"on.a%d", pin);
   if (findscript(buf)) {
-    snprintf(buf, sizeof(buf), "event.analog%d(%d, %d)", pin, value, mode);
+    snprintf(buf, sizeof(buf), "on.a%d(%d, %d)", pin, value, mode);
     doCommand(buf);
   }
 
@@ -2208,14 +2197,6 @@ static void analogPinEventHandler(uint8_t pin, int16_t value, int8_t mode) {
 
 static void batteryPercentageEventHandler(uint8_t value) {
   powerReportHQ();
-  // REVIEW: proper function name?
-  if (findscript("event.percent")) {
-    String callback = "event.percent(" + String(value) + ")";
-    char buf[32];
-    callback.toCharArray(buf, callback.length()+1);
-    doCommand(buf);
-  }
-}
 
   if (findscript("on.battery.level")) {
     String callback = "on.battery.level(" + String(value) + ")";
@@ -2227,9 +2208,9 @@ static void batteryPercentageEventHandler(uint8_t value) {
 
 static void batteryChargingEventHandler(uint8_t value) {
   powerReportHQ();
-  // REVIEW: proper function name?
-  if (findscript("event.charging")) {
-    String callback = "event.charging(" + String(value) + ")";
+
+  if (findscript("on.battery.charging")) {
+    String callback = "on.battery.charging(" + String(value) + ")";
     char buf[32];
     callback.toCharArray(buf, callback.length()+1);
     doCommand(buf);
@@ -2238,9 +2219,9 @@ static void batteryChargingEventHandler(uint8_t value) {
 
 static void temperatureEventHandler(uint8_t value) {
   tempReportHQ();
-  // REVIEW: proper function name?
-  if (findscript("event.temperature")) {
-    String callback = "event.temperature(" + String(value) + ")";
+
+  if (findscript("on.temperature")) {
+    String callback = "on.temperature(" + String(value) + ")";
     char buf[32];
     callback.toCharArray(buf, callback.length()+1);
     doCommand(buf);
