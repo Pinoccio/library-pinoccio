@@ -1114,8 +1114,13 @@ static numvar pinMakePWM(void) {
     return 0;
   }
 
-  if (!Scout.makePWM(pin)) {
+  if (Scout.isPinReserved(pin)) {
     speol(F("Cannot change mode of reserved pin"));
+    return 0;
+  }
+  
+  if (!Scout.makePWM(pin)) {
+    speol(F("Cannot change mode of non PWM pin"));
     return 0;
   }
 
@@ -1208,7 +1213,7 @@ static numvar pinWritePWM(void) {
   }
 
   if (getarg(2) < 0 || getarg(2) > 255) {
-    speol(F("Invalid pin value"));
+    speol(F("Invalid PWM value"));
     return 0;
   }
 

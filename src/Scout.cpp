@@ -24,7 +24,7 @@ PinoccioScout::PinoccioScout() {
   digitalStateChangeTimer.mode = SYS_TIMER_PERIODIC_MODE;
   digitalStateChangeTimer.handler = scoutDigitalStateChangeTimerHandler;
 
-  analogStateChangeTimer.interval = 60000;
+  analogStateChangeTimer.interval = 1000;
   analogStateChangeTimer.mode = SYS_TIMER_PERIODIC_MODE;
   analogStateChangeTimer.handler = scoutAnalogStateChangeTimerHandler;
 
