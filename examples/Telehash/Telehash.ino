@@ -81,6 +81,11 @@ void readPacket()
   printHexBuffer(Serial, buf, len);
 
   packet_t p = packet_parse(buf,len);
+  if (!p) {
+    DEBUG_PRINTF("Failed to parse packet");
+    return;
+  }
+  
   free(buf);
   switch_receive(ths,p,from);
 }
