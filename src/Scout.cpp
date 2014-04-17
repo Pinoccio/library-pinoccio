@@ -296,7 +296,7 @@ bool PinoccioScout::isAnalogPin(uint8_t pin) {
 }
 
 bool PinoccioScout::isPWMPin(uint8_t pin) {
-  if (pin >= 2 && pin <= 5) {
+  if (digitalPinHasPWM(pin)) {
     return true;
   }
   return false;
