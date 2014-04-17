@@ -1275,7 +1275,7 @@ static numvar backpackReport(void) {
   return 1;
 }
 
-static void printHexBuffer(Print &p, const uint8_t *buf, size_t len, const char *sep = NULL) {
+void printHexBuffer(Print &p, const uint8_t *buf, size_t len, const char *sep) {
   for (uint8_t i=0; i<len; ++i) {
     if (buf[i] < 0x10) {
       p.print('0');

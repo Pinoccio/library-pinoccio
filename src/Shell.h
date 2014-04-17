@@ -56,5 +56,6 @@ class PinoccioShell {
 extern PinoccioShell Shell;
 
 void bitlashFilter(byte b); // watches bitlash output for channel announcements
+void printHexBuffer(Print &p, const uint8_t *buf, size_t len, const char *sep = NULL);
 
 #endif
