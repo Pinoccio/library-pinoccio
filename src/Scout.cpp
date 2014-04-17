@@ -283,7 +283,7 @@ bool PinoccioScout::setMode(uint8_t pin, uint8_t mode) {
 
   // PWM mode
   if (mode == PWM) {
-    pinMode(pin, 2); // output still, for PWM
+    pinMode(pin, OUTPUT); // output still, for PWM
 
     if (isPWMPin(pin)) {
       digitalPinMode[pin-2] = PWM;
