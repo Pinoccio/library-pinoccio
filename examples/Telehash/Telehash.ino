@@ -30,8 +30,13 @@ void onOn()
 {
   IPAddress ip;
   Serial.println("online");
-  if(!Scout.wifi.server.begin(42424))
+  if(!Scout.wifi.server.begin(42424)) {
     Serial.println("Bind failed");
+    // this probably just means that we're already bound, since onOn is
+    // also called after the TCP connection reconnects, without
+    // reassociating
+    return;
+  }
 
   isOn = true;
   // create/send a ping packet  
