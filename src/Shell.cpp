@@ -1276,14 +1276,16 @@ static numvar backpackReport(void) {
 }
 
 void printHexBuffer(Print &p, const uint8_t *buf, size_t len, const char *sep) {
-  for (uint8_t i=0; i<len; ++i) {
-    if (buf[i] < 0x10) {
+  while(len) {
+    if (*buf < 0x10) {
       p.print('0');
     }
-    p.print(buf[i], HEX);
+    p.print(*buf, HEX);
     if (sep) {
       p.print(sep);
     }
+    --len;
+    ++buf;
   }
 }
 
