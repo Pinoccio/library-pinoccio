@@ -74,9 +74,12 @@ void readPacket()
   path_ip4(from,Scout.wifi.server.remoteIP());
   path_port(from,Scout.wifi.server.remotePort());
   Scout.wifi.server.read(buf,1500);
+
+  DEBUG_PRINTF("received packet %d %s\n", len, path_json(from));
+  printHexBuffer(Serial, buf, len);
+
   packet_t p = packet_parse(buf,len);
   free(buf);
-  printf("received %s packet %d %s\n", p->json_len?"open":"line", len, path_json(from));
   switch_receive(ths,p,from);
 }
 
