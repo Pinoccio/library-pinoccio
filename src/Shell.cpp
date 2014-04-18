@@ -1500,7 +1500,7 @@ static numvar backpackDetail(void) {
   Pbbe::Header *h = Backpacks::info[addr].getHeader();
   Pbbe::UniqueId &id = Backpacks::info[addr].id;
 
-  // FIXME: Convert these to sp()'s so we can see them in HQ?
+  // TODO: Convert these to sp()'s so we can see them in HQ, once sp/speol support the base argument
   Serial.print(F("Backpack name: "));
   Serial.println(h->backpack_name);
 
