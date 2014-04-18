@@ -345,18 +345,30 @@ bool PinoccioScout::isPWMPin(uint8_t pin) {
   return false;
 }
 
+bool PinoccioScout::isInputPin(uint8_t pin) {
+  if (Scout.getPinMode(pin) == INPUT || Scout.getPinMode(pin) == INPUT_PULLUP) {
+    return true;
+  }
+  return false;
+}
+
+bool PinoccioScout::isOutputPin(uint8_t pin) {
+  if (Scout.getPinMode(pin) == OUTPUT || Scout.getPinMode(pin) == PWM) {
+    return true;
+  }
+  return false;
+}
+
 bool PinoccioScout::pinWrite(uint8_t pin, uint8_t value) {
-  if (isPinReserved(pin)) {
+  if (isPinReserved(pin) || !Scout.isOutputPin(pin)) {
     return false;
   }
 
   if (Scout.isDigitalPin(pin)) {
-    Scout.makeOutput(pin);
     digitalWrite(pin, value);
     digitalPinState[pin-2] = value;
   }
   if (Scout.isAnalogPin(pin)) {
-    Scout.makeOutput(pin);
     digitalWrite(pin, value);
     analogPinState[pin-A0] = value;
   }
@@ -365,21 +377,20 @@ bool PinoccioScout::pinWrite(uint8_t pin, uint8_t value) {
 }
 
 bool PinoccioScout::pinWritePWM(uint8_t pin, uint8_t value) {
-  if (isPinReserved(pin)) {
+  if (isPinReserved(pin) || !Scout.isPWMPin(pin)) {
     return false;
   }
 
-  if (Scout.isPWMPin(pin)) {
-    Scout.makePWM(pin);
-    analogWrite(pin, value);
-    pwmPinValue[pin-2] = value;
-    return true;
-  }
-
-  return false;
+  analogWrite(pin, value);
+  pwmPinValue[pin-2] = value;
+  return true;
 }
 
 uint16_t PinoccioScout::pinRead(uint8_t pin) {
+  if (isPinReserved(pin) || !Scout.isInputPin(pin)) {
+    return 0;
+  }
+
   if (Scout.isDigitalPin(pin)) {
     return digitalRead(pin);
   } else if (Scout.isAnalogPin(pin)) {
@@ -437,7 +448,7 @@ static void scoutDigitalStateChangeTimerHandler(SYS_Timer_t *timer) {
         mode = Scout.getRegisterPinMode(pin);
       }
 
-      if (Scout.digitalPinState[i] != val) {
+      if (Scout.digitalPinState[i] != val || Scout.digitalPinMode[i] != mode) {
         if (Scout.eventVerboseOutput) {
           Serial.print(F("Running: digitalPinEventHandler("));
           Serial.print(pin);
@@ -471,7 +482,7 @@ static void scoutAnalogStateChangeTimerHandler(SYS_Timer_t *timer) {
       val = Scout.pinRead(i+A0); // explicit digital pins until we can update core
       mode = Scout.getRegisterPinMode(i+A0);
 
-      if (Scout.analogPinState[i] != val) {
+      if (Scout.analogPinState[i] != val || Scout.analogPinMode[i] != mode) {
         if (Scout.eventVerboseOutput) {
           Serial.print(F("Running: analogPinEventHandler("));
           Serial.print(i);

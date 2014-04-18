@@ -1248,7 +1248,7 @@ static numvar pinMakePWM(void) {
     speol(F("Cannot change mode of reserved pin"));
     return 0;
   }
-  
+
   if (!Scout.makePWM(pin)) {
     speol(F("Cannot change mode of non PWM pin"));
     return 0;
@@ -1318,6 +1318,11 @@ static numvar pinRead(void) {
     return 0;
   }
 
+  if (!Scout.isInputPin(pin)) {
+    speol(F("Pin must be set as an input before writing"));
+    return 0;
+  }
+
   return Scout.pinRead(pin);
 }
 
@@ -1338,12 +1343,17 @@ static numvar pinWrite(void) {
     return 0;
   }
 
+  if (!Scout.isOutputPin(pin)) {
+    speol(F("Pin must be set as an output before writing"));
+    return 0;
+  }
+
+  Scout.pinWrite(pin, value);
+
   if (Scout.isDigitalPin(pin)) {
-    Scout.pinWrite(pin, value);
     digitalPinReportHQ();
   }
   if (Scout.isAnalogPin(pin)) {
-    Scout.pinWrite(pin, value);
     analogPinReportHQ();
   }
   return true;
@@ -1362,9 +1372,13 @@ static numvar pinWritePWM(void) {
     return 0;
   }
 
-  if (Scout.isDigitalPin(pin)) {
+  if (!Scout.isPWMPin(pin)) {
+    speol(F("Pin must be set as PWM before writing"));
+    return 0;
+  }
+
+  if (Scout.isPWMPin(pin)) {
     Scout.pinWritePWM(pin, value);
-    digitalPinReportHQ();
   }
 
   return true;
