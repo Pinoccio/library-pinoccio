@@ -89,6 +89,7 @@ static numvar pinConstLow(void);
 static numvar pinConstInput(void);
 static numvar pinConstOutput(void);
 static numvar pinConstInputPullup(void);
+static numvar pinConstPWM(void);
 static numvar pinMakeInput(void);
 static numvar pinMakeOutput(void);
 static numvar pinMakePWM(void);
@@ -259,6 +260,7 @@ void PinoccioShell::setup() {
   addBitlashFunction("input", (bitlash_function) pinConstInput);
   addBitlashFunction("output", (bitlash_function) pinConstOutput);
   addBitlashFunction("input_pullup", (bitlash_function) pinConstInputPullup);
+  addBitlashFunction("pwm", (bitlash_function) pinConstPWM);
 
   addBitlashFunction("pin.makeinput", (bitlash_function) pinMakeInput);
   addBitlashFunction("pin.makeoutput", (bitlash_function) pinMakeOutput);
@@ -1158,23 +1160,27 @@ static StringBuffer analogPinReportHQ(void) {
 }
 
 static numvar pinConstHigh(void) {
-  return 1;
+  return HIGH;
 }
 
 static numvar pinConstLow(void) {
-  return 0;
+  return LOW;
 }
 
 static numvar pinConstInput(void) {
-  return 0;
+  return INPUT;
 }
 
 static numvar pinConstOutput(void) {
-  return 1;
+  return OUTPUT;
 }
 
 static numvar pinConstInputPullup(void) {
-  return 2;
+  return INPUT_PULLUP;
+}
+
+static numvar pinConstPWM(void) {
+  return PWM;
 }
 
 static numvar pinMakeInput(void) {
@@ -1382,7 +1388,7 @@ static numvar pinSave(void) {
     return 0;
   }
 
-  if (mode < -1 || mode > 2) {
+  if (mode < DISABLED || mode > PWM) {
     speol(F("Invalid pin mode"));
     return 0;
   }
