@@ -41,19 +41,6 @@ void onOn()
   DEBUG_PRINTF("seek %d",p->json_len);
   chan_send(c, p);
 
-  DEBUG_PRINTF("looking for packets to send");
-  while((p = switch_sending(ths)))
-  {
-    if(util_cmp(p->out->type,"ipv4")!=0)
-    {
-      packet_free(p);
-      continue;
-    }
-    DEBUG_PRINTF("sending %s packet %d %s\n",p->json_len?"open":"line",packet_len(p),path_json(p->out));
-    writePacket(path_ip(p->out,0),path_port(p->out,0),packet_raw(p),packet_len(p));
-    packet_free(p);
-  }
-
 }
 
 void readPacket()
@@ -68,17 +55,66 @@ void readPacket()
   path_t from = path_new("ipv4");
   path_ip4(from,Scout.wifi.server.remoteIP());
   path_port(from,Scout.wifi.server.remotePort());
-  Scout.wifi.server.read(buf,1500);
+  size_t read = 0;
+  while(read < len)
+    read += Scout.wifi.server.read(buf + read, len - read);
   packet_t p = packet_parse(buf,len);
   free(buf);
   printf("received %s packet %d %s\n", p->json_len?"open":"line", len, path_json(from));
   switch_receive(ths,p,from);
 }
 
+static numvar localIn(void)
+{
+  if(!getarg(1) || !isstringarg(1))
+  {
+    speol("missing arg");
+    return 0;
+  }
+  const char *str = (const char *)getarg(1);
+  int len = strlen(str)/2;
+  unsigned char *raw = (unsigned char *)malloc(len);
+  util_unhex((unsigned char*)str,len*2,raw);
+  path_t from = path_new("local");
+  packet_t p = packet_parse(raw,len);
+  free(raw);
+  if(!p)
+  {
+    speol("invalid packet");
+    return 0;
+  }
+  printf("received %s packet %d\n", p->json_len?"open":"line", len);
+  switch_receive(ths,p,from);
+  return 1;
+}
+
+// check for outgoing packets
+void sendLoop(void)
+{
+  packet_t p;
+  while((p = switch_sending(ths)))
+  {
+    if(util_cmp(p->out->type,"ipv4")==0 && isOn)
+    {
+      DEBUG_PRINTF("sending ipv4 %s packet %d %s\n",p->json_len?"open":"line",packet_len(p),path_json(p->out));
+      writePacket(path_ip(p->out,0),path_port(p->out,0),packet_raw(p),packet_len(p));
+    }
+    if(util_cmp(p->out->type,"local")==0)
+    {
+      Serial.print("telehash:");
+      unsigned char *hex = (unsigned char *)malloc(packet_len(p)*2+1);
+      Serial.println((char*)util_hex(packet_raw(p),packet_len(p),hex));
+      free(hex);
+    }
+    packet_free(p);
+  }
+}
+
 void setup() {
   Scout.setup();  
   Scout.wifi.onOn = onOn;
   platform_debugging(1);
+  addBitlashFunction("telehash", (bitlash_function) localIn);
   
   char seedjs[] = "{\"paths\":[{\"type\":\"ipv4\",\"ip\":\"192.168.0.36\",\"port\":42424}],\"parts\":{\"1a\":\"821e083c2b788c75bf4608e66a52ef2d911590f6\"},\"keys\":{\"1a\":\"z6yCAC7r5XIr6C4xdxeX7RlSmGu9Xe73L1gv8qecm4/UEZAKR5iCxA==\"}}";
   packet_t keys = packet_new();
@@ -92,6 +128,8 @@ void setup() {
   seed = hn_fromjson(ths->index,p);
   DEBUG_PRINTF("loaded seed %s",seed->hexname);
   
+  Serial.print("telehash:");
+  Serial.println(ths->id->hexname);
 }
 
 void loop() {
