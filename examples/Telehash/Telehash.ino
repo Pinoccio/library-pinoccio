@@ -7,12 +7,11 @@
 #include <lwm.h>
 #include <js0n.h>
 extern "C" {
-#define DEBUG 1
-#define CS_1a 1
-#include <avr.h>
 #include <switch.h>
-  void println(char *x) { Serial.println(x); }
+#include <avr.h>
+void println(char *x) { Serial.println(x); }
 }
+void localWrite(packet_t p);
 
 switch_t ths;
 hn_t seed;
@@ -88,6 +87,14 @@ static numvar localIn(void)
   return 1;
 }
 
+void localWrite(packet_t p)
+{
+  sp("telehash:");
+  unsigned char *hex = (unsigned char *)malloc(packet_len(p)*2+1);
+  speol((char*)util_hex(packet_raw(p),packet_len(p),hex));
+  free(hex);
+}
+
 // check for outgoing packets
 void sendLoop(void)
 {
@@ -99,13 +106,7 @@ void sendLoop(void)
       DEBUG_PRINTF("sending ipv4 %s packet %d %s\n",p->json_len?"open":"line",packet_len(p),path_json(p->out));
       writePacket(path_ip(p->out,0),path_port(p->out,0),packet_raw(p),packet_len(p));
     }
-    if(util_cmp(p->out->type,"local")==0)
-    {
-      Serial.print("telehash:");
-      unsigned char *hex = (unsigned char *)malloc(packet_len(p)*2+1);
-      Serial.println((char*)util_hex(packet_raw(p),packet_len(p),hex));
-      free(hex);
-    }
+    if(util_cmp(p->out->type,"local")==0) localWrite(p);
     packet_free(p);
   }
 }
@@ -126,10 +127,14 @@ void setup() {
   packet_t p = packet_new();
   packet_json(p,(unsigned char*)seedjs,strlen(seedjs));
   seed = hn_fromjson(ths->index,p);
+  packet_free(p);
   DEBUG_PRINTF("loaded seed %s",seed->hexname);
   
-  Serial.print("telehash:");
-  Serial.println(ths->id->hexname);
+  p = packet_new();
+  packet_set_str(p,"type","ping");
+  packet_set(p,"1a","true",4);
+  localWrite(p);
+  packet_free(p);
 }
 
 void loop() {
