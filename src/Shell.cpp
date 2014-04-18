@@ -1124,7 +1124,7 @@ static numvar pinMakePWM(void) {
     speol(F("Cannot change mode of reserved pin"));
     return 0;
   }
-  
+
   if (!Scout.makePWM(pin)) {
     speol(F("Cannot change mode of non PWM pin"));
     return 0;
@@ -1183,6 +1183,11 @@ static numvar pinRead(void) {
     return 0;
   }
 
+  if (!Scout.isInputPin(pin)) {
+    speol(F("Pin must be set as an input before writing"));
+    return 0;
+  }
+
   return Scout.pinRead(pin);
 }
 
@@ -1199,12 +1204,17 @@ static numvar pinWrite(void) {
     return 0;
   }
 
+  if (!Scout.isOutputPin(pin)) {
+    speol(F("Pin must be set as an output before writing"));
+    return 0;
+  }
+
+  Scout.pinWrite(pin, value);
+
   if (Scout.isDigitalPin(pin)) {
-    Scout.pinWrite(pin, value);
     digitalPinReportHQ();
   }
   if (Scout.isAnalogPin(pin)) {
-    Scout.pinWrite(pin, value);
     analogPinReportHQ();
   }
   return true;
@@ -1223,9 +1233,13 @@ static numvar pinWritePWM(void) {
     return 0;
   }
 
-  if (Scout.isDigitalPin(pin)) {
+  if (!Scout.isPWMPin(pin)) {
+    speol(F("Pin must be set as PWM before writing"));
+    return 0;
+  }
+
+  if (Scout.isPWMPin(pin)) {
     Scout.pinWritePWM(pin, value);
-    digitalPinReportHQ();
   }
 
   return true;
@@ -1442,37 +1456,37 @@ static numvar backpackDetail(void) {
   }
   Pbbe::Header *h = Backpacks::info[addr].getHeader();
   Pbbe::UniqueId &id = Backpacks::info[addr].id;
-  
+
   Serial.print(F("Backpack name: "));
   Serial.println(h->backpack_name);
-  
+
   Serial.print(F("Model number: 0x"));
   Serial.println(id.model, HEX); // TODO: zero pad
-  
+
   Serial.print(F("Board revision: "));
   Pbbe::MajorMinor rev = Pbbe::extractMajorMinor(id.revision);
   Serial.print(rev.major);
   Serial.print(F("."));
   Serial.println(rev.minor);
-  
+
   Serial.print(F("Serial number: 0x"));
   Serial.println(id.serial, HEX); // TODO: zero pad
-  
+
   Serial.print(F("Backpack Bus Protocol version: "));
   Serial.print(id.protocol_version);
   Serial.println(F(".x")); // Only the major version is advertised
-  
+
   Serial.print(F("Backpack Bus firmware version: "));
   Serial.println(h->firmware_version);
-  
+
   Serial.print(F("EEPROM layout version: "));
   Serial.print(h->layout_version);
   Serial.println(F(".x")); // Only the major version is advertised
-  
+
   Serial.print(F("EEPROM size: "));
   Serial.print(h->total_eeprom_size);
   Serial.println(F(" bytes"));
-  
+
   Serial.print(F("EEPROM used: "));
   Serial.print(h->used_eeprom_size);
   Serial.println(F(" bytes"));

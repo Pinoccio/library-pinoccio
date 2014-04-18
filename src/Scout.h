@@ -73,6 +73,8 @@ class PinoccioScout : public PinoccioClass {
     bool isDigitalPin(uint8_t pin);
     bool isAnalogPin(uint8_t pin);
     bool isPWMPin(uint8_t pin);
+    bool isInputPin(uint8_t pin);
+    bool isOutputPin(uint8_t pin);
     bool pinWrite(uint8_t pin, uint8_t value);
     bool pinWritePWM(uint8_t pin, uint8_t value);
     uint16_t pinRead(uint8_t pin);
