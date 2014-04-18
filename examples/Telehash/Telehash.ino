@@ -29,8 +29,13 @@ void onOn()
 {
   IPAddress ip;
   Serial.println("online");
-  if(!Scout.wifi.server.begin(42424))
+  if(!Scout.wifi.server.begin(42424)) {
     Serial.println("Bind failed");
+    // this probably just means that we're already bound, since onOn is
+    // also called after the TCP connection reconnects, without
+    // reassociating
+    return;
+  }
 
   isOn = true;
   // create/send a ping packet  
@@ -57,9 +62,17 @@ void readPacket()
   size_t read = 0;
   while(read < len)
     read += Scout.wifi.server.read(buf + read, len - read);
+
+  DEBUG_PRINTF("received packet %d %s\n", len, path_json(from));
+  printHexBuffer(Serial, buf, len);
+
   packet_t p = packet_parse(buf,len);
+  if (!p) {
+    DEBUG_PRINTF("Failed to parse packet");
+    return;
+  }
+  
   free(buf);
-  printf("received %s packet %d %s\n", p->json_len?"open":"line", len, path_json(from));
   switch_receive(ths,p,from);
 }
 

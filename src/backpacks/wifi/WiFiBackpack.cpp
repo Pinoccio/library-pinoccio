@@ -34,6 +34,8 @@ void WiFiBackpack::onAssociate(void *data) {
   }
 
   wifi.apConnCount++;
+
+  if(wifi.onOn) wifi.onOn();
 }
 
 void WiFiBackpack::onNcmConnect(void *data, GSCore::cid_t cid) {
@@ -54,8 +56,6 @@ void WiFiBackpack::onNcmConnect(void *data, GSCore::cid_t cid) {
   
   wifi.hqConnCount++;
 
-  if(wifi.onOn) wifi.onOn();
-  
   // TODO: Don't call leadHQConnect directly?
   leadHQConnect();
 }
@@ -169,7 +169,7 @@ bool WiFiBackpack::autoConnectHq() {
   gs.setParam(GSModule::GS_PARAM_L4_RETRY_COUNT, 0);
 
   return gs.setAutoConnectClient(HqHandler::host, HqHandler::port) &&
-         gs.setNcm(/* enable */ true, /* associate_only */ false, /* remember */ false);
+         gs.setNcm(/* enable */ true, /* associate_only */ true, /* remember */ false);
 }
 
 void WiFiBackpack::disassociate() {
