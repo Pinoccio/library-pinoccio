@@ -92,6 +92,9 @@ class PinoccioScout : public PinoccioClass {
     int8_t getPinFromName(const char* name);
     bool isPinReserved(uint8_t pin);
 
+    bool updateDigitalPinState(uint8_t pin, int16_t val, int8_t mode);
+    bool updateAnalogPinState(uint8_t pin, int16_t val, int8_t mode);
+
     void (*digitalPinEventHandler)(uint8_t pin, int8_t value, int8_t mode);
     void (*analogPinEventHandler)(uint8_t pin, int16_t value, int8_t mode);
     void (*batteryPercentageEventHandler)(uint8_t value);
@@ -103,7 +106,6 @@ class PinoccioScout : public PinoccioClass {
     int8_t digitalPinMode[7];
     int16_t analogPinState[8];
     int8_t analogPinMode[8];
-    uint8_t pwmPinValue[4];
 
     uint8_t batteryPercentage;
     uint16_t batteryVoltage;
