@@ -1083,12 +1083,6 @@ static numvar pinMakeInput(void) {
     return 0;
   }
 
-  if (Scout.isDigitalPin(pin)) {
-    digitalPinReportHQ();
-  }
-  if (Scout.isAnalogPin(pin)) {
-    analogPinReportHQ();
-  }
   return 1;
 }
 
@@ -1104,12 +1098,6 @@ static numvar pinMakeOutput(void) {
     return 0;
   }
 
-  if (Scout.isDigitalPin(pin)) {
-    digitalPinReportHQ();
-  }
-  if (Scout.isAnalogPin(pin)) {
-    analogPinReportHQ();
-  }
   return 1;
 }
 
@@ -1130,7 +1118,6 @@ static numvar pinMakePWM(void) {
     return 0;
   }
 
-  digitalPinReportHQ();
   return 1;
 }
 
@@ -1146,12 +1133,6 @@ static numvar pinDisable(void) {
     return 0;
   }
 
-  if (Scout.isDigitalPin(pin)) {
-    digitalPinReportHQ();
-  }
-  if (Scout.isAnalogPin(pin)) {
-    analogPinReportHQ();
-  }
   return 1;
 }
 
@@ -1167,12 +1148,6 @@ static numvar pinSetMode(void) {
     return 0;
   }
 
-  if (Scout.isDigitalPin(pin)) {
-    digitalPinReportHQ();
-  }
-  if (Scout.isAnalogPin(pin)) {
-    analogPinReportHQ();
-  }
   return 1;
 }
 
@@ -1211,13 +1186,7 @@ static numvar pinWrite(void) {
 
   Scout.pinWrite(pin, value);
 
-  if (Scout.isDigitalPin(pin)) {
-    digitalPinReportHQ();
-  }
-  if (Scout.isAnalogPin(pin)) {
-    analogPinReportHQ();
-  }
-  return true;
+  return 1;
 }
 
 static numvar pinWritePWM(void) {
@@ -1238,11 +1207,8 @@ static numvar pinWritePWM(void) {
     return 0;
   }
 
-  if (Scout.isPWMPin(pin)) {
-    Scout.pinWritePWM(pin, value);
-  }
-
-  return true;
+  Scout.pinWritePWM(pin, value);
+  return 1;
 }
 
 static numvar pinSave(void) {
@@ -1283,25 +1249,17 @@ static numvar pinSave(void) {
   }
 
   doCommand(buf);
-
-  if (Scout.isDigitalPin(pin)) {
-    digitalPinReportHQ();
-  }
-  if (Scout.isAnalogPin(pin)) {
-    analogPinReportHQ();
-  }
-
-  return true;
+  return 1;
 }
 
 static numvar digitalPinReport(void) {
   speol(digitalPinReportHQ());
-  return true;
+  return 1;
 }
 
 static numvar analogPinReport(void) {
   speol(analogPinReportHQ());
-  return true;
+  return 1;
 }
 
 static int getPinFromArg(int arg) {
