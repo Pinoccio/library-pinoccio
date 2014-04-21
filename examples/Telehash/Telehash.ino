@@ -10,13 +10,23 @@
 extern "C" {
 #include <switch.h>
 #include <avr.h>
-void println(char *x) { Serial.println(x); }
+void println(char *x) { Serial.println(x); Serial.flush(); }
 }
 void localWrite(packet_t p);
 
 switch_t ths;
 hn_t seed;
 uint8_t isOn = 0;
+
+// ping
+//  telehash("00637b2274797065223a22706f6e67222c2266726f6d223a7b223161223a2266333631396565643139613761373163306566636130366262643061363932333039636163333938227d2c227472616365223a223464333966366637653861313035643322");telehash("7d03f157875b76ebe3e404b5e4b2097886d682d8d51ffeb5f66dd4846aca368a65eb9ba6afacee1efd");telehash(0)
+
+// open
+// telehash("00011afe1b9200791dc91ecdb5dd5f6c697d451342722732ebef0b9dbce0ef803d9a215337604c4a0e28ed18999b64d89d188b3f96e409326a10cfc52dcf32c80b62f9fb176e2bcf02c9b7cc019625739d53f978e7c4948c576349e13814e6b88eee5075");telehash("1624476b092578a9b3cd0bebc9cb506bb63c49d583caccf8bd41bf078dfd88e96ad68e2b98cd56648e0b4a39b069d0bb8a2a3ea7d940e83c9fe55efeddd6b72c7038a920f1fe44a673466715f926c98aa4019d20ae5a022d1cb8fe919b7840d11aa9e6c2");
+// telehash("0f0fbd28f1dcee1d8763ffd4cc531148f8229afde2deb58af0e0c8701dcfa8611a7a56656ce641c583d50380a5c298adb303f7cc87fe2934ea401f9674b08071c36b9e4cfde28ea740f2bddb4306ce5e98632115c445e1c42ce0b42fc7fac9b5");telehash(0);
+
+// line
+// telehash("0000feeda5d5f3d9e45bfa6cc351e220ae0c5023422f00000000b09105e1c187b77b4f33f0449c7bd9ed0274504e17db5d664b54476694d9090b9601c46a71bddfa53cb6f72b3b308c1981b4ad1aa00158c49ba05615606a31ef25505cdcf0fee107d536");telehash("88aa40c006a5f2fd645229a98d86caed6bb33a040d0f2e");telehash(0);
 
 void writePacket(char *ip, uint16_t port, unsigned char *msg, int len)
 {
@@ -110,6 +120,7 @@ static numvar localIn(void)
   path_t from = path_new("local");
   packet_t p = packet_parse(localBuf,localBufLen);
   free(localBuf);
+  localBuf = NULL;
   localBufLen = 0;
   if(!p)
   {
@@ -124,16 +135,20 @@ static numvar localIn(void)
 
 void localWrite(packet_t p)
 {
-  unsigned char *hex = (unsigned char *)malloc(packet_len(p)*2+1);
-  if(!hex)
+  unsigned char hex[128], *raw = packet_raw(p);
+  int chunk, len = packet_len(p);
+  DEBUG_PRINTF("write %d",len);
+  Serial.print("\ntelehash:");
+  while(len > 0)
   {
-    sp("no memory ");
-    speol(packet_len(p)*2+1);
-  }else{
-    sp("\ntelehash:");
-    speol((char*)util_hex(packet_raw(p),packet_len(p),hex));    
-    free(hex);
+    chunk = len;
+    if(chunk > 63) chunk = 63;
+    Serial.write((char*)util_hex(raw,chunk,hex),chunk*2);
+    Serial.flush();
+    raw += chunk;
+    len -= chunk;
   }
+  Serial.println();
   packet_free(p);
 }
 
@@ -182,8 +197,14 @@ void setup() {
   localWrite(switch_ping(ths));
 }
 
+long lastt = millis();
 void loop() {
   Scout.loop();
   readPacket();
   sendLoop();
+  if(millis() - lastt > 10000)
+  {
+    lastt = millis();
+    DEBUG_PRINTF("tick %d",lastt);
+  }
 }
