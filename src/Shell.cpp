@@ -1303,7 +1303,7 @@ static numvar pinSave(void) {
     if (getarg(0) == 3 && mode == OUTPUT) {
       uint8_t value = getarg(3);
       Scout.pinWrite(pin, value);
-      snprintf(buf, sizeof(buf), "function startup.%s { pin.setmode(\"%s\",%d); pin.write(%d,%d) }", str, str, mode, pin, value);
+      snprintf(buf, sizeof(buf), "function startup.%s { pin.setmode(\"%s\",%d); pin.write(\"%d\",%d) }", str, str, mode, str, value);
     } else {
       snprintf(buf, sizeof(buf), "function startup.%s { pin.setmode(\"%s\",%d); }", str, str, mode);
     }
