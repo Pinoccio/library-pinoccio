@@ -138,6 +138,7 @@ void localWrite(packet_t p)
   unsigned char hex[128], *raw = packet_raw(p);
   int chunk, len = packet_len(p);
   DEBUG_PRINTF("write %d",len);
+  RgbLed.red();
   Serial.print("\ntelehash:");
   while(len > 0)
   {
