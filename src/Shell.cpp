@@ -97,6 +97,7 @@ static numvar otaBoot(void);
 
 static numvar hqVerbose(void);
 static numvar hqPrint(void);
+static numvar hqReport(void);
 
 static numvar startStateChangeEvents(void);
 static numvar stopStateChangeEvents(void);
@@ -251,6 +252,7 @@ void PinoccioShell::setup() {
   addBitlashFunction("hq.gettoken", (bitlash_function) getHQToken);
   addBitlashFunction("hq.verbose", (bitlash_function) hqVerbose);
   addBitlashFunction("hq.print", (bitlash_function) hqPrint);
+  addBitlashFunction("hq.report", (bitlash_function) hqReport);
 
   addBitlashFunction("events.start", (bitlash_function) startStateChangeEvents);
   addBitlashFunction("events.stop", (bitlash_function) stopStateChangeEvents);
@@ -865,7 +867,7 @@ static numvar meshIsInGroup(void) {
   return inGroup;
 }
 
-// ver = 0 means all args, ver > 1 means ignore first arg
+// ver = 0 means all args, ver < 0 means skip first arg, ver >= 1 means include ver and skip first arg
 StringBuffer arg2array(int ver) {
   StringBuffer buf(100);
   int i;
@@ -873,7 +875,8 @@ StringBuffer arg2array(int ver) {
   if (args > 8) {
     args = 8;
   }
-  buf.appendSprintf("[%d,", ver);
+  buf = "[";
+  if(ver >= 0) buf.appendSprintf("%d,", ver);
   for (i=ver?2:1; i<=args; i++) {
     int key = (isstringarg(i)) ? keyMap((char*)getstringarg(i), 0) : getarg(i);
     buf.appendJsonString(keyGet(key), true);
@@ -1708,6 +1711,28 @@ static numvar hqPrint(void) {
     return false;
   }
   Scout.handler.announce(0, arg2array(0));
+  return true;
+}
+
+static numvar hqReport(void) {
+  if (!getarg(0)) {
+    return false;
+  }
+  StringBuffer args = arg2array(-1);
+  const char *type = (isstringarg(1))?(const char*)getarg(1):keyGet(getarg(1));
+  if(args.length()+strlen(type) > 80)
+  {
+    speol("report too large");
+    return false;
+  }
+  StringBuffer report(100);
+  report.appendSprintf("[%d,[%d,%d],[%s,%s]]",
+          keyMap("custom", 0),
+          keyMap("type", 0),
+          keyMap("custom", 0),
+          type,
+          args.c_str());
+  speol(Scout.handler.report(report));
   return true;
 }
 
