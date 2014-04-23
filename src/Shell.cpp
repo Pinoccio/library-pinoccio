@@ -877,7 +877,7 @@ StringBuffer arg2array(int ver) {
   }
   buf = "[";
   if(ver >= 0) buf.appendSprintf("%d,", ver);
-  for (i=ver?2:1; i<=args; i++) {
+  for (i=(ver!=0)?2:1; i<=args; i++) {
     int key = (isstringarg(i)) ? keyMap((char*)getstringarg(i), 0) : getarg(i);
     buf.appendJsonString(keyGet(key), true);
     if(i+1 <= args) buf += ",";
@@ -1718,20 +1718,27 @@ static numvar hqReport(void) {
   if (!getarg(0)) {
     return false;
   }
-  StringBuffer args = arg2array(-1);
-  const char *type = (isstringarg(1))?(const char*)getarg(1):keyGet(getarg(1));
-  if(args.length()+strlen(type) > 80)
+  const char *name = (isstringarg(1))?(const char*)getarg(1):keyGet(getarg(1));
+  if(!name || strlen(name) == 0)
   {
+    speol("report name must be the first argument");
+    return false;
+  }
+  char *args = strdup(arg2array(-1).c_str());
+  if(strlen(args)+strlen(name) > 80)
+  {
+    free(args);
     speol("report too large");
     return false;
   }
   StringBuffer report(100);
-  report.appendSprintf("[%d,[%d,%d],[%s,%s]]",
+  report.appendSprintf("[%d,[%d,%d],[\"%s\",%s]]",
           keyMap("custom", 0),
-          keyMap("type", 0),
+          keyMap("name", 0),
           keyMap("custom", 0),
-          type,
-          args.c_str());
+          name,
+          args);
+  free(args);
   speol(Scout.handler.report(report));
   return true;
 }
