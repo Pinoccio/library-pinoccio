@@ -4,8 +4,6 @@
 #include <src/bitlash.h>
 #include <lwm/phy/atmegarfr2.h>
 
-PinoccioClass Pinoccio;
-
 PinoccioClass::PinoccioClass() {
   // this has to be called as early as possible before other code uses the register
   lastResetCause = GPIOR0;
@@ -180,8 +178,17 @@ void PinoccioClass::meshSetRadio(const uint16_t theAddress, const uint16_t thePa
   eeprom_update_word((uint16_t *)8180, panId);
   eeprom_update_byte((uint8_t *)8179, channel);
 
-  meshSetPower(0);
-  meshSetDataRate(0);
+  if (eeprom_read_byte((uint8_t *)8178) != 0xFF) {
+    meshSetPower(eeprom_read_byte((uint8_t *)8178));
+  }else{
+    meshSetPower(0);
+  }
+  if (eeprom_read_byte((uint8_t *)8126) != 0xFF) {
+    meshSetDataRate(eeprom_read_byte((uint8_t *)8126));
+  }else{
+    meshSetDataRate(0);
+  }
+
 }
 
 
