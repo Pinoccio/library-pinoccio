@@ -1605,37 +1605,41 @@ static numvar getHQToken(void) {
 }
 
 
-SYS_Timer_t delayTimer;
-char *delayCommand = NULL;
 static void delayTimerHandler(SYS_Timer_t *timer) {
-  char *cmd = delayCommand;
-  delayCommand = NULL;
-  doCommand(cmd);
-  free(cmd);
+  doCommand(((char*)timer)+(sizeof(struct SYS_Timer_t)));
+  free(timer);
+}
+
+void delayCommand(uint32_t at, char *command)
+{
+  // allocate space for the command after the timer pointer
+  SYS_Timer_t *delayTimer = (SYS_Timer_t *)malloc(sizeof(struct SYS_Timer_t)+strlen(command)+1);
+  memset(delayTimer,0,sizeof(struct SYS_Timer_t));
+  memcpy(((char*)delayTimer)+sizeof(struct SYS_Timer_t),command,strlen(command)+1);
+  // init timer
+  delayTimer->mode = SYS_TIMER_INTERVAL_MODE;
+  delayTimer->handler = delayTimerHandler;
+  delayTimer->interval = at;
+  SYS_TimerStart(delayTimer);  
 }
 
 static numvar scoutDelay(void) {
   char *str;
-  if (getarg(0) != 2) {
-    speol("usage: delay(ms,\"function\")");
+  int i, args = getarg(0);
+  if (!args || args % 2) {
+    speol("usage: delay(ms,\"function\",ms,\"function\",...)");
     return 0;
   }
-  if (isstringarg(2)) {
-    str = (char *)getarg(2);
-  } else {
-    str = (char *)keyGet(getarg(2));
+  for(i=1;i<args;i+=2)
+  {
+    // copy at the end the command string
+    if (isstringarg(i+1)) {
+      str = (char *)getarg(i+1);
+    } else {
+      str = (char *)keyGet(getarg(i+1));
+    }
+    delayCommand(getarg(i),str);
   }
-  // TODO, fix SYS_Timer_t to have a .arg void * instead of this single global BS
-  if (delayCommand) {
-    SYS_TimerStop(&delayTimer);
-    free(delayCommand);
-  }
-  delayTimer.mode = SYS_TIMER_INTERVAL_MODE;
-  delayTimer.handler = delayTimerHandler;
-  delayTimer.interval = getarg(1);
-  delayCommand = strdup(str);
-  SYS_TimerStart(&delayTimer);
-
   return 1;
 }
 
