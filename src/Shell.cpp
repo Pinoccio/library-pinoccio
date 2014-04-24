@@ -1612,10 +1612,11 @@ static void delayTimerHandler(SYS_Timer_t *timer) {
 
 void delayCommand(uint32_t at, char *command)
 {
+  size_t clen = strlen(command)+1;
   // allocate space for the command after the timer pointer
-  SYS_Timer_t *delayTimer = (SYS_Timer_t *)malloc(sizeof(struct SYS_Timer_t)+strlen(command)+1);
+  SYS_Timer_t *delayTimer = (SYS_Timer_t *)malloc(sizeof(struct SYS_Timer_t)+clen);
   memset(delayTimer,0,sizeof(struct SYS_Timer_t));
-  memcpy(((char*)delayTimer)+sizeof(struct SYS_Timer_t),command,strlen(command)+1);
+  memcpy(((char*)delayTimer)+sizeof(struct SYS_Timer_t),command,clen);
   // init timer
   delayTimer->mode = SYS_TIMER_INTERVAL_MODE;
   delayTimer->handler = delayTimerHandler;
