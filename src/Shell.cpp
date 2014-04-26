@@ -395,7 +395,8 @@ static numvar allVerbose(void) {
 
 void PinoccioShell::loop() {
   if (isShellEnabled) {
-    runBitlash();
+//    runBitlash();
+    runBackgroundTasks();
     keyLoop(millis());
   }
 }

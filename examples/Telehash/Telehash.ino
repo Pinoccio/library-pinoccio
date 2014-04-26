@@ -87,69 +87,21 @@ void readPacket()
   switch_receive(ths,p,from);
 }
 
-unsigned char *localBuf;
-int localBufLen = 0;
-static numvar localIn(void)
-{
-  if(getarg(1) && isstringarg(1))
-  {
-    const char *str = (const char *)getarg(1);
-    int len = strlen(str)/2;
-    // buffering up mode
-    if(len)
-    {
-      unsigned char *buf = (unsigned char*)realloc(localBuf,localBufLen+len);
-      if(!buf)
-      {
-        free(localBuf);
-        speol("out of memory ");
-        speol(localBufLen+len);
-        localBufLen = 0;
-        return 0;
-      }
-      localBuf = buf;
-      util_unhex((unsigned char*)str,len*2,localBuf+localBufLen);
-      localBufLen += len;
-      sp("buffered ");
-      speol(localBufLen);
-    }
-    return 1;
-  }
-  if(!localBufLen) return 0;
-  // packet parsing
-  path_t from = path_new("local");
-  packet_t p = packet_parse(localBuf,localBufLen);
-  free(localBuf);
-  localBuf = NULL;
-  localBufLen = 0;
-  if(!p)
-  {
-    speol("invalid packet");
-    return 0;
-  }
-  speol("processing");
-  DEBUG_PRINTF("received %s packet %d", p->json_len?(p->json_len>1?packet_get_str(p,"type"):"open"):"line", packet_len(p));
-  switch_receive(ths,p,from);
-  return 1;
-}
 
 void localWrite(packet_t p)
 {
-  unsigned char hex[128], *raw = packet_raw(p);
-  int chunk, len = packet_len(p);
+  unsigned char blen, *raw = packet_raw(p);
+  int len = packet_len(p);
+  if(!raw || !len) return;
+
+  blen = (char)((len-1)/256);
   DEBUG_PRINTF("write %d",len);
   RgbLed.red();
-  Serial.print("\ntelehash:");
-  while(len > 0)
-  {
-    chunk = len;
-    if(chunk > 63) chunk = 63;
-    Serial.write((char*)util_hex(raw,chunk,hex),chunk*2);
-    Serial.flush();
-    raw += chunk;
-    len -= chunk;
-  }
-  Serial.println();
+  Serial.write('\n');
+  Serial.write((char)42);
+  Serial.write(blen);
+  Serial.write((char)(len - (blen*256)));
+  Serial.write(raw,len);
   packet_free(p);
 }
 
@@ -177,7 +129,6 @@ void setup() {
   Scout.setup();  
   Scout.wifi.onOn = onOn;
   platform_debugging(1);
-  addBitlashFunction("telehash", (bitlash_function) localIn);
   crypt_init();
   
   char keyjs[] = "{\"1a\":\"kNcFp/4mRAS7lSHjhfCfAHZv264e8nGONBuenfzJS3gSCJmHDbpy4w==\",\"1a_secret\":\"estHaS+O5xRYGyPhLcXL9Iaggfk=\"}";
@@ -194,14 +145,69 @@ void setup() {
   seed = hn_fromjson(ths->index,p);
   packet_free(p);
   DEBUG_PRINTF("loaded seed %s",seed->hexname);
-  
-  localWrite(switch_ping(ths));
+}
+
+StringBuffer bufS(100);
+char modeS = 0;
+size_t lenS;
+void localRead(void)
+{
+  char c;
+  while(Serial.available() > 0)
+  {
+    c = (char)Serial.read();
+    switch(modeS) {
+      case 0: // first char on new line
+      DEBUG_PRINTF("MODE %d %d",modeS,c);
+        // detect read packet start
+        if(c == 42)
+        {
+          modeS = 2;
+          continue;
+        }
+        // fall through
+        modeS = 1;
+      case 1: // normal serial commands
+        Serial.write(c); // echo
+        bufS += c;
+        if(c != '\n') continue;
+        doCommand((char*)bufS.c_str());
+        Serial.write("> ",2);
+        bufS = "";
+        modeS = 0;
+        break;
+      case 2: // read big len
+      DEBUG_PRINTF("MODE %d %d",modeS,c);
+        lenS = 256 * c;
+        modeS = 3;
+        break;
+      case 3: // read big len
+      DEBUG_PRINTF("MODE %d %d",modeS,c);
+        lenS += c;
+        modeS = 4;
+        break;
+      case 4: // read packet bytes
+        bufS += c;
+        if(bufS.length() != lenS) continue;
+        path_t from = path_new("local");
+        packet_t p = packet_parse((unsigned char*)bufS.c_str(),lenS);
+        bufS = "";
+        modeS = 0;
+        if(!p)
+        {
+          Serial.println("invalid packet");
+          continue;
+        }
+        DEBUG_PRINTF("received %s packet %d", p->json_len?(p->json_len>1?packet_get_str(p,"type"):"open"):"line", packet_len(p));
+        switch_receive(ths,p,from); 
+    }
+  }
 }
 
 long lastt = millis();
 void loop() {
   Scout.loop();
-  readPacket();
+  localRead();
   sendLoop();
   if(millis() - lastt > 10000)
   {
