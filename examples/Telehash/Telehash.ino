@@ -117,14 +117,14 @@ void readSerial(void)
 {
   char c, more = 0;
   
-  if(Serial.available()) DEBUG_PRINTF("read %d %d %d %d %d %d",Serial.available(),modeS,countS,blockS,readS,bufS.length());
+//  if(Serial.available()) DEBUG_PRINTF("read %d %d %d %d %d %d",Serial.available(),modeS,countS,blockS,readS,bufS.length());
   while(Serial.available() > 0)
   {
     c = (char)Serial.read();
     countS++;
     switch(modeS) {
       case 0: // first char on new line
-      DEBUG_PRINTF("zero %d",c);
+//      DEBUG_PRINTF("zero %d",c);
         // detect read packet start
         if(c == 42)
         {
@@ -146,7 +146,7 @@ void readSerial(void)
         blockS = (uint8_t)c;
         readS = 0;
         modeS = 3;
-        DEBUG_PRINTF("block read %d %d",blockS,bufS.length());
+//        DEBUG_PRINTF("block read %d %d",blockS,bufS.length());
         if(blockS) continue;
         // empty block means packet received
         serialParse(&bufS);
@@ -157,7 +157,7 @@ void readSerial(void)
         bufS += c;
         readS++;
         if(readS < blockS) continue;
-        DEBUG_PRINTF("block done %d %d",blockS,bufS.length());
+//        DEBUG_PRINTF("block done %d %d",blockS,bufS.length());
         modeS = 2;
         // sending empty packet signals ready for another block
         writeSerial(NULL);
@@ -241,7 +241,7 @@ void setup() {
 
 long lastt = millis();
 void loop() {
-  readLoop(); // this first since something in scout loop eats serial, bitlash ^C check somehow?
+  readLoop();
   writeLoop();
   strangeLoop();
   Scout.loop();
