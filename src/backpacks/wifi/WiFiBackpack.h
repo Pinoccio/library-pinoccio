@@ -49,8 +49,9 @@ class WiFiBackpack : public Backpack {
     uint16_t apConnCount;
     uint16_t hqConnCount;
     
-  protected:
     GSModule gs;
+    
+  protected:
 
     // Event handlers
     static void onAssociate(void *data);
