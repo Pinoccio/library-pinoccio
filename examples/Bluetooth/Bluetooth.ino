@@ -11,7 +11,7 @@ ACT
 RST     D8
 3Vo
 GND     GND
-VIN     VUSB
+VIN     VUSB (also works powered via 3V3 when not plugged into USB)
 */
 
 /*********************************************************************
