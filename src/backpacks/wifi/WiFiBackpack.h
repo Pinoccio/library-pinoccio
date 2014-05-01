@@ -51,8 +51,9 @@ class WiFiBackpack : public Backpack {
     void (*onOnline)(void);
     void (*onOffline)(void);
     
-  protected:
     GSModule gs;
+    
+  protected:
 
     // Event handlers
     static void onAssociate(void *data);
