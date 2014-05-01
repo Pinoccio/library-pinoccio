@@ -1627,19 +1627,21 @@ void delayCommand(uint32_t at, char *command)
 static numvar scoutDelay(void) {
   char *str;
   int i, args = getarg(0);
+  uint32_t accum = 0;
   if (!args || args % 2) {
-    speol("usage: delay(ms,\"function\",ms,\"function\",...)");
+    speol("usage: delay(\"function\",ms,...)");
     return 0;
   }
   for(i=1;i<args;i+=2)
   {
     // copy at the end the command string
-    if (isstringarg(i+1)) {
-      str = (char *)getarg(i+1);
+    if (isstringarg(i)) {
+      str = (char *)getarg(i);
     } else {
-      str = (char *)keyGet(getarg(i+1));
+      str = (char *)keyGet(getarg(i));
     }
-    delayCommand(getarg(i),str);
+    accum += (uint32_t)getarg(i+1);
+    delayCommand(accum,str);
   }
   return 1;
 }
