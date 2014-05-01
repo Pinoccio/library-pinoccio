@@ -219,7 +219,7 @@ void strangeLoop(void)
 
 void setup() {
   Scout.setup();  
-  Scout.wifi.onOn = onOn;
+  Scout.wifi.onOnline = onOn;
   platform_debugging(1);
   crypt_init();
   
@@ -228,12 +228,12 @@ void setup() {
 //  crypt_keygen(0x1a,keys);
   packet_json(keys,(unsigned char*)keyjs,strlen(keyjs));
 
-  char seedjs[] = "{\"paths\":[{\"type\":\"ipv4\",\"ip\":\"192.168.0.36\",\"port\":42424}],\"parts\":{\"1a\":\"821e083c2b788c75bf4608e66a52ef2d911590f6\"},\"keys\":{\"1a\":\"z6yCAC7r5XIr6C4xdxeX7RlSmGu9Xe73L1gv8qecm4/UEZAKR5iCxA==\"}}";
+  char seedjs[] = "{\"paths\":[{\"type\":\"ipv4\",\"ip\":\"192.168.0.36\",\"port\":42424}],\"parts\":{\"1a\":\"b5a96d25802b3600ea99774138a650d5d1fa1f3cf3cb10ae8f1c58a527d85086\"},\"keys\":{\"1a\":\"z6yCAC7r5XIr6C4xdxeX7RlSmGu9Xe73L1gv8qecm4/UEZAKR5iCxA==\"}}";
   ths = switch_new(41);
   if(switch_init(ths,keys)) Serial.println("switch init failed");
   DEBUG_PRINTF("loaded hashname %s",ths->id->hexname);
   packet_t p = packet_new();
-  packet_json(p,(unsigned char*)seedjs,strlen(seedjs));
+  if(packet_json(p,(unsigned char*)seedjs,strlen(seedjs))) Serial.println("seed json parse failed");
   seed = hn_fromjson(ths->index,p);
   packet_free(p);
   DEBUG_PRINTF("loaded seed %s",seed->hexname);

@@ -86,7 +86,7 @@ PinoccioScoutHandler::~PinoccioScoutHandler() { }
 void PinoccioScoutHandler::setup() {
   if (Scout.isLeadScout()) {
     Scout.wifi.setup();
-    Scout.wifi.autoConnectHq();
+    Scout.wifi.autoOnline();
 
     Scout.meshListen(3, leadAnswers);
     Scout.meshJoinGroup(0xBEEF); // our internal reporting channel
@@ -113,6 +113,10 @@ void PinoccioScoutHandler::loop() {
 
 void PinoccioScoutHandler::setVerbose(bool flag) {
   hqVerboseOutput = flag;
+}
+
+bool PinoccioScoutHandler::isOnline() {
+  return false;
 }
 
 static bool fieldCommands(NWK_DataInd_t *ind) {
@@ -416,18 +420,12 @@ StringBuffer PinoccioScoutHandler::report(const String &report) {
 
 void leadHQConnect() {
 
-  if (Scout.wifi.client.connected()) {
-    char token[33];
-    StringBuffer auth(64);
-    token[32] = 0;
-    Scout.getHQToken(token);
-    auth.appendSprintf("{\"type\":\"token\",\"token\":\"%s\"}\n", token);
-    leadSignal(auth);
-  } else {
-    if (hqVerboseOutput) {
-      Serial.println(F("server unvailable"));
-    }
-  }
+  char token[33];
+  StringBuffer auth(64);
+  token[32] = 0;
+  Scout.getHQToken(token);
+  auth.appendSprintf("{\"type\":\"token\",\"token\":\"%s\"}\n", token);
+  leadSignal(auth);
 }
 
 // this is called on the main loop to process incoming data from HQ
@@ -437,12 +435,13 @@ void leadHQHandle(void) {
   unsigned short index[32]; // <10 keypairs in the incoming json
 
   // only continue if new data to read
-  if (!Scout.wifi.client.available()) {
+  if (!Scout.wifi.server.available()) {
     return;
   }
 
   // Read a block of data and look for packets
-  while ((rsize = hqIncoming.readClient(Scout.wifi.client, 128))) {
+//  while ((rsize = hqIncoming.readClient(Scout.wifi.server, 128))) {
+  while(0){
     int nl;
     while((nl = hqIncoming.indexOf('\n')) >= 0) {
      // look for a packet
@@ -611,7 +610,7 @@ static void leadCommandChunk() {
 
 // wrapper to send a chunk of JSON to the HQ
 void leadSignal(const String &json) {
-  if (!Scout.wifi.client.connected()) {
+  if (!Scout.handler.isOnline()) {
     if (hqVerboseOutput) {
       Serial.println(F("HQ offline, can't signal"));
       Serial.println(json);
@@ -623,8 +622,8 @@ void leadSignal(const String &json) {
     Serial.println(json);
   }
 
-  Scout.wifi.client.print(json);
-  Scout.wifi.client.flush();
+  Scout.wifi.server.print(json);
+  Scout.wifi.server.flush();
 }
 
 // called whenever another scout sends an answer back to us

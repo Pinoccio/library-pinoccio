@@ -1787,7 +1787,7 @@ static StringBuffer wifiReportHQ(void) {
           keyMap("connected", 0),
           keyMap("hq", 0),
           Scout.wifi.isAPConnected() ? "true" : "false",
-          Scout.wifi.isHQConnected() ? "true" : "false");
+          Scout.handler.isOnline() ? "true" : "false");
   return Scout.handler.report(report);
 }
 
@@ -1867,7 +1867,7 @@ static numvar wifiDisassociate(void) {
 
 static numvar wifiReassociate(void) {
   // This restart the NCM
-  return Scout.wifi.autoConnectHq();
+  return Scout.wifi.autoOnline();
 }
 
 static numvar wifiCommand(void) {
