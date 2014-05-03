@@ -395,7 +395,8 @@ static numvar allVerbose(void) {
 
 void PinoccioShell::loop() {
   if (isShellEnabled) {
-    runBitlash();
+//    runBitlash();
+    runBackgroundTasks();
     keyLoop(millis());
   }
 }
@@ -1278,15 +1279,17 @@ static numvar backpackReport(void) {
   return 1;
 }
 
-static void printHexBuffer(Print &p, const uint8_t *buf, size_t len, const char *sep = NULL) {
-  for (uint8_t i=0; i<len; ++i) {
-    if (buf[i] < 0x10) {
+void printHexBuffer(Print &p, const uint8_t *buf, size_t len, const char *sep) {
+  while(len) {
+    if (*buf < 0x10) {
       p.print('0');
     }
-    p.print(buf[i], HEX);
+    p.print(*buf, HEX);
     if (sep) {
       p.print(sep);
     }
+    --len;
+    ++buf;
   }
 }
 
@@ -1791,7 +1794,7 @@ static StringBuffer wifiReportHQ(void) {
           keyMap("connected", 0),
           keyMap("hq", 0),
           Scout.wifi.isAPConnected() ? "true" : "false",
-          Scout.wifi.isHQConnected() ? "true" : "false");
+          Scout.handler.isOnline() ? "true" : "false");
   return Scout.handler.report(report);
 }
 
@@ -1871,7 +1874,7 @@ static numvar wifiDisassociate(void) {
 
 static numvar wifiReassociate(void) {
   // This restart the NCM
-  return Scout.wifi.autoConnectHq();
+  return Scout.wifi.autoOnline();
 }
 
 static numvar wifiCommand(void) {
