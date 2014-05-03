@@ -57,8 +57,7 @@ class WiFiBackpack : public Backpack {
 
     // Event handlers
     static void onAssociate(void *data);
-    static void onNcmConnect(void *data, GSCore::cid_t cid);
-    static void onNcmDisconnect(void *data);
+    static void onDisassociate(void *data);
 };
 
 #endif // LIB_PINOCCIO_WIFI_BACKPACK_H_

@@ -19,21 +19,13 @@ void WiFiBackpack::onAssociate(void *data) {
   WiFiBackpack& wifi = *(WiFiBackpack*)data;
 
   wifi.apConnCount++;
-
-}
-
-void WiFiBackpack::onNcmConnect(void *data, GSCore::cid_t cid) {
-  WiFiBackpack& wifi = *(WiFiBackpack*)data;
-
-  wifi.server = cid;
   if(wifi.onOnline) wifi.onOnline();
 
 }
 
-void WiFiBackpack::onNcmDisconnect(void *data) {
+void WiFiBackpack::onDisassociate(void *data) {
   WiFiBackpack& wifi = *(WiFiBackpack*)data;
 
-  wifi.server = GSCore::INVALID_CID;
   if(wifi.onOffline) wifi.onOffline();
 }
 
@@ -49,8 +41,7 @@ bool WiFiBackpack::setup() {
   SPI.setClockDivider(SPI_CLOCK_DIV16);
 
   gs.onAssociate = onAssociate;
-  gs.onNcmConnect = onNcmConnect;
-  gs.onNcmDisconnect = onNcmDisconnect;
+  gs.onDisassociate = onDisassociate;
   gs.eventData = this;
 
   if (!gs.begin(7))
@@ -62,7 +53,6 @@ bool WiFiBackpack::setup() {
 void WiFiBackpack::loop() {
   Backpack::loop();
   gs.loop();
-  server = gs.getNcmCid();
 }
 
 static bool isWepKey(const char *key) {
@@ -129,8 +119,7 @@ bool WiFiBackpack::autoOnline() {
   // documentation says it should be >= 1).
   gs.setNcmParam(GSModule::GS_NCM_L3_CONNECT_RETRY_COUNT, 0);
 
-  return gs.setAutoConnectServer(HqHandler::port, GSModule::GS_UDP) &&
-         gs.setNcm(/* enable */ true, /* associate_only */ true, /* remember */ false);
+  return gs.setNcm(/* enable */ true, /* associate_only */ true, /* remember */ false);
 }
 
 void WiFiBackpack::disassociate() {
