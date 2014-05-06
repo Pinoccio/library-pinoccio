@@ -1718,7 +1718,8 @@ static void delayTimerHandler(SYS_Timer_t *timer) {
   free(timer);
 }
 
-void delayCommand(uint32_t at, char *command) {
+void delayCommand(uint32_t at, char *command)
+{
   size_t clen = strlen(command)+1;
   // allocate space for the command after the timer pointer
   SYS_Timer_t *delayTimer = (SYS_Timer_t *)malloc(sizeof(struct SYS_Timer_t)+clen);
@@ -1728,7 +1729,7 @@ void delayCommand(uint32_t at, char *command) {
   delayTimer->mode = SYS_TIMER_INTERVAL_MODE;
   delayTimer->handler = delayTimerHandler;
   delayTimer->interval = at;
-  SYS_TimerStart(delayTimer);
+  SYS_TimerStart(delayTimer);  
 }
 
 static numvar scoutDelay(void) {
@@ -1736,7 +1737,7 @@ static numvar scoutDelay(void) {
   int i, args = getarg(0);
   uint32_t accum = 0;
   if (!args || args % 2) {
-    speol("usage: scout.delay(\"function\",ms,...)");
+    speol("usage: delay(\"function\",ms,...)");
     return 0;
   }
   for(i=1;i<args;i+=2)
@@ -1839,18 +1840,16 @@ static numvar hqPrint(void) {
 }
 
 static numvar hqReport(void) {
-  if (!getarg(0)) {
-    return false;
+  if (!checkArgs(1, F("usage: hq.print(\"string\""))) {
+    return 0;
   }
   const char *name = (isstringarg(1))?(const char*)getarg(1):keyGet(getarg(1));
-  if(!name || strlen(name) == 0)
-  {
+  if (!name || strlen(name) == 0) {
     speol("report name must be the first argument");
     return false;
   }
   char *args = strdup(arg2array(-1).c_str());
-  if(strlen(args)+strlen(name) > 80)
-  {
+  if (strlen(args)+strlen(name) > 80) {
     free(args);
     speol("report too large");
     return false;
