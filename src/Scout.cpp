@@ -94,7 +94,7 @@ bool PinoccioScout::isBatteryAlarmTriggered() {
 }
 
 int8_t PinoccioScout::getTemperatureC() {
-  return temperature;
+  return this->getTemperature();
 }
 
 int8_t PinoccioScout::getTemperatureF() {
