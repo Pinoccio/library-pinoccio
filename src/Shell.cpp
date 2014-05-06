@@ -457,11 +457,14 @@ static bool sendDataReqBusy;
 
 static StringBuffer tempReportHQ(void) {
   StringBuffer report(100);
-  int temp = Scout.getTemperature();
-  report.appendSprintf("[%d,[%d],[%d]]",
+  int tempC = Scout.getTemperature();
+  int tempF = (uint32_t)round((1.8 * tempC) + 32);
+  report.appendSprintf("[%d,[%d,%d],[%d,%d]]",
           keyMap("temp", 0),
-          keyMap("current", 0),
-          temp);
+          keyMap("c", 0),
+          keyMap("f", 0),
+          tempC,
+          tempF);
   return Scout.handler.report(report);
 }
 
