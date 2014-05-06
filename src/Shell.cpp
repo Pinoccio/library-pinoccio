@@ -155,7 +155,7 @@ static void digitalPinEventHandler(uint8_t pin, int8_t value, int8_t mode);
 static void analogPinEventHandler(uint8_t pin, int16_t value, int8_t mode);
 static void batteryPercentageEventHandler(uint8_t value);
 static void batteryChargingEventHandler(uint8_t value);
-static void temperatureEventHandler(uint8_t value);
+static void temperatureEventHandler(int8_t tempC, int8_t tempF);
 static void ledEventHandler(uint8_t redValue, uint8_t greenValue, uint8_t blueValue);
 
 PinoccioShell Shell;
@@ -457,14 +457,12 @@ static bool sendDataReqBusy;
 
 static StringBuffer tempReportHQ(void) {
   StringBuffer report(100);
-  int tempC = Scout.getTemperature();
-  int tempF = (uint32_t)round((1.8 * tempC) + 32);
   report.appendSprintf("[%d,[%d,%d],[%d,%d]]",
           keyMap("temp", 0),
           keyMap("c", 0),
           keyMap("f", 0),
-          tempC,
-          tempF);
+          Scout.getTemperatureC(),
+          Scout.getTemperatureF());
   return Scout.handler.report(report);
 }
 
@@ -474,13 +472,11 @@ static numvar temperatureReport(void) {
 }
 
 static numvar getTemperatureC(void) {
-  return Scout.getTemperature();
+  return Scout.getTemperatureC();
 }
 
 static numvar getTemperatureF(void) {
-  float f;
-  f = round((1.8 * Scout.getTemperature()) + 32);
-  return (uint32_t)f;
+  return Scout.getTemperatureF();
 }
 
 static numvar getRandomNumber(void) {
@@ -2224,11 +2220,11 @@ static void batteryChargingEventHandler(uint8_t value) {
   }
 }
 
-static void temperatureEventHandler(uint8_t value) {
+static void temperatureEventHandler(int8_t tempC, int8_t tempF) {
   tempReportHQ();
 
   if (findscript("on.temperature")) {
-    String callback = "on.temperature(" + String(value) + ")";
+    String callback = "on.temperature(" + String(tempC) + "," + String(tempF) + ")";
     char buf[32];
     callback.toCharArray(buf, callback.length()+1);
     doCommand(buf);
