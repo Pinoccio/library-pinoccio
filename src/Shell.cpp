@@ -1240,7 +1240,7 @@ static numvar pinRead(void) {
 
 static numvar pinWrite(void) {
   // TODO: handle PWM pins
-  if (!checkArgs(1, F("usage: pin.write(\"pinName\", pinValue)"))) {
+  if (!checkArgs(2, F("usage: pin.write(\"pinName\", pinValue)"))) {
     return 0;
   }
 
