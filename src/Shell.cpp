@@ -24,7 +24,7 @@ static numvar getBatteryPercentage(void);
 static numvar getBatteryVoltage(void);
 static numvar enableBackpackVcc(void);
 static numvar disableBackpackVcc(void);
-static numvar goToSleep(void);
+static numvar hibernate(void);
 static numvar powerReport(void);
 
 static numvar ledBlink(void);
@@ -168,7 +168,7 @@ void PinoccioShell::setup() {
   addBitlashFunction("power.voltage", (bitlash_function) getBatteryVoltage);
   addBitlashFunction("power.enablevcc", (bitlash_function) enableBackpackVcc);
   addBitlashFunction("power.disablevcc", (bitlash_function) disableBackpackVcc);
-  addBitlashFunction("power.sleep", (bitlash_function) goToSleep);
+  addBitlashFunction("power.hibernate", (bitlash_function) hibernate);
   addBitlashFunction("power.report", (bitlash_function) powerReport);
 
   addBitlashFunction("mesh.config", (bitlash_function) meshConfig);
@@ -591,9 +591,23 @@ static numvar disableBackpackVcc(void) {
   return true;
 }
 
-static numvar goToSleep(void) {
-  // TODO: not implemented yet
-  //Pinoccio.goToSleep(getarg(1));
+static numvar hibernate(void) {
+  if (!getarg(0) || getarg(0) > 2) {
+    speol("usage: power.hibernate(ms, [\"function\"])");
+    return 0;
+  }
+
+  Scout.hibernateUntil = millis() + getarg(1);
+  Scout.hibernatePending = true;
+
+  if (getarg(0) > 1) {
+    if (isstringarg(2)) {
+      Scout.postHibernateCommand = strdup((char *)getarg(2));
+    } else {
+      Scout.postHibernateCommand = strdup(keyGet(getarg(2)));
+    }
+  }
+
   return 1;
 }
 

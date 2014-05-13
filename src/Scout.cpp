@@ -2,6 +2,7 @@
 #include <Wire.h>
 #include <Scout.h>
 #include "backpacks/Backpacks.h"
+#include "SleepHandler.h"
 #include <math.h>
 #include <avr/eeprom.h>
 
@@ -34,6 +35,9 @@ PinoccioScout::PinoccioScout() {
 
   eventVerboseOutput = false;
   isFactoryResetReady = false;
+
+  hibernatePending = false;
+  Scout.postHibernateCommand = NULL;
 }
 
 PinoccioScout::~PinoccioScout() { }
@@ -65,12 +69,23 @@ void PinoccioScout::setup(const char *sketchName, const char *sketchRevision, in
 }
 
 void PinoccioScout::loop() {
+  bool canSleep = true;
+  // TODO: Let other loop functions return some "cansleep" status as well
+
   PinoccioClass::loop();
   Shell.loop();
   handler.loop();
 
   if (isLeadScout()) {
     wifi.loop();
+  }
+
+
+  if (hibernatePending) {
+    canSleep = canSleep && !NWK_Busy();
+
+    if (canSleep)
+      doHibernate();
   }
 }
 
@@ -495,4 +510,29 @@ static void scoutPeripheralStateChangeTimerHandler(SYS_Timer_t *timer) {
       Scout.temperatureEventHandler(val);
     }
   }
+}
+
+void PinoccioScout::doHibernate() {
+  int32_t remaining = hibernateUntil - millis();
+  // Copy the pointer, so the post command can set a new hibernate
+  // timeout again.
+  char *cmd = postHibernateCommand;
+  postHibernateCommand = NULL;
+  hibernatePending = false;
+
+  if (remaining > 0) {
+    NWK_SleepReq();
+
+    // TODO: suspend more stuff? Wait for UART byte completion?
+
+    SleepHandler::doHibernate(remaining, true);
+    NWK_WakeupReq();
+
+    // TODO: Allow ^C to stop running callbacks like this one
+    if (cmd)
+      doCommand(cmd);
+  }
+
+  free(cmd);
+
 }
