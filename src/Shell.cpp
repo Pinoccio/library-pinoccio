@@ -94,6 +94,9 @@ static numvar scoutFree(void);
 static numvar daisyWipe(void);
 static numvar boot(void);
 static numvar otaBoot(void);
+static numvar wallTime(void);
+static numvar cpuTime(void);
+static numvar sleepTime(void);
 
 static numvar hqVerbose(void);
 static numvar hqPrint(void);
@@ -247,6 +250,9 @@ void PinoccioShell::setup() {
   addBitlashFunction("scout.daisy", (bitlash_function) daisyWipe);
   addBitlashFunction("scout.boot", (bitlash_function) boot);
   addBitlashFunction("scout.otaboot", (bitlash_function) otaBoot);
+  addBitlashFunction("scout.walltime", (bitlash_function) wallTime);
+  addBitlashFunction("scout.cputime", (bitlash_function) cpuTime);
+  addBitlashFunction("scout.sleeptime", (bitlash_function) sleepTime);
 
   addBitlashFunction("hq.settoken", (bitlash_function) setHQToken);
   addBitlashFunction("hq.gettoken", (bitlash_function) getHQToken);
@@ -498,12 +504,14 @@ static StringBuffer uptimeReportHQ(void) {
   reset[sizeof(reset) - 1] = 0; // ensure termination, strncpy is weird
 
   // free memory based on http://forum.pololu.com/viewtopic.php?f=10&t=989&view=unread#p4218
-  report.appendSprintf("[%d,[%d,%d,%d,%d],[%ld,%d,%d,",keyMap("uptime",0),
+  report.appendSprintf("[%d,[%d,%d,%d,%d,%d],[%ld,%ld,%d,%d,",keyMap("uptime",0),
           keyMap("millis", 0),
+          keyMap("sleep", 0),
           keyMap("free", 0),
           keyMap("random", 0),
           keyMap("reset", 0),
-          (unsigned long)millis(),
+          Scout.getCpuTime(),
+          Scout.getSleepTime(),
           ((int)&freeMem) - ((int)&__bss_end),
           (int)random());
 
@@ -514,7 +522,25 @@ static StringBuffer uptimeReportHQ(void) {
 
 static numvar uptimeReport(void) {
   uptimeReportHQ();
-  sp(millis());
+  sp(Scout.getWallTime());
+  speol();
+  return true;
+}
+
+static numvar cpuTime(void) {
+  sp(Scout.getCpuTime());
+  speol();
+  return true;
+}
+
+static numvar sleepTime(void) {
+  sp(Scout.getSleepTime());
+  speol();
+  return true;
+}
+
+static numvar wallTime(void) {
+  sp(Scout.getWallTime());
   speol();
   return true;
 }

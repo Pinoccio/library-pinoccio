@@ -536,3 +536,15 @@ void PinoccioScout::doHibernate() {
   free(cmd);
 
 }
+
+uint32_t PinoccioScout::getWallTime() {
+  return getCpuTime() + getSleepTime();
+}
+
+uint32_t PinoccioScout::getCpuTime() {
+  return millis();
+}
+
+uint32_t PinoccioScout::getSleepTime() {
+  return SleepHandler::hibernateMillis;
+}
