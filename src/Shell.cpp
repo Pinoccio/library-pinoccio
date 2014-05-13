@@ -35,6 +35,7 @@ static numvar uptimeHours(void);
 static numvar uptimeReport(void);
 
 static numvar isBatteryCharging(void);
+static numvar isBatteryConnected(void);
 static numvar getBatteryPercentage(void);
 static numvar getBatteryVoltage(void);
 static numvar enableBackpackVcc(void);
@@ -182,6 +183,7 @@ void PinoccioShell::setup() {
   addBitlashFunction("banner", (bitlash_function) pinoccioBanner);
 
   addBitlashFunction("power.ischarging", (bitlash_function) isBatteryCharging);
+  addBitlashFunction("power.hasbattery", (bitlash_function) isBatteryConnected);
   addBitlashFunction("power.percent", (bitlash_function) getBatteryPercentage);
   addBitlashFunction("power.voltage", (bitlash_function) getBatteryVoltage);
   addBitlashFunction("power.enablevcc", (bitlash_function) enableBackpackVcc);
@@ -617,6 +619,10 @@ static numvar keySave(void) {
 
 static numvar isBatteryCharging(void) {
   return Scout.isBatteryCharging();
+}
+
+static numvar isBatteryConnected(void) {
+  return Scout.isBatteryConnected();
 }
 
 static numvar getBatteryPercentage(void) {

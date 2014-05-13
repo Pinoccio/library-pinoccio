@@ -81,10 +81,6 @@ void PinoccioScout::loop() {
   }
 }
 
-void PinoccioScout::delay(unsigned long ms) {
-  Serial.println("not safe, disabled");
-}
-
 bool PinoccioScout::isBatteryCharging() {
   return isBattCharging;
 }
@@ -99,6 +95,22 @@ int PinoccioScout::getBatteryVoltage() {
 
 bool PinoccioScout::isBatteryAlarmTriggered() {
   return isBattAlarmTriggered;
+}
+
+bool PinoccioScout::isBatteryConnected() {
+  bool start = digitalRead(CHG_STATUS);
+  bool state = start;
+  bool changed = false;
+
+  for (int i=0; i<40; i++) {
+    if ((state = digitalRead(CHG_STATUS)) != start) {
+      changed = true;
+    } else if (changed == true) {
+      return false;
+    }
+    delay(1);
+  }
+  return true;
 }
 
 int8_t PinoccioScout::getTemperatureC() {
