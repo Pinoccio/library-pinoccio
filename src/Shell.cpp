@@ -309,7 +309,7 @@ void PinoccioShell::setup() {
   Scout.batteryPercentageEventHandler = batteryPercentageEventHandler;
   Scout.batteryChargingEventHandler = batteryChargingEventHandler;
   Scout.temperatureEventHandler = temperatureEventHandler;
-  RgbLed.ledEventHandler = ledEventHandler;
+  Led.ledEventHandler = ledEventHandler;
 
   if (isShellEnabled) {
     startShell();
@@ -669,12 +669,12 @@ static StringBuffer ledReportHQ(void) {
           keyMap("led", 0),
           keyMap("led", 0),
           keyMap("torch", 0),
-          RgbLed.getRedValue(),
-          RgbLed.getGreenValue(),
-          RgbLed.getBlueValue(),
-          RgbLed.getRedTorchValue(),
-          RgbLed.getGreenTorchValue(),
-          RgbLed.getBlueTorchValue());
+          Led.getRedValue(),
+          Led.getGreenValue(),
+          Led.getBlueValue(),
+          Led.getRedTorchValue(),
+          Led.getGreenTorchValue(),
+          Led.getBlueTorchValue());
   return Scout.handler.report(report);
 }
 
@@ -683,122 +683,122 @@ static numvar ledBlink(void) {
     return 0;
   }
   if (getarg(0) == 5) {
-    RgbLed.blinkColor(getarg(1), getarg(2), getarg(3), getarg(4), getarg(5));
+    Led.blinkColor(getarg(1), getarg(2), getarg(3), getarg(4), getarg(5));
   } else if (getarg(0) == 4) {
-    RgbLed.blinkColor(getarg(1), getarg(2), getarg(3), getarg(4));
+    Led.blinkColor(getarg(1), getarg(2), getarg(3), getarg(4));
   } else {
-    RgbLed.blinkColor(getarg(1), getarg(2), getarg(3));
+    Led.blinkColor(getarg(1), getarg(2), getarg(3));
   }
   return 1;
 }
 
 static numvar ledOff(void) {
-  RgbLed.turnOff();
+  Led.turnOff();
   return 1;
 }
 
 static numvar ledRed(void) {
   if (getarg(0) == 2) {
-    RgbLed.blinkRed(getarg(1), getarg(2));
+    Led.blinkRed(getarg(1), getarg(2));
   } else if (getarg(0) == 1) {
-    RgbLed.blinkRed(getarg(1));
+    Led.blinkRed(getarg(1));
   } else {
-    RgbLed.red();
+    Led.red();
   }
   return 1;
 }
 
 static numvar ledGreen(void) {
   if (getarg(0) == 2) {
-    RgbLed.blinkGreen(getarg(1), getarg(2));
+    Led.blinkGreen(getarg(1), getarg(2));
   } else if (getarg(0) == 1) {
-    RgbLed.blinkGreen(getarg(1));
+    Led.blinkGreen(getarg(1));
   } else {
-    RgbLed.green();
+    Led.green();
   }
   return 1;
 }
 
 static numvar ledBlue(void) {
   if (getarg(0) == 2) {
-    RgbLed.blinkBlue(getarg(1), getarg(2));
+    Led.blinkBlue(getarg(1), getarg(2));
   } else if (getarg(0) == 1) {
-    RgbLed.blinkBlue(getarg(1));
+    Led.blinkBlue(getarg(1));
   } else {
-    RgbLed.blue();
+    Led.blue();
   }
   return 1;
 }
 
 static numvar ledCyan(void) {
   if (getarg(0) == 2) {
-    RgbLed.blinkCyan(getarg(1), getarg(2));
+    Led.blinkCyan(getarg(1), getarg(2));
   } else if (getarg(0) == 1) {
-    RgbLed.blinkCyan(getarg(1));
+    Led.blinkCyan(getarg(1));
   } else {
-    RgbLed.cyan();
+    Led.cyan();
   }
   return 1;
 }
 
 static numvar ledPurple(void) {
   if (getarg(0) == 2) {
-    RgbLed.blinkPurple(getarg(1), getarg(2));
+    Led.blinkPurple(getarg(1), getarg(2));
   } else if (getarg(0) == 1) {
-    RgbLed.blinkPurple(getarg(1));
+    Led.blinkPurple(getarg(1));
   } else {
-    RgbLed.purple();
+    Led.purple();
   }
   return 1;
 }
 
 static numvar ledMagenta(void) {
   if (getarg(0) == 2) {
-    RgbLed.blinkMagenta(getarg(1), getarg(2));
+    Led.blinkMagenta(getarg(1), getarg(2));
   } else if (getarg(0) == 1) {
-    RgbLed.blinkMagenta(getarg(1));
+    Led.blinkMagenta(getarg(1));
   } else {
-    RgbLed.magenta();
+    Led.magenta();
   }
   return 1;
 }
 
 static numvar ledYellow(void) {
   if (getarg(0) == 2) {
-    RgbLed.blinkYellow(getarg(1), getarg(2));
+    Led.blinkYellow(getarg(1), getarg(2));
   } else if (getarg(0) == 1) {
-    RgbLed.blinkYellow(getarg(1));
+    Led.blinkYellow(getarg(1));
   } else {
-    RgbLed.yellow();
+    Led.yellow();
   }
   return 1;
 }
 
 static numvar ledOrange(void) {
   if (getarg(0) == 2) {
-    RgbLed.blinkOrange(getarg(1), getarg(2));
+    Led.blinkOrange(getarg(1), getarg(2));
   } else if (getarg(0) == 1) {
-    RgbLed.blinkOrange(getarg(1));
+    Led.blinkOrange(getarg(1));
   } else {
-    RgbLed.orange();
+    Led.orange();
   }
   return 1;
 }
 
 static numvar ledWhite(void) {
   if (getarg(0) == 2) {
-    RgbLed.blinkWhite(getarg(1), getarg(2));
+    Led.blinkWhite(getarg(1), getarg(2));
   } else if (getarg(0) == 1) {
-    RgbLed.blinkWhite(getarg(1));
+    Led.blinkWhite(getarg(1));
   } else {
-    RgbLed.white();
+    Led.white();
   }
   return 1;
 }
 
 static numvar ledGetHex(void) {
   char hex[8];
-  snprintf(hex, sizeof(hex),"%02x%02x%02x", RgbLed.getRedValue(), RgbLed.getGreenValue(), RgbLed.getBlueValue());
+  snprintf(hex, sizeof(hex),"%02x%02x%02x", Led.getRedValue(), Led.getGreenValue(), Led.getBlueValue());
   return keyMap(hex, millis());
 }
 
@@ -816,7 +816,7 @@ static numvar ledSetHex(void) {
 
   uint8_t out[3];
   PinoccioShell::parseHex(str, 6, out);
-  RgbLed.setColor(out[0], out[1], out[2]);
+  Led.setColor(out[0], out[1], out[2]);
 
   return 1;
 }
@@ -825,29 +825,29 @@ static numvar ledSetRgb(void) {
   if (!checkArgs(3, F("usage: led.setrgb(red, green, blue)"))) {
     return 0;
   }
-  RgbLed.setColor(getarg(1), getarg(2), getarg(3));
+  Led.setColor(getarg(1), getarg(2), getarg(3));
   return 1;
 }
 
 static numvar ledIsOff(void) {
-  return RgbLed.isOff();
+  return Led.isOff();
 }
 
 static numvar ledSaveTorch(void) {
   if (!checkArgs(3, F("usage: led.savetorch(red, green, blue)"))) {
     return 0;
   }
-  RgbLed.saveTorch(getarg(1), getarg(2), getarg(3));
+  Led.saveTorch(getarg(1), getarg(2), getarg(3));
   return 1;
 }
 
 static numvar ledTorch(void) {
   if (getarg(0) == 2) {
-    RgbLed.blinkTorch(getarg(1), getarg(2));
+    Led.blinkTorch(getarg(1), getarg(2));
   } else if (getarg(0) == 1) {
-    RgbLed.blinkTorch(getarg(1));
+    Led.blinkTorch(getarg(1));
   } else {
-    RgbLed.setTorch();
+    Led.setTorch();
   }
   return 1;
 }

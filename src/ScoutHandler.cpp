@@ -599,7 +599,6 @@ static void leadCommandChunk() {
   leadCommandReq.size = len;
   leadCommandReq.confirm = leadCommandChunkConfirm;
   NWK_DataReq(&leadCommandReq);
-  //RgbLed.blinkCyan(200);
 
   if (hqVerboseOutput) {
     Serial.print(leadCommandTo);
