@@ -1,6 +1,6 @@
 #include "HqHandler.h"
 
-#define USE_TLS
+//#define USE_TLS
 
 
 // Warning: Setting an IP address here, or setting a _shorter_ hostname
