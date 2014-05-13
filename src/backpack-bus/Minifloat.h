@@ -1,3 +1,12 @@
+/**************************************************************************\
+* Pinoccio Library                                                         *
+* https://github.com/Pinoccio/library-pinoccio                             *
+* Copyright (c) 2012-2014, Pinoccio Inc. All rights reserved.              *
+* ------------------------------------------------------------------------ *
+*  This program is free software; you can redistribute it and/or modify it *
+*  under the terms of the BSD License as described in license.txt.         *
+\**************************************************************************/
+
 // Class for handling minifloat values
 #ifndef LIB_PINOCCIO_MINIFLOAT_H
 #define LIB_PINOCCIO_MINIFLOAT_H
@@ -7,7 +16,7 @@
 #include "Arduino.h"
 #include "../util/static_assert.h"
 
-// This is jus a bunch of macros that the compiler automatically defines
+// This is just a bunch of macros that the compiler automatically defines
 // that should be said like this when the "float" type actually uses
 // IEEE754 32-bit floats, as the below code assumes. If this error
 // triggers, this might mean something is wrong, or perhaps your
