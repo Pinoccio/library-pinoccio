@@ -420,30 +420,30 @@ void PinoccioShell::loop() {
 }
 
 void PinoccioShell::startShell() {
-  char boot[32];
+  char buf[32];
   uint8_t i;
 
   isShellEnabled = true;
   initBitlash(115200);
 
   for (i='a'; i<'z'; i++) {
-    snprintf(boot, sizeof(boot), "startup.%c", i);
-    if (findscript(boot)) {
-      doCommand(boot);
+    snprintf(buf, sizeof(buf), "startup.%c", i);
+    if (find_user_function(buf) || findscript(buf)) {
+      doCommand(buf);
     }
   }
 
   for (i=2; i<9; i++) {
-    snprintf(boot, sizeof(boot), "startup.d%d", i);
-    if (findscript(boot)) {
-      doCommand(boot);
+    snprintf(buf, sizeof(buf), "startup.d%d", i);
+    if (find_user_function(buf) || findscript(buf)) {
+      doCommand(buf);
     }
   }
 
   for (i=0; i<8; i++) {
-    snprintf(boot, sizeof(boot), "startup.a%d", i);
-    if (findscript(boot)) {
-      doCommand(boot);
+    snprintf(buf, sizeof(buf), "startup.a%d", i);
+    if (find_user_function(buf) || findscript(buf)) {
+      doCommand(buf);
     }
   }
 }
@@ -1734,7 +1734,7 @@ void delayCommand(uint32_t at, char *command) {
   delayTimer->mode = SYS_TIMER_INTERVAL_MODE;
   delayTimer->handler = delayTimerHandler;
   delayTimer->interval = at;
-  SYS_TimerStart(delayTimer);  
+  SYS_TimerStart(delayTimer);
 }
 
 static numvar scoutDelay(void) {
@@ -2096,16 +2096,22 @@ static bool receiveMessage(NWK_DataInd_t *ind) {
 
   // parse the array payload into keys, [1, "foo", "bar"]
   keyLoad(data, keys, millis());
+  uint32_t time = millis();
 
-  // REVIEW: proper function name?
   snprintf(buf, sizeof(buf),"on.message.scout");
-  if (findscript(buf)) {
+  if (find_user_function(buf) || findscript(buf)) {
     snprintf(buf, sizeof(buf), "on.message.scout(%d", ind->srcAddr);
     for (int i=2; i<=keys[0]; i++) {
       snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf), ",%d", keys[i]);
     }
     snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf), ")");
     doCommand(buf);
+  }
+  
+  if (Scout.eventVerboseOutput) {
+    Serial.print(F("on.message.scout event handler took "));
+    Serial.print(millis() - time);
+    Serial.println(F("ms"));
   }
   return true;
 }
@@ -2176,11 +2182,18 @@ static void sendConfirm(NWK_DataReq_t *req) {
 
   // run the Bitlash callback ack function
   char buf[32];
+  uint32_t time = millis();
 
   snprintf(buf, sizeof(buf),"on.message.signal");
-  if (findscript(buf)) {
+  if (find_user_function(buf) || findscript(buf)) {
     snprintf(buf, sizeof(buf), "on.message.signal(%d, %d)", req->dstAddr, (req->status == NWK_SUCCESS_STATUS) ? req->control : 0);
     doCommand(buf);
+  }
+
+  if (Scout.eventVerboseOutput) {
+    Serial.print(F("on.message.signal event handler took "));
+    Serial.print(millis() - time);
+    Serial.println(F("ms"));
   }
 }
 
@@ -2191,13 +2204,13 @@ static void sendConfirm(NWK_DataReq_t *req) {
 
 static void digitalPinEventHandler(uint8_t pin, int8_t value, int8_t mode) {
   uint32_t time = millis();
-  char buf[32];
+  char buf[16];
 
   digitalPinReportHQ();
 
   snprintf(buf, sizeof(buf), "on.d%d", pin);
-  if (findscript(buf)) {
-    snprintf(buf, sizeof(buf), "on.d%d(%d, %d)", pin, value, mode);
+  if (find_user_function(buf) || findscript(buf)) {
+    snprintf(buf, sizeof(buf), "on.d%d(%d,%d)", pin, value, mode);
     doCommand(buf);
   }
 
@@ -2208,13 +2221,13 @@ static void digitalPinEventHandler(uint8_t pin, int8_t value, int8_t mode) {
     } else {
       snprintf(buf, sizeof(buf), "on.d%d.high", pin);
     }
-    if (findscript(buf)) {
+    if (find_user_function(buf) || findscript(buf)) {
       doCommand(buf);
     }
   }
 
   if (Scout.eventVerboseOutput) {
-    Serial.print(F("Digital pin event handler took "));
+    Serial.print(F("Digital pin event handlers took "));
     Serial.print(millis() - time);
     Serial.println(F("ms"));
   }
@@ -2222,53 +2235,77 @@ static void digitalPinEventHandler(uint8_t pin, int8_t value, int8_t mode) {
 
 static void analogPinEventHandler(uint8_t pin, int16_t value, int8_t mode) {
   uint32_t time = millis();
-  char buf[32];
+  char buf[16];
 
   analogPinReportHQ();
 
   snprintf(buf, sizeof(buf),"on.a%d", pin);
-  if (findscript(buf)) {
+  if (find_user_function(buf) || findscript(buf)) {
     snprintf(buf, sizeof(buf), "on.a%d(%d, %d)", pin, value, mode);
     doCommand(buf);
   }
 
   if (Scout.eventVerboseOutput) {
-    Serial.print(F("Analog pin event handler took "));
+    Serial.print(F("Analog pin event handlers took "));
     Serial.print(millis() - time);
     Serial.println(F("ms"));
   }
 }
 
 static void batteryPercentageEventHandler(uint8_t value) {
+  uint32_t time = millis();
+  char buf[24];
+  char *func = "on.battery.level";
+
   powerReportHQ();
 
-  if (findscript("on.battery.level")) {
-    String callback = "on.battery.level(" + String(value) + ")";
-    char buf[32];
-    callback.toCharArray(buf, callback.length()+1);
+  if (find_user_function(func) || findscript(func)) {
+    snprintf(buf, sizeof(buf), "%s(%d)", func, value);
     doCommand(buf);
+  }
+
+  if (Scout.eventVerboseOutput) {
+    Serial.print(F("on.battery.level event handler took "));
+    Serial.print(millis() - time);
+    Serial.println(F("ms"));
   }
 }
 
 static void batteryChargingEventHandler(uint8_t value) {
+  uint32_t time = millis();
+  char buf[28];
+  char *func = "on.battery.charging";
+
   powerReportHQ();
 
-  if (findscript("on.battery.charging")) {
-    String callback = "on.battery.charging(" + String(value) + ")";
-    char buf[32];
-    callback.toCharArray(buf, callback.length()+1);
+  if (find_user_function(func) || findscript(func)) {
+    snprintf(buf, sizeof(buf), "%s(%d)", func, value);
     doCommand(buf);
+  }
+
+  if (Scout.eventVerboseOutput) {
+    Serial.print(F("on.battery.charging event handler took "));
+    Serial.print(millis() - time);
+    Serial.println(F("ms"));
   }
 }
 
 static void temperatureEventHandler(int8_t tempC, int8_t tempF) {
+  uint32_t time = millis();
+  char buf[28];
+  char *func = "on.temperature";
+
   tempReportHQ();
 
-  if (findscript("on.temperature")) {
-    String callback = "on.temperature(" + String(tempC) + "," + String(tempF) + ")";
-    char buf[32];
-    callback.toCharArray(buf, callback.length()+1);
+  if (find_user_function(func) || findscript(func)) {
+    snprintf(buf, sizeof(buf), "%s(%d, %d)", func, tempC, tempF);
     doCommand(buf);
+  }
+
+  if (Scout.eventVerboseOutput) {
+    Serial.print(F("on.temperature event handler took "));
+    Serial.print(millis() - time);
+    Serial.println(F("ms"));
   }
 }
 
