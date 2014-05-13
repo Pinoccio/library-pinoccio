@@ -38,7 +38,6 @@ class PinoccioScout : public PinoccioClass {
 
     void setup(const char *sketchName = "Custom", const char *sketchRevision = "unknown", int32_t sketchBuild = -1);
     void loop();
-    void delay(unsigned long ms);
 
     bool isBatteryCharging();
     int getBatteryPercentage();
@@ -95,12 +94,22 @@ class PinoccioScout : public PinoccioClass {
 
     bool eventVerboseOutput;
 
+    uint32_t getWallTime();
+    uint32_t getCpuTime();
+    uint32_t getSleepTime();
+
     PBBP bp;
     WiFiBackpack wifi;
     PinoccioScoutHandler handler;
 
+    bool hibernatePending;
+    uint32_t hibernateUntil;
+    char * postHibernateCommand;
+
   protected:
     void checkStateChange();
+
+    void doHibernate();
 
     bool isVccEnabled;
     bool isStateSaved;
