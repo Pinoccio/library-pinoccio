@@ -74,10 +74,6 @@ void PinoccioScout::loop() {
   }
 }
 
-void PinoccioScout::delay(unsigned long ms) {
-  Serial.println("not safe, disabled");
-}
-
 bool PinoccioScout::isBatteryCharging() {
   return isBattCharging;
 }
