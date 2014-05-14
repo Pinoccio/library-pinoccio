@@ -487,7 +487,7 @@ static StringBuffer tempReportHQ(void) {
 }
 
 static numvar temperatureReport(void) {
-  tempReportHQ();
+  speol(tempReportHQ());
   return 1;
 }
 
