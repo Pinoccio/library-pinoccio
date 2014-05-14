@@ -27,12 +27,15 @@ static numvar getRandomNumber(void);
 static numvar allReport(void);
 static numvar allVerbose(void);
 
-static numvar getLastResetCause(void);
+static numvar uptimeMillisAwake(void);
+static numvar uptimeMillisSleep(void);
 static numvar uptimeMillis(void);
 static numvar uptimeSeconds(void);
 static numvar uptimeMinutes(void);
 static numvar uptimeHours(void);
+static numvar uptimeDays(void);
 static numvar uptimeReport(void);
+static numvar getLastResetCause(void);
 
 static numvar isBatteryCharging(void);
 static numvar isBatteryConnected(void);
@@ -112,9 +115,6 @@ static numvar memoryReport(void);
 static numvar daisyWipe(void);
 static numvar boot(void);
 static numvar otaBoot(void);
-static numvar wallTime(void);
-static numvar cpuTime(void);
-static numvar sleepTime(void);
 
 static numvar hqVerbose(void);
 static numvar hqPrint(void);
@@ -217,16 +217,20 @@ void PinoccioShell::setup() {
   addBitlashFunction("temperature.f", (bitlash_function) getTemperatureF);
   addBitlashFunction("temperature.report", (bitlash_function) temperatureReport);
   addBitlashFunction("randomnumber", (bitlash_function) getRandomNumber);
+  addBitlashFunction("memory.report", (bitlash_function) memoryReport);
 
   addBitlashFunction("report", (bitlash_function) allReport);
   addBitlashFunction("verbose", (bitlash_function) allVerbose);
 
-  addBitlashFunction("uptime.getlastreset", (bitlash_function) getLastResetCause);
+  addBitlashFunction("uptime.millis.awake", (bitlash_function) uptimeMillisAwake);
+  addBitlashFunction("uptime.millis.sleep", (bitlash_function) uptimeMillisSleep);
   addBitlashFunction("uptime.millis", (bitlash_function) uptimeMillis);
   addBitlashFunction("uptime.seconds", (bitlash_function) uptimeSeconds);
   addBitlashFunction("uptime.minutes", (bitlash_function) uptimeMinutes);
   addBitlashFunction("uptime.hours", (bitlash_function) uptimeHours);
+  addBitlashFunction("uptime.days", (bitlash_function) uptimeDays);
   addBitlashFunction("uptime.report", (bitlash_function) uptimeReport);
+  addBitlashFunction("uptime.getlastreset", (bitlash_function) getLastResetCause);
 
   addBitlashFunction("led.off", (bitlash_function) ledOff);
   addBitlashFunction("led.red", (bitlash_function) ledRed);
@@ -277,11 +281,6 @@ void PinoccioShell::setup() {
   addBitlashFunction("scout.daisy", (bitlash_function) daisyWipe);
   addBitlashFunction("scout.boot", (bitlash_function) boot);
   addBitlashFunction("scout.otaboot", (bitlash_function) otaBoot);
-  addBitlashFunction("scout.walltime", (bitlash_function) wallTime);
-  addBitlashFunction("scout.cputime", (bitlash_function) cpuTime);
-  addBitlashFunction("scout.sleeptime", (bitlash_function) sleepTime);
-
-  addBitlashFunction("memory.report", (bitlash_function) memoryReport);
 
   addBitlashFunction("hq.settoken", (bitlash_function) setHQToken);
   addBitlashFunction("hq.gettoken", (bitlash_function) getHQToken);
@@ -539,19 +538,23 @@ static StringBuffer uptimeReportHQ(void) {
 }
 
 static numvar uptimeMillis(void) {
-  return millis();
+  return Scout.getWallTime();
 }
 
 static numvar uptimeSeconds(void) {
-  return millis()/1000;
+  return Scout.getWallTime()/1000;
 }
 
 static numvar uptimeMinutes(void) {
-  return millis()/1000/60;
+  return Scout.getWallTime()/1000/60;
 }
 
 static numvar uptimeHours(void) {
-  return millis()/1000/60/60;
+  return Scout.getWallTime()/1000/60/60;
+}
+
+static numvar uptimeDays(void) {
+  return Scout.getWallTime()/1000/60/60/24;
 }
 
 static numvar uptimeReport(void) {
@@ -559,24 +562,15 @@ static numvar uptimeReport(void) {
   return true;
 }
 
-static numvar cpuTime(void) {
-  sp(Scout.getCpuTime());
-  speol();
+static numvar uptimeMillisAwake(void) {
+  return Scout.getCpuTime();
   return true;
 }
 
-static numvar sleepTime(void) {
-  sp(Scout.getSleepTime());
-  speol();
+static numvar uptimeMillisSleep(void) {
+  return Scout.getSleepTime();
   return true;
 }
-
-static numvar wallTime(void) {
-  sp(Scout.getWallTime());
-  speol();
-  return true;
-}
-
 
 /****************************\
 *        KEY HANDLERS        *
@@ -1326,7 +1320,7 @@ static numvar pinWrite(void) {
 }
 
 static numvar pinSave(void) {
-  if (!checkArgs(2, F("usage: pin.save(\"pinName\", pinMode)"))) {
+  if (!checkArgs(2, F("usage: pin.save(\"pinName\", pinMode, [pinValue])"))) {
     return 0;
   }
 
@@ -2158,7 +2152,7 @@ static bool receiveMessage(NWK_DataInd_t *ind) {
     snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf), ")");
     doCommand(buf);
   }
-  
+
   if (Scout.eventVerboseOutput) {
     Serial.print(F("on.message.scout event handler took "));
     Serial.print(millis() - time);
