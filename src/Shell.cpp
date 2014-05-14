@@ -524,15 +524,13 @@ static StringBuffer uptimeReportHQ(void) {
   strncpy_P(reset, Scout.getLastResetCause(), sizeof(reset));
   reset[sizeof(reset) - 1] = 0; // ensure termination, strncpy is weird
 
-  report.appendSprintf("[%d,[%d,%d,%d,%d,%d],[%ld,%ld,%d,%d,",keyMap("uptime",0),
+  report.appendSprintf("[%d,[%d,%d,%d,%d],[%ld,%ld,%d,",keyMap("uptime",0),
           keyMap("millis", 0),
           keyMap("sleep", 0),
-          keyMap("free", 0),
           keyMap("random", 0),
           keyMap("reset", 0),
           Scout.getCpuTime(),
           Scout.getSleepTime(),
-          (freeMem),
           (int)random());
 
   report.appendJsonString(reset, true);
