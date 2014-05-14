@@ -41,7 +41,7 @@ static numvar getBatteryVoltage(void);
 static numvar enableBackpackVcc(void);
 static numvar disableBackpackVcc(void);
 static numvar isBackpackVccEnabled(void);
-static numvar hibernate(void);
+static numvar sleep(void);
 static numvar powerReport(void);
 
 static numvar ledBlink(void);
@@ -192,7 +192,7 @@ void PinoccioShell::setup() {
   addBitlashFunction("power.enablevcc", (bitlash_function) enableBackpackVcc);
   addBitlashFunction("power.disablevcc", (bitlash_function) disableBackpackVcc);
   addBitlashFunction("power.isvccenabled", (bitlash_function) isBackpackVccEnabled);
-  addBitlashFunction("power.hibernate", (bitlash_function) hibernate);
+  addBitlashFunction("power.sleep", (bitlash_function) sleep);
   addBitlashFunction("power.report", (bitlash_function) powerReport);
 
   addBitlashFunction("mesh.config", (bitlash_function) meshConfig);
@@ -555,7 +555,7 @@ static numvar uptimeHours(void) {
 }
 
 static numvar uptimeReport(void) {
-  uptimeReportHQ();
+  speol(uptimeReportHQ());
   return true;
 }
 
@@ -671,9 +671,9 @@ static numvar isBackpackVccEnabled(void) {
   return Scout.isBackpackVccEnabled();
 }
 
-static numvar hibernate(void) {
+static numvar sleep(void) {
   if (!getarg(0) || getarg(0) > 2) {
-    speol("usage: power.hibernate(ms, [\"function\"])");
+    speol("usage: power.sleep(ms, [\"function\"])");
     return 0;
   }
 
