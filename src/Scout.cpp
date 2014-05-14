@@ -1,7 +1,16 @@
+/**************************************************************************\
+* Pinoccio Library                                                         *
+* https://github.com/Pinoccio/library-pinoccio                             *
+* Copyright (c) 2012-2014, Pinoccio Inc. All rights reserved.              *
+* ------------------------------------------------------------------------ *
+*  This program is free software; you can redistribute it and/or modify it *
+*  under the terms of the BSD License as described in license.txt.         *
+\**************************************************************************/
 #include <Arduino.h>
 #include <Wire.h>
 #include <Scout.h>
 #include "backpacks/Backpacks.h"
+#include "SleepHandler.h"
 #include <math.h>
 #include <avr/eeprom.h>
 
@@ -15,7 +24,6 @@ PinoccioScout::PinoccioScout() {
   digitalPinEventHandler = 0;
   analogPinEventHandler = 0;
   batteryPercentageEventHandler = 0;
-  batteryVoltageEventHandler = 0;
   batteryChargingEventHandler = 0;
   batteryAlarmTriggeredEventHandler = 0;
   temperatureEventHandler = 0;
@@ -34,6 +42,9 @@ PinoccioScout::PinoccioScout() {
 
   eventVerboseOutput = false;
   isFactoryResetReady = false;
+
+  hibernatePending = false;
+  Scout.postHibernateCommand = NULL;
 }
 
 PinoccioScout::~PinoccioScout() { }
@@ -49,7 +60,7 @@ void PinoccioScout::setup(const char *sketchName, const char *sketchRevision, in
   delay(100);
   enableBackpackVcc();
 
-  RgbLed.turnOff();
+  Led.turnOff();
   Wire.begin();
   HAL_FuelGaugeConfig(20);   // Configure the MAX17048G's alert percentage to 20%
   Backpacks::setup();
@@ -65,6 +76,9 @@ void PinoccioScout::setup(const char *sketchName, const char *sketchRevision, in
 }
 
 void PinoccioScout::loop() {
+  bool canSleep = true;
+  // TODO: Let other loop functions return some "cansleep" status as well
+
   PinoccioClass::loop();
   Shell.loop();
   handler.loop();
@@ -72,10 +86,13 @@ void PinoccioScout::loop() {
   if (isLeadScout()) {
     wifi.loop();
   }
-}
 
-void PinoccioScout::delay(unsigned long ms) {
-  Serial.println("not safe, disabled");
+  if (hibernatePending) {
+    canSleep = canSleep && !NWK_Busy();
+
+    if (canSleep)
+      doHibernate();
+  }
 }
 
 bool PinoccioScout::isBatteryCharging() {
@@ -92,6 +109,32 @@ int PinoccioScout::getBatteryVoltage() {
 
 bool PinoccioScout::isBatteryAlarmTriggered() {
   return isBattAlarmTriggered;
+}
+
+bool PinoccioScout::isBatteryConnected() {
+  bool start = digitalRead(CHG_STATUS);
+  bool state = start;
+  bool changed = false;
+
+  for (int i=0; i<40; i++) {
+    if ((state = digitalRead(CHG_STATUS)) != start) {
+      changed = true;
+    } else if (changed == true) {
+      return false;
+    }
+    delay(1);
+  }
+  return true;
+}
+
+int8_t PinoccioScout::getTemperatureC() {
+  return this->getTemperature();
+}
+
+int8_t PinoccioScout::getTemperatureF() {
+  float f;
+  f = round((1.8 * temperature) + 32);
+  return (uint32_t)f;
 }
 
 void PinoccioScout::enableBackpackVcc() {
@@ -183,7 +226,7 @@ void PinoccioScout::saveState() {
   batteryVoltage = HAL_FuelGaugeVoltage();
   isBattCharging = (digitalRead(CHG_STATUS) == LOW);
   isBattAlarmTriggered = (digitalRead(BATT_ALARM) == LOW);
-  temperature = this->getTemperature();
+  temperature = this->getTemperatureC();
 }
 
 int8_t PinoccioScout::getRegisterPinMode(uint8_t pin) {
@@ -448,19 +491,6 @@ static void scoutPeripheralStateChangeTimerHandler(SYS_Timer_t *timer) {
     }
   }
 
-  if (Scout.batteryVoltageEventHandler != 0) {
-    val = HAL_FuelGaugeVoltage();
-    if (Scout.batteryVoltage != val) {
-      if (Scout.eventVerboseOutput) {
-        Serial.print(F("Running: batteryVoltageEventHandler("));
-        Serial.print(val);
-        Serial.println(F(")"));
-      }
-      Scout.batteryVoltage = val;
-      Scout.batteryVoltageEventHandler(val);
-    }
-  }
-
   if (Scout.batteryChargingEventHandler != 0) {
     val = (digitalRead(CHG_STATUS) == LOW);
     if (Scout.isBattCharging != val) {
@@ -488,15 +518,55 @@ static void scoutPeripheralStateChangeTimerHandler(SYS_Timer_t *timer) {
   }
 
   if (Scout.temperatureEventHandler != 0) {
-    val = Scout.getTemperature();
+    int8_t tempC = Scout.getTemperatureC();
+    int8_t tempF = Scout.getTemperatureF();
     if (Scout.temperature != val) {
       if (Scout.eventVerboseOutput) {
         Serial.print(F("Running: temperatureEventHandler("));
-        Serial.print(val);
+        Serial.print(tempC);
+        Serial.print(",");
+        Serial.print(tempF);
         Serial.println(F(")"));
       }
-      Scout.temperature = val;
-      Scout.temperatureEventHandler(val);
+      Scout.temperature = tempC;
+      Scout.temperatureEventHandler(tempC, tempF);
     }
   }
+}
+
+void PinoccioScout::doHibernate() {
+  int32_t remaining = hibernateUntil - millis();
+  // Copy the pointer, so the post command can set a new hibernate
+  // timeout again.
+  char *cmd = postHibernateCommand;
+  postHibernateCommand = NULL;
+  hibernatePending = false;
+
+  if (remaining > 0) {
+    NWK_SleepReq();
+
+    // TODO: suspend more stuff? Wait for UART byte completion?
+
+    SleepHandler::doHibernate(remaining, true);
+    NWK_WakeupReq();
+
+    // TODO: Allow ^C to stop running callbacks like this one
+    if (cmd)
+      doCommand(cmd);
+  }
+
+  free(cmd);
+
+}
+
+uint32_t PinoccioScout::getWallTime() {
+  return getCpuTime() + getSleepTime();
+}
+
+uint32_t PinoccioScout::getCpuTime() {
+  return millis();
+}
+
+uint32_t PinoccioScout::getSleepTime() {
+  return SleepHandler::hibernateMillis;
 }

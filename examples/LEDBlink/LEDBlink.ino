@@ -19,6 +19,7 @@
 void setup() {
   Scout.setup(SKETCH_NAME, SKETCH_REVISION, SKETCH_BUILD);
   // Add custom setup code here
+  Led.blinkCyan(500, true);
 }
 
 void loop() {

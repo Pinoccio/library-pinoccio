@@ -1,3 +1,11 @@
+/**************************************************************************\
+* Pinoccio Library                                                         *
+* https://github.com/Pinoccio/library-pinoccio                             *
+* Copyright (c) 2012-2014, Pinoccio Inc. All rights reserved.              *
+* ------------------------------------------------------------------------ *
+*  This program is free software; you can redistribute it and/or modify it *
+*  under the terms of the BSD License as described in license.txt.         *
+\**************************************************************************/
 #include "Shell.h"
 #include "Scout.h"
 #include "backpacks/Backpacks.h"
@@ -11,20 +19,29 @@ extern "C" {
 
 static numvar pinoccioBanner(void);
 
-static numvar getTemperature(void);
+static numvar getTemperatureC(void);
+static numvar getTemperatureF(void);
 static numvar temperatureReport(void);
 static numvar getRandomNumber(void);
-static numvar getLastResetCause(void);
-static numvar uptimeReport(void);
+
 static numvar allReport(void);
 static numvar allVerbose(void);
 
+static numvar getLastResetCause(void);
+static numvar uptimeMillis(void);
+static numvar uptimeSeconds(void);
+static numvar uptimeMinutes(void);
+static numvar uptimeHours(void);
+static numvar uptimeReport(void);
+
 static numvar isBatteryCharging(void);
+static numvar isBatteryConnected(void);
 static numvar getBatteryPercentage(void);
 static numvar getBatteryVoltage(void);
 static numvar enableBackpackVcc(void);
 static numvar disableBackpackVcc(void);
-static numvar goToSleep(void);
+static numvar isBackpackVccEnabled(void);
+static numvar hibernate(void);
 static numvar powerReport(void);
 
 static numvar ledBlink(void);
@@ -55,13 +72,14 @@ static numvar meshResetKey(void);
 static numvar meshJoinGroup(void);
 static numvar meshLeaveGroup(void);
 static numvar meshIsInGroup(void);
-static numvar meshSend(void);
 static numvar meshVerbose(void);
 static numvar meshReport(void);
 static numvar meshRouting(void);
-static numvar meshAnnounce(void);
 static numvar meshSignal(void);
 static numvar meshLoss(void);
+
+static numvar messageScout(void);
+static numvar messageGroup(void);
 
 static numvar pinConstHigh(void);
 static numvar pinConstLow(void);
@@ -90,10 +108,13 @@ static numvar isScoutLeadScout(void);
 static numvar setHQToken(void);
 static numvar getHQToken(void);
 static numvar scoutDelay(void);
-static numvar scoutFree(void);
+static numvar memoryReport(void);
 static numvar daisyWipe(void);
 static numvar boot(void);
 static numvar otaBoot(void);
+static numvar wallTime(void);
+static numvar cpuTime(void);
+static numvar sleepTime(void);
 
 static numvar hqVerbose(void);
 static numvar hqPrint(void);
@@ -122,11 +143,13 @@ static numvar wifiVerbose(void);
 static numvar wifiStats(void);
 
 static numvar keyMap(void);
+static numvar keyFree(void);
 static numvar keyPrint(void);
 static numvar keyNumber(void);
 static numvar keySave(void);
 
 static int getPinFromArg(int arg);
+static bool checkArgs(uint8_t required, const __FlashStringHelper *errorMsg, bool minRequired=false);
 
 static StringBuffer scoutReportHQ(void);
 static StringBuffer uptimeReportHQ(void);
@@ -145,9 +168,8 @@ static void sendConfirm(NWK_DataReq_t *req);
 static void digitalPinEventHandler(uint8_t pin, int8_t value, int8_t mode);
 static void analogPinEventHandler(uint8_t pin, int16_t value, int8_t mode);
 static void batteryPercentageEventHandler(uint8_t value);
-static void batteryVoltageEventHandler(uint8_t value);
 static void batteryChargingEventHandler(uint8_t value);
-static void temperatureEventHandler(uint8_t value);
+static void temperatureEventHandler(int8_t tempC, int8_t tempF);
 static void ledEventHandler(uint8_t redValue, uint8_t greenValue, uint8_t blueValue);
 
 PinoccioShell Shell;
@@ -164,38 +186,47 @@ void PinoccioShell::setup() {
   addBitlashFunction("banner", (bitlash_function) pinoccioBanner);
 
   addBitlashFunction("power.ischarging", (bitlash_function) isBatteryCharging);
+  addBitlashFunction("power.hasbattery", (bitlash_function) isBatteryConnected);
   addBitlashFunction("power.percent", (bitlash_function) getBatteryPercentage);
   addBitlashFunction("power.voltage", (bitlash_function) getBatteryVoltage);
   addBitlashFunction("power.enablevcc", (bitlash_function) enableBackpackVcc);
   addBitlashFunction("power.disablevcc", (bitlash_function) disableBackpackVcc);
-  addBitlashFunction("power.sleep", (bitlash_function) goToSleep);
+  addBitlashFunction("power.isvccenabled", (bitlash_function) isBackpackVccEnabled);
+  addBitlashFunction("power.hibernate", (bitlash_function) hibernate);
   addBitlashFunction("power.report", (bitlash_function) powerReport);
 
   addBitlashFunction("mesh.config", (bitlash_function) meshConfig);
   addBitlashFunction("mesh.setpower", (bitlash_function) meshSetPower);
   addBitlashFunction("mesh.setdatarate", (bitlash_function) meshSetDataRate);
-  addBitlashFunction("mesh.key", (bitlash_function) meshSetKey);
   addBitlashFunction("mesh.setkey", (bitlash_function) meshSetKey);
   addBitlashFunction("mesh.getkey", (bitlash_function) meshGetKey);
   addBitlashFunction("mesh.resetkey", (bitlash_function) meshResetKey);
   addBitlashFunction("mesh.joingroup", (bitlash_function) meshJoinGroup);
   addBitlashFunction("mesh.leavegroup", (bitlash_function) meshLeaveGroup);
   addBitlashFunction("mesh.ingroup", (bitlash_function) meshIsInGroup);
-  addBitlashFunction("mesh.send", (bitlash_function) meshSend);
   addBitlashFunction("mesh.verbose", (bitlash_function) meshVerbose);
   addBitlashFunction("mesh.report", (bitlash_function) meshReport);
   addBitlashFunction("mesh.routing", (bitlash_function) meshRouting);
-  addBitlashFunction("mesh.announce", (bitlash_function) meshAnnounce);
   addBitlashFunction("mesh.signal", (bitlash_function) meshSignal);
   addBitlashFunction("mesh.loss", (bitlash_function) meshLoss);
 
-  addBitlashFunction("temperature", (bitlash_function) getTemperature);
+  addBitlashFunction("message.scout", (bitlash_function) messageScout);
+  addBitlashFunction("message.group", (bitlash_function) messageGroup);
+
+  addBitlashFunction("temperature.c", (bitlash_function) getTemperatureC);
+  addBitlashFunction("temperature.f", (bitlash_function) getTemperatureF);
   addBitlashFunction("temperature.report", (bitlash_function) temperatureReport);
   addBitlashFunction("randomnumber", (bitlash_function) getRandomNumber);
-  addBitlashFunction("lastreset", (bitlash_function) getLastResetCause);
-  addBitlashFunction("uptime", (bitlash_function) uptimeReport);
+
   addBitlashFunction("report", (bitlash_function) allReport);
   addBitlashFunction("verbose", (bitlash_function) allVerbose);
+
+  addBitlashFunction("uptime.getlastreset", (bitlash_function) getLastResetCause);
+  addBitlashFunction("uptime.millis", (bitlash_function) uptimeMillis);
+  addBitlashFunction("uptime.seconds", (bitlash_function) uptimeSeconds);
+  addBitlashFunction("uptime.minutes", (bitlash_function) uptimeMinutes);
+  addBitlashFunction("uptime.hours", (bitlash_function) uptimeHours);
+  addBitlashFunction("uptime.report", (bitlash_function) uptimeReport);
 
   addBitlashFunction("led.off", (bitlash_function) ledOff);
   addBitlashFunction("led.red", (bitlash_function) ledRed);
@@ -243,10 +274,14 @@ void PinoccioShell::setup() {
   addBitlashFunction("scout.report", (bitlash_function) scoutReport);
   addBitlashFunction("scout.isleadscout", (bitlash_function) isScoutLeadScout);
   addBitlashFunction("scout.delay", (bitlash_function) scoutDelay);
-  addBitlashFunction("scout.free", (bitlash_function) scoutFree);
   addBitlashFunction("scout.daisy", (bitlash_function) daisyWipe);
   addBitlashFunction("scout.boot", (bitlash_function) boot);
   addBitlashFunction("scout.otaboot", (bitlash_function) otaBoot);
+  addBitlashFunction("scout.walltime", (bitlash_function) wallTime);
+  addBitlashFunction("scout.cputime", (bitlash_function) cpuTime);
+  addBitlashFunction("scout.sleeptime", (bitlash_function) sleepTime);
+
+  addBitlashFunction("memory.report", (bitlash_function) memoryReport);
 
   addBitlashFunction("hq.settoken", (bitlash_function) setHQToken);
   addBitlashFunction("hq.gettoken", (bitlash_function) getHQToken);
@@ -260,6 +295,7 @@ void PinoccioShell::setup() {
   addBitlashFunction("events.verbose", (bitlash_function) setEventVerbose);
 
   addBitlashFunction("key", (bitlash_function) keyMap);
+  addBitlashFunction("key.free", (bitlash_function) keyFree);
   addBitlashFunction("key.print", (bitlash_function) keyPrint);
   addBitlashFunction("key.number", (bitlash_function) keyNumber);
   addBitlashFunction("key.save", (bitlash_function) keySave);
@@ -287,10 +323,9 @@ void PinoccioShell::setup() {
   Scout.digitalPinEventHandler = digitalPinEventHandler;
   Scout.analogPinEventHandler = analogPinEventHandler;
   Scout.batteryPercentageEventHandler = batteryPercentageEventHandler;
-  Scout.batteryVoltageEventHandler = batteryVoltageEventHandler;
   Scout.batteryChargingEventHandler = batteryChargingEventHandler;
   Scout.temperatureEventHandler = temperatureEventHandler;
-  RgbLed.ledEventHandler = ledEventHandler;
+  Led.ledEventHandler = ledEventHandler;
 
   if (isShellEnabled) {
     startShell();
@@ -401,30 +436,30 @@ void PinoccioShell::loop() {
 }
 
 void PinoccioShell::startShell() {
-  char boot[32];
+  char buf[32];
   uint8_t i;
 
   isShellEnabled = true;
   initBitlash(115200);
 
   for (i='a'; i<'z'; i++) {
-    snprintf(boot, sizeof(boot), "startup.%c", i);
-    if (findscript(boot)) {
-      doCommand(boot);
+    snprintf(buf, sizeof(buf), "startup.%c", i);
+    if (find_user_function(buf) || findscript(buf)) {
+      doCommand(buf);
     }
   }
 
   for (i=2; i<9; i++) {
-    snprintf(boot, sizeof(boot), "startup.d%d", i);
-    if (findscript(boot)) {
-      doCommand(boot);
+    snprintf(buf, sizeof(buf), "startup.d%d", i);
+    if (find_user_function(buf) || findscript(buf)) {
+      doCommand(buf);
     }
   }
 
   for (i=0; i<8; i++) {
-    snprintf(boot, sizeof(boot), "startup.a%d", i);
-    if (findscript(boot)) {
-      doCommand(boot);
+    snprintf(buf, sizeof(buf), "startup.a%d", i);
+    if (find_user_function(buf) || findscript(buf)) {
+      doCommand(buf);
     }
   }
 }
@@ -435,9 +470,6 @@ void PinoccioShell::disableShell() {
 
 static NWK_DataReq_t sendDataReq;
 static bool sendDataReqBusy;
-static int tempHigh = 0;
-static int tempLow = 0;
-
 
 /****************************\
 *      BUILT-IN HANDLERS    *
@@ -445,17 +477,12 @@ static int tempLow = 0;
 
 static StringBuffer tempReportHQ(void) {
   StringBuffer report(100);
-  int temp = Scout.getTemperature();
-  if(temp > tempHigh) tempHigh = temp;
-  if(!tempLow || temp < tempLow) tempLow = temp;
-  report.appendSprintf("[%d,[%d,%d,%d],[%d,%d,%d]]",
+  report.appendSprintf("[%d,[%d,%d],[%d,%d]]",
           keyMap("temp", 0),
-          keyMap("current", 0),
-          keyMap("high", 0),
-          keyMap("low", 0),
-          temp,
-          tempHigh,
-          tempLow);
+          keyMap("c", 0),
+          keyMap("f", 0),
+          Scout.getTemperatureC(),
+          Scout.getTemperatureF());
   return Scout.handler.report(report);
 }
 
@@ -464,10 +491,12 @@ static numvar temperatureReport(void) {
   return 1;
 }
 
-static numvar getTemperature(void) {
-  tempReportHQ();
-  int i = Scout.getTemperature();
-  return i;
+static numvar getTemperatureC(void) {
+  return Scout.getTemperatureC();
+}
+
+static numvar getTemperatureF(void) {
+  return Scout.getTemperatureF();
 }
 
 static numvar getRandomNumber(void) {
@@ -484,27 +513,24 @@ static numvar getLastResetCause(void) {
   while((c = pgm_read_byte(resetString++))) {
     sprintf(reset + strlen(reset), "%c", c);
   }
-  speol(reset);
-  return true;
+  return keyMap(reset, 0);
 }
 
-extern int __bss_end;
 static StringBuffer uptimeReportHQ(void) {
   StringBuffer report(100);
-  int freeMem;
+  int freeMem = getFreeMemory();
 
   char reset[20];
   strncpy_P(reset, Scout.getLastResetCause(), sizeof(reset));
   reset[sizeof(reset) - 1] = 0; // ensure termination, strncpy is weird
 
-  // free memory based on http://forum.pololu.com/viewtopic.php?f=10&t=989&view=unread#p4218
-  report.appendSprintf("[%d,[%d,%d,%d,%d],[%ld,%d,%d,",keyMap("uptime",0),
+  report.appendSprintf("[%d,[%d,%d,%d,%d],[%ld,%ld,%d,",keyMap("uptime",0),
           keyMap("millis", 0),
-          keyMap("free", 0),
+          keyMap("sleep", 0),
           keyMap("random", 0),
           keyMap("reset", 0),
-          (unsigned long)millis(),
-          ((int)&freeMem) - ((int)&__bss_end),
+          Scout.getCpuTime(),
+          Scout.getSleepTime(),
           (int)random());
 
   report.appendJsonString(reset, true);
@@ -512,9 +538,41 @@ static StringBuffer uptimeReportHQ(void) {
   return Scout.handler.report(report);
 }
 
+static numvar uptimeMillis(void) {
+  return millis();
+}
+
+static numvar uptimeSeconds(void) {
+  return millis()/1000;
+}
+
+static numvar uptimeMinutes(void) {
+  return millis()/1000/60;
+}
+
+static numvar uptimeHours(void) {
+  return millis()/1000/60/60;
+}
+
 static numvar uptimeReport(void) {
   uptimeReportHQ();
-  sp(millis());
+  return true;
+}
+
+static numvar cpuTime(void) {
+  sp(Scout.getCpuTime());
+  speol();
+  return true;
+}
+
+static numvar sleepTime(void) {
+  sp(Scout.getSleepTime());
+  speol();
+  return true;
+}
+
+static numvar wallTime(void) {
+  sp(Scout.getWallTime());
   speol();
   return true;
 }
@@ -525,6 +583,9 @@ static numvar uptimeReport(void) {
 \****************************/
 
 static numvar keyMap(void) {
+  if (!checkArgs(1, F("usage: key(\"string\")"))) {
+    return 0;
+  }
   static char num[8];
   if (isstringarg(1)) {
     return keyMap((char*)getstringarg(1), 0);
@@ -533,7 +594,18 @@ static numvar keyMap(void) {
   return keyMap(num, 0);
 }
 
+static numvar keyFree(void) {
+  if (!checkArgs(1, F("usage: key.free(key)"))) {
+    return 0;
+  }
+  keyFree(getarg(1));
+  return 1;
+}
+
 static numvar keyPrint(void) {
+  if (!checkArgs(1, F("usage: key.print(key)"))) {
+    return 0;
+  }
   const char *key = keyGet(getarg(1));
   if (!key) {
     return 0;
@@ -543,6 +615,9 @@ static numvar keyPrint(void) {
 }
 
 static numvar keyNumber(void) {
+  if (!checkArgs(1, F("usage: key.number(key)"))) {
+    return 0;
+  }
   const char *key = keyGet(getarg(1));
   if (!key) {
     return 0;
@@ -551,10 +626,10 @@ static numvar keyNumber(void) {
 }
 
 static numvar keySave(void) {
-  char cmd[42], *var;
-  if (getarg(0) != 2 || !isstringarg(1)) {
+  if (!checkArgs(2, F("usage: key.save(\"string\", at)")) || !isstringarg(1)) {
     return 0;
   }
+  char cmd[42], *var;
   var = (char*)getstringarg(1);
   snprintf(cmd, sizeof(cmd), "function boot.%s {%s=key(\"%s\");}", var, var, keyGet(getarg(2)));
   doCommand(cmd);
@@ -567,33 +642,52 @@ static numvar keySave(void) {
 \****************************/
 
 static numvar isBatteryCharging(void) {
-  int i = Scout.isBatteryCharging();
-  return i;
+  return Scout.isBatteryCharging();
+}
+
+static numvar isBatteryConnected(void) {
+  return Scout.isBatteryConnected();
 }
 
 static numvar getBatteryPercentage(void) {
-  int i = Scout.getBatteryPercentage();
-  return i;
+  return Scout.getBatteryPercentage();
 }
 
 static numvar getBatteryVoltage(void) {
-  int i = Scout.getBatteryVoltage();
-  return i;
+  return Scout.getBatteryVoltage();
 }
 
 static numvar enableBackpackVcc(void) {
   Scout.enableBackpackVcc();
-  return true;
+  return 1;
 }
 
 static numvar disableBackpackVcc(void) {
   Scout.disableBackpackVcc();
-  return true;
+  return 1;
 }
 
-static numvar goToSleep(void) {
-  // TODO: not implemented yet
-  //Pinoccio.goToSleep(getarg(1));
+static numvar isBackpackVccEnabled(void) {
+  return Scout.isBackpackVccEnabled();
+}
+
+static numvar hibernate(void) {
+  if (!getarg(0) || getarg(0) > 2) {
+    speol("usage: power.hibernate(ms, [\"function\"])");
+    return 0;
+  }
+
+  Scout.hibernateUntil = millis() + getarg(1);
+  Scout.hibernatePending = true;
+
+  if (getarg(0) > 1) {
+    if (isstringarg(2)) {
+      Scout.postHibernateCommand = strdup((char *)getarg(2));
+    } else {
+      Scout.postHibernateCommand = strdup(keyGet(getarg(2)));
+    }
+  }
+
   return 1;
 }
 
@@ -614,7 +708,7 @@ static StringBuffer powerReportHQ(void) {
 
 static numvar powerReport(void) {
   speol(powerReportHQ());
-  return true;
+  return 1;
 }
 
 /****************************\
@@ -627,177 +721,185 @@ static StringBuffer ledReportHQ(void) {
           keyMap("led", 0),
           keyMap("led", 0),
           keyMap("torch", 0),
-          RgbLed.getRedValue(),
-          RgbLed.getGreenValue(),
-          RgbLed.getBlueValue(),
-          RgbLed.getRedTorchValue(),
-          RgbLed.getGreenTorchValue(),
-          RgbLed.getBlueTorchValue());
+          Led.getRedValue(),
+          Led.getGreenValue(),
+          Led.getBlueValue(),
+          Led.getRedTorchValue(),
+          Led.getGreenTorchValue(),
+          Led.getBlueTorchValue());
   return Scout.handler.report(report);
 }
 
 static numvar ledBlink(void) {
+  if (!checkArgs(3, F("usage: ledBlink(red, green, blue, ms=500, continuous=0)"), true)) {
+    return 0;
+  }
   if (getarg(0) == 5) {
-    RgbLed.blinkColor(getarg(1), getarg(2), getarg(3), getarg(4), getarg(5));
+    Led.blinkColor(getarg(1), getarg(2), getarg(3), getarg(4), getarg(5));
   } else if (getarg(0) == 4) {
-    RgbLed.blinkColor(getarg(1), getarg(2), getarg(3), getarg(4));
+    Led.blinkColor(getarg(1), getarg(2), getarg(3), getarg(4));
   } else {
-    RgbLed.blinkColor(getarg(1), getarg(2), getarg(3));
+    Led.blinkColor(getarg(1), getarg(2), getarg(3));
   }
   return 1;
 }
 
 static numvar ledOff(void) {
-  RgbLed.turnOff();
+  Led.turnOff();
   return 1;
 }
 
 static numvar ledRed(void) {
   if (getarg(0) == 2) {
-    RgbLed.blinkRed(getarg(1), getarg(2));
+    Led.blinkRed(getarg(1), getarg(2));
   } else if (getarg(0) == 1) {
-    RgbLed.blinkRed(getarg(1));
+    Led.blinkRed(getarg(1));
   } else {
-    RgbLed.red();
+    Led.red();
   }
   return 1;
 }
 
 static numvar ledGreen(void) {
   if (getarg(0) == 2) {
-    RgbLed.blinkGreen(getarg(1), getarg(2));
+    Led.blinkGreen(getarg(1), getarg(2));
   } else if (getarg(0) == 1) {
-    RgbLed.blinkGreen(getarg(1));
+    Led.blinkGreen(getarg(1));
   } else {
-    RgbLed.green();
+    Led.green();
   }
   return 1;
 }
 
 static numvar ledBlue(void) {
   if (getarg(0) == 2) {
-    RgbLed.blinkBlue(getarg(1), getarg(2));
+    Led.blinkBlue(getarg(1), getarg(2));
   } else if (getarg(0) == 1) {
-    RgbLed.blinkBlue(getarg(1));
+    Led.blinkBlue(getarg(1));
   } else {
-    RgbLed.blue();
+    Led.blue();
   }
   return 1;
 }
 
 static numvar ledCyan(void) {
   if (getarg(0) == 2) {
-    RgbLed.blinkCyan(getarg(1), getarg(2));
+    Led.blinkCyan(getarg(1), getarg(2));
   } else if (getarg(0) == 1) {
-    RgbLed.blinkCyan(getarg(1));
+    Led.blinkCyan(getarg(1));
   } else {
-    RgbLed.cyan();
+    Led.cyan();
   }
   return 1;
 }
 
 static numvar ledPurple(void) {
   if (getarg(0) == 2) {
-    RgbLed.blinkPurple(getarg(1), getarg(2));
+    Led.blinkPurple(getarg(1), getarg(2));
   } else if (getarg(0) == 1) {
-    RgbLed.blinkPurple(getarg(1));
+    Led.blinkPurple(getarg(1));
   } else {
-    RgbLed.purple();
+    Led.purple();
   }
   return 1;
 }
 
 static numvar ledMagenta(void) {
   if (getarg(0) == 2) {
-    RgbLed.blinkMagenta(getarg(1), getarg(2));
+    Led.blinkMagenta(getarg(1), getarg(2));
   } else if (getarg(0) == 1) {
-    RgbLed.blinkMagenta(getarg(1));
+    Led.blinkMagenta(getarg(1));
   } else {
-    RgbLed.magenta();
+    Led.magenta();
   }
   return 1;
 }
 
 static numvar ledYellow(void) {
   if (getarg(0) == 2) {
-    RgbLed.blinkYellow(getarg(1), getarg(2));
+    Led.blinkYellow(getarg(1), getarg(2));
   } else if (getarg(0) == 1) {
-    RgbLed.blinkYellow(getarg(1));
+    Led.blinkYellow(getarg(1));
   } else {
-    RgbLed.yellow();
+    Led.yellow();
   }
   return 1;
 }
 
 static numvar ledOrange(void) {
   if (getarg(0) == 2) {
-    RgbLed.blinkOrange(getarg(1), getarg(2));
+    Led.blinkOrange(getarg(1), getarg(2));
   } else if (getarg(0) == 1) {
-    RgbLed.blinkOrange(getarg(1));
+    Led.blinkOrange(getarg(1));
   } else {
-    RgbLed.orange();
+    Led.orange();
   }
   return 1;
 }
 
 static numvar ledWhite(void) {
   if (getarg(0) == 2) {
-    RgbLed.blinkWhite(getarg(1), getarg(2));
+    Led.blinkWhite(getarg(1), getarg(2));
   } else if (getarg(0) == 1) {
-    RgbLed.blinkWhite(getarg(1));
+    Led.blinkWhite(getarg(1));
   } else {
-    RgbLed.white();
+    Led.white();
   }
   return 1;
 }
 
 static numvar ledGetHex(void) {
   char hex[8];
-  snprintf(hex, sizeof(hex),"%02x%02x%02x", RgbLed.getRedValue(), RgbLed.getGreenValue(), RgbLed.getBlueValue());
+  snprintf(hex, sizeof(hex),"%02x%02x%02x", Led.getRedValue(), Led.getGreenValue(), Led.getBlueValue());
   return keyMap(hex, millis());
 }
 
 static numvar ledSetHex(void) {
-  if (getarg(1)) {
-    const char *str;
-    if (isstringarg(1)) {
-      str = (const char *)getarg(1);
-    } else {
-      str = keyGet(getarg(1));
-    }
-
-    uint8_t out[3];
-    PinoccioShell::parseHex(str, 6, out);
-    RgbLed.setColor(out[0], out[1], out[2]);
-
-    return true;
-  } else {
-    return false;
+  if (!checkArgs(1, F("usage: led.sethex(\"hexvalue\")"))) {
+    return 0;
   }
+
+  const char *str;
+  if (isstringarg(1)) {
+    str = (const char *)getarg(1);
+  } else {
+    str = keyGet(getarg(1));
+  }
+
+  uint8_t out[3];
+  PinoccioShell::parseHex(str, 6, out);
+  Led.setColor(out[0], out[1], out[2]);
+
   return 1;
 }
 
 static numvar ledSetRgb(void) {
-  RgbLed.setColor(getarg(1), getarg(2), getarg(3));
+  if (!checkArgs(3, F("usage: led.setrgb(red, green, blue)"))) {
+    return 0;
+  }
+  Led.setColor(getarg(1), getarg(2), getarg(3));
   return 1;
 }
 
 static numvar ledIsOff(void) {
-  return RgbLed.isOff();
+  return Led.isOff();
 }
 
 static numvar ledSaveTorch(void) {
-  RgbLed.saveTorch(getarg(1), getarg(2), getarg(3));
+  if (!checkArgs(3, F("usage: led.savetorch(red, green, blue)"))) {
+    return 0;
+  }
+  Led.saveTorch(getarg(1), getarg(2), getarg(3));
   return 1;
 }
 
 static numvar ledTorch(void) {
   if (getarg(0) == 2) {
-    RgbLed.blinkTorch(getarg(1), getarg(2));
+    Led.blinkTorch(getarg(1), getarg(2));
   } else if (getarg(0) == 1) {
-    RgbLed.blinkTorch(getarg(1));
+    Led.blinkTorch(getarg(1));
   } else {
-    RgbLed.setTorch();
+    Led.setTorch();
   }
   return 1;
 }
@@ -812,29 +914,38 @@ static numvar ledReport(void) {
 \****************************/
 
 static numvar meshConfig(void) {
-  uint16_t panId = 0x4567;
-  uint8_t channel = 20;
-  if (getarg(0) >= 2) {
-    panId = getarg(2);
+  if (!checkArgs(2, F("usage: mesh.config(scoutId, troopId, channel=20)"), true)) {
+    return 0;
   }
+  uint8_t channel = 20;
+
   if (getarg(0) >= 3) {
     channel = getarg(3);
   }
-  Scout.meshSetRadio(getarg(1), panId, channel);
+  Scout.meshSetRadio(getarg(1), getarg(2), channel);
   return 1;
 }
 
 static numvar meshSetPower(void) {
+  if (!checkArgs(1, F("usage: mesh.setpower(powerLevel)"))) {
+    return 0;
+  }
   Scout.meshSetPower(getarg(1));
   return 1;
 }
 
 static numvar meshSetDataRate(void) {
+  if (!checkArgs(1, F("usage: mesh.setdatarate(dataRate)"))) {
+    return 0;
+  }
   Scout.meshSetDataRate(getarg(1));
   return 1;
 }
 
 static numvar meshSetKey(void) {
+  if (!checkArgs(1, F("usage: mesh.setkey(\"key\")"))) {
+    return 0;
+  }
   Scout.meshSetSecurityKey((const uint8_t *)getstringarg(1));
   return 1;
 }
@@ -853,18 +964,26 @@ static numvar meshResetKey(void) {
 }
 
 static numvar meshJoinGroup(void) {
+  if (!checkArgs(1, F("usage: mesh.joingroup(groupId)"))) {
+    return 0;
+  }
   Scout.meshJoinGroup(getarg(1));
   return 1;
 }
 
 static numvar meshLeaveGroup(void) {
+  if (!checkArgs(1, F("usage: mesh.leavegroup(groupId)"))) {
+    return 0;
+  }
   Scout.meshLeaveGroup(getarg(1));
   return 1;
 }
 
 static numvar meshIsInGroup(void) {
-  bool inGroup = Scout.meshIsInGroup(getarg(1));
-  return inGroup;
+  if (!checkArgs(1, F("usage: mesh.ingroup(groupId)"))) {
+    return 0;
+  }
+  return Scout.meshIsInGroup(getarg(1));
 }
 
 // ver = 0 means all args, ver < 0 means skip first arg, ver >= 1 means include ver and skip first arg
@@ -886,23 +1005,6 @@ StringBuffer arg2array(int ver) {
   return buf;
 }
 
-static numvar meshSend(void) {
-  if (!getarg(0)) {
-    return false;
-  }
-
-  sendMessage(getarg(1), arg2array(1));
-  return true;
-}
-
-static numvar meshAnnounce(void) {
-  if (!getarg(0)) {
-    return false;
-  }
-  Scout.handler.announce(getarg(1), arg2array(1));
-  return true;
-}
-
 static numvar meshSignal(void) {
   return lastMeshRssi * -1;
 }
@@ -912,6 +1014,9 @@ static numvar meshLoss(void) {
 }
 
 static numvar meshVerbose(void) {
+  if (!checkArgs(1, F("usage: mesh.verbose(flag)"))) {
+    return 0;
+  }
   isMeshVerbose = getarg(1);
   return 1;
 }
@@ -986,6 +1091,21 @@ static numvar meshRouting(void) {
   return 1;
 }
 
+static numvar messageScout(void) {
+  if (!checkArgs(1, F("usage: message.scout(scoutId, \"message\")"), true)) {
+    return 0;
+  }
+  sendMessage(getarg(1), arg2array(1));
+  return 1;
+}
+
+static numvar messageGroup(void) {
+  if (!checkArgs(1, F("usage: message.group(groupId, \"message\")"), true)) {
+    return 0;
+  }
+  Scout.handler.announce(getarg(1), arg2array(1));
+  return 1;
+}
 
 /****************************\
 *        I/O HANDLERS       *
@@ -1060,6 +1180,9 @@ static numvar pinConstInputPullup(void) {
 }
 
 static numvar pinMakeInput(void) {
+  if (!checkArgs(1, F("usage: pin.makeinput(\"pinName\", inputType=INPUT_PULLUP)"), true)) {
+    return 0;
+  }
   int8_t pin = getPinFromArg(1);
   if (pin == -1) {
     speol(F("Invalid pin number"));
@@ -1086,6 +1209,10 @@ static numvar pinMakeInput(void) {
 }
 
 static numvar pinMakeOutput(void) {
+  if (!checkArgs(1, F("usage: pin.makeoutput(\"pinName\")"))) {
+    return 0;
+  }
+
   int8_t pin = getPinFromArg(1);
   if (pin == -1) {
     speol(F("Invalid pin number"));
@@ -1107,6 +1234,10 @@ static numvar pinMakeOutput(void) {
 }
 
 static numvar pinDisable(void) {
+  if (!checkArgs(1, F("usage: pin.disable(\"pinName\")"))) {
+    return 0;
+  }
+
   int8_t pin = getPinFromArg(1);
   if (pin == -1) {
     speol(F("Invalid pin number"));
@@ -1128,6 +1259,10 @@ static numvar pinDisable(void) {
 }
 
 static numvar pinSetMode(void) {
+  if (!checkArgs(2, F("usage: pin.setmode(\"pinName\", pinMode)"))) {
+    return 0;
+  }
+
   int8_t pin = getPinFromArg(1);
   if (pin == -1) {
     speol(F("Invalid pin number"));
@@ -1149,6 +1284,9 @@ static numvar pinSetMode(void) {
 }
 
 static numvar pinRead(void) {
+  if (!checkArgs(1, F("usage: pin.read(\"pinName\")"))) {
+    return 0;
+  }
   int8_t pin = getPinFromArg(1);
   if (pin == -1) {
     speol(F("Invalid pin number"));
@@ -1160,6 +1298,10 @@ static numvar pinRead(void) {
 
 static numvar pinWrite(void) {
   // TODO: handle PWM pins
+  if (!checkArgs(2, F("usage: pin.write(\"pinName\", pinValue)"))) {
+    return 0;
+  }
+
   int8_t pin = getPinFromArg(1);
   uint8_t value = getarg(2);
   if (pin == -1) {
@@ -1184,6 +1326,10 @@ static numvar pinWrite(void) {
 }
 
 static numvar pinSave(void) {
+  if (!checkArgs(2, F("usage: pin.save(\"pinName\", pinMode)"))) {
+    return 0;
+  }
+
   int8_t pin = getPinFromArg(1);
   int8_t mode = getarg(2);
 
@@ -1214,7 +1360,7 @@ static numvar pinSave(void) {
     if (getarg(0) == 3 && mode == OUTPUT) {
       uint8_t value = getarg(3);
       Scout.pinWrite(pin, value);
-      snprintf(buf, sizeof(buf), "function startup.%s { pin.setmode(\"%s\",%d); pin.write(%d,%d) }", str, str, mode, pin, value);
+      snprintf(buf, sizeof(buf), "function startup.%s { pin.setmode(\"%s\",%d); pin.write(\"%d\",%d) }", str, str, mode, str, value);
     } else {
       snprintf(buf, sizeof(buf), "function startup.%s { pin.setmode(\"%s\",%d); }", str, str, mode);
     }
@@ -1250,6 +1396,22 @@ static int getPinFromArg(int arg) {
   } else {
     return -1;
   }
+}
+
+static bool checkArgs(uint8_t required, const __FlashStringHelper *errorMsg, bool minRequired) {
+  if (minRequired == true) {
+    if (getarg(0) < required) {
+      speol(errorMsg);
+      return false;
+    } else {
+      return true;
+    }
+  }
+  if (getarg(0) != required) {
+    speol(errorMsg);
+    return false;
+  }
+  return true;
 }
 
 /****************************\
@@ -1394,37 +1556,38 @@ static numvar backpackDetail(void) {
   }
   Pbbe::Header *h = Backpacks::info[addr].getHeader();
   Pbbe::UniqueId &id = Backpacks::info[addr].id;
-  
+
+  // TODO: Convert these to sp()'s so we can see them in HQ, once sp/speol support the base argument
   Serial.print(F("Backpack name: "));
   Serial.println(h->backpack_name);
-  
+
   Serial.print(F("Model number: 0x"));
   Serial.println(id.model, HEX); // TODO: zero pad
-  
+
   Serial.print(F("Board revision: "));
   Pbbe::MajorMinor rev = Pbbe::extractMajorMinor(id.revision);
   Serial.print(rev.major);
   Serial.print(F("."));
   Serial.println(rev.minor);
-  
+
   Serial.print(F("Serial number: 0x"));
   Serial.println(id.serial, HEX); // TODO: zero pad
-  
+
   Serial.print(F("Backpack Bus Protocol version: "));
   Serial.print(id.protocol_version);
   Serial.println(F(".x")); // Only the major version is advertised
-  
+
   Serial.print(F("Backpack Bus firmware version: "));
   Serial.println(h->firmware_version);
-  
+
   Serial.print(F("EEPROM layout version: "));
   Serial.print(h->layout_version);
   Serial.println(F(".x")); // Only the major version is advertised
-  
+
   Serial.print(F("EEPROM size: "));
   Serial.print(h->total_eeprom_size);
   Serial.println(F(" bytes"));
-  
+
   Serial.print(F("EEPROM used: "));
   Serial.print(h->used_eeprom_size);
   Serial.println(F(" bytes"));
@@ -1592,6 +1755,9 @@ static numvar isScoutLeadScout(void) {
 }
 
 static numvar setHQToken(void) {
+  if (!checkArgs(1, F("usage: hq.settoken(\"token\""))) {
+    return 0;
+  }
   Scout.setHQToken((const char *)getstringarg(1));
   return 1;
 }
@@ -1606,22 +1772,21 @@ static numvar getHQToken(void) {
 
 
 static void delayTimerHandler(SYS_Timer_t *timer) {
-  doCommand(((char*)timer)+(sizeof(struct SYS_Timer_t)));
+  doCommand(((char*)timer) + (sizeof(struct SYS_Timer_t)));
   free(timer);
 }
 
-void delayCommand(uint32_t at, char *command)
-{
-  size_t clen = strlen(command)+1;
+void delayCommand(uint32_t at, char *command) {
+  size_t clen = strlen(command) + 1;
   // allocate space for the command after the timer pointer
-  SYS_Timer_t *delayTimer = (SYS_Timer_t *)malloc(sizeof(struct SYS_Timer_t)+clen);
+  SYS_Timer_t *delayTimer = (SYS_Timer_t *)malloc(sizeof(struct SYS_Timer_t) + clen);
   memset(delayTimer,0,sizeof(struct SYS_Timer_t));
-  memcpy(((char*)delayTimer)+sizeof(struct SYS_Timer_t),command,clen);
+  memcpy(((char*)delayTimer) + sizeof(struct SYS_Timer_t), command, clen);
   // init timer
   delayTimer->mode = SYS_TIMER_INTERVAL_MODE;
   delayTimer->handler = delayTimerHandler;
   delayTimer->interval = at;
-  SYS_TimerStart(delayTimer);  
+  SYS_TimerStart(delayTimer);
 }
 
 static numvar scoutDelay(void) {
@@ -1629,11 +1794,10 @@ static numvar scoutDelay(void) {
   int i, args = getarg(0);
   uint32_t accum = 0;
   if (!args || args % 2) {
-    speol("usage: delay(\"function\",ms,...)");
+    speol("usage: scout.delay(\"function\",ms,...)");
     return 0;
   }
-  for(i=1;i<args;i+=2)
-  {
+  for (i=1; i<args; i+=2) {
     // copy at the end the command string
     if (isstringarg(i)) {
       str = (char *)getarg(i);
@@ -1641,14 +1805,24 @@ static numvar scoutDelay(void) {
       str = (char *)keyGet(getarg(i));
     }
     accum += (uint32_t)getarg(i+1);
-    delayCommand(accum,str);
+    delayCommand(accum, str);
   }
   return 1;
 }
 
-static numvar scoutFree(void) {
-  showMemory();
-  return getFreeMemory();
+static numvar memoryReport(void) {
+  StringBuffer report(100);
+  int freeMem = getFreeMemory();
+  report.appendSprintf("[%d,[%d,%d,%d],[%d,%d,%d]]",
+          keyMap("memory", 0),
+          keyMap("used", 0),
+          keyMap("free", 0),
+          keyMap("large", 0),
+          getMemoryUsed(),
+          freeMem,
+          getLargestAvailableMemoryBlock());
+  speol(Scout.handler.report(report));
+  return freeMem;
 }
 
 static numvar daisyWipe(void) {
@@ -1714,26 +1888,24 @@ static numvar hqVerbose(void) {
 }
 
 static numvar hqPrint(void) {
-  if (!getarg(0)) {
-    return false;
+  if (!checkArgs(1, F("usage: hq.print(\"string\""))) {
+    return 0;
   }
   Scout.handler.announce(0, arg2array(0));
   return true;
 }
 
 static numvar hqReport(void) {
-  if (!getarg(0)) {
-    return false;
+  if (!checkArgs(1, F("usage: hq.print(\"string\""))) {
+    return 0;
   }
   const char *name = (isstringarg(1))?(const char*)getarg(1):keyGet(getarg(1));
-  if(!name || strlen(name) == 0)
-  {
+  if (!name || strlen(name) == 0) {
     speol("report name must be the first argument");
     return false;
   }
   char *args = strdup(arg2array(-1).c_str());
-  if(strlen(args)+strlen(name) > 80)
-  {
+  if (strlen(args)+strlen(name) > 80) {
     free(args);
     speol("report too large");
     return false;
@@ -1819,6 +1991,10 @@ static numvar wifiList(void) {
 }
 
 static numvar wifiConfig(void) {
+  if (!checkArgs(2, F("usage: wifi.config(\"wifiAPName\", \"wifiAPPassword\")"))) {
+    return 0;
+  }
+
   if (!Scout.wifi.wifiConfig((const char *)getstringarg(1), (const char *)getstringarg(2))) {
     speol(F("Error: saving Scout.wifi.configuration data failed"));
   }
@@ -1835,6 +2011,10 @@ static numvar wifiDhcp(void) {
 }
 
 static numvar wifiStatic(void) {
+  if (!checkArgs(4, F("usage: wifi.static(\"ip\", \"netmask\", \"gateway\", \"dns\")"))) {
+    return 0;
+  }
+
   IPAddress ip, nm, gw, dns;
 
   if (!GSCore::parseIpAddress(&ip, (const char *)getstringarg(1))) {
@@ -1875,6 +2055,9 @@ static numvar wifiReassociate(void) {
 }
 
 static numvar wifiCommand(void) {
+  if (!checkArgs(1, F("usage: wifi.command(\"command\")"))) {
+    return 0;
+  }
   if (!Scout.wifi.runDirectCommand(Serial, (const char *)getstringarg(1))) {
      speol(F("Error: Wi-Fi direct command failed"));
   }
@@ -1882,6 +2065,9 @@ static numvar wifiCommand(void) {
 }
 
 static numvar wifiPing(void) {
+  if (!checkArgs(1, F("usage: wifi.ping(\"hostname\")"))) {
+    return 0;
+  }
   if (!Scout.wifi.ping(Serial, (const char *)getstringarg(1))) {
      speol(F("Error: Wi-Fi ping command failed"));
   }
@@ -1889,6 +2075,9 @@ static numvar wifiPing(void) {
 }
 
 static numvar wifiDNSLookup(void) {
+  if (!checkArgs(1, F("usage: wifi.dnslookup(\"hostname\")"))) {
+    return 0;
+  }
   if (!Scout.wifi.dnsLookup(Serial, (const char *)getstringarg(1))) {
      speol(F("Error: Wi-Fi DNS lookup command failed"));
   }
@@ -1933,7 +2122,6 @@ static numvar wifiStats(void) {
  *     HELPER FUNCTIONS     *
 \****************************/
 
-
 static bool receiveMessage(NWK_DataInd_t *ind) {
   char buf[64];
   char *data = (char*)ind->data;
@@ -1959,15 +2147,22 @@ static bool receiveMessage(NWK_DataInd_t *ind) {
 
   // parse the array payload into keys, [1, "foo", "bar"]
   keyLoad(data, keys, millis());
+  uint32_t time = millis();
 
-  snprintf(buf, sizeof(buf),"event.message");
-  if (findscript(buf)) {
-    snprintf(buf, sizeof(buf), "event.message(%d", ind->srcAddr);
+  snprintf(buf, sizeof(buf),"on.message.scout");
+  if (find_user_function(buf) || findscript(buf)) {
+    snprintf(buf, sizeof(buf), "on.message.scout(%d", ind->srcAddr);
     for (int i=2; i<=keys[0]; i++) {
       snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf), ",%d", keys[i]);
     }
     snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf), ")");
     doCommand(buf);
+  }
+  
+  if (Scout.eventVerboseOutput) {
+    Serial.print(F("on.message.scout event handler took "));
+    Serial.print(millis() - time);
+    Serial.println(F("ms"));
   }
   return true;
 }
@@ -2038,10 +2233,18 @@ static void sendConfirm(NWK_DataReq_t *req) {
 
   // run the Bitlash callback ack function
   char buf[32];
-  snprintf(buf, sizeof(buf),"event.ack");
-  if (findscript(buf)) {
-    snprintf(buf, sizeof(buf), "event.ack(%d, %d)", req->dstAddr, (req->status == NWK_SUCCESS_STATUS) ? req->control : 0);
+  uint32_t time = millis();
+
+  snprintf(buf, sizeof(buf),"on.message.signal");
+  if (find_user_function(buf) || findscript(buf)) {
+    snprintf(buf, sizeof(buf), "on.message.signal(%d, %d)", req->dstAddr, (req->status == NWK_SUCCESS_STATUS) ? req->control : 0);
     doCommand(buf);
+  }
+
+  if (Scout.eventVerboseOutput) {
+    Serial.print(F("on.message.signal event handler took "));
+    Serial.print(millis() - time);
+    Serial.println(F("ms"));
   }
 }
 
@@ -2052,31 +2255,30 @@ static void sendConfirm(NWK_DataReq_t *req) {
 
 static void digitalPinEventHandler(uint8_t pin, int8_t value, int8_t mode) {
   uint32_t time = millis();
-  char buf[32];
+  char buf[16];
 
   digitalPinReportHQ();
-  if (findscript("event.digital")) {
-    String callback = "event.digital(" + String(pin) + "," + String(value) + "," + String(mode) + ")";
-    callback.toCharArray(buf, callback.length() + 1);
-    doCommand(buf);
-  }
 
-  snprintf(buf, sizeof(buf), "event.digital%d", pin);
-  if (findscript(buf)) {
-    snprintf(buf, sizeof(buf), "event.digital%d(%d, %d)", pin, value, mode);
+  snprintf(buf, sizeof(buf), "on.d%d", pin);
+  if (find_user_function(buf) || findscript(buf)) {
+    snprintf(buf, sizeof(buf), "on.d%d(%d,%d)", pin, value, mode);
     doCommand(buf);
   }
 
   // simplified button trigger
-  if (value == 0 && (mode == INPUT_PULLUP || mode == INPUT)) {
-    snprintf(buf, sizeof(buf), "event.button%d", pin);
-    if (findscript(buf)) {
+  if (mode == INPUT_PULLUP || mode == INPUT) {
+    if (value == 0) {
+      snprintf(buf, sizeof(buf), "on.d%d.low", pin);
+    } else {
+      snprintf(buf, sizeof(buf), "on.d%d.high", pin);
+    }
+    if (find_user_function(buf) || findscript(buf)) {
       doCommand(buf);
     }
   }
 
   if (Scout.eventVerboseOutput) {
-    Serial.print(F("Digital pin event handler took "));
+    Serial.print(F("Digital pin event handlers took "));
     Serial.print(millis() - time);
     Serial.println(F("ms"));
   }
@@ -2084,66 +2286,77 @@ static void digitalPinEventHandler(uint8_t pin, int8_t value, int8_t mode) {
 
 static void analogPinEventHandler(uint8_t pin, int16_t value, int8_t mode) {
   uint32_t time = millis();
-  char buf[32];
+  char buf[16];
 
   analogPinReportHQ();
-  if (findscript("event.analog")) {
-    String callback = "event.analog(" + String(pin) + "," + String(value) + "," + String(mode) + ")";
-    char buf[32];
-    callback.toCharArray(buf, callback.length()+1);
-    doCommand(buf);
-  }
 
-  snprintf(buf, sizeof(buf),"event.analog%d", pin);
-  if (findscript(buf)) {
-    snprintf(buf, sizeof(buf), "event.analog%d(%d, %d)", pin, value, mode);
+  snprintf(buf, sizeof(buf),"on.a%d", pin);
+  if (find_user_function(buf) || findscript(buf)) {
+    snprintf(buf, sizeof(buf), "on.a%d(%d, %d)", pin, value, mode);
     doCommand(buf);
   }
 
   if (Scout.eventVerboseOutput) {
-    Serial.print(F("Analog pin event handler took "));
+    Serial.print(F("Analog pin event handlers took "));
     Serial.print(millis() - time);
     Serial.println(F("ms"));
   }
 }
 
 static void batteryPercentageEventHandler(uint8_t value) {
+  uint32_t time = millis();
+  char buf[24];
+  char *func = "on.battery.level";
+
   powerReportHQ();
-  if (findscript("event.percent")) {
-    String callback = "event.percent(" + String(value) + ")";
-    char buf[32];
-    callback.toCharArray(buf, callback.length()+1);
+
+  if (find_user_function(func) || findscript(func)) {
+    snprintf(buf, sizeof(buf), "%s(%d)", func, value);
     doCommand(buf);
   }
-}
 
-static void batteryVoltageEventHandler(uint8_t value) {
-  powerReportHQ();
-  if (findscript("event.voltage")) {
-    String callback = "event.voltage(" + String(value) + ")";
-    char buf[32];
-    callback.toCharArray(buf, callback.length()+1);
-    doCommand(buf);
+  if (Scout.eventVerboseOutput) {
+    Serial.print(F("on.battery.level event handler took "));
+    Serial.print(millis() - time);
+    Serial.println(F("ms"));
   }
 }
 
 static void batteryChargingEventHandler(uint8_t value) {
+  uint32_t time = millis();
+  char buf[28];
+  char *func = "on.battery.charging";
+
   powerReportHQ();
-  if (findscript("event.charging")) {
-    String callback = "event.charging(" + String(value) + ")";
-    char buf[32];
-    callback.toCharArray(buf, callback.length()+1);
+
+  if (find_user_function(func) || findscript(func)) {
+    snprintf(buf, sizeof(buf), "%s(%d)", func, value);
     doCommand(buf);
+  }
+
+  if (Scout.eventVerboseOutput) {
+    Serial.print(F("on.battery.charging event handler took "));
+    Serial.print(millis() - time);
+    Serial.println(F("ms"));
   }
 }
 
-static void temperatureEventHandler(uint8_t value) {
+static void temperatureEventHandler(int8_t tempC, int8_t tempF) {
+  uint32_t time = millis();
+  char buf[28];
+  char *func = "on.temperature";
+
   tempReportHQ();
-  if (findscript("event.temperature")) {
-    String callback = "event.temperature(" + String(value) + ")";
-    char buf[32];
-    callback.toCharArray(buf, callback.length()+1);
+
+  if (find_user_function(func) || findscript(func)) {
+    snprintf(buf, sizeof(buf), "%s(%d, %d)", func, tempC, tempF);
     doCommand(buf);
+  }
+
+  if (Scout.eventVerboseOutput) {
+    Serial.print(F("on.temperature event handler took "));
+    Serial.print(millis() - time);
+    Serial.println(F("ms"));
   }
 }
 

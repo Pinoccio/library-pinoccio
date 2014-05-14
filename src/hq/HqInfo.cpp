@@ -1,7 +1,15 @@
+/**************************************************************************\
+* Pinoccio Library                                                         *
+* https://github.com/Pinoccio/library-pinoccio                             *
+* Copyright (c) 2012-2014, Pinoccio Inc. All rights reserved.              *
+* ------------------------------------------------------------------------ *
+*  This program is free software; you can redistribute it and/or modify it *
+*  under the terms of the BSD License as described in license.txt.         *
+\**************************************************************************/
 #include "HqHandler.h"
 
-#define USE_TLS
-
+// Uncomment this in order to use TLS
+//#define USE_TLS
 
 // Warning: Setting an IP address here, or setting a _shorter_ hostname
 // is not possible due to a bug in the Gainspan firmware... e.g. if I

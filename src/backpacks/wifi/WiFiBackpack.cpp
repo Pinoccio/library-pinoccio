@@ -1,3 +1,11 @@
+/**************************************************************************\
+* Pinoccio Library                                                         *
+* https://github.com/Pinoccio/library-pinoccio                             *
+* Copyright (c) 2012-2014, Pinoccio Inc. All rights reserved.              *
+* ------------------------------------------------------------------------ *
+*  This program is free software; you can redistribute it and/or modify it *
+*  under the terms of the BSD License as described in license.txt.         *
+\**************************************************************************/
 #include <Arduino.h>
 #include <SPI.h>
 #include "WiFiBackpack.h"
@@ -207,7 +215,11 @@ bool WiFiBackpack::isAPConnected() {
 }
 
 bool WiFiBackpack::isHQConnected() {
+  #ifdef USE_TLS
   return client.connected() && client.sslConnected();
+  #else
+  return client.connected();
+  #endif
 }
 
 bool WiFiBackpack::dnsLookup(Print& p, const char *host) {

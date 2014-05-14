@@ -1,12 +1,11 @@
 /**************************************************************************\
-* Pinoccio Arduino Library                                                 *
-* https://github.com/Pinoccio/pinoccio-arduino-library                     *
-* Copyright (c) 2012-2013, Pinoccio. All rights reserved.                  *
+* Pinoccio Library                                                         *
+* https://github.com/Pinoccio/library-pinoccio                             *
+* Copyright (c) 2012-2014, Pinoccio Inc. All rights reserved.              *
 * ------------------------------------------------------------------------ *
 *  This program is free software; you can redistribute it and/or modify it *
-*  under the terms of the BSD license as described in license.txt.         *
+*  under the terms of the BSD License as described in license.txt.         *
 \**************************************************************************/
-
 #include "halRgbLed.h"
 #include "Arduino.h"
 #include "Scout.h"
@@ -15,7 +14,7 @@
 
 static void halRgbLedBlinkTimerHandler(SYS_Timer_t *timer);
 
-HalRgbLed RgbLed;
+HalRgbLed Led;
 
 HalRgbLed::HalRgbLed() {
   turnOff();
@@ -204,7 +203,7 @@ void HalRgbLed::setColor(short red, short green, short blue) {
   setBlueValue(blue);
 
   if (hasChanged) {
-    RgbLed.triggerEvent();
+    triggerEvent();
   }
 }
 
@@ -235,7 +234,7 @@ short HalRgbLed::getBlueTorchValue(void) {
 }
 
 void HalRgbLed::triggerEvent(void) {
-  if (RgbLed.ledEventHandler != 0) {
+  if (Led.ledEventHandler != 0) {
     if (Scout.eventVerboseOutput) {
       Serial.print(F("Running: ledEventHandler("));
       Serial.print(redValue);
@@ -245,19 +244,19 @@ void HalRgbLed::triggerEvent(void) {
       Serial.print(blueValue);
       Serial.println(F(")"));
     }
-    RgbLed.ledEventHandler(redValue, greenValue, blueValue);
+    Led.ledEventHandler(redValue, greenValue, blueValue);
   }
 }
 
 static void halRgbLedBlinkTimerHandler(SYS_Timer_t *timer) {
   if (timer->mode == SYS_TIMER_PERIODIC_MODE) {
-    if (RgbLed.getRedValue() || RgbLed.getGreenValue() || RgbLed.getBlueValue()) {
-      RgbLed.setColor(0, 0, 0);
+    if (Led.getRedValue() || Led.getGreenValue() || Led.getBlueValue()) {
+      Led.setColor(0, 0, 0);
     } else {
-      RgbLed.setLEDToBlinkValue();
+      Led.setLEDToBlinkValue();
     }
 
   } else {
-    RgbLed.turnOff();
+    Led.turnOff();
   }
 }

@@ -1,3 +1,11 @@
+/**************************************************************************\
+* Pinoccio Library                                                         *
+* https://github.com/Pinoccio/library-pinoccio                             *
+* Copyright (c) 2012-2014, Pinoccio Inc. All rights reserved.              *
+* ------------------------------------------------------------------------ *
+*  This program is free software; you can redistribute it and/or modify it *
+*  under the terms of the BSD License as described in license.txt.         *
+\**************************************************************************/
 #ifndef LIB_PINOCCIO_SCOUT_H_
 #define LIB_PINOCCIO_SCOUT_H_
 
@@ -38,12 +46,15 @@ class PinoccioScout : public PinoccioClass {
 
     void setup(const char *sketchName = "Custom", const char *sketchRevision = "unknown", int32_t sketchBuild = -1);
     void loop();
-    void delay(unsigned long ms);
 
     bool isBatteryCharging();
     int getBatteryPercentage();
     int getBatteryVoltage();
     bool isBatteryAlarmTriggered();
+    bool isBatteryConnected();
+    
+    int8_t getTemperatureC();
+    int8_t getTemperatureF();
 
     void enableBackpackVcc();
     void disableBackpackVcc();
@@ -77,10 +88,9 @@ class PinoccioScout : public PinoccioClass {
     void (*digitalPinEventHandler)(uint8_t pin, int8_t value, int8_t mode);
     void (*analogPinEventHandler)(uint8_t pin, int16_t value, int8_t mode);
     void (*batteryPercentageEventHandler)(uint8_t value);
-    void (*batteryVoltageEventHandler)(uint8_t value);
     void (*batteryChargingEventHandler)(uint8_t value);
     void (*batteryAlarmTriggeredEventHandler)(uint8_t value);
-    void (*temperatureEventHandler)(uint8_t value);
+    void (*temperatureEventHandler)(int8_t tempC, int8_t tempF);
 
     int8_t digitalPinState[7];
     int8_t digitalPinMode[7];
@@ -95,12 +105,22 @@ class PinoccioScout : public PinoccioClass {
 
     bool eventVerboseOutput;
 
+    uint32_t getWallTime();
+    uint32_t getCpuTime();
+    uint32_t getSleepTime();
+
     PBBP bp;
     WiFiBackpack wifi;
     PinoccioScoutHandler handler;
 
+    bool hibernatePending;
+    uint32_t hibernateUntil;
+    char * postHibernateCommand;
+
   protected:
     void checkStateChange();
+
+    void doHibernate();
 
     bool isVccEnabled;
     bool isStateSaved;
