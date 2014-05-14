@@ -2084,7 +2084,6 @@ static numvar wifiStats(void) {
  *     HELPER FUNCTIONS     *
 \****************************/
 
-
 static bool receiveMessage(NWK_DataInd_t *ind) {
   char buf[64];
   char *data = (char*)ind->data;
