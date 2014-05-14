@@ -215,7 +215,11 @@ bool WiFiBackpack::isAPConnected() {
 }
 
 bool WiFiBackpack::isHQConnected() {
+  #ifdef USE_TLS
   return client.connected() && client.sslConnected();
+  #else
+  return client.connected();
+  #endif
 }
 
 bool WiFiBackpack::dnsLookup(Print& p, const char *host) {
