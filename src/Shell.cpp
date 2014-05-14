@@ -41,7 +41,7 @@ static numvar getBatteryVoltage(void);
 static numvar enableBackpackVcc(void);
 static numvar disableBackpackVcc(void);
 static numvar isBackpackVccEnabled(void);
-static numvar goToSleep(void);
+static numvar hibernate(void);
 static numvar powerReport(void);
 
 static numvar ledBlink(void);
@@ -112,6 +112,9 @@ static numvar memoryReport(void);
 static numvar daisyWipe(void);
 static numvar boot(void);
 static numvar otaBoot(void);
+static numvar wallTime(void);
+static numvar cpuTime(void);
+static numvar sleepTime(void);
 
 static numvar hqVerbose(void);
 static numvar hqPrint(void);
@@ -189,7 +192,7 @@ void PinoccioShell::setup() {
   addBitlashFunction("power.enablevcc", (bitlash_function) enableBackpackVcc);
   addBitlashFunction("power.disablevcc", (bitlash_function) disableBackpackVcc);
   addBitlashFunction("power.isvccenabled", (bitlash_function) isBackpackVccEnabled);
-  addBitlashFunction("power.sleep", (bitlash_function) goToSleep);
+  addBitlashFunction("power.hibernate", (bitlash_function) hibernate);
   addBitlashFunction("power.report", (bitlash_function) powerReport);
 
   addBitlashFunction("mesh.config", (bitlash_function) meshConfig);
@@ -274,6 +277,9 @@ void PinoccioShell::setup() {
   addBitlashFunction("scout.daisy", (bitlash_function) daisyWipe);
   addBitlashFunction("scout.boot", (bitlash_function) boot);
   addBitlashFunction("scout.otaboot", (bitlash_function) otaBoot);
+  addBitlashFunction("scout.walltime", (bitlash_function) wallTime);
+  addBitlashFunction("scout.cputime", (bitlash_function) cpuTime);
+  addBitlashFunction("scout.sleeptime", (bitlash_function) sleepTime);
 
   addBitlashFunction("memory.report", (bitlash_function) memoryReport);
 
@@ -518,13 +524,15 @@ static StringBuffer uptimeReportHQ(void) {
   strncpy_P(reset, Scout.getLastResetCause(), sizeof(reset));
   reset[sizeof(reset) - 1] = 0; // ensure termination, strncpy is weird
 
-  report.appendSprintf("[%d,[%d,%d,%d,%d],[%ld,%d,%d,",keyMap("uptime",0),
+  report.appendSprintf("[%d,[%d,%d,%d,%d,%d],[%ld,%ld,%d,%d,",keyMap("uptime",0),
           keyMap("millis", 0),
+          keyMap("sleep", 0),
           keyMap("free", 0),
           keyMap("random", 0),
           keyMap("reset", 0),
-          (unsigned long)millis(),
-          freeMem,
+          Scout.getCpuTime(),
+          Scout.getSleepTime(),
+          (freeMem),
           (int)random());
 
   report.appendJsonString(reset, true);
@@ -550,6 +558,24 @@ static numvar uptimeHours(void) {
 
 static numvar uptimeReport(void) {
   uptimeReportHQ();
+  return true;
+}
+
+static numvar cpuTime(void) {
+  sp(Scout.getCpuTime());
+  speol();
+  return true;
+}
+
+static numvar sleepTime(void) {
+  sp(Scout.getSleepTime());
+  speol();
+  return true;
+}
+
+static numvar wallTime(void) {
+  sp(Scout.getWallTime());
+  speol();
   return true;
 }
 
@@ -647,9 +673,23 @@ static numvar isBackpackVccEnabled(void) {
   return Scout.isBackpackVccEnabled();
 }
 
-static numvar goToSleep(void) {
-  // TODO: not implemented yet
-  //Pinoccio.goToSleep(getarg(1));
+static numvar hibernate(void) {
+  if (!getarg(0) || getarg(0) > 2) {
+    speol("usage: power.hibernate(ms, [\"function\"])");
+    return 0;
+  }
+
+  Scout.hibernateUntil = millis() + getarg(1);
+  Scout.hibernatePending = true;
+
+  if (getarg(0) > 1) {
+    if (isstringarg(2)) {
+      Scout.postHibernateCommand = strdup((char *)getarg(2));
+    } else {
+      Scout.postHibernateCommand = strdup(keyGet(getarg(2)));
+    }
+  }
+
   return 1;
 }
 
