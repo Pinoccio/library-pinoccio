@@ -8,8 +8,8 @@
 \**************************************************************************/
 #include "HqHandler.h"
 
+// Uncomment this in order to use TLS
 //#define USE_TLS
-
 
 // Warning: Setting an IP address here, or setting a _shorter_ hostname
 // is not possible due to a bug in the Gainspan firmware... e.g. if I
