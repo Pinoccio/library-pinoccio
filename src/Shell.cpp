@@ -232,6 +232,7 @@ void PinoccioShell::setup() {
   addBitlashFunction("uptime.report", (bitlash_function) uptimeReport);
   addBitlashFunction("uptime.getlastreset", (bitlash_function) getLastResetCause);
 
+  addBitlashFunction("led.on", (bitlash_function) ledTorch); // alias
   addBitlashFunction("led.off", (bitlash_function) ledOff);
   addBitlashFunction("led.red", (bitlash_function) ledRed);
   addBitlashFunction("led.green", (bitlash_function) ledGreen);
@@ -243,7 +244,6 @@ void PinoccioShell::setup() {
   addBitlashFunction("led.orange", (bitlash_function) ledOrange);
   addBitlashFunction("led.white", (bitlash_function) ledWhite);
   addBitlashFunction("led.torch", (bitlash_function) ledTorch);
-  addBitlashFunction("led.on", (bitlash_function) ledTorch); // alias
   addBitlashFunction("led.blink", (bitlash_function) ledBlink);
   addBitlashFunction("led.sethex", (bitlash_function) ledSetHex);
   addBitlashFunction("led.gethex", (bitlash_function) ledGetHex);
@@ -1890,7 +1890,7 @@ static numvar hqPrint(void) {
 }
 
 static numvar hqReport(void) {
-  if (!checkArgs(1, F("usage: hq.print(\"string\""))) {
+  if (!checkArgs(1, F("usage: hq.report(\"reportname\", \"value\")"))) {
     return 0;
   }
   const char *name = (isstringarg(1))?(const char*)getarg(1):keyGet(getarg(1));
