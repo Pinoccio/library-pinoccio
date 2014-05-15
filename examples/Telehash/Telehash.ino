@@ -198,8 +198,6 @@ void strangeLoop(void)
   chan_t c;
   packet_t p;
 
-  switch_loop(ths);
-
   // any incoming active channels
   while((c = switch_pop(ths)))
   {
