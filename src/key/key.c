@@ -15,6 +15,7 @@
 char *keytable[KEY_MAX];
 char keytableTmp[KEY_MAX];
 unsigned long keytableLast = 0;
+static int keySpaceLeft = KEY_MAX * (KEY_LEN + 1);
 
 void keyInit() {
   memset(keytable, 0, sizeof(keytable));
@@ -44,24 +45,26 @@ int keyLoop(unsigned long now) {
 
 int keyMap(const char *key, unsigned long at) {
   int i;
-  if (strlen(key) > KEY_LEN) {
-    return 0;
-  }
 
   for (i=0; keytable[i] && i<KEY_MAX; i++) {
-    if (strcmp(keytable[i],key) != 0) {
-      continue;
+    if (strcmp(keytable[i],key) == 0) {
+	if (!at)
+	  keytableTmp[i] = 0; // always make sticky if not tmp
+	return i;
     }
-    if (!at) {
-      keytableTmp[i] = 0; // always make sticky if not tmp
-    }
-    return i;
   }
 
   // full!
   if (i == KEY_MAX) {
     return 0;
   }
+
+  // check for not enough space left including \0.
+  int keyLen = strlen(key) + 1;
+  if (keyLen > keySpaceLeft) {
+    return 0;
+  }
+  keySpaceLeft -= keyLen;
 
   // save new key
   keytable[i] = strdup(key);
@@ -83,6 +86,7 @@ void keyFree(int i) {
   if (i < 1 || i >= KEY_MAX) {
     return;
   }
+  keySpaceLeft += strlen(keytable[i]) + 1;
   free(keytable[i]);
   keytableTmp[i] = 0;
   keytable[i] = 0;
