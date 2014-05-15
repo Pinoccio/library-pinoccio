@@ -30,6 +30,7 @@ class PinoccioShell {
     void setup();
     void loop();
     void allReportHQ();
+    void delay(uint32_t at, char *command);
 
     void startShell();
     void disableShell();

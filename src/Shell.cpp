@@ -1764,13 +1764,12 @@ static numvar getHQToken(void) {
   return keyMap(token, millis());
 }
 
-
 static void delayTimerHandler(SYS_Timer_t *timer) {
   doCommand(((char*)timer) + (sizeof(struct SYS_Timer_t)));
   free(timer);
 }
 
-void delayCommand(uint32_t at, char *command) {
+void PinoccioShell::delay(uint32_t at, char *command) {
   size_t clen = strlen(command) + 1;
   // allocate space for the command after the timer pointer
   SYS_Timer_t *delayTimer = (SYS_Timer_t *)malloc(sizeof(struct SYS_Timer_t) + clen);
@@ -1788,18 +1787,18 @@ static numvar scoutDelay(void) {
   int i, args = getarg(0);
   uint32_t accum = 0;
   if (!args || args % 2) {
-    speol("usage: scout.delay(\"function\",ms,...)");
+    speol("usage: scout.delay(ms,\"function\",...)");
     return 0;
   }
   for (i=1; i<args; i+=2) {
     // copy at the end the command string
-    if (isstringarg(i)) {
-      str = (char *)getarg(i);
+    if (isstringarg(i+1)) {
+      str = (char *)getarg(i+1);
     } else {
-      str = (char *)keyGet(getarg(i));
+      str = (char *)keyGet(getarg(i+1));
     }
-    accum += (uint32_t)getarg(i+1);
-    delayCommand(accum, str);
+    accum += (uint32_t)getarg(i);
+    Shell.delay(accum, str);
   }
   return 1;
 }
