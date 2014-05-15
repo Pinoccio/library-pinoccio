@@ -2,7 +2,7 @@
 #include <avr/sleep.h>
 #include "SleepHandler.h"
 
-uint32_t SleepHandler::hibernateMillis;
+uint32_t SleepHandler::sleepMillis;
 
 static bool timer_match = true;
 ISR(TIMER2_COMPB_vect) {
@@ -70,7 +70,7 @@ bool SleepHandler::sleepUntilMatch(bool interruptible) {
   }
 }
 
-void SleepHandler::doHibernate(uint32_t ms, bool interruptible) {
+void SleepHandler::doSleep(uint32_t ms, bool interruptible) {
   // First, make sure we configure timer2 and get it running as
   // fast as possible. This makes the total sleep delay as
   // accurate as possible.
@@ -154,7 +154,7 @@ void SleepHandler::doHibernate(uint32_t ms, bool interruptible) {
     // false when another interrupt occurs.
     if (sleepUntilMatch(interruptible)) {
       ms -= TIMER_MAX_MS;
-      hibernateMillis += TIMER_MAX_MS;
+      sleepMillis += TIMER_MAX_MS;
     } else {
       // Another interrupt occurred, bail out
       ms = 0;
@@ -175,7 +175,7 @@ void SleepHandler::doHibernate(uint32_t ms, bool interruptible) {
   TCCR2B = 0;
   while (ASSR & (1 << TCR2BUB)) /* nothing */;
 
-  hibernateMillis += TICKS_TO_MS(TCNT2);
+  sleepMillis += TICKS_TO_MS(TCNT2);
   sleep_disable();
 
   // Clear any pending timer2 interrupts before enabling

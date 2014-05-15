@@ -43,8 +43,8 @@ PinoccioScout::PinoccioScout() {
   eventVerboseOutput = false;
   isFactoryResetReady = false;
 
-  hibernatePending = false;
-  Scout.postHibernateCommand = NULL;
+  sleepPending = false;
+  Scout.postSleepCommand = NULL;
 }
 
 PinoccioScout::~PinoccioScout() { }
@@ -87,11 +87,11 @@ void PinoccioScout::loop() {
     wifi.loop();
   }
 
-  if (hibernatePending) {
+  if (sleepPending) {
     canSleep = canSleep && !NWK_Busy();
 
     if (canSleep)
-      doHibernate();
+      doSleep();
   }
 }
 
@@ -534,20 +534,20 @@ static void scoutPeripheralStateChangeTimerHandler(SYS_Timer_t *timer) {
   }
 }
 
-void PinoccioScout::doHibernate() {
-  int32_t remaining = hibernateUntil - millis();
-  // Copy the pointer, so the post command can set a new hibernate
+void PinoccioScout::doSleep() {
+  int32_t remaining = sleepUntil - millis();
+  // Copy the pointer, so the post command can set a new sleep
   // timeout again.
-  char *cmd = postHibernateCommand;
-  postHibernateCommand = NULL;
-  hibernatePending = false;
+  char *cmd = postSleepCommand;
+  postSleepCommand = NULL;
+  sleepPending = false;
 
   if (remaining > 0) {
     NWK_SleepReq();
 
     // TODO: suspend more stuff? Wait for UART byte completion?
 
-    SleepHandler::doHibernate(remaining, true);
+    SleepHandler::doSleep(remaining, true);
     NWK_WakeupReq();
 
     // TODO: Allow ^C to stop running callbacks like this one
@@ -568,5 +568,5 @@ uint32_t PinoccioScout::getCpuTime() {
 }
 
 uint32_t PinoccioScout::getSleepTime() {
-  return SleepHandler::hibernateMillis;
+  return SleepHandler::sleepMillis;
 }

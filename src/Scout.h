@@ -113,14 +113,14 @@ class PinoccioScout : public PinoccioClass {
     WiFiBackpack wifi;
     PinoccioScoutHandler handler;
 
-    bool hibernatePending;
-    uint32_t hibernateUntil;
-    char * postHibernateCommand;
+    bool sleepPending;
+    uint32_t sleepUntil;
+    char * postSleepCommand;
 
   protected:
     void checkStateChange();
 
-    void doHibernate();
+    void doSleep();
 
     bool isVccEnabled;
     bool isStateSaved;

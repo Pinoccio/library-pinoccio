@@ -671,14 +671,14 @@ static numvar sleep(void) {
     return 0;
   }
 
-  Scout.hibernateUntil = millis() + getarg(1);
-  Scout.hibernatePending = true;
+  Scout.sleepUntil = millis() + getarg(1);
+  Scout.sleepPending = true;
 
   if (getarg(0) > 1) {
     if (isstringarg(2)) {
-      Scout.postHibernateCommand = strdup((char *)getarg(2));
+      Scout.postSleepCommand = strdup((char *)getarg(2));
     } else {
-      Scout.postHibernateCommand = strdup(keyGet(getarg(2)));
+      Scout.postSleepCommand = strdup(keyGet(getarg(2)));
     }
   }
 
