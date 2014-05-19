@@ -557,11 +557,11 @@ void PinoccioScout::doSleep() {
 
     SleepHandler::doSleep(remaining, true);
     NWK_WakeupReq();
-
-    // TODO: Allow ^C to stop running callbacks like this one
-    if (cmd)
-      doCommand(cmd);
   }
+
+  // TODO: Allow ^C to stop running callbacks like this one
+  if (cmd)
+    doCommand(cmd);
 
   free(cmd);
 
