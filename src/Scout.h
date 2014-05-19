@@ -121,7 +121,7 @@ class PinoccioScout : public PinoccioClass {
   protected:
     void checkStateChange();
 
-    void doSleep();
+    void doSleep(int32_t ms);
 
     bool isVccEnabled;
     bool isStateSaved;

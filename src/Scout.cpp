@@ -90,8 +90,12 @@ void PinoccioScout::loop() {
   if (sleepPending) {
     canSleep = canSleep && !NWK_Busy();
 
-    if (canSleep)
-      doSleep();
+    int32_t remaining = sleepUntil - millis();
+
+    // if remaining <= 0, we won't actually sleep anymore, but still
+    // call doSleep to run the callback and clean up
+    if (canSleep || remaining <= 0)
+      doSleep(remaining);
   }
 }
 
@@ -542,20 +546,19 @@ void PinoccioScout::scheduleSleep(uint32_t ms, char *cmd) {
   Scout.postSleepCommand = cmd;
 }
 
-void PinoccioScout::doSleep() {
-  int32_t remaining = sleepUntil - millis();
+void PinoccioScout::doSleep(int32_t ms) {
   // Copy the pointer, so the post command can set a new sleep
   // timeout again.
   char *cmd = postSleepCommand;
   postSleepCommand = NULL;
   sleepPending = false;
 
-  if (remaining > 0) {
+  if (ms > 0) {
     NWK_SleepReq();
 
     // TODO: suspend more stuff? Wait for UART byte completion?
 
-    SleepHandler::doSleep(remaining, true);
+    SleepHandler::doSleep(ms, true);
     NWK_WakeupReq();
   }
 
