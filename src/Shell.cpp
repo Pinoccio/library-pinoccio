@@ -671,16 +671,14 @@ static numvar sleep(void) {
     return 0;
   }
 
-  Scout.sleepUntil = millis() + getarg(1);
-  Scout.sleepPending = true;
-
+  const char *cmd = NULL;
   if (getarg(0) > 1) {
-    if (isstringarg(2)) {
-      Scout.postSleepCommand = strdup((char *)getarg(2));
-    } else {
-      Scout.postSleepCommand = strdup(keyGet(getarg(2)));
-    }
+    if (isstringarg(2))
+      cmd = (char*)getstringarg(2);
+    else
+      cmd = keyGet(getarg(2));
   }
+  Scout.scheduleSleep(getarg(1), strdup(cmd));
 
   return 1;
 }

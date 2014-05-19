@@ -534,6 +534,12 @@ static void scoutPeripheralStateChangeTimerHandler(SYS_Timer_t *timer) {
   }
 }
 
+void PinoccioScout::scheduleSleep(uint32_t ms, char *cmd) {
+  Scout.sleepUntil = millis() + ms;
+  Scout.sleepPending = (ms > 0);
+  Scout.postSleepCommand = cmd;
+}
+
 void PinoccioScout::doSleep() {
   int32_t remaining = sleepUntil - millis();
   // Copy the pointer, so the post command can set a new sleep

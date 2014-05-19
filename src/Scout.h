@@ -113,9 +113,10 @@ class PinoccioScout : public PinoccioClass {
     WiFiBackpack wifi;
     PinoccioScoutHandler handler;
 
-    bool sleepPending;
-    uint32_t sleepUntil;
-    char * postSleepCommand;
+    // Schedule a sleep that lasts until now + ms. The optional bitlash
+    // command is executed after the sleep and then free()'d. A previous
+    // sleep can be canceled by passing 0, NULL.
+    void scheduleSleep(uint32_t ms, char *cmd);
 
   protected:
     void checkStateChange();
@@ -129,6 +130,10 @@ class PinoccioScout : public PinoccioClass {
     SYS_Timer_t digitalStateChangeTimer;
     SYS_Timer_t analogStateChangeTimer;
     SYS_Timer_t peripheralStateChangeTimer;
+
+    bool sleepPending;
+    uint32_t sleepUntil;
+    char * postSleepCommand;
 };
 
 extern PinoccioScout Scout;
