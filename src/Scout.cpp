@@ -53,7 +53,7 @@ void PinoccioScout::setup(const char *sketchName, const char *sketchRevision, in
   PinoccioClass::setup(sketchName, sketchRevision, sketchBuild);
 
   pinMode(CHG_STATUS, INPUT_PULLUP);
-  pinMode(BATT_ALARM, INPUT_PULLUP);
+  pinMode(BATT_ALERT, INPUT_PULLUP);
   pinMode(VCC_ENABLE, OUTPUT);
 
   disableBackpackVcc();
@@ -225,7 +225,7 @@ void PinoccioScout::saveState() {
   batteryPercentage = constrain(HAL_FuelGaugePercent(), 0, 100);
   batteryVoltage = HAL_FuelGaugeVoltage();
   isBattCharging = (digitalRead(CHG_STATUS) == LOW);
-  isBattAlarmTriggered = (digitalRead(BATT_ALARM) == LOW);
+  isBattAlarmTriggered = (digitalRead(BATT_ALERT) == LOW);
   temperature = this->getTemperatureC();
 }
 
@@ -505,7 +505,7 @@ static void scoutPeripheralStateChangeTimerHandler(SYS_Timer_t *timer) {
   }
 
   if (Scout.batteryAlarmTriggeredEventHandler != 0) {
-    val = (digitalRead(BATT_ALARM) == LOW);
+    val = (digitalRead(BATT_ALERT) == LOW);
     if (Scout.isBattAlarmTriggered != val) {
       if (Scout.eventVerboseOutput) {
         Serial.print(F("Running: batteryAlarmTriggeredEventHandler("));
