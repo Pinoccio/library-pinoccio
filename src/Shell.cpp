@@ -1329,6 +1329,10 @@ static numvar pinWrite(void) {
 }
 
 static numvar pinWritePWM(void) {
+  if (!checkArgs(2, F("usage: pin.writepwm(\"pinName\", pinValue)"))) {
+    return 0;
+  }
+
   int8_t pin = getPinFromArg(1);
   uint8_t value = getarg(2);
 
