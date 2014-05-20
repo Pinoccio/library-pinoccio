@@ -23,9 +23,6 @@
 #include "peripherals/halFuelGauge.h"
 #include "peripherals/halRgbLed.h"
 
-#define DISABLED -1
-#define PWM 3
-
 // This is a temporary hack to check the result of snprintf and print an
 // error
 /*
@@ -128,6 +125,14 @@ class PinoccioScout : public PinoccioClass {
     // sleep can be canceled by passing 0, NULL.
     void scheduleSleep(uint32_t ms, char *cmd);
 
+    enum {
+      PINMODE_RESERVED = -2,
+      PINMODE_DISABLED = -1,
+      PINMODE_INPUT = 0,
+      PINMODE_OUTPUT = 1,
+      PINMODE_INPUT_PULLUP = 2,
+      PINMODE_PWM = 3,
+    };
   protected:
     void checkStateChange();
 

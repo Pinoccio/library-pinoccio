@@ -1207,23 +1207,23 @@ static numvar pinConstLow(void) {
 }
 
 static numvar pinConstDisabled(void) {
-  return -1;
+  return PinoccioScout::PINMODE_DISABLED;
 }
 
 static numvar pinConstInput(void) {
-  return INPUT;
+  return PinoccioScout::PINMODE_INPUT;
 }
 
 static numvar pinConstOutput(void) {
-  return OUTPUT;
+  return PinoccioScout::PINMODE_OUTPUT;
 }
 
 static numvar pinConstInputPullup(void) {
-  return INPUT_PULLUP;
+  return PinoccioScout::PINMODE_INPUT_PULLUP;
 }
 
 static numvar pinConstPWM(void) {
-  return PWM;
+  return PinoccioScout::PINMODE_PWM;
 }
 
 static numvar pinMakeInput(void) {
@@ -1237,7 +1237,7 @@ static numvar pinMakeInput(void) {
   }
 
   bool pullup = true;
-  if (getarg(0) == 2 && getarg(2) == 0) {
+  if (getarg(0) == 2 && getarg(2) == PinoccioScout::PINMODE_INPUT) {
     pullup = false;
   }
 
@@ -1318,7 +1318,7 @@ static numvar pinSetMode(void) {
     return 0;
   }
 
-  if (!Scout.isPWMPin(pin) && getarg(2) == PWM) {
+  if (!Scout.isPWMPin(pin) && getarg(2) == PinoccioScout::PINMODE_PWM) {
     speol(F("Cannot change mode of non PWM pin"));
     return 0;
   }
@@ -1360,11 +1360,11 @@ static numvar pinWrite(void) {
     speol(F("Pin must be set as an output before writing"));
     return 0;
   }
-  if (Scout.getPinMode(pin) == PWM && (value < 0 || value > 255)) {
+  if (Scout.getPinMode(pin) == PinoccioScout::PINMODE_PWM && (value < 0 || value > 255)) {
     speol(F("Invalid PWM value"));
     return 0;
   } 
-  if (Scout.getPinMode(pin) != PWM && (value < 0 || value > 1)) {
+  if (Scout.getPinMode(pin) != PinoccioScout::PINMODE_PWM && (value < 0 || value > 1)) {
     speol(F("Invalid pin value"));
     return 0;
   }
@@ -1391,7 +1391,7 @@ static numvar pinSave(void) {
     return 0;
   }
 
-  if (mode < DISABLED || mode > PWM) {
+  if (mode < PinoccioScout::PINMODE_DISABLED || mode > PinoccioScout::PINMODE_PWM) {
     speol(F("Invalid pin mode"));
     return 0;
   }

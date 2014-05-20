@@ -207,18 +207,18 @@ void PinoccioScout::setStateChangeEventCycle(uint32_t digitalInterval, uint32_t 
 void PinoccioScout::saveState() {
   for (int i=0; i<7; i++) {
     if (isPinReserved(i+2)) {
-      digitalPinMode[i] = -2;
+      digitalPinMode[i] = PINMODE_RESERVED;
     } else {
-      digitalPinMode[i] = -1;
+      digitalPinMode[i] = PINMODE_DISABLED;
     }
     digitalPinState[i] = -1;
   }
 
   for (int i=0; i<8; i++) {
     if (isPinReserved(i+A0)) {
-      analogPinMode[i] = -2;
+      analogPinMode[i] = PINMODE_RESERVED;
     } else {
-      analogPinMode[i] = -1;
+      analogPinMode[i] = PINMODE_DISABLED;
     }
     analogPinState[i] = -1;
   }
@@ -267,11 +267,11 @@ bool PinoccioScout::makePWM(uint8_t pin) {
   if (!isPWMPin(pin)) {
     return false;
   }
-  return setMode(pin, PWM);
+  return setMode(pin, PINMODE_PWM);
 }
 
 bool PinoccioScout::makeDisabled(uint8_t pin) {
-  return setMode(pin, DISABLED);
+  return setMode(pin, PINMODE_DISABLED);
 }
 
 bool PinoccioScout::setMode(uint8_t pin, int8_t mode) {
@@ -330,11 +330,11 @@ bool PinoccioScout::isPWMPin(uint8_t pin) {
 }
 
 bool PinoccioScout::isInputPin(uint8_t pin) {
-  return (getPinMode(pin) == INPUT || getPinMode(pin) == INPUT_PULLUP) ? true : false;
+  return (getPinMode(pin) == PINMODE_INPUT || getPinMode(pin) == PINMODE_INPUT_PULLUP) ? true : false;
 }
 
 bool PinoccioScout::isOutputPin(uint8_t pin) {
-  return (getPinMode(pin) == OUTPUT || getPinMode(pin) == PWM) ? true : false;
+  return (getPinMode(pin) == PINMODE_OUTPUT || getPinMode(pin) == PINMODE_PWM) ? true : false;
 }
 
 bool PinoccioScout::pinWrite(uint8_t pin, uint8_t value) {
@@ -343,7 +343,7 @@ bool PinoccioScout::pinWrite(uint8_t pin, uint8_t value) {
   }
 
   if (Scout.isDigitalPin(pin)) {
-    if (getPinMode(pin) == PWM) {
+    if (getPinMode(pin) == PINMODE_PWM) {
       analogWrite(pin, value);
     } else {
       digitalWrite(pin, value);
@@ -363,7 +363,7 @@ uint16_t PinoccioScout::pinRead(uint8_t pin) {
     return 0;
   }
 
-  if (Scout.getPinMode(pin) == PWM) {
+  if (Scout.getPinMode(pin) == PINMODE_PWM) {
     return digitalPinState[pin-2];
   }
   if (Scout.isDigitalPin(pin)) {
