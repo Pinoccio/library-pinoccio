@@ -252,6 +252,7 @@ int8_t PinoccioScout::getPinMode(uint8_t pin) {
   if (isAnalogPin(pin)) {
     return analogPinMode[pin-A0];
   }
+  return PINMODE_UNSET;
 }
 
 bool PinoccioScout::makeInput(uint8_t pin, bool enablePullup) {
