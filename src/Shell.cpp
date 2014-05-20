@@ -86,6 +86,7 @@ static numvar messageGroup(void);
 
 static numvar pinConstHigh(void);
 static numvar pinConstLow(void);
+static numvar pinConstDisabled(void);
 static numvar pinConstInput(void);
 static numvar pinConstOutput(void);
 static numvar pinConstInputPullup(void);
@@ -254,6 +255,7 @@ void PinoccioShell::setup() {
 
   addBitlashFunction("high", (bitlash_function) pinConstHigh);
   addBitlashFunction("low", (bitlash_function) pinConstLow);
+  addBitlashFunction("disabled", (bitlash_function) pinConstDisabled);
   addBitlashFunction("input", (bitlash_function) pinConstInput);
   addBitlashFunction("output", (bitlash_function) pinConstOutput);
   addBitlashFunction("input_pullup", (bitlash_function) pinConstInputPullup);
@@ -1157,6 +1159,10 @@ static numvar pinConstHigh(void) {
 
 static numvar pinConstLow(void) {
   return 0;
+}
+
+static numvar pinConstDisabled(void) {
+  return -1;
 }
 
 static numvar pinConstInput(void) {
