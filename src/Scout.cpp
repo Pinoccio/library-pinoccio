@@ -231,9 +231,6 @@ void PinoccioScout::saveState() {
 }
 
 int8_t PinoccioScout::getRegisterPinMode(uint8_t pin) {
-  if (isPinReserved(pin)) {
-    return -1;
-  }
   if ((~(*portModeRegister(digitalPinToPort(pin))) & digitalPinToBitMask(pin)) &&
       (~(*portOutputRegister(digitalPinToPort(pin))) & digitalPinToBitMask(pin))) {
     return INPUT; // 0
