@@ -1418,7 +1418,6 @@ static bool checkArgs(uint8_t required, const __FlashStringHelper *errorMsg, boo
 
 static StringBuffer backpackReportHQ(void) {
   StringBuffer report(100);
-  int comma = 0;
   report.appendSprintf("[%d,[%d],[[", keyMap("backpacks", 0), keyMap("list", 0));
   /*
   for (uint8_t i=0; i<Backpacks::num_backpacks; ++i) {
