@@ -280,27 +280,45 @@ bool PinoccioScout::setMode(uint8_t pin, int8_t mode) {
   }
 
   // pre-set initial values for mode change
-  int value = pinRead(pin);
-  int rawMode = mode;
+  int value;
+  switch (mode) {
+    case PINMODE_DISABLED:
+    case PINMODE_INPUT:
+      pinMode(pin, INPUT);
+      break;
+    case PINMODE_INPUT_PULLUP:
+      pinMode(pin, INPUT_PULLUP);
+      break;
+    case PINMODE_OUTPUT:
+    case PINMODE_PWM:
+      pinMode(pin, OUTPUT);
+      break;
+    default:
+      return false;
+  }
 
-  if (mode < 0) {
-    value = -1;
-    rawMode = INPUT; // input-no-pullup, for lowest power draw
-  } else if (mode == PWM) {
-    value = 0;
-    rawMode = OUTPUT;
+  switch(mode) {
+    case PINMODE_DISABLED:
+      value = -1;
+      break;
+    case PINMODE_PWM:
+      value = 0;
+      break;
+    case PINMODE_INPUT:
+    case PINMODE_OUTPUT:
+    case PINMODE_INPUT_PULLUP:
+      value = pinRead(pin);
+      break;
   }
 
   if (isDigitalPin(pin)) {
     stopDigitalStateChangeEvents();
-    pinMode(pin, rawMode);
     updateDigitalPinState(pin, value, mode);
     startDigitalStateChangeEvents();
   }
 
   if (isAnalogPin(pin)) {
     stopAnalogStateChangeEvents();
-    pinMode(pin, rawMode);
     updateAnalogPinState(pin, value, mode);
     startAnalogStateChangeEvents();
   }
