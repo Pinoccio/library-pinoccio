@@ -287,6 +287,10 @@ bool PinoccioScout::setMode(uint8_t pin, int8_t mode) {
     case PINMODE_INPUT:
       pinMode(pin, INPUT);
       break;
+    // On disconnected (floating) pins, enable a pullup. Without the
+    // pullup, the input logic might switch between high and low all the
+    // time, causing excessive power usage.
+    case PINMODE_DISCONNECTED:
     case PINMODE_INPUT_PULLUP:
       pinMode(pin, INPUT_PULLUP);
       break;
