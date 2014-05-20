@@ -150,7 +150,8 @@ static numvar keyNumber(void);
 static numvar keySave(void);
 
 static int getPinFromArg(int arg);
-static bool checkArgs(uint8_t required, const __FlashStringHelper *errorMsg, bool minRequired=false);
+static bool checkArgs(uint8_t min, uint8_t max, const __FlashStringHelper *errorMsg);
+static bool checkArgs(uint8_t exactly, const __FlashStringHelper *errorMsg);
 
 static StringBuffer scoutReportHQ(void);
 static StringBuffer uptimeReportHQ(void);
@@ -725,7 +726,7 @@ static StringBuffer ledReportHQ(void) {
 }
 
 static numvar ledBlink(void) {
-  if (!checkArgs(3, F("usage: ledBlink(red, green, blue, ms=500, continuous=0)"), true)) {
+  if (!checkArgs(3, 5, F("usage: ledBlink(red, green, blue, ms=500, continuous=0)"))) {
     return 0;
   }
   if (getarg(0) == 5) {
@@ -908,7 +909,7 @@ static numvar ledReport(void) {
 \****************************/
 
 static numvar meshConfig(void) {
-  if (!checkArgs(2, F("usage: mesh.config(scoutId, troopId, channel=20)"), true)) {
+  if (!checkArgs(2, 3, F("usage: mesh.config(scoutId, troopId, channel=20)"))) {
     return 0;
   }
   uint8_t channel = 20;
@@ -1086,7 +1087,7 @@ static numvar meshRouting(void) {
 }
 
 static numvar messageScout(void) {
-  if (!checkArgs(1, F("usage: message.scout(scoutId, \"message\")"), true)) {
+  if (!checkArgs(1, 99, F("usage: message.scout(scoutId, \"message\")"))) {
     return 0;
   }
   sendMessage(getarg(1), arg2array(1));
@@ -1094,7 +1095,7 @@ static numvar messageScout(void) {
 }
 
 static numvar messageGroup(void) {
-  if (!checkArgs(1, F("usage: message.group(groupId, \"message\")"), true)) {
+  if (!checkArgs(1, 99, F("usage: message.group(groupId, \"message\")"))) {
     return 0;
   }
   Scout.handler.announce(getarg(1), arg2array(1));
@@ -1178,7 +1179,7 @@ static numvar pinConstInputPullup(void) {
 }
 
 static numvar pinMakeInput(void) {
-  if (!checkArgs(1, F("usage: pin.makeinput(\"pinName\", inputType=INPUT_PULLUP)"), true)) {
+  if (!checkArgs(1, 2, F("usage: pin.makeinput(\"pinName\", inputType=INPUT_PULLUP)"))) {
     return 0;
   }
   int8_t pin = getPinFromArg(1);
@@ -1324,7 +1325,7 @@ static numvar pinWrite(void) {
 }
 
 static numvar pinSave(void) {
-  if (!checkArgs(2, F("usage: pin.save(\"pinName\", pinMode, [pinValue])"), true)) {
+  if (!checkArgs(2, 3, F("usage: pin.save(\"pinName\", pinMode, [pinValue])"))) {
     return 0;
   }
 
@@ -1396,18 +1397,18 @@ static int getPinFromArg(int arg) {
   }
 }
 
-static bool checkArgs(uint8_t required, const __FlashStringHelper *errorMsg, bool minRequired) {
-  if (minRequired == true) {
-    if (getarg(0) < required) {
+static bool checkArgs(uint8_t exactly, const __FlashStringHelper *errorMsg) {
+  if (getarg(0) != exactly) {
       speol(errorMsg);
       return false;
-    } else {
-      return true;
-    }
   }
-  if (getarg(0) != required) {
-    speol(errorMsg);
-    return false;
+  return true;
+}
+
+static bool checkArgs(uint8_t min, uint8_t max, const __FlashStringHelper *errorMsg) {
+  if (getarg(0) < min || getarg(0) > max) {
+      speol(errorMsg);
+      return false;
   }
   return true;
 }
