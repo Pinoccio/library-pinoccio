@@ -469,27 +469,19 @@ bool PinoccioScout::updateAnalogPinState(uint8_t pin, int16_t val, int8_t mode) 
 }
 
 static void scoutDigitalStateChangeTimerHandler(SYS_Timer_t *timer) {
-  bool changed = false;
   if (Scout.digitalPinEventHandler != 0) {
     for (int i=2; i<9; i++) {
-      if (Scout.updateDigitalPinState(i, Scout.pinRead(i), Scout.getPinMode(i)) || changed) {
-        changed = true;
-      }
+      Scout.updateDigitalPinState(i, Scout.pinRead(i), Scout.getPinMode(i));
     }
   }
-  return changed;
 }
 
 static void scoutAnalogStateChangeTimerHandler(SYS_Timer_t *timer) {
-  bool changed = false;
   if (Scout.analogPinEventHandler != 0) {
     for (int i=0; i<NUM_ANALOG_INPUTS; i++) {
-      if (Scout.updateAnalogPinState(i, Scout.pinRead(i), Scout.getPinMode(i) || changed)) {
-        changed = true;
-      }
+      Scout.updateAnalogPinState(i+A0, Scout.pinRead(i+A0), Scout.getPinMode(i+A0));
     }
   }
-  return changed;
 }
 
 static void scoutPeripheralStateChangeTimerHandler(SYS_Timer_t *timer) {
