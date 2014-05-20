@@ -1331,13 +1331,9 @@ static numvar pinWrite(void) {
 static numvar pinWritePWM(void) {
   int8_t pin = getPinFromArg(1);
   uint8_t value = getarg(2);
+
   if (pin == -1) {
     speol(F("Invalid pin number"));
-    return 0;
-  }
-
-  if (getarg(2) < 0 || getarg(2) > 255) {
-    speol(F("Invalid PWM value"));
     return 0;
   }
 
@@ -1346,7 +1342,14 @@ static numvar pinWritePWM(void) {
     return 0;
   }
 
+  if (getarg(2) < 0 || getarg(2) > 255) {
+    speol(F("Invalid PWM value"));
+    return 0;
+  }
+
   Scout.pinWritePWM(pin, value);
+  digitalPinReportHQ();
+
   return 1;
 }
 
