@@ -33,6 +33,7 @@ WiFiBackpack::~WiFiBackpack() { }
 void WiFiBackpack::onAssociate(void *data) {
   WiFiBackpack& wifi = *(WiFiBackpack*)data;
 
+  #ifdef USE_TLS
   // Do a timesync
   IPAddress ip = wifi.gs.dnsLookup(NTP_SERVER);
   if (ip == INADDR_NONE ||
@@ -40,6 +41,9 @@ void WiFiBackpack::onAssociate(void *data) {
     Serial.println("Time sync failed, reassociating to retry");
     wifi.autoConnectHq();
   }
+  #else
+  wifi.autoConnectHq();
+  #endif
   
   wifi.apConnCount++;
 }
