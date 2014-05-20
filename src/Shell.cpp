@@ -1320,7 +1320,7 @@ static numvar pinWrite(void) {
 }
 
 static numvar pinSave(void) {
-  if (!checkArgs(2, F("usage: pin.save(\"pinName\", pinMode, [pinValue])"))) {
+  if (!checkArgs(2, F("usage: pin.save(\"pinName\", pinMode, [pinValue])"), true)) {
     return 0;
   }
 
@@ -1354,7 +1354,7 @@ static numvar pinSave(void) {
     if (getarg(0) == 3 && mode == OUTPUT) {
       uint8_t value = getarg(3);
       Scout.pinWrite(pin, value);
-      snprintf(buf, sizeof(buf), "function startup.%s { pin.setmode(\"%s\",%d); pin.write(\"%d\",%d) }", str, str, mode, str, value);
+      snprintf(buf, sizeof(buf), "function startup.%s { pin.setmode(\"%s\",%d); pin.write(\"%s\",%d) }", str, str, mode, str, value);
     } else {
       snprintf(buf, sizeof(buf), "function startup.%s { pin.setmode(\"%s\",%d); }", str, str, mode);
     }
@@ -1889,7 +1889,7 @@ static numvar hqPrint(void) {
 }
 
 static numvar hqReport(void) {
-  if (!checkArgs(1, F("usage: hq.report(\"reportname\", \"value\")"))) {
+  if (!checkArgs(2, F("usage: hq.report(\"reportname\", \"value\")"))) {
     return 0;
   }
   const char *name = (isstringarg(1))?(const char*)getarg(1):keyGet(getarg(1));
