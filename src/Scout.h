@@ -77,6 +77,7 @@ class PinoccioScout : public PinoccioClass {
     bool makeOutput(uint8_t pin);
     bool makePWM(uint8_t pin);
     bool makeDisabled(uint8_t pin);
+    void makeUnsetDisconnected();
     bool setMode(uint8_t pin, int8_t mode);
     bool isDigitalPin(uint8_t pin);
     bool isAnalogPin(uint8_t pin);
