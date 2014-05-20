@@ -209,7 +209,7 @@ void PinoccioScout::saveState() {
     if (isPinReserved(i+2)) {
       digitalPinMode[i] = PINMODE_RESERVED;
     } else {
-      digitalPinMode[i] = PINMODE_DISABLED;
+      digitalPinMode[i] = PINMODE_UNSET;
     }
     digitalPinState[i] = -1;
   }
@@ -218,7 +218,7 @@ void PinoccioScout::saveState() {
     if (isPinReserved(i+A0)) {
       analogPinMode[i] = PINMODE_RESERVED;
     } else {
-      analogPinMode[i] = PINMODE_DISABLED;
+      analogPinMode[i] = PINMODE_UNSET;
     }
     analogPinState[i] = -1;
   }
