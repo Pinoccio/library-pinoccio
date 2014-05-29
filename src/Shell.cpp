@@ -1960,7 +1960,7 @@ static StringBuffer wifiReportHQ(void) {
           keyMap("connected", 0),
           keyMap("hq", 0),
           Scout.wifi.isAPConnected() ? "true" : "false",
-          Scout.wifi.isHQConnected() ? "true" : "false");
+          Scout.hq.connected() ? "true" : "false");
   return Scout.handler.report(report);
 }
 
@@ -2048,7 +2048,7 @@ static numvar wifiDisassociate(void) {
 
 static numvar wifiReassociate(void) {
   // This restart the NCM
-  return Scout.wifi.autoConnectHq();
+  return Scout.wifi.associate();
 }
 
 static numvar wifiCommand(void) {
@@ -2111,7 +2111,7 @@ static numvar wifiStats(void) {
   sp(F("Number of connections to AP since boot: "));
   speol(Scout.wifi.apConnCount);
   sp(F("Number of connections to HQ since boot: "));
-  speol(Scout.wifi.hqConnCount);
+  speol(Scout.hq.connCount);
 }
 
 

@@ -14,6 +14,7 @@
 #include <ScoutHandler.h>
 #include "backpack-bus/PBBP.h"
 #include "backpacks/wifi/WiFiBackpack.h"
+#include "hq/HqHandler.h"
 #include <Wire.h>
 
 #include "lwm/phy/phy.h"
@@ -112,6 +113,7 @@ class PinoccioScout : public PinoccioClass {
     PBBP bp;
     WiFiBackpack wifi;
     PinoccioScoutHandler handler;
+    HqHandler hq;
 
     // Schedule a sleep that lasts until now + ms. The optional bitlash
     // command is executed after the sleep and then free()'d. A previous

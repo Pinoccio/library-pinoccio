@@ -21,6 +21,15 @@ void Backpacks::setup()
   delay(5);
   pbbp.begin(BACKPACK_BUS);
   detect();
+
+//  if(Backpacks::isModelPresent(0x0001)) wifi.setup();
+
+}
+
+void Backpacks::loop()
+{
+// TODO this needs to be automated better
+//  if(Backpacks::isModelPresent(0x0001)) wifi.loop();
 }
 
 bool Backpacks::detect()

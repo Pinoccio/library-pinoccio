@@ -13,6 +13,7 @@
 #include "../backpack-bus/PBBP.h"
 #include "../backpack-bus/Pbbe.h"
 #include "../util/integer.h"
+#include "wifi/WiFiBackpack.h"
 
 /**
  * Structure collecting some info on a backpack. Do not create any of
@@ -100,7 +101,7 @@ public:
   static bool detect();
 
   static void setup();
-  static void loop() {}
+  static void loop();
 
   /**
    * See if a backpack with the given model identifier is present.
@@ -112,6 +113,8 @@ public:
   static PBBP pbbp;
 
   static Pbbe::LogicalPin::mask_t used_pins;
+
+  static WiFiBackpack wifi;
 
 protected:
   /**
