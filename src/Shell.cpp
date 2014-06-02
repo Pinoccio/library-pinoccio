@@ -941,7 +941,14 @@ static numvar meshSetKey(void) {
   if (!checkArgs(1, F("usage: mesh.setkey(\"key\")"))) {
     return 0;
   }
-  Scout.meshSetSecurityKey((const uint8_t *)getstringarg(1));
+  int len = strlen((const char*)getstringarg(1));
+  char key[NWK_SECURITY_KEY_SIZE];
+  memset(key, 0xFF, NWK_SECURITY_KEY_SIZE);
+  if (len > NWK_SECURITY_KEY_SIZE) {
+    len = NWK_SECURITY_KEY_SIZE;
+  }
+  memcpy(key, (const char*)getstringarg(1), len);
+  Scout.meshSetSecurityKey((const uint8_t *)key);
   return 1;
 }
 
