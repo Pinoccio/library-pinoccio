@@ -567,7 +567,6 @@ void PinoccioScout::doSleep(int32_t ms) {
     doCommand(cmd);
 
   free(cmd);
-
 }
 
 uint32_t PinoccioScout::getWallTime() {
