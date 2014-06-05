@@ -153,7 +153,7 @@ bool PinoccioScout::isBackpackVccEnabled() {
 }
 
 bool PinoccioScout::isLeadScout() {
-  return hq.isBridge();
+  return wifi.isAvailable();
 }
 
 bool PinoccioScout::factoryReset() {

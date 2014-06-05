@@ -129,6 +129,7 @@ bool HqHandler::isBridge() {
 
 void HqHandler::up(UDP *out) {
   uout = out;
+  Serial.println("HQ network up");
   // TODO send flush/ping packets now
 }
 

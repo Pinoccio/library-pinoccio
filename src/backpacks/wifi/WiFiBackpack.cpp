@@ -41,7 +41,7 @@ bool WiFiBackpack::setup() {
   // UART firmware running on them
   // Serial1.begin(115200);
   // return gs.begin(Serial1);
-
+  
   SPI.begin();
   SPI.setClockDivider(SPI_CLOCK_DIV16);
 

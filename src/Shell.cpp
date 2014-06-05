@@ -331,8 +331,6 @@ void PinoccioShell::setup() {
 
   if (isShellEnabled) {
     startShell();
-  } else {
-    Serial.begin(115200);
   }
 
   Scout.meshListen(1, receiveMessage);
