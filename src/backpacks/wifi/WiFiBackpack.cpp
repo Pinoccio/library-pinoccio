@@ -8,6 +8,7 @@
 \**************************************************************************/
 #include <Arduino.h>
 #include <SPI.h>
+#include "Scout.h"
 #include "WiFiBackpack.h"
 #include "src/bitlash.h"
 
@@ -27,7 +28,7 @@ void WiFiBackpack::onAssociate(void *data) {
   WiFiBackpack& wifi = *(WiFiBackpack*)data;
 
   wifi.server.begin(42424);
-//  wifi.hq.setDefault(wifi.sendPacket);
+  Scout.hq.up(&(wifi.server));
   
   wifi.apConnCount++;
 }

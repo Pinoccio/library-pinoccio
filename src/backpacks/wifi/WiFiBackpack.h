@@ -59,7 +59,6 @@ class WiFiBackpack : public Backpack {
     
     uint16_t apConnCount;
     bool available;
-    HqHandler hq;
     
     GSModule gs;
     

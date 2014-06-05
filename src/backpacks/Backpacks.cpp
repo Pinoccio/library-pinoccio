@@ -8,6 +8,7 @@
 \**************************************************************************/
 #include <Arduino.h>
 #include "Backpacks.h"
+#include "Scout.h"
 
 uint8_t Backpacks::num_backpacks = 0;
 BackpackInfo *Backpacks::info = NULL;
@@ -22,14 +23,14 @@ void Backpacks::setup()
   pbbp.begin(BACKPACK_BUS);
   detect();
 
-//  if(Backpacks::isModelPresent(0x0001)) wifi.setup();
+  if(Backpacks::isModelPresent(0x0001)) Scout.wifi.setup();
 
 }
 
 void Backpacks::loop()
 {
 // TODO this needs to be automated better
-//  if(Backpacks::isModelPresent(0x0001)) wifi.loop();
+  if(Backpacks::isModelPresent(0x0001)) Scout.wifi.loop();
 }
 
 bool Backpacks::detect()

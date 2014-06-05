@@ -13,6 +13,7 @@
 #include <stdint.h>
 #include <telehash.h>
 #include <Arduino.h>
+#include <UDP.h>
 #include "../util/StringBuffer.h"
 
 /**
@@ -34,10 +35,11 @@ public:
   // is the lead scout bridging to the internet
   bool isBridge();
   
-  // set by last active network delivery, if any
-  void setDefault(void (*net)(packet_t p));
-  
+  // process any incoming packet
   void recvPacket(packet_t p);
+  
+  // called when any UDP interface is available
+  void up(UDP *out);
   
   bool connected();
   bool available();
@@ -45,7 +47,7 @@ public:
   uint16_t connCount;
   
 private:
-  void (*onDefault)(packet_t p);
+  UDP *uout;
 };
 
 #endif // LIB_PINOCCIO_HQHANDLER_H_

@@ -127,6 +127,10 @@ bool HqHandler::isBridge() {
   return false;
 }
 
+void HqHandler::up(UDP *out) {
+  uout = out;
+  // TODO send flush/ping packets now
+}
 
 void HqHandler::setVerbose(bool flag) {
   hqVerboseOutput = flag;
