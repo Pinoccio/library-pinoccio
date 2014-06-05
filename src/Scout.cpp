@@ -66,7 +66,6 @@ void PinoccioScout::setup(const char *sketchName, const char *sketchRevision, in
   Backpacks::setup();
 
   saveState();
-  handler.setup();
 
   startDigitalStateChangeEvents();
   startAnalogStateChangeEvents();
@@ -82,7 +81,6 @@ void PinoccioScout::loop() {
 
   PinoccioClass::loop();
   Shell.loop();
-  handler.loop();
   Backpacks::loop();
   hq.loop();
 

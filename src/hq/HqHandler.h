@@ -12,6 +12,8 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <telehash.h>
+#include <Arduino.h>
+#include "../util/StringBuffer.h"
 
 /**
  * This class handles direct connections to the HQ server (e.g., through
@@ -24,6 +26,10 @@ public:
 
   void setup();
   void loop();
+
+  void announce(uint16_t group, const String& message);
+  void setVerbose(bool flag);
+  StringBuffer report(const String& report);
 
   // is the lead scout bridging to the internet
   bool isBridge();
