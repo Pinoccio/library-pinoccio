@@ -95,7 +95,7 @@ class PinoccioScout : public PinoccioClass {
     bool updateDigitalPinState(uint8_t pin, int16_t val, int8_t mode);
     bool updateAnalogPinState(uint8_t pin, int16_t val, int8_t mode);
 
-    void (*digitalPinEventHandler)(uint8_t pin, int8_t value, int8_t mode);
+    void (*digitalPinEventHandler)(uint8_t pin, int16_t value, int8_t mode);
     void (*analogPinEventHandler)(uint8_t pin, int16_t value, int8_t mode);
     void (*batteryPercentageEventHandler)(uint8_t value);
     void (*batteryChargingEventHandler)(uint8_t value);

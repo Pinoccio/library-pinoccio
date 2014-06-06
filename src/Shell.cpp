@@ -170,7 +170,7 @@ static bool receiveMessage(NWK_DataInd_t *ind);
 static void sendMessage(int address, const String&);
 static void sendConfirm(NWK_DataReq_t *req);
 
-static void digitalPinEventHandler(uint8_t pin, int8_t value, int8_t mode);
+static void digitalPinEventHandler(uint8_t pin, int16_t value, int8_t mode);
 static void analogPinEventHandler(uint8_t pin, int16_t value, int8_t mode);
 static void batteryPercentageEventHandler(uint8_t value);
 static void batteryChargingEventHandler(uint8_t value);
@@ -2285,7 +2285,7 @@ static void sendConfirm(NWK_DataReq_t *req) {
  *      EVENT HANDLERS      *
 \****************************/
 
-static void digitalPinEventHandler(uint8_t pin, int8_t value, int8_t mode) {
+static void digitalPinEventHandler(uint8_t pin, int16_t value, int8_t mode) {
   uint32_t time = millis();
   char buf[16];
 

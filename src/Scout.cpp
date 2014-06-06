@@ -306,14 +306,19 @@ bool PinoccioScout::setMode(uint8_t pin, uint8_t mode) {
     return true;
   }
 
+  // reset the value to 0 if this mode was PWM
+  int value = pinRead(pin);
+  if (getPinMode(pin) == PWM) {
+    value = 0;
+  }
   pinMode(pin, mode);
 
   if (isDigitalPin(pin)) {
-    updateDigitalPinState(pin, pinRead(pin), mode);
+    updateDigitalPinState(pin, value, mode);
   }
 
   if (isAnalogPin(pin)) {
-    updateAnalogPinState(pin, pinRead(pin), mode);
+    updateAnalogPinState(pin, value, mode);
   }
 
   return true;
@@ -381,6 +386,9 @@ uint16_t PinoccioScout::pinRead(uint8_t pin) {
     return 0;
   }
 
+  if (Scout.getPinMode(pin) == PWM) {
+    return digitalPinState[pin-2];
+  }
   if (Scout.isDigitalPin(pin)) {
     return digitalRead(pin);
   } else if (Scout.isAnalogPin(pin)) {
