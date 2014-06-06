@@ -41,8 +41,6 @@ void WiFiBackpack::onAssociate(void *data) {
     Serial.println("Time sync failed, reassociating to retry");
     wifi.autoConnectHq();
   }
-  #else
-  wifi.autoConnectHq();
   #endif
   
   wifi.apConnCount++;

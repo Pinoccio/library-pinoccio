@@ -6,12 +6,12 @@ class SleepHandler {
     // Sleep for the given amount of time. If interruptible is true,
     // this can return earlier if we are woken from sleep by another
     // interrupt.
-    static void doHibernate(uint32_t ms, bool interruptible);
+    static void doSleep(uint32_t ms, bool interruptible);
 
     // This is (roughly) the time spent in hibernation. millis() +
-    // hibernateMillis should approximate the total wall time spent
+    // sleepMillis should approximate the total wall time spent
     // since powerup.
-    static uint32_t hibernateMillis;
+    static uint32_t sleepMillis;
 
   protected:
     static bool sleepUntilMatch(bool interruptible);
