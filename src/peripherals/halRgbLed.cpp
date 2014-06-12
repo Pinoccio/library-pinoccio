@@ -75,6 +75,10 @@ void HalRgbLed::purple() {
   setColor(50, 0, 255);
 }
 
+void HalRgbLed::beccapurple() {
+  setColor(102, 51, 153);
+}
+
 void HalRgbLed::magenta() {
   setColor(255, 0, 255);
 }
@@ -109,6 +113,10 @@ void HalRgbLed::blinkCyan(unsigned int ms, bool continuous) {
 
 void HalRgbLed::blinkPurple(unsigned int ms, bool continuous) {
   blinkColor(50, 0, 255, ms, continuous);
+}
+
+void HalRgbLed::blinkBeccaPurple(unsigned int ms, bool continuous) {
+  blinkColor(102, 51, 153, ms, continuous);
 }
 
 void HalRgbLed::blinkMagenta(unsigned int ms, bool continuous) {
