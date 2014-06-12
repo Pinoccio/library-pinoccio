@@ -13,10 +13,6 @@
 #include <bitlash.h>
 #include <lwm.h>
 #include <js0n.h>
-#include <AESLib.h>
-#include <telehash.h>
-#include <avrcrypt/avrcrypt.h>
-#include <ext/ext.h>
 #include "version.h"
 
 void setup() {

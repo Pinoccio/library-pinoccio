@@ -13,7 +13,6 @@
 #include "../Backpack.h"
 #include "../../hq/HqHandler.h"
 #include <GS.h>
-#include <telehash.h>
 
 class WiFiBackpack : public Backpack {
 
@@ -25,9 +24,6 @@ class WiFiBackpack : public Backpack {
     bool init();
     void loop();
     
-    // tries to send packet if network is available
-    void sendPacket(packet_t p);
-
     // Does not take effect until autoConnectHq() is called
     bool wifiConfig(const char *ssid, const char *passphrase);
     // Takes effect immediately
@@ -63,8 +59,6 @@ class WiFiBackpack : public Backpack {
     GSModule gs;
     
   protected:
-
-    GSUdpServer server;
 
     // Event handlers
     static void onAssociate(void *data);

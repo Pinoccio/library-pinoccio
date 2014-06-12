@@ -18,7 +18,7 @@ static void print_line(const uint8_t *buf, uint16_t len, void *data) {
   speol();
 }
 
-WiFiBackpack::WiFiBackpack() : server(gs) {
+WiFiBackpack::WiFiBackpack() {
   available = false;
 }
 
@@ -27,8 +27,7 @@ WiFiBackpack::~WiFiBackpack() { }
 void WiFiBackpack::onAssociate(void *data) {
   WiFiBackpack& wifi = *(WiFiBackpack*)data;
 
-  wifi.server.begin(42424);
-  Scout.hq.up(&(wifi.server));
+  Scout.hq.up(wifi.gs);
   
   wifi.apConnCount++;
 }
@@ -56,12 +55,6 @@ bool WiFiBackpack::setup() {
 
 void WiFiBackpack::loop() {
   gs.loop();
-  // TODO read server and do hq.onPacket(p)
-}
-
-void WiFiBackpack::sendPacket(packet_t p) {
-  // TODO
-  packet_free(p);
 }
 
 static bool isWepKey(const char *key) {

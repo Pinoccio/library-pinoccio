@@ -11,9 +11,8 @@
 
 #include <stddef.h>
 #include <stdint.h>
-#include <telehash.h>
 #include <Arduino.h>
-#include <UDP.h>
+#include <GS.h>
 #include "../util/StringBuffer.h"
 
 /**
@@ -35,11 +34,8 @@ public:
   // is the lead scout bridging to the internet
   bool isBridge();
   
-  // process any incoming packet
-  void recvPacket(packet_t p);
-  
-  // called when any UDP interface is available
-  void up(UDP *out);
+  // called by wifi when network is up
+  void up(GSModule gs);
   
   bool connected();
   bool available();
@@ -47,7 +43,7 @@ public:
   uint16_t connCount;
   
 private:
-  UDP *uout;
+  GSTcpClient *tcp;
 };
 
 #endif // LIB_PINOCCIO_HQHANDLER_H_
