@@ -397,15 +397,13 @@ static numvar pinoccioBanner(void) {
   speol(F("Hello from Pinoccio!"));
   speol(F(" (Shell based on Bitlash v2.0 (c) 2014 Bill Roy)"));
   sp(F(" "));
-  sp(func_free());
-  speol(F(" bytes free"));
-  sp(F(" "));
   sp(Scout.getSketchName());
-  sp(F(" Build "));
-  sp(Scout.getSketchBuild());
-  sp(F(" (rev "));
+  sp(F(" Sketch (rev "));
   sp(Scout.getSketchRevision());
   speol(F(")"));
+  sp(F(" "));
+  sp(func_free());
+  speol(F(" bytes free"));
 
   if (Scout.isLeadScout()) {
     speol(F(" Lead Scout ready"));
