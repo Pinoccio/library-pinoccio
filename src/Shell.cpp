@@ -98,7 +98,6 @@ static numvar pinDisable(void);
 static numvar pinSetMode(void);
 static numvar pinRead(void);
 static numvar pinWrite(void);
-static numvar pinWritePWM(void);
 static numvar pinSave(void);
 static numvar digitalPinReport(void);
 static numvar analogPinReport(void);
@@ -272,7 +271,6 @@ void PinoccioShell::setup() {
   addBitlashFunction("pin.setmode", (bitlash_function) pinSetMode);
   addBitlashFunction("pin.read", (bitlash_function) pinRead);
   addBitlashFunction("pin.write", (bitlash_function) pinWrite);
-  addBitlashFunction("pin.writepwm", (bitlash_function) pinWritePWM);
   addBitlashFunction("pin.save", (bitlash_function) pinSave);
   addBitlashFunction("pin.report.digital", (bitlash_function) digitalPinReport);
   addBitlashFunction("pin.report.analog", (bitlash_function) analogPinReport);
@@ -1285,6 +1283,11 @@ static numvar pinSetMode(void) {
     return 0;
   }
 
+  if (!Scout.isPWMPin(pin) && getarg(2) == PWM) {
+    speol(F("Cannot change mode of non PWM pin"));
+    return 0;
+  }
+
   if (!Scout.setMode(pin, getarg(2))) {
     speol(F("Cannot change mode of reserved pin"));
     return 0;
@@ -1333,36 +1336,12 @@ static numvar pinWrite(void) {
     return 0;
   }
 
-  Scout.pinWrite(pin, value);
-
-  return 1;
-}
-
-static numvar pinWritePWM(void) {
-  if (!checkArgs(2, F("usage: pin.writepwm(\"pinName\", pinValue)"))) {
-    return 0;
-  }
-
-  int8_t pin = getPinFromArg(1);
-  uint8_t value = getarg(2);
-
-  if (pin == -1) {
-    speol(F("Invalid pin number"));
-    return 0;
-  }
-
-  if (!Scout.isPWMPin(pin)) {
-    speol(F("Pin must be set as PWM before writing"));
-    return 0;
-  }
-
-  if (getarg(2) < 0 || getarg(2) > 255) {
+  if (Scout.isPWMPin(pin) && (getarg(2) < 0 || getarg(2) > 255)) {
     speol(F("Invalid PWM value"));
     return 0;
   }
 
-  Scout.pinWritePWM(pin, value);
-  digitalPinReportHQ();
+  Scout.pinWrite(pin, value);
 
   return 1;
 }
