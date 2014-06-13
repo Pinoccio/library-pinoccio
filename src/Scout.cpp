@@ -306,19 +306,14 @@ bool PinoccioScout::setMode(uint8_t pin, uint8_t mode) {
     return true;
   }
 
-  // reset the value to 0 if this mode was PWM
-  int value = pinRead(pin);
-  if (getPinMode(pin) == PWM) {
-    value = 0;
-  }
   pinMode(pin, mode);
 
   if (isDigitalPin(pin)) {
-    updateDigitalPinState(pin, value, mode);
+    updateDigitalPinState(pin, pinRead(pin), mode);
   }
 
   if (isAnalogPin(pin)) {
-    updateAnalogPinState(pin, value, mode);
+    updateAnalogPinState(pin, pinRead(pin), mode);
   }
 
   return true;
@@ -426,10 +421,7 @@ bool PinoccioScout::updateDigitalPinState(uint8_t pin, int16_t val, int8_t mode)
 // Serial.println("--------");
 
   if (digitalPinState[i] != val || digitalPinMode[i] != mode) {
-    digitalPinState[i] = val;
-    digitalPinMode[i] = mode;
-
-    if (digitalPinEventHandler != 0) {
+    if (digitalPinEventHandler != 0 && (digitalPinMode[i] != mode || mode > 0)) {
       if (eventVerboseOutput) {
         Serial.print(F("Running: digitalPinEventHandler("));
         Serial.print(pin);
@@ -441,6 +433,9 @@ bool PinoccioScout::updateDigitalPinState(uint8_t pin, int16_t val, int8_t mode)
       }
       digitalPinEventHandler(pin, val, mode);
     }
+    digitalPinState[i] = val;
+    digitalPinMode[i] = mode;
+    
     return true;
   }
   return false;
@@ -453,10 +448,7 @@ bool PinoccioScout::updateAnalogPinState(uint8_t pin, int16_t val, int8_t mode) 
   mode = Scout.getRegisterPinMode(i+A0);
 
   if (Scout.analogPinState[i] != val || Scout.analogPinMode[i] != mode) {
-    Scout.analogPinState[i] = val;
-    Scout.analogPinMode[i] = mode;
-
-    if (analogPinEventHandler != 0) {    
+    if (analogPinEventHandler != 0 && (analogPinMode[i] != mode || mode > 0)) {    
       if (Scout.eventVerboseOutput) {
         Serial.print(F("Running: analogPinEventHandler("));
         Serial.print(i);
@@ -468,6 +460,9 @@ bool PinoccioScout::updateAnalogPinState(uint8_t pin, int16_t val, int8_t mode) 
       }
       Scout.analogPinEventHandler(i, val, mode);
     }
+    Scout.analogPinState[i] = val;
+    Scout.analogPinMode[i] = mode;
+    
     return true;
   }
   return false;

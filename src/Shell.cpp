@@ -1316,11 +1316,6 @@ static numvar pinRead(void) {
     return 0;
   }
 
-  if (!Scout.isInputPin(pin)) {
-    speol(F("Pin must be set as an input before writing"));
-    return 0;
-  }
-
   return Scout.pinRead(pin);
 }
 
@@ -1330,14 +1325,9 @@ static numvar pinWrite(void) {
   }
 
   int8_t pin = getPinFromArg(1);
-  uint8_t value = getarg(2);
+  int16_t value = getarg(2);
   if (pin == -1) {
     speol(F("Invalid pin number"));
-    return 0;
-  }
-
-  if (getarg(2) < 0 || getarg(2) > 1) {
-    speol(F("Invalid pin value"));
     return 0;
   }
 
@@ -1345,14 +1335,16 @@ static numvar pinWrite(void) {
     speol(F("Pin must be set as an output before writing"));
     return 0;
   }
-
-  if (Scout.isPWMPin(pin) && (getarg(2) < 0 || getarg(2) > 255)) {
+  if (Scout.getPinMode(pin) == PWM && (value < 0 || value > 255)) {
     speol(F("Invalid PWM value"));
+    return 0;
+  } 
+  if (Scout.getPinMode(pin) != PWM && (value < 0 || value > 1)) {
+    speol(F("Invalid pin value"));
     return 0;
   }
 
   Scout.pinWrite(pin, value);
-
   return 1;
 }
 
@@ -1397,7 +1389,6 @@ static numvar pinSave(void) {
     }
   }
 
-  doCommand(buf);
   return 1;
 }
 
@@ -1875,6 +1866,7 @@ static numvar daisyWipe(void) {
     Scout.meshResetSecurityKey();
     Scout.meshSetRadio(0, 0x0000);
     Scout.resetHQToken();
+    Led.saveTorch(0, 255, 0);
 
     // so long, and thanks for all the fish!
     doCommand("rm *");
@@ -2277,7 +2269,7 @@ static void sendConfirm(NWK_DataReq_t *req) {
 static void digitalPinEventHandler(uint8_t pin, int16_t value, int8_t mode) {
   uint32_t time = millis();
   char buf[16];
-
+  
   digitalPinReportHQ();
 
   snprintf(buf, sizeof(buf), "on.d%d", pin);
