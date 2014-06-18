@@ -124,9 +124,14 @@ void PinoccioScoutHandler::loop() {
 }
 
 void PinoccioScoutHandler::setBridgeMode(bool flag) {
+
+  hqBridgeMode = flag;
   if(!Scout.isLeadScout()) {
-    hqBridgeMode = flag;
     Scout.meshListen(3, leadAnswers);
+  } else if(flag) {
+    Scout.wifi.disassociate();
+  } else {
+    Scout.wifi.autoConnectHq();
   }
 }
 
@@ -270,6 +275,7 @@ static void announceConfirm(NWK_DataReq_t *req) {
 }
 
 void PinoccioScoutHandler::announce(uint16_t group, const String& message) {
+
   // when lead scout, shortcut
   if (Scout.isLeadScout()) {
     leadAnnouncementSend(group, Scout.getAddress(), message);
@@ -280,6 +286,7 @@ void PinoccioScoutHandler::announce(uint16_t group, const String& message) {
   }
 
   if( hqBridgeMode && (!group || group == 0xBEEF) ){
+
     Serial.print(F("[hq-bridge] {\"dest\":"));
     Serial.print(group);
     Serial.print(F(",\"src\":"));
@@ -345,11 +352,10 @@ static bool fieldAnnouncements(NWK_DataInd_t *ind) {
     Serial.print(F("multicast in "));
     Serial.println(ind->dstAddr);
   }
+
   if (Scout.isLeadScout()) {
     leadAnnouncementSend(ind->dstAddr, ind->srcAddr, ConstBuf(data, ind->size-1)); // no null
-  }
-
-  if (!ind->dstAddr || ind->dstAddr == 0xBEEF || strlen(data) < 3 || data[0] != '[') {
+  } else if (!ind->dstAddr || ind->dstAddr == 0xBEEF || strlen(data) < 3 || data[0] != '[') {
     if ( hqBridgeMode ) {
       Serial.print(F("[hq-bridge] {\"dest\":"));
       Serial.print(ind->dstAddr);
@@ -669,6 +675,7 @@ void leadSignal(const String &json) {
     if (hqVerboseOutput) {
       Serial.println(F("scout is in bridge mode sending reply."));
     }
+
     Serial.print(F("[hq-bridge] "));
     Serial.println(json);
     return;
