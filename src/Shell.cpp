@@ -144,6 +144,7 @@ static numvar wifiVerbose(void);
 static numvar wifiStats(void);
 
 static numvar keyMap(void);
+static numvar keyMap_int(void);
 static numvar keyFree(void);
 static numvar keyPrint(void);
 static numvar keyNumber(void);
@@ -297,6 +298,8 @@ void PinoccioShell::setup() {
   addBitlashFunction("events.verbose", (bitlash_function) setEventVerbose);
 
   addBitlashFunction("key", (bitlash_function) keyMap);
+  addBitlashFunction("key.unsigned", (bitlash_function) keyMap);
+  addBitlashFunction("key.signed", (bitlash_function) keyMap_int);
   addBitlashFunction("key.free", (bitlash_function) keyFree);
   addBitlashFunction("key.print", (bitlash_function) keyPrint);
   addBitlashFunction("key.number", (bitlash_function) keyNumber);
@@ -586,6 +589,19 @@ static numvar keyMap(void) {
     return keyMap((char*)getstringarg(1), 0);
   }
   snprintf(num, 8, "%lu", getarg(1));
+  return keyMap(num, 0);
+}
+
+/* Save key as a signed int */
+static numvar keyMap_int(void) {
+  if (!checkArgs(1, F("usage: key.signed(int_value)"))) {
+    return 0;
+  }
+  static char num[8];
+  if (isstringarg(1)) {
+    return 0;
+  }
+  snprintf(num, 8, "%ld", getarg(1));
   return keyMap(num, 0);
 }
 
