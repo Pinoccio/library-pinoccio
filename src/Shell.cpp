@@ -578,15 +578,20 @@ static numvar uptimeMillisSleep(void) {
 \****************************/
 
 static numvar keyMap(void) {
-  if (!checkArgs(1, F("usage: key(\"string\")"))) {
+  if (!checkArgs(1, 2, F("usage: key(\"string\")" [, temp_flag]))) {
     return 0;
   }
+  unsigned long at = 0;
   static char num[8];
+  // if the temp flag was passed
+  if(getarg(0) > 1) {
+    at = getarg(2);
+  }
   if (isstringarg(1)) {
-    return keyMap((char*)getstringarg(1), 0);
+    return keyMap((char*)getstringarg(1), at);
   }
   snprintf(num, 8, "%lu", getarg(1));
-  return keyMap(num, 0);
+  return keyMap(num, at);
 }
 
 static numvar keyFree(void) {
