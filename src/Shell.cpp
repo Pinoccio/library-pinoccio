@@ -346,6 +346,16 @@ void PinoccioShell::setup() {
   }
 }
 
+// just a safe wrapper around bitlash checks
+bool PinoccioShell::defined(char *cmd)
+{
+  // TODO, use our own lookup table
+  if(!cmd) return false;
+  if(find_user_function(cmd)) return true;
+  if(findKey(cmd) >= 0) return true; // don't use findscript(), it's not re-entrant safe
+  return false;
+}
+
 static bool isMeshVerbose;
 static int lastMeshRssi = 0;
 static int lastMeshLqi = 0;
@@ -448,21 +458,21 @@ void PinoccioShell::startShell() {
 
   for (i='a'; i<'z'; i++) {
     snprintf(buf, sizeof(buf), "startup.%c", i);
-    if (find_user_function(buf) || findscript(buf)) {
+    if (Shell.defined(buf)) {
       doCommand(buf);
     }
   }
 
   for (i=2; i<9; i++) {
     snprintf(buf, sizeof(buf), "startup.d%d", i);
-    if (find_user_function(buf) || findscript(buf)) {
+    if (Shell.defined(buf)) {
       doCommand(buf);
     }
   }
 
   for (i=0; i<8; i++) {
     snprintf(buf, sizeof(buf), "startup.a%d", i);
-    if (find_user_function(buf) || findscript(buf)) {
+    if (Shell.defined(buf)) {
       doCommand(buf);
     }
   }
@@ -2161,7 +2171,7 @@ static bool receiveMessage(NWK_DataInd_t *ind) {
   uint32_t time = millis();
 
   snprintf(buf, sizeof(buf),"on.message.scout");
-  if (find_user_function(buf) || findscript(buf)) {
+  if (Shell.defined(buf)) {
     snprintf(buf, sizeof(buf), "on.message.scout(%d", ind->srcAddr);
     for (int i=2; i<=keys[0]; i++) {
       snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf), ",%d", keys[i]);
@@ -2247,7 +2257,7 @@ static void sendConfirm(NWK_DataReq_t *req) {
   uint32_t time = millis();
 
   snprintf(buf, sizeof(buf),"on.message.signal");
-  if (find_user_function(buf) || findscript(buf)) {
+  if (Shell.defined(buf)) {
     snprintf(buf, sizeof(buf), "on.message.signal(%d, %d)", req->dstAddr, (req->status == NWK_SUCCESS_STATUS) ? req->control : 0);
     doCommand(buf);
   }
@@ -2271,7 +2281,7 @@ static void digitalPinEventHandler(uint8_t pin, int16_t value, int8_t mode) {
   digitalPinReportHQ();
 
   snprintf(buf, sizeof(buf), "on.d%d", pin);
-  if (find_user_function(buf) || findscript(buf)) {
+  if (Shell.defined(buf)) {
     snprintf(buf, sizeof(buf), "on.d%d(%d,%d)", pin, value, mode);
     doCommand(buf);
   }
@@ -2283,7 +2293,7 @@ static void digitalPinEventHandler(uint8_t pin, int16_t value, int8_t mode) {
     } else {
       snprintf(buf, sizeof(buf), "on.d%d.high", pin);
     }
-    if (find_user_function(buf) || findscript(buf)) {
+    if (Shell.defined(buf)) {
       doCommand(buf);
     }
   }
@@ -2302,7 +2312,7 @@ static void analogPinEventHandler(uint8_t pin, int16_t value, int8_t mode) {
   analogPinReportHQ();
 
   snprintf(buf, sizeof(buf),"on.a%d", pin);
-  if (find_user_function(buf) || findscript(buf)) {
+  if (Shell.defined(buf)) {
     snprintf(buf, sizeof(buf), "on.a%d(%d, %d)", pin, value, mode);
     doCommand(buf);
   }
@@ -2321,7 +2331,7 @@ static void batteryPercentageEventHandler(uint8_t value) {
 
   powerReportHQ();
 
-  if (find_user_function(func) || findscript(func)) {
+  if (Shell.defined(func)) {
     snprintf(buf, sizeof(buf), "%s(%d)", func, value);
     doCommand(buf);
   }
@@ -2340,7 +2350,7 @@ static void batteryChargingEventHandler(uint8_t value) {
 
   powerReportHQ();
 
-  if (find_user_function(func) || findscript(func)) {
+  if (Shell.defined(func)) {
     snprintf(buf, sizeof(buf), "%s(%d)", func, value);
     doCommand(buf);
   }
@@ -2359,7 +2369,7 @@ static void temperatureEventHandler(int8_t tempC, int8_t tempF) {
 
   tempReportHQ();
 
-  if (find_user_function(func) || findscript(func)) {
+  if (Shell.defined(func)) {
     snprintf(buf, sizeof(buf), "%s(%d, %d)", func, tempC, tempF);
     doCommand(buf);
   }
