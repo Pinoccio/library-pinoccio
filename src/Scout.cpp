@@ -280,40 +280,35 @@ bool PinoccioScout::makeDisabled(uint8_t pin) {
   return setMode(pin, DISABLED);
 }
 
-bool PinoccioScout::setMode(uint8_t pin, uint8_t mode) {
+bool PinoccioScout::setMode(uint8_t pin, int8_t mode) {
   if (isPinReserved(pin)) {
     return false;
   }
 
-  // PWM mode
-  if (mode == PWM) {
-    pinMode(pin, OUTPUT); // output still for PWM
-    updateDigitalPinState(pin, 0, PWM);
-    return true;
+  // pre-set initial values for mode change
+  int value = pinRead(pin);
+  int rawMode = mode;
+
+  if (mode < 0) {
+    value = -1;
+    rawMode = INPUT; // input-no-pullup, for lowest power draw
+  } else if (mode == PWM) {
+    value = 0;
+    rawMode = OUTPUT;
   }
-
-  // Disabled
-  if (mode == DISABLED) {
-    pinMode(pin, INPUT);  // input-no-pullup, for lowest power draw
-
-    if (isDigitalPin(pin)) {
-      updateDigitalPinState(pin, -1, DISABLED);
-    }
-
-    if (isAnalogPin(pin)) {
-      updateAnalogPinState(pin, -1, DISABLED);
-    }
-    return true;
-  }
-
-  pinMode(pin, mode);
 
   if (isDigitalPin(pin)) {
-    updateDigitalPinState(pin, pinRead(pin), mode);
+    stopDigitalStateChangeEvents();
+    pinMode(pin, rawMode);
+    updateDigitalPinState(pin, value, mode);
+    startDigitalStateChangeEvents();
   }
 
   if (isAnalogPin(pin)) {
-    updateAnalogPinState(pin, pinRead(pin), mode);
+    stopAnalogStateChangeEvents();
+    pinMode(pin, rawMode);
+    updateAnalogPinState(pin, value, mode);
+    startAnalogStateChangeEvents();
   }
 
   return true;
@@ -352,7 +347,7 @@ bool PinoccioScout::pinWrite(uint8_t pin, uint8_t value) {
   if (isPinReserved(pin) || !isOutputPin(pin)) {
     return false;
   }
-  
+
   if (Scout.isDigitalPin(pin)) {
     if (getPinMode(pin) == PWM) {
       analogWrite(pin, value);
@@ -435,7 +430,7 @@ bool PinoccioScout::updateDigitalPinState(uint8_t pin, int16_t val, int8_t mode)
     }
     digitalPinState[i] = val;
     digitalPinMode[i] = mode;
-    
+
     return true;
   }
   return false;
@@ -448,7 +443,7 @@ bool PinoccioScout::updateAnalogPinState(uint8_t pin, int16_t val, int8_t mode) 
   mode = Scout.getRegisterPinMode(i+A0);
 
   if (Scout.analogPinState[i] != val || Scout.analogPinMode[i] != mode) {
-    if (analogPinEventHandler != 0 && (analogPinMode[i] != mode || mode > 0)) {    
+    if (analogPinEventHandler != 0 && (analogPinMode[i] != mode || mode > 0)) {
       if (Scout.eventVerboseOutput) {
         Serial.print(F("Running: analogPinEventHandler("));
         Serial.print(i);
@@ -462,7 +457,7 @@ bool PinoccioScout::updateAnalogPinState(uint8_t pin, int16_t val, int8_t mode) 
     }
     Scout.analogPinState[i] = val;
     Scout.analogPinMode[i] = mode;
-    
+
     return true;
   }
   return false;
@@ -471,7 +466,12 @@ bool PinoccioScout::updateAnalogPinState(uint8_t pin, int16_t val, int8_t mode) 
 static void scoutDigitalStateChangeTimerHandler(SYS_Timer_t *timer) {
   if (Scout.digitalPinEventHandler != 0) {
     for (int i=2; i<9; i++) {
-      Scout.updateDigitalPinState(i, Scout.pinRead(i), Scout.getPinMode(i));
+      int value = Scout.pinRead(i);
+      int mode = Scout.getPinMode(i);
+      if (mode < 0) {
+        value = -1;
+      }
+      Scout.updateDigitalPinState(i, value, mode);
     }
   }
 }
@@ -479,7 +479,12 @@ static void scoutDigitalStateChangeTimerHandler(SYS_Timer_t *timer) {
 static void scoutAnalogStateChangeTimerHandler(SYS_Timer_t *timer) {
   if (Scout.analogPinEventHandler != 0) {
     for (int i=0; i<NUM_ANALOG_INPUTS; i++) {
-      Scout.updateAnalogPinState(i+A0, Scout.pinRead(i+A0), Scout.getPinMode(i+A0));
+      int value = Scout.pinRead(i+A0);
+      int mode = Scout.getPinMode(i+A0);
+      if (mode < 0) {
+        value = -1;
+      }
+      Scout.updateAnalogPinState(i+A0, value, mode);
     }
   }
 }
@@ -568,8 +573,9 @@ void PinoccioScout::doSleep(int32_t ms) {
   }
 
   // TODO: Allow ^C to stop running callbacks like this one
-  if (cmd)
+  if (cmd) {
     doCommand(cmd);
+  }
 
   free(cmd);
 }
