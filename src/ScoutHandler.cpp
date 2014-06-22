@@ -279,10 +279,15 @@ void PinoccioScoutHandler::announce(uint16_t group, const String& message) {
   // when lead scout, shortcut
   if (Scout.isLeadScout()) {
     leadAnnouncementSend(group, Scout.getAddress(), message);
+    // old:
     // Don't broadcast HQ commands over the network if we are a lead
     // scout
-    if (!group || group == 0xBEEF)
-      return;
+
+    // yes broadcast HQ commands over the network so bridge mode scouts can pick them up!
+    // you will not mesh recieve events you send yourself! otherwise this wopuld resulty in a murder death loop. 
+    //
+    //if (!group || group == 0xBEEF)
+    //  return;
   }
 
   if( hqBridgeMode && (!group || group == 0xBEEF) ){
