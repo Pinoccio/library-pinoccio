@@ -11,6 +11,9 @@
 #include <avr/sleep.h>
 #include <util/delay.h>
 
+// For calibrating the temp to real-world measurement
+#define CALIBRATION_OFFSET 7
+
 /*****************************************************************************
 *****************************************************************************/
 int8_t HAL_MeasureTemperature(void) {
@@ -35,5 +38,5 @@ int8_t HAL_MeasureTemperature(void) {
   ADCSRC = adcsrc;
   ADMUX = admux;
 
-  return ((int)((1.13 * val - 272.8)));
+  return ((int)((1.13 * val - 272.8 + CALIBRATION_OFFSET)));
 }
