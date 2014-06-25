@@ -325,6 +325,16 @@ void PinoccioShell::setup() {
     addBitlashFunction("wifi.stats", (bitlash_function) wifiStats);
   }
 
+  addBitlashFunction("servo.initialize", (bitlash_function)timer3Initialize);
+  addBitlashFunction("servo.setPeriod", (bitlash_function)timer3SetPeriod);
+  addBitlashFunction("servo.start", (bitlash_function)timer3Start);
+  addBitlashFunction("servo.stop", (bitlash_function)timer3Stop);
+  addBitlashFunction("servo.restart", (bitlash_function)timer3Restart);
+  addBitlashFunction("servo.resume", (bitlash_function)timer3Resume);
+  addBitlashFunction("servo.pwm", (bitlash_function)timer3Pwm);
+  addBitlashFunction("servo.setPwmDuty", (bitlash_function)timer3SetPwmDuty);
+  addBitlashFunction("servo.disablePwm", (bitlash_function)timer3DisablePwm); 
+
   // set up event handlers
   Scout.digitalPinEventHandler = digitalPinEventHandler;
   Scout.analogPinEventHandler = analogPinEventHandler;
@@ -2128,6 +2138,48 @@ static numvar wifiStats(void) {
   speol(Scout.wifi.apConnCount);
   sp(F("Number of connections to HQ since boot: "));
   speol(Scout.wifi.hqConnCount);
+}
+
+
+/****************************\
+ *          SERVO           *
+\****************************/
+
+
+void timer3Initialize (){
+  Timer3.initialize(getPinFromArg(1));
+}
+
+void timer3SetPeriod (){
+  Timer3.setPeriod(getPinFromArg(1));
+}
+
+void timer3Start (){
+  Timer3.start();
+}
+
+void timer3Stop (){
+  Timer3.stop();
+}
+
+void timer3Restart (){
+  Timer3.restart();
+}
+
+void timer3Resume (){
+  Timer3.resume();
+}
+
+void timer3Pwm (){
+  Timer3.pwm(getPinFromArg(1), getarg(2));
+}
+
+void timer3SetPwmDuty (){
+  Timer3.setPwmDuty(getPinFromArg(1), getarg(2));
+}
+
+void timer3DisablePwm (){
+  Timer3.disablePwm(getPinFromArg(1));
 }
 
 
