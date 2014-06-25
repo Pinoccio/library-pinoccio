@@ -140,6 +140,7 @@ static numvar wifiDisassociate(void);
 static numvar wifiCommand(void);
 static numvar wifiPing(void);
 static numvar wifiDNSLookup(void);
+static numvar wifiPrintTime(void);
 static numvar wifiGetTime(void);
 static numvar wifiSleep(void);
 static numvar wifiWakeup(void);
@@ -320,6 +321,7 @@ void PinoccioShell::setup() {
     addBitlashFunction("wifi.command", (bitlash_function) wifiCommand);
     addBitlashFunction("wifi.ping", (bitlash_function) wifiPing);
     addBitlashFunction("wifi.dnslookup", (bitlash_function) wifiDNSLookup);
+    addBitlashFunction("wifi.printtime", (bitlash_function) wifiPrintTime);
     addBitlashFunction("wifi.gettime", (bitlash_function) wifiGetTime);
     addBitlashFunction("wifi.sleep", (bitlash_function) wifiSleep);
     addBitlashFunction("wifi.wakeup", (bitlash_function) wifiWakeup);
@@ -2106,11 +2108,19 @@ static numvar wifiDNSLookup(void) {
   return 1;
 }
 
-static numvar wifiGetTime(void) {
+static numvar wifiPrintTime(void) {
   if (!Scout.wifi.printTime(Serial)) {
      speol(F("Error: Wi-Fi NTP time lookup command failed"));
   }
   return 1;
+}
+
+static numvar wifiGetTime(void) {
+  uint32_t time;
+  if (!(time = Scout.wifi.getTime())) {
+     speol(F("Error: Wi-Fi NTP time lookup command failed"));
+  }
+  return time;
 }
 
 static numvar wifiSleep(void) {

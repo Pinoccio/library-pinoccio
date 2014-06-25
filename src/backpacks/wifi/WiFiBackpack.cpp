@@ -26,6 +26,11 @@ static void print_line(const uint8_t *buf, uint16_t len, void *data) {
   speol();
 }
 
+char *timePtr;
+static void get_line(const uint8_t *buf, uint16_t len, void *data) {
+  strncpy(timePtr, (const char *)buf, len);
+}
+
 WiFiBackpack::WiFiBackpack() : client(gs) { }
 
 WiFiBackpack::~WiFiBackpack() { }
@@ -253,6 +258,20 @@ bool WiFiBackpack::wakeUp() {
 
 bool WiFiBackpack::printTime(Print &p) {
   return runDirectCommand(p, "AT+GETTIME=?");
+}
+
+// 25/6/2014,20:13:20,1403727200281
+uint32_t WiFiBackpack::getTime() {
+  char time[40];
+  const char delim[] = ",";
+  timePtr = time;
+  gs.writeCommand("%s", "AT+GETTIME=?");
+  if (!gs.readResponse(get_line, NULL) == GSCore::GS_SUCCESS) {
+    return false;
+  }
+  strtok(timePtr, delim);
+  strtok(NULL, delim);
+  return atol(strtok(NULL, delim));
 }
 
 
