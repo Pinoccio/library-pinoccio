@@ -35,6 +35,7 @@ static numvar uptimeMinutes(void);
 static numvar uptimeHours(void);
 static numvar uptimeDays(void);
 static numvar uptimeReport(void);
+static numvar getMicros(void);
 static numvar getLastResetCause(void);
 
 static numvar isBatteryCharging(void);
@@ -234,6 +235,7 @@ void PinoccioShell::setup() {
   addBitlashFunction("uptime.hours", (bitlash_function) uptimeHours);
   addBitlashFunction("uptime.days", (bitlash_function) uptimeDays);
   addBitlashFunction("uptime.report", (bitlash_function) uptimeReport);
+  addBitlashFunction("uptime.micros", (bitlash_function) getMicros);
   addBitlashFunction("uptime.getlastreset", (bitlash_function) getLastResetCause);
 
   addBitlashFunction("led.on", (bitlash_function) ledTorch); // alias
@@ -579,12 +581,14 @@ static numvar uptimeReport(void) {
 
 static numvar uptimeMillisAwake(void) {
   return Scout.getCpuTime();
-  return true;
 }
 
 static numvar uptimeMillisSleep(void) {
   return Scout.getSleepTime();
-  return true;
+}
+
+static numvar getMicros(void) {
+  return micros();
 }
 
 /****************************\
