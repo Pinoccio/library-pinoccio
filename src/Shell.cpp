@@ -55,6 +55,7 @@ static numvar ledGreen(void);
 static numvar ledBlue(void);
 static numvar ledCyan(void);
 static numvar ledPurple(void);
+static numvar ledBeccaPurple(void);
 static numvar ledMagenta(void);
 static numvar ledYellow(void);
 static numvar ledOrange(void);
@@ -245,6 +246,7 @@ void PinoccioShell::setup() {
   addBitlashFunction("led.blue", (bitlash_function) ledBlue);
   addBitlashFunction("led.cyan", (bitlash_function) ledCyan);
   addBitlashFunction("led.purple", (bitlash_function) ledPurple);
+  addBitlashFunction("led.beccapurple", (bitlash_function) ledBeccaPurple);
   addBitlashFunction("led.magenta", (bitlash_function) ledMagenta);
   addBitlashFunction("led.yellow", (bitlash_function) ledYellow);
   addBitlashFunction("led.orange", (bitlash_function) ledOrange);
@@ -816,6 +818,17 @@ static numvar ledPurple(void) {
     Led.blinkPurple(getarg(1));
   } else {
     Led.purple();
+  }
+  return 1;
+}
+
+static numvar ledBeccaPurple(void) {
+  if (getarg(0) == 2) {
+    Led.blinkBeccaPurple(getarg(1), getarg(2));
+  } else if (getarg(0) == 1) {
+    Led.blinkBeccaPurple(getarg(1));
+  } else {
+    Led.beccapurple();
   }
   return 1;
 }

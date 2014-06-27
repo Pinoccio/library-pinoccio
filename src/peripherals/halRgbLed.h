@@ -26,6 +26,7 @@ class HalRgbLed {
     void blue();
     void cyan();
     void purple();
+	void beccapurple();
     void magenta();
     void yellow();
     void orange();
@@ -36,6 +37,7 @@ class HalRgbLed {
     void blinkBlue(unsigned int ms=500, bool continuous=false);
     void blinkCyan(unsigned int ms=500, bool continuous=false);
     void blinkPurple(unsigned int ms=500, bool continuous=false);
+    void blinkBeccaPurple(unsigned int ms=500, bool continuous=false);
     void blinkMagenta(unsigned int ms=500, bool continuous=false);
     void blinkYellow(unsigned int ms=500, bool continuous=false);
     void blinkOrange(unsigned int ms=500, bool continuous=false);
