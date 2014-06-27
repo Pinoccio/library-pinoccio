@@ -14,12 +14,14 @@
 
 char *keytable[KEY_MAX];
 char keytableTmp[KEY_MAX];
+unsigned char keyRef[KEY_MAX];
 unsigned long keytableLast = 0;
 
 void keyInit() {
   memset(keytable, 0, sizeof(keytable));
   memset(keytableTmp, 0, sizeof(keytableTmp));
-  keyMap("OVERFLOW", 0); // becomes 0, error
+  memset(keyRef, 0, sizeof(keyRef));
+  keyMapRO("OVERFLOW", 0); // becomes 0, error
   keyLoad(KEYS_BUNDLE, 0, 0);
 }
 
@@ -42,6 +44,15 @@ int keyLoop(unsigned long now) {
   return 1;
 }
 
+int keyMapRO(const char *key, unsigned long at) {
+  int i;
+  if (strlen(key) > KEY_LEN) {
+    return 0;
+  }
+  keyRef[i] = 0xFF;
+  return keyMap(key, at);
+}
+
 int keyMap(const char *key, unsigned long at) {
   int i;
   if (strlen(key) > KEY_LEN) {
@@ -55,6 +66,12 @@ int keyMap(const char *key, unsigned long at) {
     if (!at) {
       keytableTmp[i] = 0; // always make sticky if not tmp
     }
+    // 0xFF mean "never free"
+    if(keyRef[i] != 0xFF)
+    {
+      // reusing the same key, so just inc the reference count
+      keyRef[i]++;
+    }
     return i;
   }
 
@@ -65,6 +82,7 @@ int keyMap(const char *key, unsigned long at) {
 
   // save new key
   keytable[i] = strdup(key);
+  keyRef[i] = 1;    // initialize the keyRef
   if (at) {
     keytableLast = at;
     keytableTmp[i] = 1;
@@ -83,9 +101,22 @@ void keyFree(int i) {
   if (i < 1 || i >= KEY_MAX) {
     return;
   }
-  free(keytable[i]);
-  keytableTmp[i] = 0;
-  keytable[i] = 0;
+  // don't free if ref is 0xFF
+  if(keyRef == 0xFF)
+  {
+    return;
+  }
+  if(keyRef[i] == 1 || keyRef[i] == 0)
+  {
+    free(keytable[i]);
+    keytableTmp[i] = 0;
+    keytable[i] = 0;
+    keyRef[i] = 0;
+  }
+  else
+  {
+    keyRef[i]--;
+  }
 }
 
 // loads json array of strings, outs is optional
@@ -106,7 +137,7 @@ void keyLoad(const char *array, int *outs, unsigned long at) {
   j0g(array, index, strlen(array));
 
   for (i=0; index[i]; i+=2) {
-    int k = keyMap(j0g_safe(i, array, index), at);
+    int k = keyMapRO(j0g_safe(i, array, index), at);
     if (outs) {
       outs[oi++] = k;
     }
