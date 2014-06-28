@@ -100,7 +100,7 @@ public:
   static bool detect();
 
   static void setup();
-  static void loop() {}
+  static void loop();
 
   /**
    * See if a backpack with the given model identifier is present.
