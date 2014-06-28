@@ -610,7 +610,7 @@ static numvar keyMap(void) {
   if (isstringarg(1)) {
     return keyMap((char*)getstringarg(1), at);
   }
-  snprintf(num, 8, "%lu", getarg(1));
+  snprintf(num, 8, "%ld", getarg(1));
   return keyMap(num, at);
 }
 
