@@ -23,6 +23,8 @@ class PinoccioScoutHandler {
     void loop();
     void announce(uint16_t group, const String& message);
     void setVerbose(bool flag);
+    void setBridgeMode(bool flag);
+    bool sendCommand(char *command, int to, int id);
     StringBuffer report(const String& report);
 
   protected:

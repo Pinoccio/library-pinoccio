@@ -27,6 +27,7 @@ extern "C" {
                 (type *)( (char *)__mptr - offsetof(type,member) );})
 
 static bool hqVerboseOutput;
+static bool hqBridgeMode;
 
 static StringBuffer fieldCommand(0, 16);
 static int fieldAnswerTo = 0;
@@ -77,6 +78,9 @@ static void leadIncoming(const char *packet, size_t len, unsigned short *index);
 // mesh callback when sending command chunks
 static void leadCommandChunkConfirm(NWK_DataReq_t *req);
 
+// called to send a command to another scout. calls leadCommandChunk
+static bool leadCommandSend(char *command, int to, int id);
+
 // called to send the first/next chunk of a command to another scout
 static void leadCommandChunk();
 
@@ -119,9 +123,26 @@ void PinoccioScoutHandler::loop() {
   }
 }
 
+void PinoccioScoutHandler::setBridgeMode(bool flag) {
+
+  hqBridgeMode = flag;
+  if(!Scout.isLeadScout()) {
+    Scout.meshListen(3, leadAnswers);
+  } else if(flag) {
+    Scout.wifi.disassociate();
+  } else {
+    Scout.wifi.autoConnectHq();
+  }
+}
+
 void PinoccioScoutHandler::setVerbose(bool flag) {
   hqVerboseOutput = flag;
 }
+
+bool PinoccioScoutHandler::sendCommand(char *command, int to, int id) {
+  return leadCommandSend(command, to, id);
+}
+
 
 static bool fieldCommands(NWK_DataInd_t *ind) {
   int ret;
@@ -254,13 +275,30 @@ static void announceConfirm(NWK_DataReq_t *req) {
 }
 
 void PinoccioScoutHandler::announce(uint16_t group, const String& message) {
+
   // when lead scout, shortcut
   if (Scout.isLeadScout()) {
     leadAnnouncementSend(group, Scout.getAddress(), message);
+    // old:
     // Don't broadcast HQ commands over the network if we are a lead
     // scout
-    if (!group || group == 0xBEEF)
-      return;
+
+    // yes broadcast HQ commands over the network so bridge mode scouts can pick them up!
+    // you will not mesh recieve events you send yourself! otherwise this wopuld resulty in a murder death loop. 
+    //
+    //if (!group || group == 0xBEEF)
+    //  return;
+  }
+
+  if( hqBridgeMode && (!group || group == 0xBEEF) ){
+
+    Serial.print(F("[hq-bridge] {\"dest\":"));
+    Serial.print(group);
+    Serial.print(F(",\"src\":"));
+    Serial.print(Scout.getAddress());
+    Serial.print(F(",\"data\":"));
+    Serial.print(message);
+    Serial.println(F("}"));
   }
 
   if (hqVerboseOutput) {
@@ -319,10 +357,19 @@ static bool fieldAnnouncements(NWK_DataInd_t *ind) {
     Serial.print(F("multicast in "));
     Serial.println(ind->dstAddr);
   }
+
   if (Scout.isLeadScout()) {
     leadAnnouncementSend(ind->dstAddr, ind->srcAddr, ConstBuf(data, ind->size-1)); // no null
-  }
-  if (!ind->dstAddr || ind->dstAddr == 0xBEEF || strlen(data) < 3 || data[0] != '[') {
+  } else if (!ind->dstAddr || ind->dstAddr == 0xBEEF || strlen(data) < 3 || data[0] != '[') {
+    if ( hqBridgeMode ) {
+      Serial.print(F("[hq-bridge] {\"dest\":"));
+      Serial.print(ind->dstAddr);
+      Serial.print(F(",\"src\":"));
+      Serial.print(ind->srcAddr);
+      Serial.print(F(",\"data\":"));
+      Serial.print(data);
+      Serial.println(F("}"));
+    }
     return false;
   }
 
@@ -537,24 +584,35 @@ void leadIncoming(const char *packet, size_t len, unsigned short *index) {
       return;
     }
 
-    // we can only send one command at a time
-    if (leadCommandTo) {
-      // TODO we could stop reading the HQ socket in this mode and then never get a busy?
-      free(buffer);
-      return leadCommandError(to,id,"busy");
-    }
+    leadCommandSend(command, to, id);
 
-    // send over mesh to recipient and cache id for any replies
-    leadAnswerID = id;
-    leadCommandTo = to;
-    leadCommandChunks = command;
-    leadCommandChunksAt = 0;
-    leadCommandRetries = 0;
-    leadCommandChunk();
   }
 
   free(buffer);
 }
+
+// moved so i can call it from bitlash.
+static bool leadCommandSend(char *command, int to, int id){
+
+  // we can only send one command at a time
+  // todo buffer commands.
+  if (leadCommandTo) {
+    // TODO we could stop reading the HQ socket in this mode and then never get a busy?
+    leadCommandError(to,id,"busy");
+    return false;
+  }
+
+  // send over mesh to recipient and cache id for any replies
+  leadAnswerID = id;
+  leadCommandTo = to;
+  leadCommandChunks = command;
+  leadCommandChunksAt = 0;
+  leadCommandRetries = 0;
+  leadCommandChunk();
+  return true;
+}
+
+
 
 // mesh callback when sending command chunks
 static void leadCommandChunkConfirm(NWK_DataReq_t *req) {
@@ -618,6 +676,21 @@ static void leadCommandChunk() {
 
 // wrapper to send a chunk of JSON to the HQ
 void leadSignal(const String &json) {
+  if ( hqBridgeMode ){
+    if (hqVerboseOutput) {
+      Serial.println(F("scout is in bridge mode sending reply."));
+    }
+
+    Serial.print(F("[hq-bridge] "));
+    Serial.println(json);
+    return;
+  }
+
+  // because this is used by bridge and lead i have to check this again here.
+  if(!Scout.isLeadScout()) {
+    return;
+  }
+
   if (!Scout.wifi.client.connected()) {
     if (hqVerboseOutput) {
       Serial.println(F("HQ offline, can't signal"));
@@ -635,6 +708,7 @@ void leadSignal(const String &json) {
 }
 
 // called whenever another scout sends an answer back to us
+
 bool leadAnswers(NWK_DataInd_t *ind) {
   bool end = false;
   StringBuffer buf(256);

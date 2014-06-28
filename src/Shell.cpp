@@ -124,6 +124,8 @@ static numvar otaBoot(void);
 static numvar hqVerbose(void);
 static numvar hqPrint(void);
 static numvar hqReport(void);
+static numvar hqBridge(void);
+static numvar hqBridgeCommand(void);
 
 static numvar startStateChangeEvents(void);
 static numvar stopStateChangeEvents(void);
@@ -298,6 +300,8 @@ void PinoccioShell::setup() {
   addBitlashFunction("hq.verbose", (bitlash_function) hqVerbose);
   addBitlashFunction("hq.print", (bitlash_function) hqPrint);
   addBitlashFunction("hq.report", (bitlash_function) hqReport);
+  addBitlashFunction("hq.bridge", (bitlash_function) hqBridge);
+  addBitlashFunction("hq.bridge.command", (bitlash_function) hqBridgeCommand);
 
   addBitlashFunction("events.start", (bitlash_function) startStateChangeEvents);
   addBitlashFunction("events.stop", (bitlash_function) stopStateChangeEvents);
@@ -361,6 +365,7 @@ bool PinoccioShell::defined(char *cmd)
 }
 
 static bool isMeshVerbose;
+static bool isBridgeMode;
 static int lastMeshRssi = 0;
 static int lastMeshLqi = 0;
 
@@ -1956,6 +1961,29 @@ static numvar hqReport(void) {
   speol(Scout.handler.report(report));
   return true;
 }
+
+static numvar hqBridge(void){
+  Scout.handler.setBridgeMode(getarg(1));
+  isBridgeMode = getarg(1);
+  if (isBridgeMode) {
+    speol("on");
+  } else {
+    speol("off");
+  }
+  return 1;
+}
+
+static numvar hqBridgeCommand(void){
+  if (!checkArgs(3, F("usage: hq.bridge.command(\"command\", scout id, reply id)"))) {
+    return 0;
+  }
+
+  Scout.handler.sendCommand((char *)getstringarg(1), getarg(2), getarg(3));
+  return 1;
+}
+
+
+
 
 
 /****************************\
