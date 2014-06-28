@@ -44,9 +44,6 @@ int keyLoop(unsigned long now) {
 
 int keyMap(const char *key, unsigned long at) {
   int i;
-  if (strlen(key) > KEY_LEN) {
-    return 0;
-  }
 
   for (i=0; keytable[i] && i<KEY_MAX; i++) {
     if (strcmp(keytable[i],key) != 0) {

@@ -10,7 +10,6 @@
 #define _key_h_
 
 #define KEY_MAX 64
-#define KEY_LEN 10
 
 void keyInit();
 
