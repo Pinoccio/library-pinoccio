@@ -84,7 +84,8 @@ void PinoccioScout::loop() {
   handler.loop();
 
   if (isLeadScout()) {
-    wifi.loop();
+    // fix after #146 is merged
+//    wifi.loop();
   }
 
   if (sleepPending) {
@@ -157,7 +158,7 @@ bool PinoccioScout::isBackpackVccEnabled() {
 
 bool PinoccioScout::isLeadScout() {
   // Check for attached wifi backpack (model id 0x0001)
-  return Backpacks::isModelPresent(0x0001);
+  return handler.isBridged || Backpacks::isModelPresent(0x0001);
 }
 
 bool PinoccioScout::factoryReset() {
