@@ -11,7 +11,9 @@
 
 #include <Pinoccio.h>
 #include "../Backpack.h"
+#include "../../hq/HqHandler.h"
 #include <GS.h>
+#include <telehash.h>
 
 class WiFiBackpack : public Backpack {
 
@@ -22,6 +24,9 @@ class WiFiBackpack : public Backpack {
     bool setup();
     bool init();
     void loop();
+    
+    // tries to send packet if network is available
+    void sendPacket(packet_t p);
 
     // Does not take effect until autoConnectHq() is called
     bool wifiConfig(const char *ssid, const char *passphrase);
@@ -30,8 +35,8 @@ class WiFiBackpack : public Backpack {
     // Takes effect immediately
     bool wifiStatic(IPAddress ip, IPAddress netmask, IPAddress gw, IPAddress dns);
 
-    // (Re-)connects the wifi and HQ connection
-    bool autoConnectHq();
+    // (Re-)connects the wifi
+    bool associate();
     void disassociate();
 
     bool printAPs(Print& p);
@@ -41,7 +46,7 @@ class WiFiBackpack : public Backpack {
     void printFirmwareVersions(Print& p);
 
     bool isAPConnected();
-    bool isHQConnected();
+    bool isAvailable();
 
     bool dnsLookup(Print &p, const char *host);
     bool ping(Print &p, const char *host);
@@ -51,15 +56,15 @@ class WiFiBackpack : public Backpack {
 
     bool goToSleep();
     bool wakeUp();
-
-    GSTcpClient client;
     
     uint16_t apConnCount;
-    uint16_t hqConnCount;
+    bool available;
     
     GSModule gs;
     
   protected:
+
+    GSUdpServer server;
 
     // Event handlers
     static void onAssociate(void *data);

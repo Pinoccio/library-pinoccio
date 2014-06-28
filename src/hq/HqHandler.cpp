@@ -6,25 +6,27 @@
 *  This program is free software; you can redistribute it and/or modify it *
 *  under the terms of the BSD License as described in license.txt.         *
 \**************************************************************************/
-#include <Arduino.h>
-#include <ScoutHandler.h>
+#include "HqHandler.h"
+#include <avr/pgmspace.h>
 #include <Shell.h>
 #include <Scout.h>
-#include "backpack-bus/PBBP.h"
-#include "backpacks/wifi/WiFiBackpack.h"
-#include "util/StringBuffer.h"
-#include "util/String.h"
-#include "util/PrintToString.h"
+#include "../backpack-bus/PBBP.h"
+#include "../backpacks/wifi/WiFiBackpack.h"
+#include "../util/String.h"
+#include "../util/PrintToString.h"
 extern "C" {
 #include <js0n.h>
 #include <j0g.h>
-#include "key/key.h"
+#include "../key/key.h"
 #include "lwm/sys/sysTimer.h"
 }
 
-#define container_of(ptr, type, member) ({ \
-                const typeof( ((type *)0)->member ) *__mptr = (ptr); \
-                (type *)( (char *)__mptr - offsetof(type,member) );})
+// created using:
+// json2c.js: console.log("{'"+JSON.stringify(require(require("path").resolve(process.argv[2]))).split("").join("','")+"'};");
+// node json2c.js seeds.json 
+
+static const char seeds_json[] PROGMEM = {'{','"','d','c','a','5','4','9','c','9','8','b','9','4','1','9','7','e','7','9','d','f','a','2','a','7','e','4','a','d','2','e','7','4','f','b','1','4','4','c','d','a','3','f','4','7','1','0','d','4','f','4','0','e','2','c','7','5','d','9','7','5','2','7','2','e','"',':','{','"','p','a','t','h','s','"',':','[','{','"','t','y','p','e','"',':','"','h','t','t','p','"',',','"','h','t','t','p','"',':','"','h','t','t','p',':','/','/','1','9','2','.','1','6','8','.','0','.','3','6',':','4','2','4','2','4','"','}',',','{','"','t','y','p','e','"',':','"','i','p','v','4','"',',','"','i','p','"',':','"','1','2','7','.','0','.','0','.','1','"',',','"','p','o','r','t','"',':','4','2','4','2','4','}',',','{','"','t','y','p','e','"',':','"','i','p','v','6','"',',','"','i','p','"',':','"','f','e','8','0',':',':','b','a','e','8',':','5','6','f','f',':','f','e','4','3',':','3','d','e','4','"',',','"','p','o','r','t','"',':','4','2','4','2','4','}',']',',','"','p','a','r','t','s','"',':','{','"','3','a','"',':','"','f','0','d','2','b','f','c','8','5','9','0','a','7','e','0','0','1','6','c','e','8','5','d','b','f','0','f','8','f','1','8','8','3','f','b','4','f','3','d','c','c','4','7','0','1','e','a','b','1','2','e','f','8','3','f','9','7','2','a','2','b','8','7','f','"',',','"','2','a','"',':','"','0','c','b','4','f','6','1','3','7','a','7','4','5','f','1','a','f','2','d','3','1','7','0','7','5','5','0','c','0','3','b','9','9','0','8','3','1','8','0','f','6','e','6','9','e','c','3','7','9','1','8','c','2','2','0','e','c','f','a','2','9','7','2','f','"',',','"','1','a','"',':','"','b','5','a','9','6','d','2','5','8','0','2','b','3','6','0','0','e','a','9','9','7','7','4','1','3','8','a','6','5','0','d','5','d','1','f','a','1','f','3','c','f','3','c','b','1','0','a','e','8','f','1','c','5','8','a','5','2','7','d','8','5','0','8','6','"','}',',','"','k','e','y','s','"',':','{','"','3','a','"',':','"','M','C','5','d','f','S','f','r','A','V','C','S','u','g','X','7','5','J','b','g','V','W','t','v','C','b','x','P','q','w','L','D','U','k','c','9','T','c','S','/','q','x','E','=','"',',','"','2','a','"',':','"','M','I','I','B','I','j','A','N','B','g','k','q','h','k','i','G','9','w','0','B','A','Q','E','F','A','A','O','C','A','Q','8','A','M','I','I','B','C','g','K','C','A','Q','E','A','q','r','1','2','t','X','n','p','n','7','0','7','l','l','k','Z','f','E','c','s','p','B','/','D','6','K','T','c','Z','M','7','6','5','+','S','n','I','5','Z','8','J','W','k','j','c','0','M','r','z','9','q','Z','B','B','2','Y','F','L','r','2','N','m','g','C','x','0','o','L','f','S','e','t','m','u','H','B','N','T','T','5','4','s','I','A','x','Q','/','v','x','y','y','k','c','M','N','G','s','S','F','g','4','W','K','h','b','s','Q','X','S','r','X','4','q','C','h','b','h','p','I','q','M','J','k','K','a','4','m','Y','Z','I','b','6','q','O','N','A','7','6','G','5','/','4','3','1','u','4','+','1','s','B','R','v','f','Y','0','e','w','H','C','h','q','G','h','0','o','T','h','c','a','a','5','0','n','T','6','8','f','8','o','h','I','s','1','i','U','F','m','+','S','L','8','L','9','U','L','/','o','K','N','3','Y','g','6','d','r','B','Y','w','p','J','i','2','E','x','5','I','d','y','u','4','Y','Q','J','w','Z','9','s','A','Q','U','4','9','P','f','s','+','L','q','h','k','H','O','a','s','c','T','m','a','a','3','+','k','T','y','T','n','p','2','i','J','9','w','E','u','P','g','+','A','R','3','P','J','w','x','X','n','w','Y','o','W','b','H','+','W','r','8','g','Y','6','i','L','e','0','F','Q','e','8','j','X','k','6','e','L','w','9','m','q','O','h','U','c','a','h','8','3','3','8','M','C','8','3','z','S','Q','c','Z','r','i','G','V','M','q','8','q','a','Q','z','0','L','9','n','w','I','D','A','Q','A','B','"',',','"','1','a','"',':','"','z','6','y','C','A','C','7','r','5','X','I','r','6','C','4','x','d','x','e','X','7','R','l','S','m','G','u','9','X','e','7','3','L','1','g','v','8','q','e','c','m','4','/','U','E','Z','A','K','R','5','i','C','x','A','=','=','"','}','}','}'};
+
 
 static bool hqVerboseOutput;
 
@@ -87,39 +89,51 @@ static void leadSignal(const String& json);
 static bool leadAnswers(NWK_DataInd_t *ind);
 
 
-PinoccioScoutHandler::PinoccioScoutHandler() { }
+HqHandler::HqHandler() { }
 
-PinoccioScoutHandler::~PinoccioScoutHandler() { }
+HqHandler::~HqHandler() { }
 
-void PinoccioScoutHandler::setup() {
-  if (Scout.isLeadScout()) {
-    Scout.wifi.setup();
-    Scout.wifi.autoConnectHq();
+void HqHandler::setup() {
 
-    Scout.meshListen(3, leadAnswers);
-    Scout.meshJoinGroup(0xBEEF); // our internal reporting channel
-    Scout.meshJoinGroup(0); // reports to HQ
-  } else {
-    Scout.meshListen(2, fieldCommands);
-  }
+  Scout.meshListen(2, fieldCommands);
+  Scout.meshListen(3, leadAnswers);
+  Scout.meshListen(4, fieldAnnouncements);
+
+  Scout.meshJoinGroup(0xBEEF); // our internal reporting channel
+  Scout.meshJoinGroup(0); // reports to HQ
 
   // join a set of groups to listen for announcements
   for (int i = 1; i < 10; i++) {
     Scout.meshJoinGroup(i);
   }
-
-  Scout.meshListen(4, fieldAnnouncements);
   
   memset(announceQ,0,announceQsize*sizeof(char*));
+
 }
 
-void PinoccioScoutHandler::loop() {
-  if (Scout.isLeadScout()) {
-    leadHQHandle();
-  }
+bool HqHandler::connected() {
+  return false;
 }
 
-void PinoccioScoutHandler::setVerbose(bool flag) {
+bool HqHandler::available() {
+  return false;
+}
+
+void HqHandler::loop() {
+  leadHQHandle();
+}
+
+bool HqHandler::isBridge() {
+  return false;
+}
+
+void HqHandler::up(UDP *out) {
+  uout = out;
+  Serial.println("HQ network up");
+  // TODO send flush/ping packets now
+}
+
+void HqHandler::setVerbose(bool flag) {
   hqVerboseOutput = flag;
 }
 
@@ -253,7 +267,7 @@ static void announceConfirm(NWK_DataReq_t *req) {
   announceQSend();
 }
 
-void PinoccioScoutHandler::announce(uint16_t group, const String& message) {
+void HqHandler::announce(uint16_t group, const String& message) {
   // when lead scout, shortcut
   if (Scout.isLeadScout()) {
     leadAnnouncementSend(group, Scout.getAddress(), message);
@@ -414,8 +428,8 @@ static void leadAnnouncementSend(uint16_t group, uint16_t from, const ConstBuf& 
 }
 
 // [3,[0,1,2],[v,v,v]]
-StringBuffer PinoccioScoutHandler::report(const String &report) {
-  Scout.handler.announce(0xBEEF, report);
+StringBuffer HqHandler::report(const String &report) {
+  Scout.hq.announce(0xBEEF, report);
   return report2json(report);
 }
 
@@ -424,7 +438,7 @@ StringBuffer PinoccioScoutHandler::report(const String &report) {
 
 void leadHQConnect() {
 
-  if (Scout.wifi.client.connected()) {
+  if (Scout.hq.connected()) {
     char token[33];
     StringBuffer auth(64);
     token[32] = 0;
@@ -445,10 +459,11 @@ void leadHQHandle(void) {
   unsigned short index[32]; // <10 keypairs in the incoming json
 
   // only continue if new data to read
-  if (!Scout.wifi.client.available()) {
+  if (!Scout.hq.available()) {
     return;
   }
 
+  /*
   // Read a block of data and look for packets
   while ((rsize = hqIncoming.readClient(Scout.wifi.client, 128))) {
     int nl;
@@ -472,6 +487,7 @@ void leadHQHandle(void) {
       hqIncoming.remove(0, nl + 1);
     }
   }
+  */
 }
 
 // when we can't process a command for some internal reason
@@ -618,7 +634,7 @@ static void leadCommandChunk() {
 
 // wrapper to send a chunk of JSON to the HQ
 void leadSignal(const String &json) {
-  if (!Scout.wifi.client.connected()) {
+  if (!Scout.hq.connected()) {
     if (hqVerboseOutput) {
       Serial.println(F("HQ offline, can't signal"));
       Serial.println(json);
@@ -630,8 +646,8 @@ void leadSignal(const String &json) {
     Serial.println(json);
   }
 
-  Scout.wifi.client.print(json);
-  Scout.wifi.client.flush();
+//  Scout.wifi.client.print(json);
+//  Scout.wifi.client.flush();
 }
 
 // called whenever another scout sends an answer back to us

@@ -11,6 +11,10 @@
 
 #include <stddef.h>
 #include <stdint.h>
+#include <telehash.h>
+#include <Arduino.h>
+#include <UDP.h>
+#include "../util/StringBuffer.h"
 
 /**
  * This class handles direct connections to the HQ server (e.g., through
@@ -18,21 +22,32 @@
  */
 class HqHandler {
 public:
+  HqHandler();
+  ~HqHandler();
 
-  // TODO: Move more code into here.
+  void setup();
+  void loop();
 
-  /////////////////////////////////////////
-  // These are defined in HQInfo.cpp
-  /////////////////////////////////////////
+  void announce(uint16_t group, const String& message);
+  void setVerbose(bool flag);
+  StringBuffer report(const String& report);
 
-  /** Hostname of the hq server */
-  static const char host[];
-  /** Port of the hq server */
-  static const uint16_t port;
-  /** The CA certificate for the hq server. */
-  static const uint8_t cacert[];
-  /** The length of cacert. Is 0 when TLS should not be used. */
-  static const size_t cacert_len;
+  // is the lead scout bridging to the internet
+  bool isBridge();
+  
+  // process any incoming packet
+  void recvPacket(packet_t p);
+  
+  // called when any UDP interface is available
+  void up(UDP *out);
+  
+  bool connected();
+  bool available();
+  
+  uint16_t connCount;
+  
+private:
+  UDP *uout;
 };
 
 #endif // LIB_PINOCCIO_HQHANDLER_H_
