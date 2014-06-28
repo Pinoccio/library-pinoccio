@@ -437,10 +437,7 @@ bool PinoccioScout::updateDigitalPinState(uint8_t pin, int16_t val, int8_t mode)
 }
 
 bool PinoccioScout::updateAnalogPinState(uint8_t pin, int16_t val, int8_t mode) {
-  uint8_t i = pin;
-
-  val = Scout.pinRead(i+A0); // explicit digital pins until we can update core
-  mode = Scout.getRegisterPinMode(i+A0);
+  uint8_t i = pin-A0;
 
   if (Scout.analogPinState[i] != val || Scout.analogPinMode[i] != mode) {
     if (analogPinEventHandler != 0 && (analogPinMode[i] != mode || mode > 0)) {
