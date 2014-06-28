@@ -66,13 +66,13 @@ void PinoccioScout::setup(const char *sketchName, const char *sketchRevision, in
   Backpacks::setup();
 
   saveState();
-  handler.setup();
 
   startDigitalStateChangeEvents();
   startAnalogStateChangeEvents();
   startPeripheralStateChangeEvents();
 
   Shell.setup();
+  hq.setup();
 }
 
 void PinoccioScout::loop() {
@@ -81,11 +81,8 @@ void PinoccioScout::loop() {
 
   PinoccioClass::loop();
   Shell.loop();
-  handler.loop();
-
-  if (isLeadScout()) {
-    wifi.loop();
-  }
+  Backpacks::loop();
+  hq.loop();
 
   if (sleepPending) {
     canSleep = canSleep && !NWK_Busy();
@@ -156,8 +153,7 @@ bool PinoccioScout::isBackpackVccEnabled() {
 }
 
 bool PinoccioScout::isLeadScout() {
-  // Check for attached wifi backpack (model id 0x0001)
-  return Backpacks::isModelPresent(0x0001);
+  return wifi.isAvailable();
 }
 
 bool PinoccioScout::factoryReset() {

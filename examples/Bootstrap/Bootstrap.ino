@@ -13,7 +13,6 @@
 #include <bitlash.h>
 #include <lwm.h>
 #include <js0n.h>
-
 #include "version.h"
 
 void setup() {

@@ -339,8 +339,6 @@ void PinoccioShell::setup() {
 
   if (isShellEnabled) {
     startShell();
-  } else {
-    Serial.begin(115200);
   }
 
   Scout.meshListen(1, receiveMessage);
@@ -440,7 +438,7 @@ static numvar allReport(void) {
 }
 
 static numvar allVerbose(void) {
-  Scout.handler.setVerbose(getarg(1));
+  Scout.hq.setVerbose(getarg(1));
   isMeshVerbose = getarg(1);
   Scout.eventVerboseOutput = getarg(1);
   return 1;
@@ -501,7 +499,7 @@ static StringBuffer tempReportHQ(void) {
           keyMap("f", 0),
           Scout.getTemperatureC(),
           Scout.getTemperatureF());
-  return Scout.handler.report(report);
+  return Scout.hq.report(report);
 }
 
 static numvar temperatureReport(void) {
@@ -553,7 +551,7 @@ static StringBuffer uptimeReportHQ(void) {
 
   report.appendJsonString(reset, true);
   report += "]]";
-  return Scout.handler.report(report);
+  return Scout.hq.report(report);
 }
 
 static numvar uptimeMillis(void) {
@@ -721,7 +719,7 @@ static StringBuffer powerReportHQ(void) {
           (int)Scout.getBatteryVoltage(),
           Scout.isBatteryCharging()?"true":"false",
           Scout.isBackpackVccEnabled()?"true":"false");
-  return Scout.handler.report(report);
+  return Scout.hq.report(report);
 }
 
 static numvar powerReport(void) {
@@ -745,7 +743,7 @@ static StringBuffer ledReportHQ(void) {
           Led.getRedTorchValue(),
           Led.getGreenTorchValue(),
           Led.getBlueTorchValue());
-  return Scout.handler.report(report);
+  return Scout.hq.report(report);
 }
 
 static numvar ledBlink(void) {
@@ -1091,7 +1089,7 @@ static StringBuffer meshReportHQ(void) {
   }
   report += "\"]]";
 
-  return Scout.handler.report(report);
+  return Scout.hq.report(report);
 }
 
 static numvar meshReport(void) {
@@ -1139,7 +1137,7 @@ static numvar messageGroup(void) {
   if (!checkArgs(1, 99, F("usage: message.group(groupId, \"message\")"))) {
     return 0;
   }
-  Scout.handler.announce(getarg(1), arg2array(1));
+  Scout.hq.announce(getarg(1), arg2array(1));
   return 1;
 }
 
@@ -1167,7 +1165,7 @@ static StringBuffer digitalPinReportHQ(void) {
           Scout.digitalPinState[4],
           Scout.digitalPinState[5],
           Scout.digitalPinState[6]);
-  return Scout.handler.report(report);
+  return Scout.hq.report(report);
 }
 
 static StringBuffer analogPinReportHQ(void) {
@@ -1192,7 +1190,7 @@ static StringBuffer analogPinReportHQ(void) {
           Scout.analogPinState[5],
           Scout.analogPinState[6],
           Scout.analogPinState[7]);
-  return Scout.handler.report(report);
+  return Scout.hq.report(report);
 }
 
 static numvar pinConstHigh(void) {
@@ -1467,7 +1465,7 @@ static StringBuffer backpackReportHQ(void) {
   }
   */
   report += "]]]";
-  return Scout.handler.report(report);
+  return Scout.hq.report(report);
 }
 
 static numvar backpackReport(void) {
@@ -1777,7 +1775,7 @@ static StringBuffer scoutReportHQ(void) {
           Scout.getSketchName(),
           Scout.getSketchBuild(),
           Scout.getSketchRevision());
-  return Scout.handler.report(report);
+  return Scout.hq.report(report);
 }
 
 static numvar scoutReport(void) {
@@ -1855,7 +1853,7 @@ static numvar memoryReport(void) {
           getMemoryUsed(),
           freeMem,
           getLargestAvailableMemoryBlock());
-  speol(Scout.handler.report(report));
+  speol(Scout.hq.report(report));
   return freeMem;
 }
 
@@ -1871,7 +1869,7 @@ static numvar daisyWipe(void) {
 
   char report[32];
   snprintf(report, sizeof(report),"[%d,[%d],[\"bye\"]]",keyMap("daisy",0),keyMap("dave",0));
-  Scout.handler.report(report);
+  Scout.hq.report(report);
 
   if (Scout.isLeadScout()) {
     if (!Scout.wifi.runDirectCommand(Serial, "AT&F")) {
@@ -1918,7 +1916,7 @@ static numvar otaBoot(void) {
 \****************************/
 
 static numvar hqVerbose(void) {
-  Scout.handler.setVerbose(getarg(1));
+  Scout.hq.setVerbose(getarg(1));
   return 1;
 }
 
@@ -1926,7 +1924,7 @@ static numvar hqPrint(void) {
   if (!checkArgs(1, F("usage: hq.print(\"string\""))) {
     return 0;
   }
-  Scout.handler.announce(0, arg2array(0));
+  Scout.hq.announce(0, arg2array(0));
   return true;
 }
 
@@ -1953,7 +1951,7 @@ static numvar hqReport(void) {
           name,
           args);
   free(args);
-  speol(Scout.handler.report(report));
+  speol(Scout.hq.report(report));
   return true;
 }
 
@@ -1998,8 +1996,8 @@ static StringBuffer wifiReportHQ(void) {
           keyMap("connected", 0),
           keyMap("hq", 0),
           Scout.wifi.isAPConnected() ? "true" : "false",
-          Scout.wifi.isHQConnected() ? "true" : "false");
-  return Scout.handler.report(report);
+          Scout.hq.connected() ? "true" : "false");
+  return Scout.hq.report(report);
 }
 
 static numvar wifiReport(void) {
@@ -2086,7 +2084,7 @@ static numvar wifiDisassociate(void) {
 
 static numvar wifiReassociate(void) {
   // This restart the NCM
-  return Scout.wifi.autoConnectHq();
+  return Scout.wifi.associate();
 }
 
 static numvar wifiCommand(void) {
@@ -2149,7 +2147,7 @@ static numvar wifiStats(void) {
   sp(F("Number of connections to AP since boot: "));
   speol(Scout.wifi.apConnCount);
   sp(F("Number of connections to HQ since boot: "));
-  speol(Scout.wifi.hqConnCount);
+  speol(Scout.hq.connCount);
 }
 
 

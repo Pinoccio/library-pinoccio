@@ -6,25 +6,20 @@
 *  This program is free software; you can redistribute it and/or modify it *
 *  under the terms of the BSD License as described in license.txt.         *
 \**************************************************************************/
-#include <Arduino.h>
-#include <ScoutHandler.h>
+#include "HqHandler.h"
+#include <avr/pgmspace.h>
 #include <Shell.h>
 #include <Scout.h>
-#include "backpack-bus/PBBP.h"
-#include "backpacks/wifi/WiFiBackpack.h"
-#include "util/StringBuffer.h"
-#include "util/String.h"
-#include "util/PrintToString.h"
+#include "../backpack-bus/PBBP.h"
+#include "../backpacks/wifi/WiFiBackpack.h"
+#include "../util/String.h"
+#include "../util/PrintToString.h"
 extern "C" {
 #include <js0n.h>
 #include <j0g.h>
-#include "key/key.h"
+#include "../key/key.h"
 #include "lwm/sys/sysTimer.h"
 }
-
-#define container_of(ptr, type, member) ({ \
-                const typeof( ((type *)0)->member ) *__mptr = (ptr); \
-                (type *)( (char *)__mptr - offsetof(type,member) );})
 
 static bool hqVerboseOutput;
 
@@ -87,39 +82,52 @@ static void leadSignal(const String& json);
 static bool leadAnswers(NWK_DataInd_t *ind);
 
 
-PinoccioScoutHandler::PinoccioScoutHandler() { }
+HqHandler::HqHandler() { }
 
-PinoccioScoutHandler::~PinoccioScoutHandler() { }
+HqHandler::~HqHandler() { }
 
-void PinoccioScoutHandler::setup() {
-  if (Scout.isLeadScout()) {
-    Scout.wifi.setup();
-    Scout.wifi.autoConnectHq();
+void HqHandler::setup() {
 
-    Scout.meshListen(3, leadAnswers);
-    Scout.meshJoinGroup(0xBEEF); // our internal reporting channel
-    Scout.meshJoinGroup(0); // reports to HQ
-  } else {
-    Scout.meshListen(2, fieldCommands);
-  }
+  Scout.meshListen(2, fieldCommands);
+  Scout.meshListen(3, leadAnswers);
+  Scout.meshListen(4, fieldAnnouncements);
+
+  Scout.meshJoinGroup(0xBEEF); // our internal reporting channel
+  Scout.meshJoinGroup(0); // reports to HQ
 
   // join a set of groups to listen for announcements
   for (int i = 1; i < 10; i++) {
     Scout.meshJoinGroup(i);
   }
-
-  Scout.meshListen(4, fieldAnnouncements);
   
   memset(announceQ,0,announceQsize*sizeof(char*));
+
 }
 
-void PinoccioScoutHandler::loop() {
-  if (Scout.isLeadScout()) {
-    leadHQHandle();
-  }
+bool HqHandler::connected() {
+  return false;
 }
 
-void PinoccioScoutHandler::setVerbose(bool flag) {
+bool HqHandler::available() {
+  return false;
+}
+
+void HqHandler::loop() {
+  leadHQHandle();
+}
+
+bool HqHandler::isBridge() {
+  return false;
+}
+
+void HqHandler::up(GSModule gs) {
+  if(tcp) delete tcp;
+  tcp = new GSTcpClient(gs);
+  Serial.println("HQ connecting");
+  // TODO send flush/ping packets now
+}
+
+void HqHandler::setVerbose(bool flag) {
   hqVerboseOutput = flag;
 }
 
@@ -253,7 +261,7 @@ static void announceConfirm(NWK_DataReq_t *req) {
   announceQSend();
 }
 
-void PinoccioScoutHandler::announce(uint16_t group, const String& message) {
+void HqHandler::announce(uint16_t group, const String& message) {
   // when lead scout, shortcut
   if (Scout.isLeadScout()) {
     leadAnnouncementSend(group, Scout.getAddress(), message);
@@ -414,8 +422,8 @@ static void leadAnnouncementSend(uint16_t group, uint16_t from, const ConstBuf& 
 }
 
 // [3,[0,1,2],[v,v,v]]
-StringBuffer PinoccioScoutHandler::report(const String &report) {
-  Scout.handler.announce(0xBEEF, report);
+StringBuffer HqHandler::report(const String &report) {
+  Scout.hq.announce(0xBEEF, report);
   return report2json(report);
 }
 
@@ -424,7 +432,7 @@ StringBuffer PinoccioScoutHandler::report(const String &report) {
 
 void leadHQConnect() {
 
-  if (Scout.wifi.client.connected()) {
+  if (Scout.hq.connected()) {
     char token[33];
     StringBuffer auth(64);
     token[32] = 0;
@@ -445,10 +453,11 @@ void leadHQHandle(void) {
   unsigned short index[32]; // <10 keypairs in the incoming json
 
   // only continue if new data to read
-  if (!Scout.wifi.client.available()) {
+  if (!Scout.hq.available()) {
     return;
   }
 
+  /*
   // Read a block of data and look for packets
   while ((rsize = hqIncoming.readClient(Scout.wifi.client, 128))) {
     int nl;
@@ -472,6 +481,7 @@ void leadHQHandle(void) {
       hqIncoming.remove(0, nl + 1);
     }
   }
+  */
 }
 
 // when we can't process a command for some internal reason
@@ -618,7 +628,7 @@ static void leadCommandChunk() {
 
 // wrapper to send a chunk of JSON to the HQ
 void leadSignal(const String &json) {
-  if (!Scout.wifi.client.connected()) {
+  if (!Scout.hq.connected()) {
     if (hqVerboseOutput) {
       Serial.println(F("HQ offline, can't signal"));
       Serial.println(json);
@@ -630,8 +640,8 @@ void leadSignal(const String &json) {
     Serial.println(json);
   }
 
-  Scout.wifi.client.print(json);
-  Scout.wifi.client.flush();
+//  Scout.wifi.client.print(json);
+//  Scout.wifi.client.flush();
 }
 
 // called whenever another scout sends an answer back to us

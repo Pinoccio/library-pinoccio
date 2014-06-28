@@ -26,6 +26,7 @@ void PinoccioClass::setup(const char *sketchName, const char *sketchRevision, in
 
   SYS_Init();
   PHY_RandomReq();
+  Serial.begin(115200);
 
   digitalWrite(SS, HIGH);
   pinMode(SS, OUTPUT);
