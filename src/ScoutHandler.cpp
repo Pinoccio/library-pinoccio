@@ -264,13 +264,9 @@ static void announceConfirm(NWK_DataReq_t *req) {
 }
 
 void PinoccioScoutHandler::announce(uint16_t group, const String& message) {
-  // when lead scout, shortcut
+  // when lead scout, share
   if (Scout.isLeadScout()) {
     leadAnnouncementSend(group, Scout.getAddress(), message);
-    // Don't broadcast HQ commands over the network if we are a lead
-    // scout
-    if (!group || group == 0xBEEF)
-      return;
   }
 
   if (hqVerboseOutput) {
