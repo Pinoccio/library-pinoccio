@@ -94,9 +94,6 @@ PinoccioScoutHandler::~PinoccioScoutHandler() { }
 void PinoccioScoutHandler::setup() {
   isBridged = false;
   if (Scout.isLeadScout()) {
-    Scout.wifi.setup();
-    Scout.wifi.autoConnectHq();
-
     Scout.meshListen(3, leadAnswers);
     Scout.meshJoinGroup(0xBEEF); // our internal reporting channel
     Scout.meshJoinGroup(0); // reports to HQ

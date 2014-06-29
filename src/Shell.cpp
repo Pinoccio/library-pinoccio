@@ -1036,7 +1036,7 @@ StringBuffer arg2array(int ver) {
   buf = "[";
   if(ver >= 0) buf.appendSprintf("%d,", ver);
   for (i=(ver!=0)?2:1; i<=args; i++) {
-    int key = (isstringarg(i)) ? keyMap((char*)getstringarg(i), 0) : getarg(i);
+    int key = (isstringarg(i)) ? keyMap((char*)getstringarg(i), 1) : getarg(i);
     buf.appendJsonString(keyGet(key), true);
     if(i+1 <= args) buf += ",";
   }
@@ -1944,7 +1944,7 @@ static numvar hqPrint(void) {
 }
 
 static numvar hqReport(void) {
-  if (!checkArgs(2, F("usage: hq.report(\"reportname\", \"value\")"))) {
+  if (!checkArgs(2, 255, F("usage: hq.report(\"reportname\", \"value\")[,\"value\"...]"))) {
     return 0;
   }
   const char *name = (isstringarg(1))?(const char*)getarg(1):keyGet(getarg(1));

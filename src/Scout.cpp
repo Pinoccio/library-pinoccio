@@ -82,11 +82,7 @@ void PinoccioScout::loop() {
   PinoccioClass::loop();
   Shell.loop();
   handler.loop();
-
-  if (isLeadScout()) {
-    // fix after #146 is merged
-//    wifi.loop();
-  }
+  Backpacks::loop();
 
   if (sleepPending) {
     canSleep = canSleep && !NWK_Busy();
