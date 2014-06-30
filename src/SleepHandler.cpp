@@ -1,5 +1,6 @@
 #include <Arduino.h>
 #include <avr/sleep.h>
+#include <util/atomic.h>
 #include "SleepHandler.h"
 
 static volatile bool timer_match;
@@ -93,7 +94,28 @@ bool SleepHandler::sleepUntilMatch(bool interruptible) {
   }
 }
 
-void SleepHandler::doSleep(uint32_t until_tick, bool interruptible) {
+void SleepHandler::scheduleSleep(uint32_t ms) {
+  uint32_t ticks = msToTicks(ms);
+  // Make sure we cannot "miss" the compare match if a low timeout is
+  // passed (really only ms = 0, which is forbidden, but handle it
+  // anyway).
+  if (ticks < 2) ticks = 2;
+  // Disable interrupts to prevent the counter passing the target before
+  // we clear the IRQSCP3 flag (due to other interrupts happening)
+  ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
+    // Schedule SCNT_CMP3 when the given counter is reached
+    write_scocr3(read_sccnt() + ticks);
+
+    // Clear any previously pending interrupt
+    SCIRQS = (1 << IRQSCP3);
+  }
+}
+
+bool SleepHandler::pastScheduledEnd() {
+  return (SCIRQS & (1 << IRQSCP3));
+}
+
+void SleepHandler::doSleep(bool interruptible) {
   // Disable Analag comparator
   uint8_t acsr = ACSR;
   ACSR = (1 << ACD);
@@ -129,17 +151,12 @@ void SleepHandler::doSleep(uint32_t until_tick, bool interruptible) {
   uint8_t tccr2b = TCCR2B;
   TCCR2B = 0;
 
-  // Schedule SCNT_CMP3 when the given counter is reached
-  write_scocr3(until_tick);
-
-  // Clear any pending interrupt
-  SCIRQS = (1 << IRQSCP3);
 
   // Check to see if we haven't passed the until time yet. Due to
   // wraparound, we convert to an integer, but this effectively halves
   // the maximum sleep duration (if until is > 2^31 from from now, it'll
   // look like the same as if until is in the past).
-  if ((int32_t)(until_tick - read_sccnt()) > 0) {
+  if (!pastScheduledEnd()) {
     // Enable the SCNT_CMP3 interrupt to wake us from sleep
     SCIRQM |= (1 << IRQMCP3);
 

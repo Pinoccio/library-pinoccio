@@ -134,7 +134,7 @@ class PinoccioScout : public PinoccioClass {
   protected:
     void checkStateChange();
 
-    void doSleep(int32_t ms);
+    void doSleep();
 
     bool isVccEnabled;
     bool isStateSaved;
@@ -145,8 +145,6 @@ class PinoccioScout : public PinoccioClass {
     SYS_Timer_t peripheralStateChangeTimer;
 
     bool sleepPending;
-    // Sleep end time, in terms of SleepHandler::ticks()
-    uint32_t sleepUntil;
     char * postSleepCommand;
 };
 

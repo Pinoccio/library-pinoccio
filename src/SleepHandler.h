@@ -9,13 +9,25 @@ class SleepHandler {
   public:
     static void setup();
 
-    // Sleep until the given time, in ticks. If interruptible is true,
-    // this can return earlier if we are woken from sleep by another
-    // interrupt.
+    // Schedule a sleep until the given number of ms from now. The sleep
+    // actually starts when doSleep is called, but any delay between
+    // scheduleSleep and doSleep does not affect the end time of the
+    // sleep (so it does affect the sleep duration).
     //
-    // An until_ticks of 2^31 (±9.5 hour) or more ticks in the future will be
-    // treated as if it was in the past and no sleeping happens.
-    static void doSleep(uint32_t until_ticks, bool interruptible);
+    // ms can not be 0, or more than 2^32 * 16 / 1000 ms (±19 hours), due to
+    // the limited range of the counter used.
+    static void scheduleSleep(uint32_t ms);
+
+    // Are we past the most recently scheduled sleep end time?
+    static bool pastScheduledEnd();
+
+    // Sleep until the previously scheduled time. If interruptible is
+    // true, this can return earlier if we are woken from sleep by
+    // another interrupt.
+    //
+    // If the previously scheduled end time has already passed, this
+    // returns immediately, without sleeping.
+    static void doSleep(bool interruptible);
 
     // A timer tick is always 16μs, so the tick count overflows after
     // 2^32 * 16 / 1000 == 68,719,476 ms (±19 hours). ms should not be
