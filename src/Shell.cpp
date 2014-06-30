@@ -124,6 +124,7 @@ static numvar otaBoot(void);
 static numvar hqVerbose(void);
 static numvar hqPrint(void);
 static numvar hqReport(void);
+static numvar hqBridge(void);
 
 static numvar startStateChangeEvents(void);
 static numvar stopStateChangeEvents(void);
@@ -298,6 +299,7 @@ void PinoccioShell::setup() {
   addBitlashFunction("hq.verbose", (bitlash_function) hqVerbose);
   addBitlashFunction("hq.print", (bitlash_function) hqPrint);
   addBitlashFunction("hq.report", (bitlash_function) hqReport);
+  addBitlashFunction("hq.bridge", (bitlash_function) hqBridge);
 
   addBitlashFunction("events.start", (bitlash_function) startStateChangeEvents);
   addBitlashFunction("events.stop", (bitlash_function) stopStateChangeEvents);
@@ -348,6 +350,7 @@ void PinoccioShell::setup() {
   if (!Scout.isLeadScout()) {
     Shell.allReportHQ(); // lead scout reports on hq connect
   }
+  
 }
 
 // just a safe wrapper around bitlash checks
@@ -1916,6 +1919,16 @@ static numvar otaBoot(void) {
 /****************************\
  *        HQ HANDLERS       *
 \****************************/
+
+static numvar hqBridge(void) {
+  if(getarg(0) == 0)
+  {
+    Scout.handler.setBridged(true);
+  }else{
+    Scout.handler.bridge += (char*)getarg(1);
+  }
+  return 1;
+}
 
 static numvar hqVerbose(void) {
   Scout.handler.setVerbose(getarg(1));

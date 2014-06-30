@@ -92,6 +92,7 @@ PinoccioScoutHandler::PinoccioScoutHandler() { }
 PinoccioScoutHandler::~PinoccioScoutHandler() { }
 
 void PinoccioScoutHandler::setup() {
+  isBridged = false;
   if (Scout.isLeadScout()) {
     Scout.meshListen(3, leadAnswers);
     Scout.meshJoinGroup(0xBEEF); // our internal reporting channel
@@ -113,6 +114,18 @@ void PinoccioScoutHandler::setup() {
 void PinoccioScoutHandler::loop() {
   if (Scout.isLeadScout()) {
     leadHQHandle();
+  }
+}
+
+void PinoccioScoutHandler::setBridged(bool flag) {
+  isBridged = flag;
+  if(isBridged)
+  {
+    bridge = "";
+    Scout.meshListen(3, leadAnswers);
+    Scout.meshJoinGroup(0xBEEF); // our internal reporting channel
+    Scout.meshJoinGroup(0); // reports to HQ
+    leadHQConnect();
   }
 }
 
@@ -251,13 +264,9 @@ static void announceConfirm(NWK_DataReq_t *req) {
 }
 
 void PinoccioScoutHandler::announce(uint16_t group, const String& message) {
-  // when lead scout, shortcut
+  // when lead scout, share
   if (Scout.isLeadScout()) {
     leadAnnouncementSend(group, Scout.getAddress(), message);
-    // Don't broadcast HQ commands over the network if we are a lead
-    // scout
-    if (!group || group == 0xBEEF)
-      return;
   }
 
   if (hqVerboseOutput) {
@@ -421,7 +430,7 @@ StringBuffer PinoccioScoutHandler::report(const String &report) {
 
 void leadHQConnect() {
 
-  if (Scout.wifi.client.connected()) {
+  if (Scout.handler.isBridged || Scout.wifi.client.connected()) {
     char token[33];
     StringBuffer auth(64);
     token[32] = 0;
@@ -438,36 +447,43 @@ void leadHQConnect() {
 // this is called on the main loop to process incoming data from HQ
 static StringBuffer hqIncoming;
 void leadHQHandle(void) {
-  int rsize;
+  int rsize = 0;
+  int nl;
   unsigned short index[32]; // <10 keypairs in the incoming json
 
-  // only continue if new data to read
-  if (!Scout.wifi.client.available()) {
-    return;
+  if(Scout.handler.isBridged)
+  {
+    rsize = (int)Scout.handler.bridge.length();
+    hqIncoming += Scout.handler.bridge;
+    Scout.handler.bridge = "";
+  }else{
+    if (Scout.wifi.client.available()) {
+      rsize = hqIncoming.readClient(Scout.wifi.client, 128);
+    }
   }
 
+  // only continue if new data to process
+  if(rsize <= 0) return;
+  
   // Read a block of data and look for packets
-  while ((rsize = hqIncoming.readClient(Scout.wifi.client, 128))) {
-    int nl;
-    while((nl = hqIncoming.indexOf('\n')) >= 0) {
-     // look for a packet
-      if (hqVerboseOutput) {
-        Serial.print(F("looking for packet in: "));
-        Serial.println(hqIncoming);
-      }
-
-      // Parse JSON up to the first newline
-      if (!js0n((const unsigned char*)hqIncoming.c_str(), nl, index, 32)) {
-        leadIncoming(hqIncoming.c_str(), nl, index);
-      } else {
-        if (hqVerboseOutput) {
-          Serial.println(F("JSON parse failed"));
-        }
-      }
-
-      // Remove up to and including the newline
-      hqIncoming.remove(0, nl + 1);
+  while((nl = hqIncoming.indexOf('\n')) >= 0) {
+   // look for a packet
+    if (hqVerboseOutput) {
+      Serial.print(F("looking for packet in: "));
+      Serial.println(hqIncoming);
     }
+
+    // Parse JSON up to the first newline
+    if (!js0n((const unsigned char*)hqIncoming.c_str(), nl, index, 32)) {
+      leadIncoming(hqIncoming.c_str(), nl, index);
+    } else {
+      if (hqVerboseOutput) {
+        Serial.println(F("JSON parse failed"));
+      }
+    }
+
+    // Remove up to and including the newline
+    hqIncoming.remove(0, nl + 1);
   }
 }
 
@@ -615,6 +631,13 @@ static void leadCommandChunk() {
 
 // wrapper to send a chunk of JSON to the HQ
 void leadSignal(const String &json) {
+  if (Scout.handler.isBridged) {
+    int i = 0;
+    Serial.print("[hq-bridge] ");
+    Serial.print(json);
+    return;
+  }
+
   if (!Scout.wifi.client.connected()) {
     if (hqVerboseOutput) {
       Serial.println(F("HQ offline, can't signal"));

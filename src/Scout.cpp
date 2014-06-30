@@ -154,7 +154,7 @@ bool PinoccioScout::isBackpackVccEnabled() {
 
 bool PinoccioScout::isLeadScout() {
   // Check for attached wifi backpack (model id 0x0001)
-  return Backpacks::isModelPresent(0x0001);
+  return handler.isBridged || Backpacks::isModelPresent(0x0001);
 }
 
 bool PinoccioScout::factoryReset() {
