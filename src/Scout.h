@@ -149,6 +149,7 @@ class PinoccioScout : public PinoccioClass {
     SYS_Timer_t peripheralStateChangeTimer;
 
     bool sleepPending;
+    // Sleep end time, in terms of SleepHandler::ticks()
     uint32_t sleepUntil;
     char * postSleepCommand;
 };

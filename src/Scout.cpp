@@ -98,6 +98,7 @@ PinoccioScout::~PinoccioScout() { }
 
 void PinoccioScout::setup(const char *sketchName, const char *sketchRevision, int32_t sketchBuild) {
   PinoccioClass::setup(sketchName, sketchRevision, sketchBuild);
+  SleepHandler::setup();
 
   pinMode(CHG_STATUS, INPUT_PULLUP);
   pinMode(BATT_ALERT, INPUT_PULLUP);
@@ -134,7 +135,7 @@ void PinoccioScout::loop() {
   if (sleepPending) {
     canSleep = canSleep && !NWK_Busy();
 
-    int32_t remaining = sleepUntil - millis();
+    int32_t remaining = sleepUntil - SleepHandler::ticks();
 
     // if remaining <= 0, we won't actually sleep anymore, but still
     // call doSleep to run the callback and clean up
@@ -578,26 +579,26 @@ static void scoutPeripheralStateChangeTimerHandler(SYS_Timer_t *timer) {
 }
 
 void PinoccioScout::scheduleSleep(uint32_t ms, char *cmd) {
-  Scout.sleepUntil = millis() + ms;
+  Scout.sleepUntil = SleepHandler::ticks() + SleepHandler::msToTicks(ms);
   Scout.sleepPending = (ms > 0);
   if (Scout.postSleepCommand)
     free(Scout.postSleepCommand);
   Scout.postSleepCommand = cmd;
 }
 
-void PinoccioScout::doSleep(int32_t ms) {
+void PinoccioScout::doSleep(int32_t remaining) {
   // Copy the pointer, so the post command can set a new sleep
   // timeout again.
   char *cmd = postSleepCommand;
   postSleepCommand = NULL;
   sleepPending = false;
 
-  if (ms > 0) {
+  if (remaining > 0) {
     NWK_SleepReq();
 
     // TODO: suspend more stuff? Wait for UART byte completion?
 
-    SleepHandler::doSleep(ms, true);
+    SleepHandler::doSleep(this->sleepUntil, true);
     NWK_WakeupReq();
   }
 
@@ -610,7 +611,8 @@ void PinoccioScout::doSleep(int32_t ms) {
 }
 
 uint32_t PinoccioScout::getWallTime() {
-  return getCpuTime() + getSleepTime();
+  // TODO: This overflows after 19 hours already
+  return SleepHandler::ticksToMs(SleepHandler::ticks());
 }
 
 uint32_t PinoccioScout::getCpuTime() {
@@ -618,5 +620,6 @@ uint32_t PinoccioScout::getCpuTime() {
 }
 
 uint32_t PinoccioScout::getSleepTime() {
-  return SleepHandler::sleepMillis;
+  // TODO
+  return 0;
 }
