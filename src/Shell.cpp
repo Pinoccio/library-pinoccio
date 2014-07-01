@@ -1414,6 +1414,8 @@ static numvar pinSave(void) {
     }
   }
 
+  doCommand(buf);
+
   return 1;
 }
 
