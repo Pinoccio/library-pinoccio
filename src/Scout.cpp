@@ -288,26 +288,6 @@ int8_t PinoccioScout::getPinMode(uint8_t pin) {
   return PINMODE_UNSET;
 }
 
-bool PinoccioScout::makeInput(uint8_t pin, bool enablePullup) {
-  uint8_t mode = enablePullup ? INPUT_PULLUP : INPUT;
-  return setMode(pin, mode);
-}
-
-bool PinoccioScout::makeOutput(uint8_t pin) {
-  return setMode(pin, OUTPUT);
-}
-
-bool PinoccioScout::makePWM(uint8_t pin) {
-  if (!isPWMPin(pin)) {
-    return false;
-  }
-  return setMode(pin, PINMODE_PWM);
-}
-
-bool PinoccioScout::makeDisabled(uint8_t pin) {
-  return setMode(pin, PINMODE_DISABLED);
-}
-
 void PinoccioScout::makeUnsetDisconnected() {
   for (int i=0; i<NUM_DIGITAL_PINS; i++) {
     if (getPinMode(i) == PINMODE_UNSET)

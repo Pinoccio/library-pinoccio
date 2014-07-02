@@ -1238,27 +1238,49 @@ static numvar pinConstPWM(void) {
   return PinoccioScout::PINMODE_PWM;
 }
 
-static numvar pinMakeInput(void) {
-  if (!checkArgs(1, 2, F("usage: pin.makeinput(\"pinName\", inputType=INPUT_PULLUP)"))) {
-    return 0;
-  }
-  int8_t pin = getPinFromArg(1);
+static numvar pinSetModeInternal(uint8_t pinarg, int8_t mode) {
+  int8_t pin = getPinFromArg(pinarg);
   if (pin == -1) {
     speol(F("Invalid pin number"));
     return 0;
   }
 
-  bool pullup = true;
-  if (getarg(0) == 2 && getarg(2) == PinoccioScout::PINMODE_INPUT) {
-    pullup = false;
-  }
-
-  if (!Scout.makeInput(pin, pullup)) {
+  if (Scout.isPinReserved(pin)) {
     speol(F("Cannot change mode of reserved pin"));
     return 0;
   }
 
+  if (mode == PinoccioScout::PINMODE_PWM && !Scout.isPWMPin(pin)) {
+    speol(F("PWM mode not supported on this pin"));
+    return 0;
+  }
+
+  if (!Scout.getNameForPinMode(mode)
+      || mode == PinoccioScout::PINMODE_UNSET
+      || mode == PinoccioScout::PINMODE_RESERVED) {
+    speol(F("Invalid pin mode"));
+    return 0;
+  }
+
+  if (!Scout.setMode(pin, mode)) {
+    speol(F("Failed to change pin mode"));
+    return 0;
+  }
+
   return 1;
+}
+
+static numvar pinMakeInput(void) {
+  if (!checkArgs(1, 2, F("usage: pin.makeinput(\"pinName\", inputType=INPUT_PULLUP)"))) {
+    return 0;
+  }
+
+  int8_t mode = PinoccioScout::PINMODE_INPUT_PULLUP;
+  if (getarg(0) == 2 && getarg(2) == PinoccioScout::PINMODE_INPUT) {
+    mode = PinoccioScout::PINMODE_INPUT;
+  }
+
+  return pinSetModeInternal(1, mode);
 }
 
 static numvar pinMakeOutput(void) {
@@ -1266,18 +1288,7 @@ static numvar pinMakeOutput(void) {
     return 0;
   }
 
-  int8_t pin = getPinFromArg(1);
-  if (pin == -1) {
-    speol(F("Invalid pin number"));
-    return 0;
-  }
-
-  if (!Scout.makeOutput(pin)) {
-    speol(F("Cannot change mode of reserved pin"));
-    return 0;
-  }
-
-  return 1;
+  return pinSetModeInternal(1, PinoccioScout::PINMODE_OUTPUT);
 }
 
 static numvar pinMakePWM(void) {
@@ -1285,23 +1296,7 @@ static numvar pinMakePWM(void) {
     return 0;
   }
 
-  int8_t pin = getPinFromArg(1);
-  if (pin == -1) {
-    speol(F("Invalid pin number"));
-    return 0;
-  }
-
-  if (Scout.isPinReserved(pin)) {
-    speol(F("Cannot change mode of reserved pin"));
-    return 0;
-  }
-
-  if (!Scout.makePWM(pin)) {
-    speol(F("Cannot change mode of non PWM pin"));
-    return 0;
-  }
-
-  return 1;
+  return pinSetModeInternal(1, PinoccioScout::PINMODE_PWM);
 }
 
 static numvar pinMakeDisconnected(void) {
@@ -1309,23 +1304,7 @@ static numvar pinMakeDisconnected(void) {
     return 0;
   }
 
-  int8_t pin = getPinFromArg(1);
-  if (pin == -1) {
-    speol(F("Invalid pin number"));
-    return 0;
-  }
-
-  if (Scout.isPinReserved(pin)) {
-    speol(F("Cannot change mode of reserved pin"));
-    return 0;
-  }
-
-  if (!Scout.setMode(pin, PinoccioScout::PINMODE_DISCONNECTED)) {
-    speol(F("Failed to set mode"));
-    return 0;
-  }
-
-  return 1;
+  return pinSetModeInternal(1, PinoccioScout::PINMODE_PWM);
 }
 
 static numvar pinDisable(void) {
@@ -1333,18 +1312,7 @@ static numvar pinDisable(void) {
     return 0;
   }
 
-  int8_t pin = getPinFromArg(1);
-  if (pin == -1) {
-    speol(F("Invalid pin number"));
-    return 0;
-  }
-
-  if (!Scout.makeDisabled(pin)) {
-    speol(F("Cannot change mode of reserved pin"));
-    return 0;
-  }
-
-  return 1;
+  return pinSetModeInternal(1, PinoccioScout::PINMODE_DISABLED);
 }
 
 static numvar pinSetMode(void) {
@@ -1352,23 +1320,7 @@ static numvar pinSetMode(void) {
     return 0;
   }
 
-  int8_t pin = getPinFromArg(1);
-  if (pin == -1) {
-    speol(F("Invalid pin number"));
-    return 0;
-  }
-
-  if (!Scout.isPWMPin(pin) && getarg(2) == PinoccioScout::PINMODE_PWM) {
-    speol(F("Cannot change mode of non PWM pin"));
-    return 0;
-  }
-
-  if (!Scout.setMode(pin, getarg(2))) {
-    speol(F("Cannot change mode of reserved pin"));
-    return 0;
-  }
-
-  return 1;
+  return pinSetModeInternal(1, getarg(2));
 }
 
 static numvar pinRead(void) {
@@ -1445,22 +1397,8 @@ static numvar pinSave(void) {
   int8_t pin = getPinFromArg(1);
   int8_t mode = getarg(2);
 
-  if (pin == -1) {
-    speol(F("Invalid pin number"));
+  if (!pinSetModeInternal(1, mode))
     return 0;
-  }
-
-  if (Scout.isPinReserved(pin)) {
-    speol(F("Cannot change mode of reserved pin"));
-    return 0;
-  }
-
-  if (mode < PinoccioScout::PINMODE_DISABLED || mode > PinoccioScout::PINMODE_PWM) {
-    speol(F("Invalid pin mode"));
-    return 0;
-  }
-
-  Scout.setMode(pin, mode);
 
   StringBuffer buf(128);
 
