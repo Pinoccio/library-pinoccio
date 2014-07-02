@@ -360,23 +360,22 @@ bool PinoccioScout::pinWrite(uint8_t pin, uint8_t value) {
 }
 
 uint16_t PinoccioScout::pinRead(uint8_t pin) {
-  if (isPinReserved(pin)) {
-    return 0;
-  }
+  switch(Scout.getPinMode(pin)) {
+    case PINMODE_PWM:
+      return pinStates[pin];
 
-  if (Scout.getPinMode(pin) == PINMODE_PWM) {
-    return pinStates[pin];
-  }
-  if (Scout.isDigitalPin(pin)) {
-    return digitalRead(pin);
-  } else if (Scout.isAnalogPin(pin)) {
-    if (Scout.getPinMode(pin) == INPUT) {
-      return analogRead(pin-A0);
-    } else {
+    case PINMODE_INPUT:
+    case PINMODE_INPUT_PULLUP:
+      if (Scout.isAnalogPin(pin))
+        return analogRead(pin - A0);
+      else
+        return digitalRead(pin);
+
+    case PINMODE_OUTPUT:
       return digitalRead(pin);
-    }
-  } else {
-    return 0;
+
+    default:
+      return 0;
   }
 }
 
