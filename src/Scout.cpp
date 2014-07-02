@@ -339,24 +339,15 @@ bool PinoccioScout::setMode(uint8_t pin, int8_t mode) {
 }
 
 bool PinoccioScout::isDigitalPin(uint8_t pin) {
-  if (pin >= D2 && pin <= D8) {
-    return true;
-  }
-  return false;
+  return (pin >= D2 && pin <= D8);
 }
 
 bool PinoccioScout::isAnalogPin(uint8_t pin) {
-  if (pin >= A0 && pin <= A0 + NUM_ANALOG_INPUTS) {
-    return true;
-  }
-  return false;
+  return (pin >= A0 && pin <= A0 + NUM_ANALOG_INPUTS);
 }
 
 bool PinoccioScout::isPWMPin(uint8_t pin) {
-  if (digitalPinHasPWM(pin)) {
-    return true;
-  }
-  return false;
+  return digitalPinHasPWM(pin);
 }
 
 bool PinoccioScout::isInputPin(uint8_t pin) {
