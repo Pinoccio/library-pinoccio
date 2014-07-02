@@ -311,13 +311,13 @@ bool PinoccioScout::setMode(uint8_t pin, int8_t mode) {
 
   if (isDigitalPin(pin)) {
     stopDigitalStateChangeEvents();
-    updateDigitalPinState(pin, value, mode);
+    updatePinState(pin, value, mode);
     startDigitalStateChangeEvents();
   }
 
   if (isAnalogPin(pin)) {
     stopAnalogStateChangeEvents();
-    updateAnalogPinState(pin, value, mode);
+    updatePinState(pin, value, mode);
     startAnalogStateChangeEvents();
   }
 
@@ -355,11 +355,11 @@ bool PinoccioScout::pinWrite(uint8_t pin, uint8_t value) {
     } else {
       digitalWrite(pin, value);
     }
-    updateDigitalPinState(pin, value, getPinMode(pin));
+    updatePinState(pin, value, getPinMode(pin));
   }
   if (Scout.isAnalogPin(pin)) {
     digitalWrite(pin, value);
-    updateAnalogPinState(pin, value, getPinMode(pin));
+    updatePinState(pin, value, getPinMode(pin));
   }
 
   return true;
@@ -427,47 +427,34 @@ bool PinoccioScout::isPinReserved(uint8_t pin) {
   }
 }
 
-bool PinoccioScout::updateDigitalPinState(uint8_t pin, int16_t val, int8_t mode) {
-// Serial.println("--------");
-// Serial.println(pin);
-// Serial.println(val);
-// Serial.println(mode);
-// Serial.println("--------");
-
-  if (pinStates[pin] != val || pinModes[pin] != mode) {
-    if (digitalPinEventHandler != 0 && (pinModes[pin] != mode || mode > 0)) {
-      if (eventVerboseOutput) {
-        Serial.print(F("Running: digitalPinEventHandler("));
-        Serial.print(pin);
-        Serial.print(F(","));
-        Serial.print(val);
-        Serial.print(F(","));
-        Serial.print(mode);
-        Serial.println(F(")"));
-      }
-      digitalPinEventHandler(pin, val, mode);
-    }
-    pinStates[pin] = val;
-    pinModes[pin] = mode;
-
-    return true;
-  }
-  return false;
-}
-
-bool PinoccioScout::updateAnalogPinState(uint8_t pin, int16_t val, int8_t mode) {
+bool PinoccioScout::updatePinState(uint8_t pin, int16_t val, int8_t mode) {
   if (Scout.pinStates[pin] != val || Scout.pinModes[pin] != mode) {
-    if (analogPinEventHandler != 0 && (pinModes[pin] != mode || mode > 0)) {
-      if (Scout.eventVerboseOutput) {
-        Serial.print(F("Running: analogPinEventHandler("));
-        Serial.print(pin - A0);
-        Serial.print(F(","));
-        Serial.print(val);
-        Serial.print(F(","));
-        Serial.print(mode);
-        Serial.println(F(")"));
+    if (pinModes[pin] != mode || mode > 0) {
+      if (isDigitalPin(pin) && digitalPinEventHandler != 0) {
+        if (eventVerboseOutput) {
+          Serial.print(F("Running: digitalPinEventHandler("));
+          Serial.print(pin);
+          Serial.print(F(","));
+          Serial.print(val);
+          Serial.print(F(","));
+          Serial.print(mode);
+          Serial.println(F(")"));
+        }
+        digitalPinEventHandler(pin, val, mode);
       }
-      Scout.analogPinEventHandler(pin - A0, val, mode);
+
+      if (isAnalogPin(pin) && analogPinEventHandler != 0) {
+        if (Scout.eventVerboseOutput) {
+          Serial.print(F("Running: analogPinEventHandler("));
+          Serial.print(pin - A0);
+          Serial.print(F(","));
+          Serial.print(val);
+          Serial.print(F(","));
+          Serial.print(mode);
+          Serial.println(F(")"));
+        }
+        Scout.analogPinEventHandler(pin - A0, val, mode);
+      }
     }
     Scout.pinStates[pin] = val;
     Scout.pinModes[pin] = mode;
@@ -485,7 +472,7 @@ static void scoutDigitalStateChangeTimerHandler(SYS_Timer_t *timer) {
       if (mode < 0) {
         value = -1;
       }
-      Scout.updateDigitalPinState(i, value, mode);
+      Scout.updatePinState(i, value, mode);
     }
   }
 }
@@ -498,7 +485,7 @@ static void scoutAnalogStateChangeTimerHandler(SYS_Timer_t *timer) {
       if (mode < 0) {
         value = -1;
       }
-      Scout.updateAnalogPinState(i+A0, value, mode);
+      Scout.updatePinState(i+A0, value, mode);
     }
   }
 }

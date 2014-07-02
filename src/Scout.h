@@ -90,8 +90,7 @@ class PinoccioScout : public PinoccioClass {
     int8_t getPinFromName(const char* name);
     bool isPinReserved(uint8_t pin);
 
-    bool updateDigitalPinState(uint8_t pin, int16_t val, int8_t mode);
-    bool updateAnalogPinState(uint8_t pin, int16_t val, int8_t mode);
+    bool updatePinState(uint8_t pin, int16_t val, int8_t mode);
 
     void (*digitalPinEventHandler)(uint8_t pin, int16_t value, int8_t mode);
     void (*analogPinEventHandler)(uint8_t pin, int16_t value, int8_t mode);
