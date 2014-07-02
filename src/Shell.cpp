@@ -1460,32 +1460,26 @@ static numvar pinSave(void) {
 
   StringBuffer buf(128);
 
-  if (mode == -1) {
-    buf += "rm startup.";
-    buf += Scout.getNameForPin(pin);
-  } else {
-    buf += "function startup.";
-    buf += Scout.getNameForPin(pin);
-    buf += " { pin.setmode(\"";
+  buf += "function startup.";
+  buf += Scout.getNameForPin(pin);
+  buf += " { pin.setmode(\"";
+  buf += Scout.getNameForPin(pin);
+  buf += "\", ";
+  buf += Scout.getNameForPinMode(mode);
+  buf += ");";
+  // if third arg is passed in, and mode is OUTPUT, then set pin value
+  if (getarg(0) == 3 && mode == OUTPUT) {
+    uint8_t value = getarg(3);
+    Scout.pinWrite(pin, value);
+    buf += " { pin.write(\"";
     buf += Scout.getNameForPin(pin);
     buf += "\", ";
-    buf += Scout.getNameForPinMode(mode);
+    buf += value;
     buf += ");";
-    // if third arg is passed in, and mode is OUTPUT, then set pin value
-    if (getarg(0) == 3 && mode == OUTPUT) {
-      uint8_t value = getarg(3);
-      Scout.pinWrite(pin, value);
-      buf += " { pin.write(\"";
-      buf += Scout.getNameForPin(pin);
-      buf += "\", ";
-      buf += value;
-      buf += ");";
-    }
-    buf += " }";
   }
+  buf += " }";
 
   doCommand((char*)buf.c_str());
-
   return 1;
 }
 
