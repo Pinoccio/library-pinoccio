@@ -104,6 +104,7 @@ static numvar pinRead(void);
 static numvar pinWrite(void);
 static numvar pinSave(void);
 static numvar pinList(void);
+static numvar pinNumber(void);
 static numvar pinOthersDisconnected(void);
 static numvar digitalPinReport(void);
 static numvar analogPinReport(void);
@@ -289,6 +290,7 @@ void PinoccioShell::setup() {
   addBitlashFunction("pin.write", (bitlash_function) pinWrite);
   addBitlashFunction("pin.save", (bitlash_function) pinSave);
   addBitlashFunction("pin.list", (bitlash_function) pinList);
+  addBitlashFunction("pin.number", (bitlash_function) pinNumber);
   addBitlashFunction("pin.othersdisconnected", (bitlash_function) pinOthersDisconnected);
   addBitlashFunction("pin.report.digital", (bitlash_function) digitalPinReport);
   addBitlashFunction("pin.report.analog", (bitlash_function) analogPinReport);
@@ -1387,6 +1389,14 @@ static numvar pinList(void) {
   }
 
   return 1;
+}
+
+static numvar pinNumber(void) {
+  if (!checkArgs(1, F("usage: pin.number(\"pinName\")"))) {
+    return 0;
+  }
+
+  return getPinFromArg(1);
 }
 
 static numvar pinSave(void) {
