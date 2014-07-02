@@ -442,7 +442,27 @@ const __FlashStringHelper* PinoccioScout::getNameForPin(uint8_t pin) {
   return NULL;
 }
 
-  return pin;
+const __FlashStringHelper* PinoccioScout::getNameForPinMode(int8_t mode) {
+  switch(mode) {
+    case (PINMODE_DISCONNECTED):
+      return F("disconnected");
+    case (PINMODE_UNSET):
+      return F("unset");
+    case (PINMODE_RESERVED):
+      return F("reserved");
+    case (PINMODE_DISABLED):
+      return F("disabled");
+    case (PINMODE_INPUT):
+      return F("input");
+    case (PINMODE_OUTPUT):
+      return F("output");
+    case (PINMODE_INPUT_PULLUP):
+      return F("input_pullup");
+    case (PINMODE_PWM):
+      return F("pwm");
+    default:
+      return NULL;
+  }
 }
 
 bool PinoccioScout::isPinReserved(uint8_t pin) {

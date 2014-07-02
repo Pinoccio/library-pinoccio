@@ -89,6 +89,7 @@ class PinoccioScout : public PinoccioClass {
     uint16_t pinRead(uint8_t pin);
     int8_t getPinFromName(const char* name);
     const __FlashStringHelper* getNameForPin(uint8_t pin);
+    const __FlashStringHelper* getNameForPinMode(int8_t mode);
     bool isPinReserved(uint8_t pin);
 
     bool updatePinState(uint8_t pin, int16_t val, int8_t mode);
