@@ -313,12 +313,12 @@ bool PinoccioScout::setMode(uint8_t pin, int8_t mode) {
     stopDigitalStateChangeEvents();
     updatePinState(pin, value, mode);
     startDigitalStateChangeEvents();
-  }
-
-  if (isAnalogPin(pin)) {
+  } else if (isAnalogPin(pin)) {
     stopAnalogStateChangeEvents();
     updatePinState(pin, value, mode);
     startAnalogStateChangeEvents();
+  } else {
+    updatePinState(pin, value, mode);
   }
 
   return true;
