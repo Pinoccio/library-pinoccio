@@ -1441,7 +1441,7 @@ static numvar analogPinReport(void) {
 static int getPinFromArg(int arg) {
   if (isstringarg(arg)) {
     return Scout.getPinFromName((const char*)getstringarg(arg));
-  } else if (Scout.isDigitalPin(getarg(arg)) || Scout.isAnalogPin(getarg(arg))) {
+  } else if (getarg(arg) < NUM_DIGITAL_PINS) {
     return getarg(arg);
   } else {
     return -1;
