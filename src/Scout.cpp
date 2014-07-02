@@ -339,7 +339,7 @@ bool PinoccioScout::setMode(uint8_t pin, int8_t mode) {
 }
 
 bool PinoccioScout::isDigitalPin(uint8_t pin) {
-  if (pin >= 2 && pin <= 8) {
+  if (pin >= D2 && pin <= D8) {
     return true;
   }
   return false;
