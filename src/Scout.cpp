@@ -435,9 +435,12 @@ int8_t PinoccioScout::getPinFromName(const char* name) {
   return -1;
 }
 
-  if (!isDigitalPin(pin) && !isAnalogPin(pin)) {
-    return -1;
-  }
+const __FlashStringHelper* PinoccioScout::getNameForPin(uint8_t pin) {
+  if (pin < lengthof(pinInfo))
+    return reinterpret_cast<const __FlashStringHelper*>(pinInfo[pin].name);
+
+  return NULL;
+}
 
   return pin;
 }
