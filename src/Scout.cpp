@@ -470,6 +470,9 @@ bool PinoccioScout::isPinReserved(uint8_t pin) {
 
 bool PinoccioScout::updatePinState(uint8_t pin, int16_t val, int8_t mode) {
   if (Scout.pinStates[pin] != val || Scout.pinModes[pin] != mode) {
+    Scout.pinStates[pin] = val;
+    Scout.pinModes[pin] = mode;
+
     if (isDigitalPin(pin) && digitalPinEventHandler != 0) {
       if (eventVerboseOutput) {
         Serial.print(F("Running: digitalPinEventHandler("));
@@ -495,9 +498,6 @@ bool PinoccioScout::updatePinState(uint8_t pin, int16_t val, int8_t mode) {
       }
       Scout.analogPinEventHandler(pin - A0, val, mode);
     }
-
-    Scout.pinStates[pin] = val;
-    Scout.pinModes[pin] = mode;
 
     return true;
   }
