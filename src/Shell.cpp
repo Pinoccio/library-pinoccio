@@ -97,6 +97,7 @@ static numvar pinConstPWM(void);
 static numvar pinMakeInput(void);
 static numvar pinMakeOutput(void);
 static numvar pinMakePWM(void);
+static numvar pinMakeDisconnected(void);
 static numvar pinDisable(void);
 static numvar pinSetMode(void);
 static numvar pinRead(void);
@@ -281,6 +282,7 @@ void PinoccioShell::setup() {
   addBitlashFunction("pin.makeinput", (bitlash_function) pinMakeInput);
   addBitlashFunction("pin.makeoutput", (bitlash_function) pinMakeOutput);
   addBitlashFunction("pin.makepwm", (bitlash_function) pinMakePWM);
+  addBitlashFunction("pin.makedisconnected", (bitlash_function) pinMakeDisconnected);
   addBitlashFunction("pin.disable", (bitlash_function) pinDisable);
   addBitlashFunction("pin.setmode", (bitlash_function) pinSetMode);
   addBitlashFunction("pin.read", (bitlash_function) pinRead);
@@ -1297,6 +1299,30 @@ static numvar pinMakePWM(void) {
 
   if (!Scout.makePWM(pin)) {
     speol(F("Cannot change mode of non PWM pin"));
+    return 0;
+  }
+
+  return 1;
+}
+
+static numvar pinMakeDisconnected(void) {
+  if (!checkArgs(1, F("usage: pin.makedisconnected(\"pinName\")"))) {
+    return 0;
+  }
+
+  int8_t pin = getPinFromArg(1);
+  if (pin == -1) {
+    speol(F("Invalid pin number"));
+    return 0;
+  }
+
+  if (Scout.isPinReserved(pin)) {
+    speol(F("Cannot change mode of reserved pin"));
+    return 0;
+  }
+
+  if (!Scout.setMode(pin, PinoccioScout::PINMODE_DISCONNECTED)) {
+    speol(F("Failed to set mode"));
     return 0;
   }
 
