@@ -159,7 +159,7 @@ static numvar keyPrint(void);
 static numvar keyNumber(void);
 static numvar keySave(void);
 
-static int getPinFromArg(int arg);
+static int8_t getPinFromArg(uint8_t arg);
 static bool checkArgs(uint8_t min, uint8_t max, const __FlashStringHelper *errorMsg);
 static bool checkArgs(uint8_t exactly, const __FlashStringHelper *errorMsg);
 
@@ -1452,7 +1452,7 @@ static numvar analogPinReport(void) {
   return 1;
 }
 
-static int getPinFromArg(int arg) {
+static int8_t getPinFromArg(uint8_t arg) {
   if (isstringarg(arg)) {
     return Scout.getPinFromName((const char*)getstringarg(arg));
   } else if (getarg(arg) < NUM_DIGITAL_PINS) {
