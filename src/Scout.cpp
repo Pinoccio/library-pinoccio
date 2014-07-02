@@ -349,18 +349,12 @@ bool PinoccioScout::pinWrite(uint8_t pin, uint8_t value) {
     return false;
   }
 
-  if (Scout.isDigitalPin(pin)) {
-    if (getPinMode(pin) == PINMODE_PWM) {
-      analogWrite(pin, value);
-    } else {
-      digitalWrite(pin, value);
-    }
-    updatePinState(pin, value, getPinMode(pin));
-  }
-  if (Scout.isAnalogPin(pin)) {
+  if (getPinMode(pin) == PINMODE_PWM)
+    analogWrite(pin, value);
+  else
     digitalWrite(pin, value);
-    updatePinState(pin, value, getPinMode(pin));
-  }
+
+  updatePinState(pin, value, getPinMode(pin));
 
   return true;
 }
