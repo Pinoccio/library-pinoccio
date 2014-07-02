@@ -13,10 +13,57 @@
 #include "SleepHandler.h"
 #include <math.h>
 #include <avr/eeprom.h>
+#include <avr/pgmspace.h>
 
 static void scoutDigitalStateChangeTimerHandler(SYS_Timer_t *timer);
 static void scoutAnalogStateChangeTimerHandler(SYS_Timer_t *timer);
 static void scoutPeripheralStateChangeTimerHandler(SYS_Timer_t *timer);
+
+#ifndef lengthof
+#define lengthof(x) (sizeof(x)/sizeof(*x))
+#endif
+
+// This allocates the same space for all strings, even when it's unused (since
+// the struct must have a fixed size). The alternative, to put a char* in the
+// struct causes the strings to be allocated outside of the string. This wastes
+// less space, but makes putting the strings in PROGMEN hard. To prevent
+// wasting a lot of space, some pin names have been abbreviated.
+static struct PinInfo {
+  const char name[5];
+} const pinInfo[NUM_DIGITAL_PINS] PROGMEM = {
+  [RX0] = { "rx0", },
+  [TX0] = { "tx0", },
+  [D2] = { "d2", },
+  [D3] = { "d3", },
+  [D4] = { "d4", },
+  [D5] = { "d5", },
+  [D6] = { "d6", },
+  [D7] = { "d7", },
+  [D8] = { "d8", },
+  [SS] = { "ss", },
+  [MOSI] = { "mosi", },
+  [MISO] = { "miso", },
+  [SCK] = { "sck", },
+  [RX1] = { "rx1", },
+  [TX1] = { "tx1", },
+  [SCL] = { "scl", },
+  [SDA] = { "sda", },
+  [VCC_ENABLE] = { "vcc", },
+  [BATT_ALERT] = { "batt", },
+  [BACKPACK_BUS] = { "bkpk", },
+  [CHG_STATUS] = { "chg", },
+  [LED_BLUE] = { "ledb", },
+  [LED_RED] = { "ledr", },
+  [LED_GREEN] = { "ledg", },
+  [A0] = { "a0", },
+  [A1] = { "a1", },
+  [A2] = { "a2", },
+  [A3] = { "a3", },
+  [A4] = { "a4", },
+  [A5] = { "a5", },
+  [A6] = { "a6", },
+  [A7] = { "a7", },
+};
 
 PinoccioScout Scout;
 
@@ -380,15 +427,13 @@ uint16_t PinoccioScout::pinRead(uint8_t pin) {
 }
 
 int8_t PinoccioScout::getPinFromName(const char* name) {
-  uint8_t pin;
-
-  if (name[0] == 'd') {
-    pin = atoi(name+1);
+  for (uint8_t i = 0; i < lengthof(pinInfo); ++i) {
+    if (strcasecmp_P(name, pinInfo[i].name) == 0)
+      return i;
   }
 
-  if (name[0] == 'a') {
-    pin = atoi(name+1) + A0;
-  }
+  return -1;
+}
 
   if (!isDigitalPin(pin) && !isAnalogPin(pin)) {
     return -1;
