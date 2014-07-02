@@ -1455,7 +1455,7 @@ static numvar analogPinReport(void) {
 static int8_t getPinFromArg(uint8_t arg) {
   if (isstringarg(arg)) {
     return Scout.getPinFromName((const char*)getstringarg(arg));
-  } else if (getarg(arg) < NUM_DIGITAL_PINS) {
+  } else if (getarg(arg) >= 0 && getarg(arg) < NUM_DIGITAL_PINS) {
     return getarg(arg);
   } else {
     return -1;
