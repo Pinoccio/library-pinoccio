@@ -1281,6 +1281,10 @@ static numvar pinMakeOutput(void) {
 }
 
 static numvar pinMakePWM(void) {
+  if (!checkArgs(1, F("usage: pin.makepwm(\"pinName\")"))) {
+    return 0;
+  }
+
   int8_t pin = getPinFromArg(1);
   if (pin == -1) {
     speol(F("Invalid pin number"));
