@@ -483,15 +483,10 @@ void PinoccioShell::startShell() {
     }
   }
 
-  for (i=2; i<9; i++) {
-    snprintf(buf, sizeof(buf), "startup.d%d", i);
-    if (Shell.defined(buf)) {
-      doCommand(buf);
-    }
-  }
+  for (i=0; i<NUM_DIGITAL_PINS; ++i) {
+    strlcpy(buf, "startup.", sizeof(buf));
+    strlcat_P(buf, (const char*)Scout.getNameForPin(i), sizeof(buf));
 
-  for (i=0; i<8; i++) {
-    snprintf(buf, sizeof(buf), "startup.a%d", i);
     if (Shell.defined(buf)) {
       doCommand(buf);
     }
