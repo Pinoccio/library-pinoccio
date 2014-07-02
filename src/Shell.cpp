@@ -101,6 +101,7 @@ static numvar pinSetMode(void);
 static numvar pinRead(void);
 static numvar pinWrite(void);
 static numvar pinSave(void);
+static numvar pinList(void);
 static numvar pinOthersDisconnected(void);
 static numvar digitalPinReport(void);
 static numvar analogPinReport(void);
@@ -179,6 +180,11 @@ static void batteryPercentageEventHandler(uint8_t value);
 static void batteryChargingEventHandler(uint8_t value);
 static void temperatureEventHandler(int8_t tempC, int8_t tempF);
 static void ledEventHandler(uint8_t redValue, uint8_t greenValue, uint8_t blueValue);
+
+static void printSpaces(int8_t number) {
+  while (number-- > 0)
+    Serial.write(' ');
+}
 
 PinoccioShell Shell;
 
@@ -278,6 +284,7 @@ void PinoccioShell::setup() {
   addBitlashFunction("pin.read", (bitlash_function) pinRead);
   addBitlashFunction("pin.write", (bitlash_function) pinWrite);
   addBitlashFunction("pin.save", (bitlash_function) pinSave);
+  addBitlashFunction("pin.list", (bitlash_function) pinList);
   addBitlashFunction("pin.othersdisconnected", (bitlash_function) pinOthersDisconnected);
   addBitlashFunction("pin.report.digital", (bitlash_function) digitalPinReport);
   addBitlashFunction("pin.report.analog", (bitlash_function) analogPinReport);
@@ -1372,6 +1379,30 @@ static numvar pinWrite(void) {
   }
 
   Scout.pinWrite(pin, value);
+  return 1;
+}
+
+static numvar pinList(void) {
+  if (!checkArgs(0, F("usage: pin.list"))) {
+    return 0;
+  }
+
+  // TODO: This should use sp/speol, but that doesn't return the number
+  // of characters printed to use for alignment...
+  Serial.println(F("Note: pin.list currently only works on Serial"));
+  Serial.println(F("#   name    mode            value"));
+  Serial.println(F("---------------------------------"));
+  for (uint8_t pin = 0; pin < NUM_DIGITAL_PINS; ++pin) {
+    printSpaces(4 - Serial.print(pin));
+    printSpaces(8 - Serial.print(Scout.getNameForPin(pin)));
+    int8_t mode = Scout.getPinMode(pin);
+    printSpaces(16 - Serial.print(Scout.getNameForPinMode(mode) ?: F("unknown")));
+    if (mode < 0)
+      Serial.println('-');
+    else
+      Serial.println(Scout.pinRead(pin));
+  }
+
   return 1;
 }
 
