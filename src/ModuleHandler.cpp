@@ -12,17 +12,17 @@
 
 LinkedList<PinoccioModule*> moduleList = LinkedList<PinoccioModule*>();
 
-void PinoccioModuleHandler::add(PinoccioModule* module) {
+void ModuleHandler::add(PinoccioModule* module) {
   moduleList.add(module);
 }
 
-void PinoccioModuleHandler::setup() {
+void ModuleHandler::setup() {
   for (uint8_t i=0; i<moduleList.size(); i++) {
     (moduleList.get(i))->setup();
   }
 }
 
-void PinoccioModuleHandler::loop() {
+void ModuleHandler::loop() {
   for (uint8_t i=0; i<moduleList.size(); i++) {
     (moduleList.get(i))->loop();
   }

@@ -122,7 +122,7 @@ class PinoccioScout : public PinoccioClass {
 
     PBBP bp;
     WiFiBackpack wifi;
-    PinoccioScoutHandler handler;
+    ScoutHandler handler;
 
     // Schedule a sleep that lasts until now + ms. The optional bitlash
     // command is executed after the sleep and then free()'d. A previous

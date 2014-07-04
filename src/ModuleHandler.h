@@ -12,7 +12,7 @@
 #include "util/LinkedList.h"
 #include <modules/PinoccioModule.h>
 
-class PinoccioModuleHandler {
+class ModuleHandler {
   public:
     static void add(PinoccioModule* module);
 
@@ -20,5 +20,4 @@ class PinoccioModuleHandler {
     static void loop();
 };
 
-typedef PinoccioModuleHandler ModuleHandler;
 #endif

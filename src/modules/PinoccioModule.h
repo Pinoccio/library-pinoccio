@@ -15,17 +15,8 @@ class PinoccioModule {
     PinoccioModule();
     ~PinoccioModule();
 
-    void setBackpack(bool isBackpack);
-    void setBridge(bool isBridge);
-    bool isBackpack();
-    bool isBridge();
-
     virtual void setup();
     virtual void loop();
-
-  protected:
-    bool backpack;
-    bool bridge;
 };
 
 #endif

@@ -13,11 +13,11 @@
 #include <ScoutHandler.h>
 #include "util/StringBuffer.h"
 
-class PinoccioScoutHandler {
+class ScoutHandler {
 
   public:
-    PinoccioScoutHandler();
-    ~PinoccioScoutHandler();
+    ScoutHandler();
+    ~ScoutHandler();
 
     void setup();
     void loop();
