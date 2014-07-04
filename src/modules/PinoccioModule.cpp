@@ -11,10 +11,28 @@
 #include "modules/PinoccioModule.h"
 
 PinoccioModule::PinoccioModule() {
+  bridge = false;
+  backpack = false;
   ModuleHandler::add(this);
 }
 
 PinoccioModule::~PinoccioModule() { }
+
+void PinoccioModule::setBackpack(bool isBackpack) {
+  backpack = isBackpack;
+}
+
+void PinoccioModule::setBridge(bool isBridge) {
+  bridge = isBridge;
+}
+
+bool PinoccioModule::isBackpack() {
+  return backpack;
+}
+
+bool PinoccioModule::isBridge() {
+  return bridge;
+}
 
 void PinoccioModule::setup() { }
 
