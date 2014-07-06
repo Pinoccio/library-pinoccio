@@ -9,7 +9,7 @@
 #include <Arduino.h>
 #include <Scout.h>
 #include "modules/Servo/Servo.h"
-#include <TimerThree.h>
+#include "TimerThree.h"
 
 static numvar servoInitialize();
 static numvar servoSetPeriod();
