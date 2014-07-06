@@ -29,6 +29,7 @@ void PinoccioClass::setup(const char *sketchName, const char *sketchRevision, in
 
   digitalWrite(SS, HIGH);
   pinMode(SS, OUTPUT);
+  Serial.begin(115200);
 
   loadSettingsFromEeprom();
 }

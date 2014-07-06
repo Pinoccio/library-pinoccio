@@ -39,6 +39,10 @@ void ServoModule::setup() {
 
 void ServoModule::loop() { }
 
+const char *ServoModule::name() {
+  return "servo";
+}
+
 static numvar servoInitialize() {
   Timer3.initialize(getarg(1));
 }

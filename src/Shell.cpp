@@ -121,6 +121,10 @@ static numvar daisyWipe(void);
 static numvar boot(void);
 static numvar otaBoot(void);
 
+static numvar moduleList(void);
+static numvar moduleLoad(void);
+static numvar moduleLoaded(void);
+
 static numvar hqVerbose(void);
 static numvar hqPrint(void);
 static numvar hqReport(void);
@@ -294,6 +298,10 @@ void PinoccioShell::setup() {
   addBitlashFunction("scout.boot", (bitlash_function) boot);
   addBitlashFunction("scout.otaboot", (bitlash_function) otaBoot);
 
+  addBitlashFunction("module.list", (bitlash_function) moduleList);
+  addBitlashFunction("module.load", (bitlash_function) moduleLoad);
+  addBitlashFunction("module.loaded", (bitlash_function) moduleLoaded);
+
   addBitlashFunction("hq.settoken", (bitlash_function) setHQToken);
   addBitlashFunction("hq.gettoken", (bitlash_function) getHQToken);
   addBitlashFunction("hq.verbose", (bitlash_function) hqVerbose);
@@ -341,8 +349,6 @@ void PinoccioShell::setup() {
 
   if (isShellEnabled) {
     startShell();
-  } else {
-    Serial.begin(115200);
   }
 
   Scout.meshListen(1, receiveMessage);
@@ -1917,6 +1923,28 @@ static numvar otaBoot(void) {
   return 1;
 }
 
+
+/****************************\
+ *    MODULES HANDLERS       *
+\****************************/
+
+static numvar moduleList(void) {
+  ModuleHandler::list();
+  return 1;
+}
+
+static numvar moduleLoad(void) {
+  if (!checkArgs(1, F("usage: modules.load(\"string\""))) {
+    return 0;
+  }
+  ModuleHandler::load((char*)getstringarg(1));
+  return 1;
+}
+
+static numvar moduleLoaded(void) {
+  ModuleHandler::loaded();
+  return 1;
+}
 
 /****************************\
  *        HQ HANDLERS       *

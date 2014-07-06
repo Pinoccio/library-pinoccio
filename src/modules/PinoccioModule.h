@@ -17,6 +17,7 @@ class PinoccioModule {
 
     virtual void setup();
     virtual void loop();
+    virtual const char *name();
 };
 
 #endif

@@ -17,6 +17,8 @@ class ServoModule : public PinoccioModule {
 
     void setup();
     void loop();
+    const char *name();
+
 };
 
 #endif

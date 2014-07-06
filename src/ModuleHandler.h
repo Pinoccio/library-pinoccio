@@ -11,13 +11,19 @@
 
 #include "util/LinkedList.h"
 #include <modules/PinoccioModule.h>
+#include <modules/Modules.h>
 
 class ModuleHandler {
   public:
+    ModuleHandler();
     static void add(PinoccioModule* module);
 
     static void setup();
     static void loop();
+    
+    static PinoccioModule *load(char *name);
+    static void list();
+    static void loaded();
 };
 
 #endif
