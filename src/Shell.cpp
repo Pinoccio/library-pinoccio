@@ -1874,8 +1874,8 @@ static numvar daisyWipe(void) {
     speol(F("Ok, terminating. Goodbye Dave."));
   }
 
-  char report[32];
-  snprintf(report, sizeof(report),"[%d,[%d],[\"bye\"]]",keyMap("daisy",0),keyMap("dave",0));
+  StringBuffer report(100);
+  report.appendSprintf("[%d,[%d],[\"bye\"]]",keyMap("daisy",0),keyMap("dave",0));
   Scout.handler.report(report);
 
   if (Scout.isLeadScout()) {
