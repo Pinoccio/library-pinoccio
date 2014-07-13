@@ -12,6 +12,7 @@
 #include "Wifi.h"
 #include "../../ScoutHandler.h"
 #include "../../hq/HqHandler.h"
+#include "../../key/key.h"
 #include "src/bitlash.h"
 
 // Be careful with using non-alphanumerics like '-' here, they might
@@ -20,6 +21,26 @@
 #define NTP_SERVER "pool.ntp.org"
 // Sync on connect and every 24 hours thereafter
 #define NTP_INTERVAL (3600L * 24)
+
+static numvar wifiReport(void);
+static numvar wifiStatus(void);
+static numvar wifiList(void);
+static numvar wifixConfig(void);
+static numvar wifixDhcp(void);
+static numvar wifixStatic(void);
+static numvar wifiReassociate(void);
+static numvar wifiDisassociate(void);
+static numvar wifiCommand(void);
+static numvar wifiPing(void);
+static numvar wifiDNSLookup(void);
+static numvar wifiGetTime(void);
+static numvar wifiSleep(void);
+static numvar wifiWakeup(void);
+static numvar wifiVerbose(void);
+static numvar wifiStats(void);
+
+// jsut copy/pasting to prep for refactor
+static bool checkArgs(uint8_t exactly, const __FlashStringHelper *errorMsg);
 
 static void print_line(const uint8_t *buf, uint16_t len, void *data) {
   while (len--)
@@ -77,10 +98,22 @@ void WifiModule::onNcmDisconnect(void *data) {
 
 void WifiModule::setup() {
 
-  // Alternatively, use the UART for Wifi backpacks that still have the
-  // UART firmware running on them
-  // Serial1.begin(115200);
-  // return gs.begin(Serial1);
+  addBitlashFunction("wifi.report", (bitlash_function) wifiReport);
+  addBitlashFunction("wifi.status", (bitlash_function) wifiStatus);
+  addBitlashFunction("wifi.list", (bitlash_function) wifiList);
+  addBitlashFunction("wifi.config", (bitlash_function) wifixConfig);
+  addBitlashFunction("wifi.dhcp", (bitlash_function) wifixDhcp);
+  addBitlashFunction("wifi.static", (bitlash_function) wifixStatic);
+  addBitlashFunction("wifi.reassociate", (bitlash_function) wifiReassociate);
+  addBitlashFunction("wifi.disassociate", (bitlash_function) wifiDisassociate);
+  addBitlashFunction("wifi.command", (bitlash_function) wifiCommand);
+  addBitlashFunction("wifi.ping", (bitlash_function) wifiPing);
+  addBitlashFunction("wifi.dnslookup", (bitlash_function) wifiDNSLookup);
+  addBitlashFunction("wifi.gettime", (bitlash_function) wifiGetTime);
+  addBitlashFunction("wifi.sleep", (bitlash_function) wifiSleep);
+  addBitlashFunction("wifi.wakeup", (bitlash_function) wifiWakeup);
+  addBitlashFunction("wifi.verbose", (bitlash_function) wifiVerbose);
+  addBitlashFunction("wifi.stats", (bitlash_function) wifiStats);
 
   SPI.begin();
   SPI.setClockDivider(SPI_CLOCK_DIV16);
@@ -95,6 +128,8 @@ void WifiModule::setup() {
 
   if (HqHandler::cacert_len)
     gs.addCert(CA_CERTNAME_HQ, /* to_flash */ false, HqHandler::cacert, HqHandler::cacert_len);
+
+  autoConnectHq();
 
 }
 
@@ -253,6 +288,174 @@ bool WifiModule::printTime(Print &p) {
   return runDirectCommand(p, "AT+GETTIME=?");
 }
 
+static StringBuffer wifiReportHQ(void) {
+  StringBuffer report(100);
+  report.appendSprintf("[%d,[%d,%d],[%s,%s]]",
+          keyMap("wifi", 0),
+          keyMap("connected", 0),
+          keyMap("hq", 0),
+          Scout.wifi.isAPConnected() ? "true" : "false",
+          Scout.wifi.isHQConnected() ? "true" : "false");
+  return Scout.handler.report(report);
+}
+
+static numvar wifiReport(void) {
+  speol(wifiReportHQ());
+  return 1;
+}
+
+static numvar wifiStatus(void) {
+  if (getarg(0) > 0 && getarg(1) == 1) {
+    Scout.wifi.printProfiles(Serial);
+  } else {
+    Scout.wifi.printFirmwareVersions(Serial);
+    Scout.wifi.printCurrentNetworkStatus(Serial);
+  }
+  return 1;
+}
+
+static numvar wifiList(void) {
+  if (!Scout.wifi.printAPs(Serial)) {
+    speol(F("Error: Scan failed"));
+    return 0;
+  }
+  return 1;
+}
+
+static numvar wifixConfig(void) {
+  if (!checkArgs(2, F("usage: wifi.config(\"wifiAPName\", \"wifiAPPassword\")"))) {
+    return 0;
+  }
+
+  if (!Scout.wifi.wifiConfig((const char *)getstringarg(1), (const char *)getstringarg(2))) {
+    speol(F("Error: saving Scout.wifi.configuration data failed"));
+  }
+  return 1;
+}
+
+static numvar wifixDhcp(void) {
+  const char *host = (getarg(0) >= 1 ? (const char*)getstringarg(1) : NULL);
+
+  if (!Scout.wifi.wifiDhcp(host)) {
+    speol(F("Error: saving Scout.wifi.configuration data failed"));
+  }
+  return 1;
+}
+
+static numvar wifixStatic(void) {
+  if (!checkArgs(4, F("usage: wifi.static(\"ip\", \"netmask\", \"gateway\", \"dns\")"))) {
+    return 0;
+  }
+
+  IPAddress ip, nm, gw, dns;
+
+  if (!GSCore::parseIpAddress(&ip, (const char *)getstringarg(1))) {
+    speol(F("Error: Invalid IP address"));
+    return 0;
+  }
+
+  if (!GSCore::parseIpAddress(&nm, (const char *)getstringarg(2))) {
+    speol(F("Error: Invalid netmask"));
+    return 0;
+  }
+
+  if (!GSCore::parseIpAddress(&gw, (const char *)getstringarg(3))) {
+    speol(F("Error: Invalid gateway"));
+    return 0;
+  }
+
+  if (!GSCore::parseIpAddress(&dns, (const char *)getstringarg(3))) {
+    speol(F("Error: Invalid dns server"));
+    return 0;
+  }
+
+  if (!Scout.wifi.wifiStatic(ip, nm, gw, dns)) {
+    speol(F("Error: saving Scout.wifi.configuration data failed"));
+    return 0;
+  }
+  return 1;
+}
+
+static numvar wifiDisassociate(void) {
+  Scout.wifi.disassociate();
+  return 1;
+}
+
+static numvar wifiReassociate(void) {
+  // This restart the NCM
+  return Scout.wifi.autoConnectHq();
+}
+
+static numvar wifiCommand(void) {
+  if (!checkArgs(1, F("usage: wifi.command(\"command\")"))) {
+    return 0;
+  }
+  if (!Scout.wifi.runDirectCommand(Serial, (const char *)getstringarg(1))) {
+     speol(F("Error: Wi-Fi direct command failed"));
+  }
+  return 1;
+}
+
+static numvar wifiPing(void) {
+  if (!checkArgs(1, F("usage: wifi.ping(\"hostname\")"))) {
+    return 0;
+  }
+  if (!Scout.wifi.ping(Serial, (const char *)getstringarg(1))) {
+     speol(F("Error: Wi-Fi ping command failed"));
+  }
+  return 1;
+}
+
+static numvar wifiDNSLookup(void) {
+  if (!checkArgs(1, F("usage: wifi.dnslookup(\"hostname\")"))) {
+    return 0;
+  }
+  if (!Scout.wifi.dnsLookup(Serial, (const char *)getstringarg(1))) {
+     speol(F("Error: Wi-Fi DNS lookup command failed"));
+  }
+  return 1;
+}
+
+static numvar wifiGetTime(void) {
+  if (!Scout.wifi.printTime(Serial)) {
+     speol(F("Error: Wi-Fi NTP time lookup command failed"));
+  }
+  return 1;
+}
+
+static numvar wifiSleep(void) {
+  if (!Scout.wifi.goToSleep()) {
+     speol(F("Error: Wi-Fi sleep command failed"));
+  }
+  return 1;
+}
+
+static numvar wifiWakeup(void) {
+  if (!Scout.wifi.wakeUp()) {
+     speol(F("Error: Wi-Fi wakeup command failed"));
+  }
+  return 1;
+}
+
+static numvar wifiVerbose(void) {
+  // TODO
+  return 1;
+}
+
+static numvar wifiStats(void) {
+  sp(F("Number of connections to AP since boot: "));
+  speol(Scout.wifi.apConnCount);
+  sp(F("Number of connections to HQ since boot: "));
+  speol(Scout.wifi.hqConnCount);
+}
+
+static bool checkArgs(uint8_t exactly, const __FlashStringHelper *errorMsg) {
+  if (getarg(0) != exactly) {
+      speol(errorMsg);
+      return false;
+  }
+  return true;
+}
 
 /* commands for auto-config
 AT+WWPA=password

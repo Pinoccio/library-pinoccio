@@ -135,23 +135,6 @@ static numvar stopStateChangeEvents(void);
 static numvar setEventCycle(void);
 static numvar setEventVerbose(void);
 
-static numvar wifiReport(void);
-static numvar wifiStatus(void);
-static numvar wifiList(void);
-static numvar wifiConfig(void);
-static numvar wifiDhcp(void);
-static numvar wifiStatic(void);
-static numvar wifiReassociate(void);
-static numvar wifiDisassociate(void);
-static numvar wifiCommand(void);
-static numvar wifiPing(void);
-static numvar wifiDNSLookup(void);
-static numvar wifiGetTime(void);
-static numvar wifiSleep(void);
-static numvar wifiWakeup(void);
-static numvar wifiVerbose(void);
-static numvar wifiStats(void);
-
 static numvar keyMap(void);
 static numvar keyFree(void);
 static numvar keyPrint(void);
@@ -319,25 +302,6 @@ void PinoccioShell::setup() {
   addBitlashFunction("key.print", (bitlash_function) keyPrint);
   addBitlashFunction("key.number", (bitlash_function) keyNumber);
   addBitlashFunction("key.save", (bitlash_function) keySave);
-
-  if (Scout.isLeadScout()) {
-    addBitlashFunction("wifi.report", (bitlash_function) wifiReport);
-    addBitlashFunction("wifi.status", (bitlash_function) wifiStatus);
-    addBitlashFunction("wifi.list", (bitlash_function) wifiList);
-    addBitlashFunction("wifi.config", (bitlash_function) wifiConfig);
-    addBitlashFunction("wifi.dhcp", (bitlash_function) wifiDhcp);
-    addBitlashFunction("wifi.static", (bitlash_function) wifiStatic);
-    addBitlashFunction("wifi.reassociate", (bitlash_function) wifiReassociate);
-    addBitlashFunction("wifi.disassociate", (bitlash_function) wifiDisassociate);
-    addBitlashFunction("wifi.command", (bitlash_function) wifiCommand);
-    addBitlashFunction("wifi.ping", (bitlash_function) wifiPing);
-    addBitlashFunction("wifi.dnslookup", (bitlash_function) wifiDNSLookup);
-    addBitlashFunction("wifi.gettime", (bitlash_function) wifiGetTime);
-    addBitlashFunction("wifi.sleep", (bitlash_function) wifiSleep);
-    addBitlashFunction("wifi.wakeup", (bitlash_function) wifiWakeup);
-    addBitlashFunction("wifi.verbose", (bitlash_function) wifiVerbose);
-    addBitlashFunction("wifi.stats", (bitlash_function) wifiStats);
-  }
 
   // set up event handlers
   Scout.digitalPinEventHandler = digitalPinEventHandler;
@@ -1884,12 +1848,13 @@ static numvar daisyWipe(void) {
   snprintf(report, sizeof(report),"[%d,[%d],[\"bye\"]]",keyMap("daisy",0),keyMap("dave",0));
   Scout.handler.report(report);
 
-  if (Scout.isLeadScout()) {
-    if (!Scout.wifi.runDirectCommand(Serial, "AT&F")) {
+  if (ModuleHandler::loaded("wifi")) {
+    WifiModule *wifi = (WifiModule*)ModuleHandler::load("wifi");
+    if (!wifi->runDirectCommand(Serial, "AT&F")) {
        sp(F("Error: Wi-Fi direct command failed"));
        ret = false;
     }
-    if (!Scout.wifi.runDirectCommand(Serial, "AT&W0")) {
+    if (!wifi->runDirectCommand(Serial, "AT&W0")) {
        sp(F("Error: Wi-Fi direct command failed"));
        ret = false;
     }
@@ -2027,172 +1992,6 @@ static numvar setEventCycle(void) {
 static numvar setEventVerbose(void) {
   Scout.eventVerboseOutput = getarg(1);
   return 1;
-}
-
-
-/****************************\
- *   SCOUT.WIFI.HANDLERS    *
-\****************************/
-
-static StringBuffer wifiReportHQ(void) {
-  StringBuffer report(100);
-  report.appendSprintf("[%d,[%d,%d],[%s,%s]]",
-          keyMap("wifi", 0),
-          keyMap("connected", 0),
-          keyMap("hq", 0),
-          Scout.wifi.isAPConnected() ? "true" : "false",
-          Scout.wifi.isHQConnected() ? "true" : "false");
-  return Scout.handler.report(report);
-}
-
-static numvar wifiReport(void) {
-  speol(wifiReportHQ());
-  return 1;
-}
-
-static numvar wifiStatus(void) {
-  if (getarg(0) > 0 && getarg(1) == 1) {
-    Scout.wifi.printProfiles(Serial);
-  } else {
-    Scout.wifi.printFirmwareVersions(Serial);
-    Scout.wifi.printCurrentNetworkStatus(Serial);
-  }
-  return 1;
-}
-
-static numvar wifiList(void) {
-  if (!Scout.wifi.printAPs(Serial)) {
-    speol(F("Error: Scan failed"));
-    return 0;
-  }
-  return 1;
-}
-
-static numvar wifiConfig(void) {
-  if (!checkArgs(2, F("usage: wifi.config(\"wifiAPName\", \"wifiAPPassword\")"))) {
-    return 0;
-  }
-
-  if (!Scout.wifi.wifiConfig((const char *)getstringarg(1), (const char *)getstringarg(2))) {
-    speol(F("Error: saving Scout.wifi.configuration data failed"));
-  }
-  return 1;
-}
-
-static numvar wifiDhcp(void) {
-  const char *host = (getarg(0) >= 1 ? (const char*)getstringarg(1) : NULL);
-
-  if (!Scout.wifi.wifiDhcp(host)) {
-    speol(F("Error: saving Scout.wifi.configuration data failed"));
-  }
-  return 1;
-}
-
-static numvar wifiStatic(void) {
-  if (!checkArgs(4, F("usage: wifi.static(\"ip\", \"netmask\", \"gateway\", \"dns\")"))) {
-    return 0;
-  }
-
-  IPAddress ip, nm, gw, dns;
-
-  if (!GSCore::parseIpAddress(&ip, (const char *)getstringarg(1))) {
-    speol(F("Error: Invalid IP address"));
-    return 0;
-  }
-
-  if (!GSCore::parseIpAddress(&nm, (const char *)getstringarg(2))) {
-    speol(F("Error: Invalid netmask"));
-    return 0;
-  }
-
-  if (!GSCore::parseIpAddress(&gw, (const char *)getstringarg(3))) {
-    speol(F("Error: Invalid gateway"));
-    return 0;
-  }
-
-  if (!GSCore::parseIpAddress(&dns, (const char *)getstringarg(3))) {
-    speol(F("Error: Invalid dns server"));
-    return 0;
-  }
-
-  if (!Scout.wifi.wifiStatic(ip, nm, gw, dns)) {
-    speol(F("Error: saving Scout.wifi.configuration data failed"));
-    return 0;
-  }
-  return 1;
-}
-
-static numvar wifiDisassociate(void) {
-  Scout.wifi.disassociate();
-  return 1;
-}
-
-static numvar wifiReassociate(void) {
-  // This restart the NCM
-  return Scout.wifi.autoConnectHq();
-}
-
-static numvar wifiCommand(void) {
-  if (!checkArgs(1, F("usage: wifi.command(\"command\")"))) {
-    return 0;
-  }
-  if (!Scout.wifi.runDirectCommand(Serial, (const char *)getstringarg(1))) {
-     speol(F("Error: Wi-Fi direct command failed"));
-  }
-  return 1;
-}
-
-static numvar wifiPing(void) {
-  if (!checkArgs(1, F("usage: wifi.ping(\"hostname\")"))) {
-    return 0;
-  }
-  if (!Scout.wifi.ping(Serial, (const char *)getstringarg(1))) {
-     speol(F("Error: Wi-Fi ping command failed"));
-  }
-  return 1;
-}
-
-static numvar wifiDNSLookup(void) {
-  if (!checkArgs(1, F("usage: wifi.dnslookup(\"hostname\")"))) {
-    return 0;
-  }
-  if (!Scout.wifi.dnsLookup(Serial, (const char *)getstringarg(1))) {
-     speol(F("Error: Wi-Fi DNS lookup command failed"));
-  }
-  return 1;
-}
-
-static numvar wifiGetTime(void) {
-  if (!Scout.wifi.printTime(Serial)) {
-     speol(F("Error: Wi-Fi NTP time lookup command failed"));
-  }
-  return 1;
-}
-
-static numvar wifiSleep(void) {
-  if (!Scout.wifi.goToSleep()) {
-     speol(F("Error: Wi-Fi sleep command failed"));
-  }
-  return 1;
-}
-
-static numvar wifiWakeup(void) {
-  if (!Scout.wifi.wakeUp()) {
-     speol(F("Error: Wi-Fi wakeup command failed"));
-  }
-  return 1;
-}
-
-static numvar wifiVerbose(void) {
-  // TODO
-  return 1;
-}
-
-static numvar wifiStats(void) {
-  sp(F("Number of connections to AP since boot: "));
-  speol(Scout.wifi.apConnCount);
-  sp(F("Number of connections to HQ since boot: "));
-  speol(Scout.wifi.hqConnCount);
 }
 
 
