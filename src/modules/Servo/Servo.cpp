@@ -11,6 +11,8 @@
 #include "modules/Servo/Servo.h"
 #include "TimerThree.h"
 
+// TODO Timer3 should be created dynamically when the module is loaded, not static
+
 static numvar servoInitialize();
 static numvar servoSetPeriod();
 static numvar servoStart();
