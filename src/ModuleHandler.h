@@ -22,6 +22,7 @@ class ModuleHandler {
     static void loop();
     
     static PinoccioModule *load(char *name);
+    static bool loaded(char *name);
     static void list();
     static void loaded();
 };

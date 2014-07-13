@@ -35,6 +35,14 @@ void ModuleHandler::list() {
   ModulesPrint();
 }
 
+bool ModuleHandler::loaded(char *name) {
+  for (uint8_t i=0; i<moduleList.size(); i++) {
+    if(strcmp(moduleList.get(i)->name(),name) == 0) return true;
+  }
+  
+  return false;
+}
+
 PinoccioModule *ModuleHandler::load(char *name) {
   PinoccioModule* module;
   for (uint8_t i=0; i<moduleList.size(); i++) {
