@@ -8,6 +8,7 @@
 \**************************************************************************/
 #include <Arduino.h>
 #include <Scout.h>
+#include <SPI.h>
 #include "Wifi.h"
 #include "../../ScoutHandler.h"
 #include "../../hq/HqHandler.h"
@@ -25,10 +26,6 @@ static void print_line(const uint8_t *buf, uint16_t len, void *data) {
     spb(*buf++);
   speol();
 }
-
-WifiModule::WifiModule() : client(gs) { }
-
-WifiModule::~WifiModule() { }
 
 const char *WifiModule::name() {
   return "wifi";
@@ -53,10 +50,10 @@ void WifiModule::onAssociate(void *data) {
 void WifiModule::onNcmConnect(void *data, GSCore::cid_t cid) {
   WifiModule& wifi = *(WifiModule*)data;
 
-  wifi.client = cid;
+  *(wifi.client) = cid;
 
   if (HqHandler::cacert_len != 0) {
-    if (!wifi.client.enableTls(CA_CERTNAME_HQ)) {
+    if (!wifi.client->enableTls(CA_CERTNAME_HQ)) {
       // If enableTls fails, the NCM doesn't retry the TCP
       // connection. We restart the entire association to get NCM to
       // retry the TCP connection instead.
@@ -75,11 +72,10 @@ void WifiModule::onNcmConnect(void *data, GSCore::cid_t cid) {
 void WifiModule::onNcmDisconnect(void *data) {
   WifiModule& wifi = *(WifiModule*)data;
 
-  wifi.client = GSCore::INVALID_CID;
+  *(wifi.client) = GSCore::INVALID_CID;
 }
 
-bool WifiModule::setup() {
-  Backpack::setup();
+void WifiModule::setup() {
 
   // Alternatively, use the UART for Wifi backpacks that still have the
   // UART firmware running on them
@@ -93,20 +89,18 @@ bool WifiModule::setup() {
   gs.onNcmConnect = onNcmConnect;
   gs.onNcmDisconnect = onNcmDisconnect;
   gs.eventData = this;
+  client = new GSTcpClient(gs);
 
-  if (!gs.begin(7))
-    return false;
+  if (!gs.begin(7)) return;
 
   if (HqHandler::cacert_len)
     gs.addCert(CA_CERTNAME_HQ, /* to_flash */ false, HqHandler::cacert, HqHandler::cacert_len);
 
-  return true;
 }
 
 void WifiModule::loop() {
-  Backpack::loop();
   gs.loop();
-  client = gs.getNcmCid();
+  *client = gs.getNcmCid();
 }
 
 static bool isWepKey(const char *key) {
@@ -222,9 +216,9 @@ bool WifiModule::isAPConnected() {
 
 bool WifiModule::isHQConnected() {
   #ifdef USE_TLS
-  return client.connected() && client.sslConnected();
+  return client->connected() && client->sslConnected();
   #else
-  return client.connected();
+  return client->connected();
   #endif
 }
 

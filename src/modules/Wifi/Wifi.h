@@ -15,6 +15,7 @@
 class WifiModule : public PinoccioModule {
 
   public:
+
     void setup();
     const char *name();
 
@@ -50,7 +51,7 @@ class WifiModule : public PinoccioModule {
     bool goToSleep();
     bool wakeUp();
 
-    GSTcpClient client;
+    GSTcpClient *client;
     
     uint16_t apConnCount;
     uint16_t hqConnCount;
