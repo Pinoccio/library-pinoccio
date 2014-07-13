@@ -430,7 +430,7 @@ StringBuffer ScoutHandler::report(const String &report) {
 
 void leadHQConnect() {
 
-  if (Scout.handler.isBridged || Scout.wifi.client.connected()) {
+  if (Scout.handler.isBridged || (Scout.handler.client && Scout.handler.client->connected())) {
     char token[33];
     StringBuffer auth(64);
     token[32] = 0;
@@ -457,8 +457,8 @@ void leadHQHandle(void) {
     hqIncoming += Scout.handler.bridge;
     Scout.handler.bridge = "";
   }else{
-    if (Scout.wifi.client.available()) {
-      rsize = hqIncoming.readClient(Scout.wifi.client, 128);
+    if (Scout.handler.client && Scout.handler.client->available()) {
+      rsize = hqIncoming.readClient(*(Scout.handler.client), 128);
     }
   }
 
@@ -638,7 +638,7 @@ void leadSignal(const String &json) {
     return;
   }
 
-  if (!Scout.wifi.client.connected()) {
+  if (!(Scout.handler.client && Scout.handler.client->connected())) {
     if (hqVerboseOutput) {
       Serial.println(F("HQ offline, can't signal"));
       Serial.println(json);
@@ -650,8 +650,8 @@ void leadSignal(const String &json) {
     Serial.println(json);
   }
 
-  Scout.wifi.client.print(json);
-  Scout.wifi.client.flush();
+  Scout.handler.client->print(json);
+  Scout.handler.client->flush();
 }
 
 // called whenever another scout sends an answer back to us

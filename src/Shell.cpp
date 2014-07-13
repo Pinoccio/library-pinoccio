@@ -135,7 +135,7 @@ static numvar stopStateChangeEvents(void);
 static numvar setEventCycle(void);
 static numvar setEventVerbose(void);
 
-static numvar keyMap(void);
+static numvar keySer(void);
 static numvar keyFree(void);
 static numvar keyPrint(void);
 static numvar keyNumber(void);
@@ -297,7 +297,7 @@ void PinoccioShell::setup() {
   addBitlashFunction("events.setcycle", (bitlash_function) setEventCycle);
   addBitlashFunction("events.verbose", (bitlash_function) setEventVerbose);
 
-  addBitlashFunction("key", (bitlash_function) keyMap);
+  addBitlashFunction("key", (bitlash_function) keySer);
   addBitlashFunction("key.free", (bitlash_function) keyFree);
   addBitlashFunction("key.print", (bitlash_function) keyPrint);
   addBitlashFunction("key.number", (bitlash_function) keyNumber);
@@ -570,7 +570,7 @@ static numvar getMicros(void) {
 *        KEY HANDLERS        *
 \****************************/
 
-static numvar keyMap(void) {
+static numvar keySer(void) {
   if (!checkArgs(1, 2, F("usage: key(\"string\") [, temp_flag]"))) {
     return 0;
   }

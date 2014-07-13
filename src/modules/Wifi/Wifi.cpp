@@ -12,8 +12,10 @@
 #include "Wifi.h"
 #include "../../ScoutHandler.h"
 #include "../../hq/HqHandler.h"
-#include "../../key/key.h"
 #include "src/bitlash.h"
+extern "C" {
+#include "key/key.h"
+}
 
 // Be careful with using non-alphanumerics like '-' here, they might
 // silently cause SSL to fail
@@ -71,10 +73,10 @@ void WifiModule::onAssociate(void *data) {
 void WifiModule::onNcmConnect(void *data, GSCore::cid_t cid) {
   WifiModule& wifi = *(WifiModule*)data;
 
-  *(wifi.client) = cid;
+  *(Scout.handler.client) = cid;
 
   if (HqHandler::cacert_len != 0) {
-    if (!wifi.client->enableTls(CA_CERTNAME_HQ)) {
+    if (!Scout.handler.client->enableTls(CA_CERTNAME_HQ)) {
       // If enableTls fails, the NCM doesn't retry the TCP
       // connection. We restart the entire association to get NCM to
       // retry the TCP connection instead.
@@ -93,11 +95,14 @@ void WifiModule::onNcmConnect(void *data, GSCore::cid_t cid) {
 void WifiModule::onNcmDisconnect(void *data) {
   WifiModule& wifi = *(WifiModule*)data;
 
-  *(wifi.client) = GSCore::INVALID_CID;
+  *(Scout.handler.client) = GSCore::INVALID_CID;
 }
 
+// this is our singleton object for c function pointer convenience
+WifiModule *wifi;
 void WifiModule::setup() {
 
+  wifi = this;
   addBitlashFunction("wifi.report", (bitlash_function) wifiReport);
   addBitlashFunction("wifi.status", (bitlash_function) wifiStatus);
   addBitlashFunction("wifi.list", (bitlash_function) wifiList);
@@ -122,7 +127,7 @@ void WifiModule::setup() {
   gs.onNcmConnect = onNcmConnect;
   gs.onNcmDisconnect = onNcmDisconnect;
   gs.eventData = this;
-  client = new GSTcpClient(gs);
+  Scout.handler.client = new GSTcpClient(gs);
 
   if (!gs.begin(7)) return;
 
@@ -130,12 +135,12 @@ void WifiModule::setup() {
     gs.addCert(CA_CERTNAME_HQ, /* to_flash */ false, HqHandler::cacert, HqHandler::cacert_len);
 
   autoConnectHq();
-
+  
 }
 
 void WifiModule::loop() {
   gs.loop();
-  *client = gs.getNcmCid();
+  *(Scout.handler.client) = gs.getNcmCid();
 }
 
 static bool isWepKey(const char *key) {
@@ -249,14 +254,6 @@ bool WifiModule::isAPConnected() {
   return gs.isAssociated();
 }
 
-bool WifiModule::isHQConnected() {
-  #ifdef USE_TLS
-  return client->connected() && client->sslConnected();
-  #else
-  return client->connected();
-  #endif
-}
-
 bool WifiModule::dnsLookup(Print& p, const char *host) {
   // TODO
   return false;
@@ -294,28 +291,28 @@ static StringBuffer wifiReportHQ(void) {
           keyMap("wifi", 0),
           keyMap("connected", 0),
           keyMap("hq", 0),
-          Scout.wifi.isAPConnected() ? "true" : "false",
-          Scout.wifi.isHQConnected() ? "true" : "false");
+          wifi->isAPConnected() ? "true" : "false",
+          Scout.handler.client->connected() ? "true" : "false");
   return Scout.handler.report(report);
 }
 
-static numvar wifiReport(void) {
+numvar wifiReport(void) {
   speol(wifiReportHQ());
   return 1;
 }
 
-static numvar wifiStatus(void) {
+numvar wifiStatus(void) {
   if (getarg(0) > 0 && getarg(1) == 1) {
-    Scout.wifi.printProfiles(Serial);
+    wifi->printProfiles(Serial);
   } else {
-    Scout.wifi.printFirmwareVersions(Serial);
-    Scout.wifi.printCurrentNetworkStatus(Serial);
+    wifi->printFirmwareVersions(Serial);
+    wifi->printCurrentNetworkStatus(Serial);
   }
   return 1;
 }
 
 static numvar wifiList(void) {
-  if (!Scout.wifi.printAPs(Serial)) {
+  if (!wifi->printAPs(Serial)) {
     speol(F("Error: Scan failed"));
     return 0;
   }
@@ -327,8 +324,8 @@ static numvar wifixConfig(void) {
     return 0;
   }
 
-  if (!Scout.wifi.wifiConfig((const char *)getstringarg(1), (const char *)getstringarg(2))) {
-    speol(F("Error: saving Scout.wifi.configuration data failed"));
+  if (!wifi->wifiConfig((const char *)getstringarg(1), (const char *)getstringarg(2))) {
+    speol(F("Error: saving wifi->configuration data failed"));
   }
   return 1;
 }
@@ -336,8 +333,8 @@ static numvar wifixConfig(void) {
 static numvar wifixDhcp(void) {
   const char *host = (getarg(0) >= 1 ? (const char*)getstringarg(1) : NULL);
 
-  if (!Scout.wifi.wifiDhcp(host)) {
-    speol(F("Error: saving Scout.wifi.configuration data failed"));
+  if (!wifi->wifiDhcp(host)) {
+    speol(F("Error: saving wifi->configuration data failed"));
   }
   return 1;
 }
@@ -369,28 +366,28 @@ static numvar wifixStatic(void) {
     return 0;
   }
 
-  if (!Scout.wifi.wifiStatic(ip, nm, gw, dns)) {
-    speol(F("Error: saving Scout.wifi.configuration data failed"));
+  if (!wifi->wifiStatic(ip, nm, gw, dns)) {
+    speol(F("Error: saving wifi->configuration data failed"));
     return 0;
   }
   return 1;
 }
 
 static numvar wifiDisassociate(void) {
-  Scout.wifi.disassociate();
+  wifi->disassociate();
   return 1;
 }
 
 static numvar wifiReassociate(void) {
   // This restart the NCM
-  return Scout.wifi.autoConnectHq();
+  return wifi->autoConnectHq();
 }
 
 static numvar wifiCommand(void) {
   if (!checkArgs(1, F("usage: wifi.command(\"command\")"))) {
     return 0;
   }
-  if (!Scout.wifi.runDirectCommand(Serial, (const char *)getstringarg(1))) {
+  if (!wifi->runDirectCommand(Serial, (const char *)getstringarg(1))) {
      speol(F("Error: Wi-Fi direct command failed"));
   }
   return 1;
@@ -400,7 +397,7 @@ static numvar wifiPing(void) {
   if (!checkArgs(1, F("usage: wifi.ping(\"hostname\")"))) {
     return 0;
   }
-  if (!Scout.wifi.ping(Serial, (const char *)getstringarg(1))) {
+  if (!wifi->ping(Serial, (const char *)getstringarg(1))) {
      speol(F("Error: Wi-Fi ping command failed"));
   }
   return 1;
@@ -410,28 +407,28 @@ static numvar wifiDNSLookup(void) {
   if (!checkArgs(1, F("usage: wifi.dnslookup(\"hostname\")"))) {
     return 0;
   }
-  if (!Scout.wifi.dnsLookup(Serial, (const char *)getstringarg(1))) {
+  if (!wifi->dnsLookup(Serial, (const char *)getstringarg(1))) {
      speol(F("Error: Wi-Fi DNS lookup command failed"));
   }
   return 1;
 }
 
 static numvar wifiGetTime(void) {
-  if (!Scout.wifi.printTime(Serial)) {
+  if (!wifi->printTime(Serial)) {
      speol(F("Error: Wi-Fi NTP time lookup command failed"));
   }
   return 1;
 }
 
 static numvar wifiSleep(void) {
-  if (!Scout.wifi.goToSleep()) {
+  if (!wifi->goToSleep()) {
      speol(F("Error: Wi-Fi sleep command failed"));
   }
   return 1;
 }
 
 static numvar wifiWakeup(void) {
-  if (!Scout.wifi.wakeUp()) {
+  if (!wifi->wakeUp()) {
      speol(F("Error: Wi-Fi wakeup command failed"));
   }
   return 1;
@@ -444,9 +441,9 @@ static numvar wifiVerbose(void) {
 
 static numvar wifiStats(void) {
   sp(F("Number of connections to AP since boot: "));
-  speol(Scout.wifi.apConnCount);
+  speol(wifi->apConnCount);
   sp(F("Number of connections to HQ since boot: "));
-  speol(Scout.wifi.hqConnCount);
+  speol(wifi->hqConnCount);
 }
 
 static bool checkArgs(uint8_t exactly, const __FlashStringHelper *errorMsg) {

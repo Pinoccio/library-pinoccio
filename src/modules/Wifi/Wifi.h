@@ -18,8 +18,6 @@ class WifiModule : public PinoccioModule {
 
     void setup();
     const char *name();
-
-    bool init();
     void loop();
 
     // Does not take effect until autoConnectHq() is called
@@ -40,7 +38,6 @@ class WifiModule : public PinoccioModule {
     void printFirmwareVersions(Print& p);
 
     bool isAPConnected();
-    bool isHQConnected();
 
     bool dnsLookup(Print &p, const char *host);
     bool ping(Print &p, const char *host);
@@ -50,8 +47,6 @@ class WifiModule : public PinoccioModule {
 
     bool goToSleep();
     bool wakeUp();
-
-    GSTcpClient *client;
     
     uint16_t apConnCount;
     uint16_t hqConnCount;

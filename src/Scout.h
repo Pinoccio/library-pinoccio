@@ -121,7 +121,6 @@ class PinoccioScout : public PinoccioClass {
     uint32_t getSleepTime();
 
     PBBP bp;
-    WiFiBackpack wifi;
     ScoutHandler handler;
 
     // Schedule a sleep that lasts until now + ms. The optional bitlash

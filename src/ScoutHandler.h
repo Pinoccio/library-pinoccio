@@ -10,7 +10,7 @@
 #define LIB_PINOCCIO_SCOUTHANDLER_H_
 
 #include <Pinoccio.h>
-#include <ScoutHandler.h>
+#include <GS.h>
 #include "util/StringBuffer.h"
 
 class ScoutHandler {
@@ -28,6 +28,8 @@ class ScoutHandler {
     bool isBridged;
     StringBuffer bridge;
     void setBridged(bool flag);
+
+    GSTcpClient *client;
 
   protected:
 };
