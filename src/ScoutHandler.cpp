@@ -11,7 +11,6 @@
 #include <Shell.h>
 #include <Scout.h>
 #include "backpack-bus/PBBP.h"
-#include "backpacks/wifi/WiFiBackpack.h"
 #include "util/StringBuffer.h"
 #include "util/String.h"
 #include "util/PrintToString.h"
