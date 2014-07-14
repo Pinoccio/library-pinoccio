@@ -360,6 +360,7 @@ StringBuffer report2json(const ConstBuf& in) {
   // copy cuz we edit it
   char *report = (char*)malloc(in.length());
   memcpy(report, in, in.length());
+  report[in.length()] = 0; // in's buf isn't null terminated for some reason
 
   // parse this and humanize
   js0n((unsigned char*)report, strlen(report), ir, 16);
@@ -397,6 +398,12 @@ StringBuffer report2json(const ConstBuf& in) {
     reportJson.appendSprintf("%s", vals + iv[i]);
   }
 
+  // newer seq added to end is just a number
+  if(ir[6])
+  {
+    report[ir[6]+ir[7]] = 0;
+    reportJson.appendSprintf(",\"at\":%s",report+ir[6]);
+  }
   reportJson += "}";
   free(report);
   return reportJson;
@@ -419,8 +426,10 @@ static void leadAnnouncementSend(uint16_t group, uint16_t from, const ConstBuf& 
   leadSignal(report);
 }
 
-// [3,[0,1,2],[v,v,v]]
-StringBuffer PinoccioScoutHandler::report(const String &report) {
+// [3,[0,1,2],[v,v,v],4]
+StringBuffer PinoccioScoutHandler::report(StringBuffer &report) {
+  report.setCharAt(report.length() - 1, ',');
+  report.appendSprintf("%lu]",millis());
   Scout.handler.announce(0xBEEF, report);
   return report2json(report);
 }
