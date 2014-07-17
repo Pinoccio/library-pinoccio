@@ -88,6 +88,7 @@ static numvar messageGroup(void);
 
 static numvar pinConstHigh(void);
 static numvar pinConstLow(void);
+static numvar pinConstDisconnected(void);
 static numvar pinConstDisabled(void);
 static numvar pinConstInput(void);
 static numvar pinConstOutput(void);
@@ -96,11 +97,15 @@ static numvar pinConstPWM(void);
 static numvar pinMakeInput(void);
 static numvar pinMakeOutput(void);
 static numvar pinMakePWM(void);
+static numvar pinMakeDisconnected(void);
 static numvar pinDisable(void);
 static numvar pinSetMode(void);
 static numvar pinRead(void);
 static numvar pinWrite(void);
 static numvar pinSave(void);
+static numvar pinList(void);
+static numvar pinNumber(void);
+static numvar pinOthersDisconnected(void);
 static numvar digitalPinReport(void);
 static numvar analogPinReport(void);
 
@@ -154,7 +159,7 @@ static numvar keyPrint(void);
 static numvar keyNumber(void);
 static numvar keySave(void);
 
-static int getPinFromArg(int arg);
+static int8_t getPinFromArg(uint8_t arg);
 static bool checkArgs(uint8_t min, uint8_t max, const __FlashStringHelper *errorMsg);
 static bool checkArgs(uint8_t exactly, const __FlashStringHelper *errorMsg);
 
@@ -178,6 +183,11 @@ static void batteryPercentageEventHandler(uint8_t value);
 static void batteryChargingEventHandler(uint8_t value);
 static void temperatureEventHandler(int8_t tempC, int8_t tempF);
 static void ledEventHandler(uint8_t redValue, uint8_t greenValue, uint8_t blueValue);
+
+static void printSpaces(int8_t number) {
+  while (number-- > 0)
+    Serial.write(' ');
+}
 
 PinoccioShell Shell;
 
@@ -263,6 +273,7 @@ void PinoccioShell::setup() {
 
   addBitlashFunction("high", (bitlash_function) pinConstHigh);
   addBitlashFunction("low", (bitlash_function) pinConstLow);
+  addBitlashFunction("disconnected", (bitlash_function) pinConstDisconnected);
   addBitlashFunction("disabled", (bitlash_function) pinConstDisabled);
   addBitlashFunction("input", (bitlash_function) pinConstInput);
   addBitlashFunction("output", (bitlash_function) pinConstOutput);
@@ -272,11 +283,15 @@ void PinoccioShell::setup() {
   addBitlashFunction("pin.makeinput", (bitlash_function) pinMakeInput);
   addBitlashFunction("pin.makeoutput", (bitlash_function) pinMakeOutput);
   addBitlashFunction("pin.makepwm", (bitlash_function) pinMakePWM);
+  addBitlashFunction("pin.makedisconnected", (bitlash_function) pinMakeDisconnected);
   addBitlashFunction("pin.disable", (bitlash_function) pinDisable);
   addBitlashFunction("pin.setmode", (bitlash_function) pinSetMode);
   addBitlashFunction("pin.read", (bitlash_function) pinRead);
   addBitlashFunction("pin.write", (bitlash_function) pinWrite);
   addBitlashFunction("pin.save", (bitlash_function) pinSave);
+  addBitlashFunction("pin.list", (bitlash_function) pinList);
+  addBitlashFunction("pin.number", (bitlash_function) pinNumber);
+  addBitlashFunction("pin.othersdisconnected", (bitlash_function) pinOthersDisconnected);
   addBitlashFunction("pin.report.digital", (bitlash_function) digitalPinReport);
   addBitlashFunction("pin.report.analog", (bitlash_function) analogPinReport);
 
@@ -470,15 +485,10 @@ void PinoccioShell::startShell() {
     }
   }
 
-  for (i=2; i<9; i++) {
-    snprintf(buf, sizeof(buf), "startup.d%d", i);
-    if (Shell.defined(buf)) {
-      doCommand(buf);
-    }
-  }
+  for (i=0; i<NUM_DIGITAL_PINS; ++i) {
+    strlcpy(buf, "startup.", sizeof(buf));
+    strlcat_P(buf, (const char*)Scout.getNameForPin(i), sizeof(buf));
 
-  for (i=0; i<8; i++) {
-    snprintf(buf, sizeof(buf), "startup.a%d", i);
     if (Shell.defined(buf)) {
       doCommand(buf);
     }
@@ -1156,20 +1166,20 @@ static StringBuffer digitalPinReportHQ(void) {
           keyMap("digital", 0),
           keyMap("mode", 0),
           keyMap("state", 0),
-          Scout.getPinMode(2),
-          Scout.getPinMode(3),
-          Scout.getPinMode(4),
-          Scout.getPinMode(5),
-          Scout.getPinMode(6),
-          Scout.getPinMode(7),
-          Scout.getPinMode(8),
-          Scout.digitalPinState[0],
-          Scout.digitalPinState[1],
-          Scout.digitalPinState[2],
-          Scout.digitalPinState[3],
-          Scout.digitalPinState[4],
-          Scout.digitalPinState[5],
-          Scout.digitalPinState[6]);
+          Scout.getPinMode(D2),
+          Scout.getPinMode(D3),
+          Scout.getPinMode(D4),
+          Scout.getPinMode(D5),
+          Scout.getPinMode(D6),
+          Scout.getPinMode(D7),
+          Scout.getPinMode(D8),
+          Scout.pinStates[D2],
+          Scout.pinStates[D3],
+          Scout.pinStates[D4],
+          Scout.pinStates[D5],
+          Scout.pinStates[D6],
+          Scout.pinStates[D7],
+          Scout.pinStates[D8]);
   return Scout.handler.report(report);
 }
 
@@ -1179,22 +1189,22 @@ static StringBuffer analogPinReportHQ(void) {
           keyMap("analog", 0),
           keyMap("mode", 0),
           keyMap("state", 0),
-          Scout.getPinMode(24),
-          Scout.getPinMode(25),
-          Scout.getPinMode(26),
-          Scout.getPinMode(27),
-          Scout.getPinMode(28),
-          Scout.getPinMode(29),
-          Scout.getPinMode(30),
-          Scout.getPinMode(31),
-          Scout.analogPinState[0],
-          Scout.analogPinState[1],
-          Scout.analogPinState[2],
-          Scout.analogPinState[3],
-          Scout.analogPinState[4],
-          Scout.analogPinState[5],
-          Scout.analogPinState[6],
-          Scout.analogPinState[7]);
+          Scout.getPinMode(A0),
+          Scout.getPinMode(A1),
+          Scout.getPinMode(A2),
+          Scout.getPinMode(A3),
+          Scout.getPinMode(A4),
+          Scout.getPinMode(A5),
+          Scout.getPinMode(A6),
+          Scout.getPinMode(A7),
+          Scout.pinStates[A0],
+          Scout.pinStates[A1],
+          Scout.pinStates[A2],
+          Scout.pinStates[A3],
+          Scout.pinStates[A4],
+          Scout.pinStates[A5],
+          Scout.pinStates[A6],
+          Scout.pinStates[A7]);
   return Scout.handler.report(report);
 }
 
@@ -1206,70 +1216,32 @@ static numvar pinConstLow(void) {
   return LOW;
 }
 
+static numvar pinConstDisconnected(void) {
+  return PinoccioScout::PINMODE_DISCONNECTED;
+}
+
 static numvar pinConstDisabled(void) {
-  return -1;
+  return PinoccioScout::PINMODE_DISABLED;
 }
 
 static numvar pinConstInput(void) {
-  return INPUT;
+  return PinoccioScout::PINMODE_INPUT;
 }
 
 static numvar pinConstOutput(void) {
-  return OUTPUT;
+  return PinoccioScout::PINMODE_OUTPUT;
 }
 
 static numvar pinConstInputPullup(void) {
-  return INPUT_PULLUP;
+  return PinoccioScout::PINMODE_INPUT_PULLUP;
 }
 
 static numvar pinConstPWM(void) {
-  return PWM;
+  return PinoccioScout::PINMODE_PWM;
 }
 
-static numvar pinMakeInput(void) {
-  if (!checkArgs(1, 2, F("usage: pin.makeinput(\"pinName\", inputType=INPUT_PULLUP)"))) {
-    return 0;
-  }
-  int8_t pin = getPinFromArg(1);
-  if (pin == -1) {
-    speol(F("Invalid pin number"));
-    return 0;
-  }
-
-  bool pullup = true;
-  if (getarg(0) == 2 && getarg(2) == 0) {
-    pullup = false;
-  }
-
-  if (!Scout.makeInput(pin, pullup)) {
-    speol(F("Cannot change mode of reserved pin"));
-    return 0;
-  }
-
-  return 1;
-}
-
-static numvar pinMakeOutput(void) {
-  if (!checkArgs(1, F("usage: pin.makeoutput(\"pinName\")"))) {
-    return 0;
-  }
-
-  int8_t pin = getPinFromArg(1);
-  if (pin == -1) {
-    speol(F("Invalid pin number"));
-    return 0;
-  }
-
-  if (!Scout.makeOutput(pin)) {
-    speol(F("Cannot change mode of reserved pin"));
-    return 0;
-  }
-
-  return 1;
-}
-
-static numvar pinMakePWM(void) {
-  int8_t pin = getPinFromArg(1);
+static numvar pinSetModeInternal(uint8_t pinarg, int8_t mode) {
+  int8_t pin = getPinFromArg(pinarg);
   if (pin == -1) {
     speol(F("Invalid pin number"));
     return 0;
@@ -1280,12 +1252,61 @@ static numvar pinMakePWM(void) {
     return 0;
   }
 
-  if (!Scout.makePWM(pin)) {
-    speol(F("Cannot change mode of non PWM pin"));
+  if (mode == PinoccioScout::PINMODE_PWM && !Scout.isPWMPin(pin)) {
+    speol(F("PWM mode not supported on this pin"));
+    return 0;
+  }
+
+  if (!Scout.getNameForPinMode(mode)
+      || mode == PinoccioScout::PINMODE_UNSET
+      || mode == PinoccioScout::PINMODE_RESERVED) {
+    speol(F("Invalid pin mode"));
+    return 0;
+  }
+
+  if (!Scout.setMode(pin, mode)) {
+    speol(F("Failed to change pin mode"));
     return 0;
   }
 
   return 1;
+}
+
+static numvar pinMakeInput(void) {
+  if (!checkArgs(1, 2, F("usage: pin.makeinput(\"pinName\", inputType=INPUT_PULLUP)"))) {
+    return 0;
+  }
+
+  int8_t mode = PinoccioScout::PINMODE_INPUT_PULLUP;
+  if (getarg(0) == 2 && getarg(2) == PinoccioScout::PINMODE_INPUT) {
+    mode = PinoccioScout::PINMODE_INPUT;
+  }
+
+  return pinSetModeInternal(1, mode);
+}
+
+static numvar pinMakeOutput(void) {
+  if (!checkArgs(1, F("usage: pin.makeoutput(\"pinName\")"))) {
+    return 0;
+  }
+
+  return pinSetModeInternal(1, PinoccioScout::PINMODE_OUTPUT);
+}
+
+static numvar pinMakePWM(void) {
+  if (!checkArgs(1, F("usage: pin.makepwm(\"pinName\")"))) {
+    return 0;
+  }
+
+  return pinSetModeInternal(1, PinoccioScout::PINMODE_PWM);
+}
+
+static numvar pinMakeDisconnected(void) {
+  if (!checkArgs(1, F("usage: pin.makedisconnected(\"pinName\")"))) {
+    return 0;
+  }
+
+  return pinSetModeInternal(1, PinoccioScout::PINMODE_PWM);
 }
 
 static numvar pinDisable(void) {
@@ -1293,18 +1314,7 @@ static numvar pinDisable(void) {
     return 0;
   }
 
-  int8_t pin = getPinFromArg(1);
-  if (pin == -1) {
-    speol(F("Invalid pin number"));
-    return 0;
-  }
-
-  if (!Scout.makeDisabled(pin)) {
-    speol(F("Cannot change mode of reserved pin"));
-    return 0;
-  }
-
-  return 1;
+  return pinSetModeInternal(1, PinoccioScout::PINMODE_DISABLED);
 }
 
 static numvar pinSetMode(void) {
@@ -1312,23 +1322,7 @@ static numvar pinSetMode(void) {
     return 0;
   }
 
-  int8_t pin = getPinFromArg(1);
-  if (pin == -1) {
-    speol(F("Invalid pin number"));
-    return 0;
-  }
-
-  if (!Scout.isPWMPin(pin) && getarg(2) == PWM) {
-    speol(F("Cannot change mode of non PWM pin"));
-    return 0;
-  }
-
-  if (!Scout.setMode(pin, getarg(2))) {
-    speol(F("Cannot change mode of reserved pin"));
-    return 0;
-  }
-
-  return 1;
+  return pinSetModeInternal(1, getarg(2));
 }
 
 static numvar pinRead(void) {
@@ -1360,17 +1354,49 @@ static numvar pinWrite(void) {
     speol(F("Pin must be set as an output before writing"));
     return 0;
   }
-  if (Scout.getPinMode(pin) == PWM && (value < 0 || value > 255)) {
+  if (Scout.getPinMode(pin) == PinoccioScout::PINMODE_PWM && (value < 0 || value > 255)) {
     speol(F("Invalid PWM value"));
     return 0;
   } 
-  if (Scout.getPinMode(pin) != PWM && (value < 0 || value > 1)) {
+  if (Scout.getPinMode(pin) != PinoccioScout::PINMODE_PWM && (value < 0 || value > 1)) {
     speol(F("Invalid pin value"));
     return 0;
   }
 
   Scout.pinWrite(pin, value);
   return 1;
+}
+
+static numvar pinList(void) {
+  if (!checkArgs(0, F("usage: pin.list"))) {
+    return 0;
+  }
+
+  // TODO: This should use sp/speol, but that doesn't return the number
+  // of characters printed to use for alignment...
+  Serial.println(F("Note: pin.list currently only works on Serial"));
+  Serial.println(F("#   name    mode            value"));
+  Serial.println(F("---------------------------------"));
+  for (uint8_t pin = 0; pin < NUM_DIGITAL_PINS; ++pin) {
+    printSpaces(4 - Serial.print(pin));
+    printSpaces(8 - Serial.print(Scout.getNameForPin(pin)));
+    int8_t mode = Scout.getPinMode(pin);
+    printSpaces(16 - Serial.print(Scout.getNameForPinMode(mode) ?: F("unknown")));
+    if (mode < 0)
+      Serial.println('-');
+    else
+      Serial.println(Scout.pinRead(pin));
+  }
+
+  return 1;
+}
+
+static numvar pinNumber(void) {
+  if (!checkArgs(1, F("usage: pin.number(\"pinName\")"))) {
+    return 0;
+  }
+
+  return getPinFromArg(1);
 }
 
 static numvar pinSave(void) {
@@ -1381,42 +1407,39 @@ static numvar pinSave(void) {
   int8_t pin = getPinFromArg(1);
   int8_t mode = getarg(2);
 
-  if (pin == -1) {
-    speol(F("Invalid pin number"));
+  if (!pinSetModeInternal(1, mode))
     return 0;
+
+  StringBuffer buf(128);
+
+  buf += "function startup.";
+  buf += Scout.getNameForPin(pin);
+  buf += " { pin.setmode(\"";
+  buf += Scout.getNameForPin(pin);
+  buf += "\", ";
+  buf += Scout.getNameForPinMode(mode);
+  buf += ");";
+  // if third arg is passed in, and mode is OUTPUT, then set pin value
+  if (getarg(0) == 3 && mode == OUTPUT) {
+    uint8_t value = getarg(3);
+    Scout.pinWrite(pin, value);
+    buf += " { pin.write(\"";
+    buf += Scout.getNameForPin(pin);
+    buf += "\", ";
+    buf += value;
+    buf += ");";
   }
+  buf += " }";
 
-  if (Scout.isPinReserved(pin)) {
-    speol(F("Cannot change mode of reserved pin"));
-    return 0;
-  }
-
-  if (mode < DISABLED || mode > PWM) {
-    speol(F("Invalid pin mode"));
-    return 0;
-  }
-
-  Scout.setMode(pin, mode);
-
-  char buf[128];
-  const char *str = (const char*)getstringarg(1);
-
-  if (mode == -1) {
-    snprintf(buf, sizeof(buf), "rm startup.%s", str);
-  } else {
-    // if third arg is passed in, and mode is OUTPUT, then set pin value
-    if (getarg(0) == 3 && mode == OUTPUT) {
-      uint8_t value = getarg(3);
-      Scout.pinWrite(pin, value);
-      snprintf(buf, sizeof(buf), "function startup.%s { pin.setmode(\"%s\",%d); pin.write(\"%s\",%d) }", str, str, mode, str, value);
-    } else {
-      snprintf(buf, sizeof(buf), "function startup.%s { pin.setmode(\"%s\",%d); }", str, str, mode);
-    }
-  }
-
-  doCommand(buf);
-
+  doCommand((char*)buf.c_str());
   return 1;
+}
+
+static numvar pinOthersDisconnected(void) {
+  if (!checkArgs(0, 0, F("usage: pin.othersdisconnected()"))) {
+    return 0;
+  }
+  Scout.makeUnsetDisconnected();
 }
 
 static numvar digitalPinReport(void) {
@@ -1429,10 +1452,10 @@ static numvar analogPinReport(void) {
   return 1;
 }
 
-static int getPinFromArg(int arg) {
+static int8_t getPinFromArg(uint8_t arg) {
   if (isstringarg(arg)) {
     return Scout.getPinFromName((const char*)getstringarg(arg));
-  } else if (Scout.isDigitalPin(getarg(arg)) || Scout.isAnalogPin(getarg(arg))) {
+  } else if (getarg(arg) >= 0 && getarg(arg) < NUM_DIGITAL_PINS) {
     return getarg(arg);
   } else {
     return -1;
