@@ -356,8 +356,6 @@ void PinoccioShell::setup() {
 
   if (isShellEnabled) {
     startShell();
-  } else {
-    Serial.begin(115200);
   }
 
   Scout.meshListen(1, receiveMessage);
@@ -464,11 +462,26 @@ static numvar allVerbose(void) {
   return 1;
 }
 
+static StringBuffer serialIncoming, serialOutgoing;
 void PinoccioShell::loop() {
   if (isShellEnabled) {
-    runBitlash();
-    keyLoop(millis());
+    while(Serial.available())
+    {
+      char c = Serial.read();
+      if(c == '\n')
+      {
+        setOutputHandler(&printToString<&serialOutgoing>);
+        doCommand(serialIncoming.c_str());
+        resetOutputHandler();
+        Serial.print(serialOutgoing.c_str());
+        serialIncoming = serialOutgoing = (char*)NULL;
+      }
+      serialIncoming += c;
+    }
+    // bitlash loop
+    runBackgroundTasks();
   }
+  keyLoop(millis());
 }
 
 void PinoccioShell::startShell() {
@@ -476,7 +489,15 @@ void PinoccioShell::startShell() {
   uint8_t i;
 
   isShellEnabled = true;
-  initBitlash(115200);
+
+  // init bitlash internals, don't use initBitlash so we do our own serial
+  initTaskList();
+  vinit();
+
+  snprintf(buf, sizeof(buf), "startup", i);
+  if (Shell.defined(buf)) {
+    doCommand(buf);
+  }
 
   for (i='a'; i<'z'; i++) {
     snprintf(buf, sizeof(buf), "startup.%c", i);
