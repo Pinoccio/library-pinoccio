@@ -11,10 +11,12 @@
 #include "backpacks/Backpacks.h"
 #include "bitlash.h"
 #include "src/bitlash.h"
+#include "util/StringBuffer.h"
+#include "util/String.h"
+#include "util/PrintToString.h"
 extern "C" {
 #include "key/key.h"
 #include "util/memdebug.h"
-#include "util/StringBuffer.h"
 }
 
 static numvar pinoccioBanner(void);
@@ -462,7 +464,8 @@ static numvar allVerbose(void) {
   return 1;
 }
 
-static StringBuffer serialIncoming, serialOutgoing;
+static StringBuffer serialIncoming;
+StringBuffer serialOutgoing;
 void PinoccioShell::loop() {
   if (isShellEnabled) {
     while(Serial.available())
@@ -471,7 +474,7 @@ void PinoccioShell::loop() {
       if(c == '\n')
       {
         setOutputHandler(&printToString<&serialOutgoing>);
-        doCommand(serialIncoming.c_str());
+        doCommand((char*)serialIncoming.c_str());
         resetOutputHandler();
         Serial.print(serialOutgoing.c_str());
         serialIncoming = serialOutgoing = (char*)NULL;
