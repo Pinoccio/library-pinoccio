@@ -192,17 +192,18 @@ static void printSpaces(int8_t number) {
 }
 
 PinoccioShell Shell;
+StringBuffer serialPrompt;
 
 PinoccioShell::PinoccioShell() {
   isShellEnabled = true;
+  echoEnabled = true;
+  serialPrompt = " >";
 }
 
 PinoccioShell::~PinoccioShell() { }
 
 void PinoccioShell::setup() {
   keyInit();
-  // This overrides the normal banner
-  addBitlashFunction("banner", (bitlash_function) pinoccioBanner);
 
   addBitlashFunction("power.ischarging", (bitlash_function) isBatteryCharging);
   addBitlashFunction("power.hasbattery", (bitlash_function) isBatteryConnected);
@@ -473,11 +474,13 @@ void PinoccioShell::loop() {
       char c = Serial.read();
       if(c == '\n')
       {
+        if(echoEnabled) Serial.println(serialIncoming.c_str());
         setOutputHandler(&printToString<&serialOutgoing>);
         doCommand((char*)serialIncoming.c_str());
         resetOutputHandler();
         Serial.print(serialOutgoing.c_str());
         serialIncoming = serialOutgoing = (char*)NULL;
+        Serial.print(serialPrompt.c_str());
       }
       serialIncoming += c;
     }
@@ -496,6 +499,8 @@ void PinoccioShell::startShell() {
   // init bitlash internals, don't use initBitlash so we do our own serial
   initTaskList();
   vinit();
+  
+  pinoccioBanner();
 
   snprintf(buf, sizeof(buf), "startup", i);
   if (Shell.defined(buf)) {
@@ -517,6 +522,8 @@ void PinoccioShell::startShell() {
       doCommand(buf);
     }
   }
+
+  Serial.print(serialPrompt.c_str());
 }
 
 void PinoccioShell::disableShell() {
