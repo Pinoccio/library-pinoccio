@@ -192,12 +192,10 @@ static void printSpaces(int8_t number) {
 }
 
 PinoccioShell Shell;
-StringBuffer serialPrompt;
 
 PinoccioShell::PinoccioShell() {
   isShellEnabled = true;
   echoEnabled = true;
-  serialPrompt = " >";
 }
 
 PinoccioShell::~PinoccioShell() { }
@@ -465,6 +463,10 @@ static numvar allVerbose(void) {
   return 1;
 }
 
+void serialPrompt(void) {
+  Serial.print("> ");
+}
+
 static StringBuffer serialIncoming;
 StringBuffer serialOutgoing;
 void PinoccioShell::loop() {
@@ -480,9 +482,10 @@ void PinoccioShell::loop() {
         resetOutputHandler();
         Serial.print(serialOutgoing.c_str());
         serialIncoming = serialOutgoing = (char*)NULL;
-        Serial.print(serialPrompt.c_str());
+        serialPrompt();
+      }else{
+        serialIncoming += c;
       }
-      serialIncoming += c;
     }
     // bitlash loop
     runBackgroundTasks();
@@ -523,7 +526,7 @@ void PinoccioShell::startShell() {
     }
   }
 
-  Serial.print(serialPrompt.c_str());
+  serialPrompt();
 }
 
 void PinoccioShell::disableShell() {
