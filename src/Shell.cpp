@@ -195,7 +195,6 @@ PinoccioShell Shell;
 
 PinoccioShell::PinoccioShell() {
   isShellEnabled = true;
-  echoEnabled = true;
 }
 
 PinoccioShell::~PinoccioShell() { }
@@ -463,8 +462,24 @@ static numvar allVerbose(void) {
   return 1;
 }
 
-void serialPrompt(void) {
+StringBuffer serialWaiting;
+void PinoccioShell::prompt(void) {
   Serial.print("> ");
+  // no longer blocking any other output
+  outWait = false;
+  // dump and clear any waiting output
+  Serial.print(serialWaiting.c_str());
+  serialWaiting = (char*)NULL;
+}
+
+// only print to serial if/when we are not handling bitlash
+void PinoccioShell::print(const char *str) {
+  if(outWait)
+  {
+    serialWaiting += str;
+  }else{
+    Serial.print(str);
+  }
 }
 
 static StringBuffer serialIncoming;
@@ -474,15 +489,16 @@ void PinoccioShell::loop() {
     while(Serial.available())
     {
       char c = Serial.read();
+      Serial.write(c); // echo everything back
+      outWait = true; // reading stuff, don't print anything else out
       if(c == '\n')
       {
-        if(echoEnabled) Serial.println(serialIncoming.c_str());
         setOutputHandler(&printToString<&serialOutgoing>);
         doCommand((char*)serialIncoming.c_str());
         resetOutputHandler();
         Serial.print(serialOutgoing.c_str());
         serialIncoming = serialOutgoing = (char*)NULL;
-        serialPrompt();
+        prompt();
       }else{
         serialIncoming += c;
       }
@@ -526,7 +542,7 @@ void PinoccioShell::startShell() {
     }
   }
 
-  serialPrompt();
+  prompt();
 }
 
 void PinoccioShell::disableShell() {

@@ -642,8 +642,8 @@ static void leadCommandChunk() {
 void leadSignal(const String &json) {
   if (Scout.handler.isBridged) {
     int i = 0;
-    Serial.print("[hq-bridge] ");
-    Serial.print(json);
+    Shell.print("[hq-bridge] ");
+    Shell.print(json.c_str());
     return;
   }
 

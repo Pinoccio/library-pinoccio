@@ -35,8 +35,10 @@ class PinoccioShell {
 
     void startShell();
     void disableShell();
+    void prompt();
+    void print(const char *str);
+    bool outWait;
 
-    bool echoEnabled;
     /**
      * Parse a single hexadecimal character. Supports both uppercase and
      * lowercase A-Z. If the character is not a valid hex character,
