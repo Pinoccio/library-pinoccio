@@ -12,17 +12,19 @@
 
 LinkedList<PinoccioModule*> moduleList = LinkedList<PinoccioModule*>();
 
-static bool isSetup = false;
+static bool didSetup = false;
 
 void ModuleHandler::add(PinoccioModule* module) {
   moduleList.add(module);
+  // run setup to init the new module if it was loaded after
+  if(didSetup) module->setup();
 }
 
 void ModuleHandler::setup() {
   for (uint8_t i=0; i<moduleList.size(); i++) {
     (moduleList.get(i))->setup();
   }
-  isSetup = true;
+  didSetup = true;
 }
 
 void ModuleHandler::loop() {
@@ -50,9 +52,7 @@ PinoccioModule *ModuleHandler::load(char *name) {
     if(strcmp(module->name(),name) == 0) return module;
   }
 
-  module = ModulesNamed(name);
-  if(module && isSetup) module->setup();
-  return module;
+  return ModulesNamed(name);
 }
 
 void ModuleHandler::loaded() {
