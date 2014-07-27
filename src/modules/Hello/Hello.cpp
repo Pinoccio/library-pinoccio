@@ -17,6 +17,8 @@ void HelloModule::setup() {
   Serial.println("hello setup");
 }
 
+void HelloModule::loop() { }
+
 const char *HelloModule::name() {
   return "hello";
 }

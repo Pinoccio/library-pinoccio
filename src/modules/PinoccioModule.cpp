@@ -16,10 +16,3 @@ PinoccioModule::PinoccioModule() {
 
 PinoccioModule::~PinoccioModule() { }
 
-void PinoccioModule::setup() { }
-
-void PinoccioModule::loop() { }
-
-const char *PinoccioModule::name() {
-  return "module";
-}

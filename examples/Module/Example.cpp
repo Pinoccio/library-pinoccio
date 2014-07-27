@@ -20,6 +20,8 @@ void ExampleModule::setup() {
   Serial.println("example module setup");
 }
 
+void ExampleModule::loop() { }
+
 const char *ExampleModule::name() {
   return "example";
 }

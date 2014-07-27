@@ -13,6 +13,7 @@ class HelloModule : public PinoccioModule {
 
   public:
     void setup();
+    void loop();
     const char *name();
 
 };

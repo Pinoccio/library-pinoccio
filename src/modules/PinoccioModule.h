@@ -15,9 +15,9 @@ class PinoccioModule {
     PinoccioModule();
     ~PinoccioModule();
 
-    virtual void setup();
-    virtual void loop();
-    virtual const char *name();
+    virtual void setup() = 0;
+    virtual void loop() = 0;
+    virtual const char *name() = 0;
 };
 
 #endif

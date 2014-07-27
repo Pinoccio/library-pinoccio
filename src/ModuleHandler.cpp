@@ -15,9 +15,9 @@ LinkedList<PinoccioModule*> moduleList = LinkedList<PinoccioModule*>();
 static bool didSetup = false;
 
 void ModuleHandler::add(PinoccioModule* module) {
+  // TODO fix, for some reason module is a pointer to the base when created with "new"??
+  if(didSetup) return;
   moduleList.add(module);
-  // run setup to init the new module if it was loaded after
-  if(didSetup) module->setup();
 }
 
 void ModuleHandler::setup() {
@@ -52,7 +52,12 @@ PinoccioModule *ModuleHandler::load(char *name) {
     if(strcmp(module->name(),name) == 0) return module;
   }
 
-  return ModulesNamed(name);
+  module = ModulesNamed(name);
+  if(module) {
+    moduleList.add(module);
+    module->setup();
+  }
+  return module;
 }
 
 void ModuleHandler::loaded() {
