@@ -23,7 +23,7 @@ class ScoutHandler {
     void loop();
     void announce(uint16_t group, const String& message);
     void setVerbose(bool flag);
-    StringBuffer report(const String& report);
+    StringBuffer report(StringBuffer& report);
     
     bool isBridged;
     StringBuffer bridge;
