@@ -1922,11 +1922,11 @@ static numvar moduleList(void) {
 }
 
 static numvar moduleLoad(void) {
-  if (!checkArgs(1, F("usage: modules.load(\"string\""))) {
+  if (!checkArgs(1, F("usage: module.load(\"string\""))) {
     return 0;
   }
-  ModuleHandler::load((char*)getstringarg(1));
-  return 1;
+  if(ModuleHandler::load((char*)getstringarg(1))) return 1;
+  return 0;
 }
 
 static numvar moduleLoaded(void) {
