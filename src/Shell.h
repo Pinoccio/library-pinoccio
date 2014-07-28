@@ -36,6 +36,7 @@ class PinoccioShell {
     void startShell();
     void disableShell();
     void prompt();
+    void refresh();
     void print(const char *str);
     bool outWait;
 
