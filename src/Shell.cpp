@@ -464,7 +464,7 @@ static numvar allVerbose(void) {
 
 StringBuffer serialWaiting;
 void PinoccioShell::prompt(void) {
-  Serial.print("> ");
+  Serial.print(F("> "));
   // no longer blocking any other output
   outWait = false;
   // dump and clear any waiting output
