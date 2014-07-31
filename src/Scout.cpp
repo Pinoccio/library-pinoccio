@@ -618,8 +618,20 @@ void PinoccioScout::doSleep(bool pastEnd) {
     cmd.appendSprintf(",%lu", left);
     cmd += ")";
 
-    doCommand((char*)cmd.c_str());
-  }
+    uint32_t ret = doCommand((char*)cmd.c_str());
 
-  free(func);
+    if (!left || !ret || sleepPending) {
+      // If the callback returned false, or it scheduled a new sleep or
+      // we finished our previous sleep, then we're done with this
+      // callback.
+      free(func);
+    } else {
+      // If the callback returned true, and it did not schedule a new
+      // sleep interval, and we're not done sleeping yet, this means we
+      // should continue sleeping (though note that at least one loop
+      // cycle is ran before actually sleeping again).
+      sleepPending = true;
+      postSleepFunction = func;
+    }
+  }
 }
