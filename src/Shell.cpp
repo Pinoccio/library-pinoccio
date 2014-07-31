@@ -8,6 +8,7 @@
 \**************************************************************************/
 #include "Shell.h"
 #include "Scout.h"
+#include "SleepHandler.h"
 #include "backpacks/Backpacks.h"
 #include "bitlash.h"
 #include "src/bitlash.h"
@@ -27,15 +28,13 @@ static numvar getRandomNumber(void);
 static numvar allReport(void);
 static numvar allVerbose(void);
 
-static numvar uptimeMillisAwake(void);
-static numvar uptimeMillisSleep(void);
-static numvar uptimeMillis(void);
+static numvar uptimeAwakeMicros(void);
+static numvar uptimeAwakeSeconds(void);
+static numvar uptimeSleepingMicros(void);
+static numvar uptimeSleepingSeconds(void);
+static numvar uptimeMicros(void);
 static numvar uptimeSeconds(void);
-static numvar uptimeMinutes(void);
-static numvar uptimeHours(void);
-static numvar uptimeDays(void);
 static numvar uptimeReport(void);
-static numvar getMicros(void);
 static numvar getLastResetCause(void);
 
 static numvar isBatteryCharging(void);
@@ -239,15 +238,13 @@ void PinoccioShell::setup() {
   addBitlashFunction("report", (bitlash_function) allReport);
   addBitlashFunction("verbose", (bitlash_function) allVerbose);
 
-  addBitlashFunction("uptime.millis.awake", (bitlash_function) uptimeMillisAwake);
-  addBitlashFunction("uptime.millis.sleep", (bitlash_function) uptimeMillisSleep);
-  addBitlashFunction("uptime.millis", (bitlash_function) uptimeMillis);
+  addBitlashFunction("uptime.awake.micros", (bitlash_function) uptimeAwakeMicros);
+  addBitlashFunction("uptime.awake.seconds", (bitlash_function) uptimeAwakeSeconds);
+  addBitlashFunction("uptime.sleeping.micros", (bitlash_function) uptimeSleepingMicros);
+  addBitlashFunction("uptime.sleeping.seconds", (bitlash_function) uptimeSleepingSeconds);
   addBitlashFunction("uptime.seconds", (bitlash_function) uptimeSeconds);
-  addBitlashFunction("uptime.minutes", (bitlash_function) uptimeMinutes);
-  addBitlashFunction("uptime.hours", (bitlash_function) uptimeHours);
-  addBitlashFunction("uptime.days", (bitlash_function) uptimeDays);
+  addBitlashFunction("uptime.micros", (bitlash_function) uptimeMicros);
   addBitlashFunction("uptime.report", (bitlash_function) uptimeReport);
-  addBitlashFunction("uptime.micros", (bitlash_function) getMicros);
   addBitlashFunction("uptime.getlastreset", (bitlash_function) getLastResetCause);
 
   addBitlashFunction("led.on", (bitlash_function) ledTorch); // alias
@@ -556,12 +553,12 @@ static StringBuffer uptimeReportHQ(void) {
   reset[sizeof(reset) - 1] = 0; // ensure termination, strncpy is weird
 
   report.appendSprintf("[%d,[%d,%d,%d,%d],[%ld,%ld,%d,",keyMap("uptime",0),
-          keyMap("millis", 0),
+          keyMap("total", 0),
           keyMap("sleep", 0),
           keyMap("random", 0),
           keyMap("reset", 0),
-          Scout.getCpuTime(),
-          Scout.getSleepTime(),
+          SleepHandler::uptime().seconds,
+          SleepHandler::sleeptime().seconds,
           (int)random());
 
   report.appendJsonString(reset, true);
@@ -569,41 +566,34 @@ static StringBuffer uptimeReportHQ(void) {
   return Scout.handler.report(report);
 }
 
-static numvar uptimeMillis(void) {
-  return Scout.getWallTime();
+static numvar uptimeAwakeMicros(void) {
+  return SleepHandler::waketime().us;
+}
+
+static numvar uptimeAwakeSeconds(void) {
+  return SleepHandler::waketime().seconds;
+}
+
+static numvar uptimeSleepingMicros(void) {
+  return SleepHandler::sleeptime().us;
+}
+
+static numvar uptimeSleepingSeconds(void) {
+  return SleepHandler::sleeptime().seconds;
+}
+
+static numvar uptimeMicros(void) {
+  return SleepHandler::uptime().us;
 }
 
 static numvar uptimeSeconds(void) {
-  return Scout.getWallTime()/1000;
+  return SleepHandler::uptime().seconds;
 }
 
-static numvar uptimeMinutes(void) {
-  return Scout.getWallTime()/1000/60;
-}
-
-static numvar uptimeHours(void) {
-  return Scout.getWallTime()/1000/60/60;
-}
-
-static numvar uptimeDays(void) {
-  return Scout.getWallTime()/1000/60/60/24;
-}
 
 static numvar uptimeReport(void) {
   speol(uptimeReportHQ());
   return true;
-}
-
-static numvar uptimeMillisAwake(void) {
-  return Scout.getCpuTime();
-}
-
-static numvar uptimeMillisSleep(void) {
-  return Scout.getSleepTime();
-}
-
-static numvar getMicros(void) {
-  return micros();
 }
 
 /****************************\

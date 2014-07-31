@@ -609,17 +609,3 @@ void PinoccioScout::doSleep(int32_t remaining) {
 
   free(cmd);
 }
-
-uint32_t PinoccioScout::getWallTime() {
-  // TODO: This overflows after 19 hours already
-  return SleepHandler::ticksToMs(SleepHandler::ticks());
-}
-
-uint32_t PinoccioScout::getCpuTime() {
-  return millis();
-}
-
-uint32_t PinoccioScout::getSleepTime() {
-  // TODO
-  return 0;
-}

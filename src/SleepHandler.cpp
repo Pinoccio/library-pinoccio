@@ -3,11 +3,16 @@
 #include "SleepHandler.h"
 
 static volatile bool timer_match;
+Duration SleepHandler::lastOverflow = {0, 0};
+Duration SleepHandler::totalSleep = {0, 0};
 
 ISR(SCNT_CMP3_vect) {
   timer_match = true;
 }
 
+ISR(SCNT_OVFL_vect) {
+  SleepHandler::lastOverflow += (1LL << 32) * SleepHandler::US_PER_TICK;
+}
 
 uint32_t SleepHandler::read_sccnt() {
   // Read LL first, that will freeze the other registers for reading
@@ -42,6 +47,9 @@ void SleepHandler::setup() {
   // Enable the symbol counter, using the external 32kHz crystal
   // SCCR1 is left at defaults, with CMP3 in absolute compare mode.
   SCCR0 |= (1 << SCEN) | (1 << SCCKSEL);
+
+  // Enable the SCNT_OVFL interrupt for timekeeping
+  SCIRQM |= (1 << IRQMOF);
 }
 
 // Sleep until the timer match interrupt fired. If interruptible is
@@ -135,7 +143,10 @@ void SleepHandler::doSleep(uint32_t until_tick, bool interruptible) {
     // Enable the SCNT_CMP3 interrupt to wake us from sleep
     SCIRQM |= (1 << IRQMCP3);
 
+    uint32_t before = read_sccnt();
     sleepUntilMatch(interruptible);
+    uint32_t after = read_sccnt();
+    totalSleep += (uint64_t)(after - before) * US_PER_TICK;
 
     // Disable the SCNT_CMP3 interrupt again
     SCIRQM &= ~(1 << IRQMCP3);

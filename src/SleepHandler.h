@@ -1,6 +1,10 @@
 #ifndef LIB_PINOCCIO_SLEEP_H
 #define LIB_PINOCCIO_SLEEP_H
 
+#include "util/Duration.h"
+
+ISR(SCNT_OVFL_vect);
+
 class SleepHandler {
   public:
     static void setup();
@@ -34,7 +38,30 @@ class SleepHandler {
       return read_sccnt();
     }
 
+    // Returns the total time since startup
+    static Duration uptime() {
+      return lastOverflow + (uint64_t)read_sccnt() * US_PER_TICK;
+    }
+
+    // Returns the time slept since startup
+    static const Duration& sleeptime() {
+      return totalSleep;
+    }
+
+    // Returns the time awake since startup
+    static Duration waketime() {
+      return uptime() - totalSleep;
+    }
+
   protected:
+    // The time from startup to the most recent overflow
+    static Duration lastOverflow;
+    // The total time spent sleeping since startup
+    static Duration totalSleep;
+
+    // Allow the symbol counter overflow ISR to access our protected members
+    friend void SCNT_OVFL_vect();
+
     static bool sleepUntilMatch(bool interruptible);
     static uint32_t read_sccnt();
     static void write_scocr3(uint32_t val);
