@@ -145,6 +145,10 @@ class PinoccioScout : public PinoccioClass {
     SYS_Timer_t peripheralStateChangeTimer;
 
     bool sleepPending;
+    // The original sleep time, used to pass to the callback and to
+    // re-sleep. The actual sleep time for the next sleep is stored by
+    // SleepHandler instead.
+    uint32_t sleepMs;
     char * postSleepFunction;
 };
 

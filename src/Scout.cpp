@@ -589,6 +589,7 @@ void PinoccioScout::scheduleSleep(uint32_t ms, char *func) {
   if (postSleepFunction)
     free(postSleepFunction);
   postSleepFunction = func;
+  sleepMs = ms;
 }
 
 void PinoccioScout::doSleep(bool pastEnd) {
@@ -609,7 +610,15 @@ void PinoccioScout::doSleep(bool pastEnd) {
 
   // TODO: Allow ^C to stop running callbacks like this one
   if (func) {
-    doCommand(func);
+    StringBuffer cmd(64, 16);
+    uint32_t left = SleepHandler::ticksToMs(SleepHandler::scheduledTicksLeft());
+    cmd += func;
+    cmd += "(";
+    cmd.appendSprintf("%lu", sleepMs);
+    cmd.appendSprintf(",%lu", left);
+    cmd += ")";
+
+    doCommand((char*)cmd.c_str());
   }
 
   free(func);
