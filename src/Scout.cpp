@@ -137,7 +137,7 @@ void PinoccioScout::loop() {
 
     // if remaining <= 0, we won't actually sleep anymore, but still
     // call doSleep to run the callback and clean up
-    if (canSleep || SleepHandler::pastScheduledEnd())
+    if (canSleep || SleepHandler::scheduledTicksLeft() == 0)
       doSleep();
   }
 }
@@ -596,7 +596,7 @@ void PinoccioScout::doSleep() {
   postSleepFunction = NULL;
   sleepPending = false;
 
-  if (!SleepHandler::pastScheduledEnd()) {
+  if (SleepHandler::scheduledTicksLeft() != 0) {
     NWK_SleepReq();
 
     // TODO: suspend more stuff? Wait for UART byte completion?

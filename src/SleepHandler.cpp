@@ -31,6 +31,15 @@ uint32_t SleepHandler::read_sccnt() {
   return sccnt;
 }
 
+uint32_t SleepHandler::read_scocr3() {
+  // Read LL first, that will freeze the other registers for reading
+  uint32_t sccnt = SCOCR3LL;
+  sccnt |= (uint32_t)SCOCR3LH << 8;
+  sccnt |= (uint32_t)SCOCR3HL << 16;
+  sccnt |= (uint32_t)SCOCR3HH << 24;
+  return sccnt;
+}
+
 void SleepHandler::write_scocr3(uint32_t val) {
   // Write LL last, that will update the entire register atomically
   SCOCR3HH = val >> 24;
@@ -88,8 +97,8 @@ bool SleepHandler::sleepUntilMatch(bool interruptible) {
       // We were woken up, but the overflow interrupt
       // didn't run, so another interrupt must have
       // triggered. Note that if the overflow
-      // interrupt did run, but also another (lower
-      // priority) interrupt occured, its flag will
+      // interrupt did trigger but not run yet, but also another
+      // (lower priority) interrupt occured, its flag will
       // remain set and it will immediately wake us up
       // on the next sleep attempt.
       return false;
@@ -99,7 +108,7 @@ bool SleepHandler::sleepUntilMatch(bool interruptible) {
     // another (higher priority) interrupt.
     if (timer_match || SCIRQS & (1 << IRQSCP3)) {
       SCIRQS = (1 << IRQSCP3);
-      timer_match = false;
+      timer_match = true;
       return true;
     }
   }
@@ -119,11 +128,23 @@ void SleepHandler::scheduleSleep(uint32_t ms) {
 
     // Clear any previously pending interrupt
     SCIRQS = (1 << IRQSCP3);
+    timer_match = false;
   }
 }
 
-bool SleepHandler::pastScheduledEnd() {
-  return (SCIRQS & (1 << IRQSCP3));
+uint32_t SleepHandler::scheduledTicksLeft() {
+  uint32_t left = read_scocr3() - read_sccnt();
+
+  // If a compare match has occured, we're past the end of sleep already.
+  // We check this _after_ grabbing the counter value above, to prevent
+  // a race condition where the counter goes past the compare value
+  // after checking for the timer_match flag. We check both the
+  // interrupt flag and the timer_match flag, to handle both before
+  // and after sleeping (since before sleeping, the IRQ is disabled, but
+  // during sleep the wakeup clears the flag).
+  if ((SCIRQS & (1 << IRQSCP3)) || timer_match)
+    return 0;
+  return left;
 }
 
 void SleepHandler::doSleep(bool interruptible) {
@@ -216,7 +237,7 @@ void SleepHandler::doSleep(bool interruptible) {
   // wraparound, we convert to an integer, but this effectively halves
   // the maximum sleep duration (if until is > 2^31 from from now, it'll
   // look like the same as if until is in the past).
-  if (!pastScheduledEnd()) {
+  if (!(SCIRQS & (1 << IRQSCP3))) {
     // Enable the SCNT_CMP3 interrupt to wake us from sleep
     SCIRQM |= (1 << IRQMCP3);
 

@@ -19,8 +19,8 @@ class SleepHandler {
     // the limited range of the counter used.
     static void scheduleSleep(uint32_t ms);
 
-    // Are we past the most recently scheduled sleep end time?
-    static bool pastScheduledEnd();
+    // How many ticks are left before the end time is reached?
+    static uint32_t scheduledTicksLeft();
 
     // Sleep until the previously scheduled time. If interruptible is
     // true, this can return earlier if we are woken from sleep by
@@ -87,6 +87,7 @@ class SleepHandler {
     static bool sleepUntilMatch(bool interruptible);
     static uint32_t read_sccnt();
     static void write_scocr3(uint32_t val);
+    static uint32_t read_scocr3();
 
     // The symbol counter always runs at 62.5kHz (period 16μs). When running
     // off the 16Mhz crystal, this is just a prescaler. When running of the
