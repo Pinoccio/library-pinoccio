@@ -133,7 +133,7 @@ void SleepHandler::doSleep(uint32_t until_tick, bool interruptible) {
   // look like the same as if until is in the past).
   if ((int32_t)(until_tick - read_sccnt()) > 0) {
     // Enable the SCNT_CMP3 interrupt to wake us from sleep
-    SCIRQM = (1 << IRQMCP3);
+    SCIRQM |= (1 << IRQMCP3);
 
     sleepUntilMatch(interruptible);
 
