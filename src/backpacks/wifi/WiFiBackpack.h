@@ -39,6 +39,8 @@ class WiFiBackpack : public Backpack {
     void printCurrentNetworkStatus(Print& p);
     bool printTime(Print& p);
     void printFirmwareVersions(Print& p);
+    int getHardwareMajorRevision();
+    int getHardwareMinorRevision();
 
     bool isAPConnected();
     bool isHQConnected();
