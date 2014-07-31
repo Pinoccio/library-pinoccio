@@ -46,7 +46,7 @@ static numvar getBatteryVoltage(void);
 static numvar enableBackpackVcc(void);
 static numvar disableBackpackVcc(void);
 static numvar isBackpackVccEnabled(void);
-static numvar sleep(void);
+static numvar powerSleep(void);
 static numvar powerReport(void);
 static numvar powerWakeupPin(void);
 
@@ -211,7 +211,7 @@ void PinoccioShell::setup() {
   addBitlashFunction("power.enablevcc", (bitlash_function) enableBackpackVcc);
   addBitlashFunction("power.disablevcc", (bitlash_function) disableBackpackVcc);
   addBitlashFunction("power.isvccenabled", (bitlash_function) isBackpackVccEnabled);
-  addBitlashFunction("power.sleep", (bitlash_function) sleep);
+  addBitlashFunction("power.sleep", (bitlash_function) powerSleep);
   addBitlashFunction("power.report", (bitlash_function) powerReport);
   addBitlashFunction("power.wakeup.pin", (bitlash_function) powerWakeupPin);
 
@@ -726,7 +726,7 @@ static numvar isBackpackVccEnabled(void) {
   return Scout.isBackpackVccEnabled();
 }
 
-static numvar sleep(void) {
+static numvar powerSleep(void) {
   if (!getarg(0) || getarg(0) > 2) {
     speol("usage: power.sleep(ms, [\"function\"])");
     return 0;
