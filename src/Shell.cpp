@@ -11,10 +11,12 @@
 #include "backpacks/Backpacks.h"
 #include "bitlash.h"
 #include "src/bitlash.h"
+#include "util/StringBuffer.h"
+#include "util/String.h"
+#include "util/PrintToString.h"
 extern "C" {
 #include "key/key.h"
 #include "util/memdebug.h"
-#include "util/StringBuffer.h"
 }
 
 static numvar pinoccioBanner(void);
@@ -199,8 +201,6 @@ PinoccioShell::~PinoccioShell() { }
 
 void PinoccioShell::setup() {
   keyInit();
-  // This overrides the normal banner
-  addBitlashFunction("banner", (bitlash_function) pinoccioBanner);
 
   addBitlashFunction("power.ischarging", (bitlash_function) isBatteryCharging);
   addBitlashFunction("power.hasbattery", (bitlash_function) isBatteryConnected);
@@ -356,8 +356,6 @@ void PinoccioShell::setup() {
 
   if (isShellEnabled) {
     startShell();
-  } else {
-    Serial.begin(115200);
   }
 
   Scout.meshListen(1, receiveMessage);
@@ -464,11 +462,51 @@ static numvar allVerbose(void) {
   return 1;
 }
 
+StringBuffer serialWaiting;
+void PinoccioShell::prompt(void) {
+  Serial.print(F("> "));
+  // no longer blocking any other output
+  outWait = false;
+  // dump and clear any waiting output
+  Serial.print(serialWaiting.c_str());
+  serialWaiting = (char*)NULL;
+}
+
+// only print to serial if/when we are not handling bitlash
+void PinoccioShell::print(const char *str) {
+  if(outWait)
+  {
+    serialWaiting += str;
+  }else{
+    Serial.print(str);
+  }
+}
+
+static StringBuffer serialIncoming;
+StringBuffer serialOutgoing;
 void PinoccioShell::loop() {
   if (isShellEnabled) {
-    runBitlash();
-    keyLoop(millis());
+    while(Serial.available())
+    {
+      char c = Serial.read();
+      Serial.write(c); // echo everything back
+      outWait = true; // reading stuff, don't print anything else out
+      if(c == '\n')
+      {
+        setOutputHandler(&printToString<&serialOutgoing>);
+        doCommand((char*)serialIncoming.c_str());
+        resetOutputHandler();
+        Serial.print(serialOutgoing.c_str());
+        serialIncoming = serialOutgoing = (char*)NULL;
+        prompt();
+      }else{
+        serialIncoming += c;
+      }
+    }
+    // bitlash loop
+    runBackgroundTasks();
   }
+  keyLoop(millis());
 }
 
 void PinoccioShell::startShell() {
@@ -476,7 +514,17 @@ void PinoccioShell::startShell() {
   uint8_t i;
 
   isShellEnabled = true;
-  initBitlash(115200);
+
+  // init bitlash internals, don't use initBitlash so we do our own serial
+  initTaskList();
+  vinit();
+  
+  pinoccioBanner();
+
+  snprintf(buf, sizeof(buf), "startup", i);
+  if (Shell.defined(buf)) {
+    doCommand(buf);
+  }
 
   for (i='a'; i<'z'; i++) {
     snprintf(buf, sizeof(buf), "startup.%c", i);
@@ -493,6 +541,8 @@ void PinoccioShell::startShell() {
       doCommand(buf);
     }
   }
+
+  prompt();
 }
 
 void PinoccioShell::disableShell() {
