@@ -2064,7 +2064,7 @@ static numvar wifiList(void) {
 }
 
 static numvar wifiConfig(void) {
-  if (!checkArgs(2, F("usage: wifi.config(\"wifiAPName\", \"wifiAPPassword\")"))) {
+  if (!checkArgs(1, 2, F("usage: wifi.config(\"wifiAPName\", \"wifiAPPassword\")"))) {
     return 0;
   }
 
