@@ -371,12 +371,12 @@ void PinoccioShell::setup() {
 }
 
 // just a safe wrapper around bitlash checks
-bool PinoccioShell::defined(char *cmd)
+bool PinoccioShell::defined(const char *cmd)
 {
   // TODO, use our own lookup table
   if(!cmd) return false;
-  if(find_user_function(cmd)) return true;
-  if(findKey(cmd) >= 0) return true; // don't use findscript(), it's not re-entrant safe
+  if(find_user_function((char*)cmd)) return true;
+  if(findKey((char*)cmd) >= 0) return true; // don't use findscript(), it's not re-entrant safe
   return false;
 }
 

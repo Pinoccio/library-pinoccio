@@ -31,7 +31,7 @@ class PinoccioShell {
     void loop();
     void allReportHQ();
     void delay(uint32_t at, char *command);
-    bool defined(char *fn);
+    bool defined(const char *fn);
 
     void startShell();
     void disableShell();
