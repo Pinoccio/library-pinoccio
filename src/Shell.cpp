@@ -13,10 +13,12 @@
 #include "SleepHandler.h"
 #include "bitlash.h"
 #include "src/bitlash.h"
+#include "util/StringBuffer.h"
+#include "util/String.h"
+#include "util/PrintToString.h"
 extern "C" {
 #include "key/key.h"
 #include "util/memdebug.h"
-#include "util/StringBuffer.h"
 }
 
 static numvar pinoccioBanner(void);
@@ -201,8 +203,6 @@ PinoccioShell::~PinoccioShell() { }
 
 void PinoccioShell::setup() {
   keyInit();
-  // This overrides the normal banner
-  addBitlashFunction("banner", (bitlash_function) pinoccioBanner);
 
   addBitlashFunction("power.ischarging", (bitlash_function) isBatteryCharging);
   addBitlashFunction("power.hasbattery", (bitlash_function) isBatteryConnected);
@@ -358,8 +358,6 @@ void PinoccioShell::setup() {
 
   if (isShellEnabled) {
     startShell();
-  } else {
-    Serial.begin(115200);
   }
 
   Scout.meshListen(1, receiveMessage);
@@ -370,13 +368,34 @@ void PinoccioShell::setup() {
   
 }
 
+// update a memory cache of which functions are defined
+StringBuffer customScripts;
+void PinoccioShell::refresh(void)
+{
+  customScripts = "";
+  setOutputHandler(&printToString<&customScripts>);
+  doCommand("ls");
+  resetOutputHandler();
+
+  // parse and condense the "ls" bitlash format of "function name {...}\n" into just "name "
+  int nl, sp;
+  while((nl = customScripts.indexOf('\n')) >= 0)
+  {
+    if(customScripts.startsWith("function ") && (sp = customScripts.indexOf(' ',9)) < nl)
+    {
+      customScripts += customScripts.substring(9,sp);
+    }
+    customScripts = customScripts.substring(nl+1);
+  }
+}
+
 // just a safe wrapper around bitlash checks
 bool PinoccioShell::defined(const char *cmd)
 {
-  // TODO, use our own lookup table
   if(!cmd) return false;
   if(find_user_function((char*)cmd)) return true;
-  if(findKey((char*)cmd) >= 0) return true; // don't use findscript(), it's not re-entrant safe
+//  if(findKey(cmd) >= 0) return true; // don't use findscript(), it's not re-entrant safe
+  if(customScripts.indexOf(cmd) >- 0) return true;
   return false;
 }
 
@@ -466,11 +485,52 @@ static numvar allVerbose(void) {
   return 1;
 }
 
+StringBuffer serialWaiting;
+void PinoccioShell::prompt(void) {
+  Serial.print(F("> "));
+  // no longer blocking any other output
+  outWait = false;
+  // dump and clear any waiting output
+  Serial.print(serialWaiting.c_str());
+  serialWaiting = (char*)NULL;
+}
+
+// only print to serial if/when we are not handling bitlash
+void PinoccioShell::print(const char *str) {
+  if(outWait)
+  {
+    serialWaiting += str;
+  }else{
+    Serial.print(str);
+  }
+}
+
+static StringBuffer serialIncoming;
+StringBuffer serialOutgoing;
 void PinoccioShell::loop() {
   if (isShellEnabled) {
-    runBitlash();
-    keyLoop(millis());
+    while(Serial.available())
+    {
+      char c = Serial.read();
+      Serial.write(c); // echo everything back
+      outWait = true; // reading stuff, don't print anything else out
+      if(c == '\n')
+      {
+        setOutputHandler(&printToString<&serialOutgoing>);
+        doCommand((char*)serialIncoming.c_str());
+        resetOutputHandler();
+        Serial.print(serialOutgoing.c_str());
+        serialIncoming = serialOutgoing = (char*)NULL;
+        Shell.refresh();
+        prompt();
+      }else{
+        serialIncoming += c;
+      }
+    }
+    // bitlash loop
+    runBackgroundTasks();
   }
+  keyLoop(millis());
 }
 
 void PinoccioShell::startShell() {
@@ -478,7 +538,19 @@ void PinoccioShell::startShell() {
   uint8_t i;
 
   isShellEnabled = true;
-  initBitlash(115200);
+
+  // init bitlash internals, don't use initBitlash so we do our own serial
+  initTaskList();
+  vinit();
+  
+  // init our defined cache and start up
+  Shell.refresh();
+  pinoccioBanner();
+
+  snprintf(buf, sizeof(buf), "startup", i);
+  if (Shell.defined(buf)) {
+    doCommand(buf);
+  }
 
   for (i='a'; i<'z'; i++) {
     snprintf(buf, sizeof(buf), "startup.%c", i);
@@ -495,6 +567,8 @@ void PinoccioShell::startShell() {
       doCommand(buf);
     }
   }
+
+  prompt();
 }
 
 void PinoccioShell::disableShell() {
@@ -2145,7 +2219,7 @@ static numvar wifiList(void) {
 }
 
 static numvar wifiConfig(void) {
-  if (!checkArgs(2, F("usage: wifi.config(\"wifiAPName\", \"wifiAPPassword\")"))) {
+  if (!checkArgs(1, 2, F("usage: wifi.config(\"wifiAPName\", \"wifiAPPassword\")"))) {
     return 0;
   }
 

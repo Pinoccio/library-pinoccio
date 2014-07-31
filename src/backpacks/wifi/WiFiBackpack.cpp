@@ -9,6 +9,7 @@
 #include <Arduino.h>
 #include <SPI.h>
 #include "WiFiBackpack.h"
+#include "backpacks/Backpacks.h"
 #include "../../ScoutHandler.h"
 #include "../../hq/HqHandler.h"
 #include "src/bitlash.h"
@@ -90,9 +91,15 @@ bool WiFiBackpack::setup() {
   gs.onNcmDisconnect = onNcmDisconnect;
   gs.eventData = this;
 
-  if (!gs.begin(7))
-    return false;
-
+  if (getHardwareMajorRevision() == 1 && getHardwareMinorRevision() == 1) {
+    if (!gs.begin(7, 5)) {
+      return false;
+    }
+  } else {
+    if (!gs.begin(7)) {
+      return false;
+    }
+  }
   if (HqHandler::cacert_len)
     gs.addCert(CA_CERTNAME_HQ, /* to_flash */ false, HqHandler::cacert, HqHandler::cacert_len);
 
@@ -255,6 +262,17 @@ bool WiFiBackpack::printTime(Print &p) {
   return runDirectCommand(p, "AT+GETTIME=?");
 }
 
+int WiFiBackpack::getHardwareMajorRevision() {
+  Pbbe::UniqueId &id = Backpacks::info[0].id;
+  Pbbe::MajorMinor rev = Pbbe::extractMajorMinor(id.revision);
+  return rev.major;
+}
+
+int WiFiBackpack::getHardwareMinorRevision() {
+  Pbbe::UniqueId &id = Backpacks::info[0].id;
+  Pbbe::MajorMinor rev = Pbbe::extractMajorMinor(id.revision);
+  return rev.minor;
+}
 
 /* commands for auto-config
 AT+WWPA=password
