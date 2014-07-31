@@ -91,7 +91,7 @@ PinoccioScout::PinoccioScout() {
   isFactoryResetReady = false;
 
   sleepPending = false;
-  Scout.postSleepFunction = NULL;
+  postSleepFunction = NULL;
 }
 
 PinoccioScout::~PinoccioScout() { }
@@ -376,13 +376,13 @@ bool PinoccioScout::pinWrite(uint8_t pin, uint8_t value) {
 }
 
 uint16_t PinoccioScout::pinRead(uint8_t pin) {
-  switch(Scout.getPinMode(pin)) {
+  switch(getPinMode(pin)) {
     case PINMODE_PWM:
       return pinStates[pin];
 
     case PINMODE_INPUT:
     case PINMODE_INPUT_PULLUP:
-      if (Scout.isAnalogPin(pin))
+      if (isAnalogPin(pin))
         return analogRead(pin - A0);
       else
         return digitalRead(pin);
@@ -458,9 +458,9 @@ bool PinoccioScout::isPinReserved(uint8_t pin) {
 }
 
 bool PinoccioScout::updatePinState(uint8_t pin, int16_t val, int8_t mode) {
-  if (Scout.pinStates[pin] != val || Scout.pinModes[pin] != mode) {
-    Scout.pinStates[pin] = val;
-    Scout.pinModes[pin] = mode;
+  if (pinStates[pin] != val || pinModes[pin] != mode) {
+    pinStates[pin] = val;
+    pinModes[pin] = mode;
 
     if (isDigitalPin(pin) && digitalPinEventHandler != 0) {
       if (eventVerboseOutput) {
@@ -476,7 +476,7 @@ bool PinoccioScout::updatePinState(uint8_t pin, int16_t val, int8_t mode) {
     }
 
     if (isAnalogPin(pin) && analogPinEventHandler != 0) {
-      if (Scout.eventVerboseOutput) {
+      if (eventVerboseOutput) {
         Serial.print(F("Running: analogPinEventHandler("));
         Serial.print(pin - A0);
         Serial.print(F(","));
@@ -485,7 +485,7 @@ bool PinoccioScout::updatePinState(uint8_t pin, int16_t val, int8_t mode) {
         Serial.print(mode);
         Serial.println(F(")"));
       }
-      Scout.analogPinEventHandler(pin - A0, val, mode);
+      analogPinEventHandler(pin - A0, val, mode);
     }
 
     return true;
@@ -579,14 +579,14 @@ static void scoutPeripheralStateChangeTimerHandler(SYS_Timer_t *timer) {
 void PinoccioScout::scheduleSleep(uint32_t ms, char *func) {
   if (ms) {
     SleepHandler::scheduleSleep(ms);
-    Scout.sleepPending = true;
+    sleepPending = true;
   } else {
-    Scout.sleepPending = false;
+    sleepPending = false;
   }
 
-  if (Scout.postSleepFunction)
-    free(Scout.postSleepFunction);
-  Scout.postSleepFunction = func;
+  if (postSleepFunction)
+    free(postSleepFunction);
+  postSleepFunction = func;
 }
 
 void PinoccioScout::doSleep() {
