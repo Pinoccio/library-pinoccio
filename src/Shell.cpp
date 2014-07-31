@@ -26,6 +26,8 @@ static numvar pinoccioBanner(void);
 static numvar getTemperatureC(void);
 static numvar getTemperatureF(void);
 static numvar temperatureReport(void);
+static numvar setTemperatureOffset(void);
+static numvar temperatureCalibrate(void);
 static numvar getRandomNumber(void);
 
 static numvar allReport(void);
@@ -236,6 +238,8 @@ void PinoccioShell::setup() {
   addBitlashFunction("temperature.c", (bitlash_function) getTemperatureC);
   addBitlashFunction("temperature.f", (bitlash_function) getTemperatureF);
   addBitlashFunction("temperature.report", (bitlash_function) temperatureReport);
+  addBitlashFunction("temperature.setoffset", (bitlash_function) setTemperatureOffset);
+  addBitlashFunction("temperature.calibrate", (bitlash_function) temperatureCalibrate);
   addBitlashFunction("randomnumber", (bitlash_function) getRandomNumber);
   addBitlashFunction("memory.report", (bitlash_function) memoryReport);
 
@@ -584,12 +588,14 @@ static bool sendDataReqBusy;
 
 static StringBuffer tempReportHQ(void) {
   StringBuffer report(100);
-  report.appendSprintf("[%d,[%d,%d],[%d,%d]]",
+  report.appendSprintf("[%d,[%d,%d,%d],[%d,%d,%d]]",
           keyMap("temp", 0),
           keyMap("c", 0),
           keyMap("f", 0),
+          keyMap("offset", 0),
           Scout.getTemperatureC(),
-          Scout.getTemperatureF());
+          Scout.getTemperatureF(),
+          Scout.getTemperatureOffset());
   return Scout.handler.report(report);
 }
 
@@ -604,6 +610,22 @@ static numvar getTemperatureC(void) {
 
 static numvar getTemperatureF(void) {
   return Scout.getTemperatureF();
+}
+
+static numvar setTemperatureOffset(void) {
+  if (!checkArgs(1, F("usage: temperature.setoffset(value)"))) {
+    return 0;
+  }
+  Scout.setTemperatureOffset(getarg(1));
+  return 1;
+}
+
+static numvar temperatureCalibrate(void) {
+  if (!checkArgs(1, F("usage: temperature.setoffset(value)"))) {
+    return 0;
+  }
+  Scout.setTemperatureOffset(getarg(1) - Scout.getTemperatureC());
+  return 1;
 }
 
 static numvar getRandomNumber(void) {

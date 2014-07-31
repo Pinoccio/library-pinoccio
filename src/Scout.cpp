@@ -182,7 +182,7 @@ int8_t PinoccioScout::getTemperatureC() {
 
 int8_t PinoccioScout::getTemperatureF() {
   float f;
-  f = round((1.8 * temperature) + 32);
+  f = round((1.8 * this->getTemperature()) + 32);
   return (uint32_t)f;
 }
 
@@ -266,7 +266,7 @@ void PinoccioScout::saveState() {
   batteryVoltage = HAL_FuelGaugeVoltage();
   isBattCharging = (digitalRead(CHG_STATUS) == LOW);
   isBattAlarmTriggered = (digitalRead(BATT_ALERT) == LOW);
-  temperature = this->getTemperatureC();
+  temperature = this->getTemperature();
 }
 
 int8_t PinoccioScout::getRegisterPinMode(uint8_t pin) {
@@ -563,8 +563,9 @@ static void scoutPeripheralStateChangeTimerHandler(SYS_Timer_t *timer) {
 
   if (Scout.temperatureEventHandler != 0) {
     int8_t tempC = Scout.getTemperatureC();
-    int8_t tempF = Scout.getTemperatureF();
-    if (Scout.temperature != val) {
+    if (Scout.temperature != tempC) {
+      Scout.temperature = tempC;
+      int8_t tempF = Scout.getTemperatureF();
       if (Scout.eventVerboseOutput) {
         Serial.print(F("Running: temperatureEventHandler("));
         Serial.print(tempC);
@@ -572,7 +573,6 @@ static void scoutPeripheralStateChangeTimerHandler(SYS_Timer_t *timer) {
         Serial.print(tempF);
         Serial.println(F(")"));
       }
-      Scout.temperature = tempC;
       Scout.temperatureEventHandler(tempC, tempF);
     }
   }
