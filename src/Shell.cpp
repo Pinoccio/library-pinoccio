@@ -36,6 +36,7 @@ static numvar uptimeSleepingSeconds(void);
 static numvar uptimeMicros(void);
 static numvar uptimeSeconds(void);
 static numvar uptimeReport(void);
+static numvar uptimeStatus(void);
 static numvar getLastResetCause(void);
 
 static numvar isBatteryCharging(void);
@@ -249,6 +250,7 @@ void PinoccioShell::setup() {
   addBitlashFunction("uptime.micros", (bitlash_function) uptimeMicros);
   addBitlashFunction("uptime.report", (bitlash_function) uptimeReport);
   addBitlashFunction("uptime.getlastreset", (bitlash_function) getLastResetCause);
+  addBitlashFunction("uptime.status", (bitlash_function) uptimeStatus);
 
   addBitlashFunction("led.on", (bitlash_function) ledTorch); // alias
   addBitlashFunction("led.off", (bitlash_function) ledOff);
@@ -596,6 +598,33 @@ static numvar uptimeSeconds(void) {
 
 static numvar uptimeReport(void) {
   speol(uptimeReportHQ());
+  return true;
+}
+
+static void appendTime(StringBuffer &b, Duration d) {
+  unsigned days = d.seconds / 3600 / 24;
+  unsigned hours = d.seconds / 3600 % 24;
+  unsigned minutes = d.seconds / 60 % 60;
+  unsigned seconds = d.seconds % 60;
+
+  b.appendSprintf("%u days, %u hours, %u minutes, %d.%06lu seconds",
+                  days, hours, minutes, seconds, d.us);
+}
+
+static numvar uptimeStatus(void) {
+  StringBuffer out(100);
+  out = F("Total: ");
+  appendTime(out, SleepHandler::uptime());
+  speol(out.c_str());
+
+  out = F("Awake: ");
+  appendTime(out, SleepHandler::waketime());
+  speol(out.c_str());
+
+  out = F("Asleep: ");
+  appendTime(out, SleepHandler::sleeptime());
+  speol(out.c_str());
+
   return true;
 }
 
