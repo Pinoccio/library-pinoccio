@@ -746,7 +746,7 @@ static numvar powerSleep(void) {
     return 0;
   }
 
-  Scout.scheduleSleep(getarg(1), strdup(func));
+  Scout.scheduleSleep(getarg(1), func ? strdup(func) : NULL);
 
   return 1;
 }
