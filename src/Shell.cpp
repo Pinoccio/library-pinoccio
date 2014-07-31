@@ -8,7 +8,9 @@
 \**************************************************************************/
 #include "Shell.h"
 #include "Scout.h"
+#include "SleepHandler.h"
 #include "backpacks/Backpacks.h"
+#include "SleepHandler.h"
 #include "bitlash.h"
 #include "src/bitlash.h"
 #include "util/StringBuffer.h"
@@ -29,15 +31,14 @@ static numvar getRandomNumber(void);
 static numvar allReport(void);
 static numvar allVerbose(void);
 
-static numvar uptimeMillisAwake(void);
-static numvar uptimeMillisSleep(void);
-static numvar uptimeMillis(void);
+static numvar uptimeAwakeMicros(void);
+static numvar uptimeAwakeSeconds(void);
+static numvar uptimeSleepingMicros(void);
+static numvar uptimeSleepingSeconds(void);
+static numvar uptimeMicros(void);
 static numvar uptimeSeconds(void);
-static numvar uptimeMinutes(void);
-static numvar uptimeHours(void);
-static numvar uptimeDays(void);
 static numvar uptimeReport(void);
-static numvar getMicros(void);
+static numvar uptimeStatus(void);
 static numvar getLastResetCause(void);
 
 static numvar isBatteryCharging(void);
@@ -47,8 +48,9 @@ static numvar getBatteryVoltage(void);
 static numvar enableBackpackVcc(void);
 static numvar disableBackpackVcc(void);
 static numvar isBackpackVccEnabled(void);
-static numvar sleep(void);
+static numvar powerSleep(void);
 static numvar powerReport(void);
+static numvar powerWakeupPin(void);
 
 static numvar ledBlink(void);
 static numvar ledOff(void);
@@ -105,7 +107,7 @@ static numvar pinSetMode(void);
 static numvar pinRead(void);
 static numvar pinWrite(void);
 static numvar pinSave(void);
-static numvar pinList(void);
+static numvar pinStatus(void);
 static numvar pinNumber(void);
 static numvar pinOthersDisconnected(void);
 static numvar digitalPinReport(void);
@@ -209,8 +211,9 @@ void PinoccioShell::setup() {
   addBitlashFunction("power.enablevcc", (bitlash_function) enableBackpackVcc);
   addBitlashFunction("power.disablevcc", (bitlash_function) disableBackpackVcc);
   addBitlashFunction("power.isvccenabled", (bitlash_function) isBackpackVccEnabled);
-  addBitlashFunction("power.sleep", (bitlash_function) sleep);
+  addBitlashFunction("power.sleep", (bitlash_function) powerSleep);
   addBitlashFunction("power.report", (bitlash_function) powerReport);
+  addBitlashFunction("power.wakeup.pin", (bitlash_function) powerWakeupPin);
 
   addBitlashFunction("mesh.config", (bitlash_function) meshConfig);
   addBitlashFunction("mesh.setpower", (bitlash_function) meshSetPower);
@@ -239,16 +242,15 @@ void PinoccioShell::setup() {
   addBitlashFunction("report", (bitlash_function) allReport);
   addBitlashFunction("verbose", (bitlash_function) allVerbose);
 
-  addBitlashFunction("uptime.millis.awake", (bitlash_function) uptimeMillisAwake);
-  addBitlashFunction("uptime.millis.sleep", (bitlash_function) uptimeMillisSleep);
-  addBitlashFunction("uptime.millis", (bitlash_function) uptimeMillis);
+  addBitlashFunction("uptime.awake.micros", (bitlash_function) uptimeAwakeMicros);
+  addBitlashFunction("uptime.awake.seconds", (bitlash_function) uptimeAwakeSeconds);
+  addBitlashFunction("uptime.sleeping.micros", (bitlash_function) uptimeSleepingMicros);
+  addBitlashFunction("uptime.sleeping.seconds", (bitlash_function) uptimeSleepingSeconds);
   addBitlashFunction("uptime.seconds", (bitlash_function) uptimeSeconds);
-  addBitlashFunction("uptime.minutes", (bitlash_function) uptimeMinutes);
-  addBitlashFunction("uptime.hours", (bitlash_function) uptimeHours);
-  addBitlashFunction("uptime.days", (bitlash_function) uptimeDays);
+  addBitlashFunction("uptime.micros", (bitlash_function) uptimeMicros);
   addBitlashFunction("uptime.report", (bitlash_function) uptimeReport);
-  addBitlashFunction("uptime.micros", (bitlash_function) getMicros);
   addBitlashFunction("uptime.getlastreset", (bitlash_function) getLastResetCause);
+  addBitlashFunction("uptime.status", (bitlash_function) uptimeStatus);
 
   addBitlashFunction("led.on", (bitlash_function) ledTorch); // alias
   addBitlashFunction("led.off", (bitlash_function) ledOff);
@@ -289,7 +291,7 @@ void PinoccioShell::setup() {
   addBitlashFunction("pin.read", (bitlash_function) pinRead);
   addBitlashFunction("pin.write", (bitlash_function) pinWrite);
   addBitlashFunction("pin.save", (bitlash_function) pinSave);
-  addBitlashFunction("pin.list", (bitlash_function) pinList);
+  addBitlashFunction("pin.status", (bitlash_function) pinStatus);
   addBitlashFunction("pin.number", (bitlash_function) pinNumber);
   addBitlashFunction("pin.othersdisconnected", (bitlash_function) pinOthersDisconnected);
   addBitlashFunction("pin.report.digital", (bitlash_function) digitalPinReport);
@@ -388,10 +390,10 @@ void PinoccioShell::refresh(void)
 }
 
 // just a safe wrapper around bitlash checks
-bool PinoccioShell::defined(char *cmd)
+bool PinoccioShell::defined(const char *cmd)
 {
   if(!cmd) return false;
-  if(find_user_function(cmd)) return true;
+  if(find_user_function((char*)cmd)) return true;
 //  if(findKey(cmd) >= 0) return true; // don't use findscript(), it's not re-entrant safe
   if(customScripts.indexOf(cmd) >- 0) return true;
   return false;
@@ -630,12 +632,12 @@ static StringBuffer uptimeReportHQ(void) {
   reset[sizeof(reset) - 1] = 0; // ensure termination, strncpy is weird
 
   report.appendSprintf("[%d,[%d,%d,%d,%d],[%ld,%ld,%d,",keyMap("uptime",0),
-          keyMap("millis", 0),
+          keyMap("total", 0),
           keyMap("sleep", 0),
           keyMap("random", 0),
           keyMap("reset", 0),
-          Scout.getCpuTime(),
-          Scout.getSleepTime(),
+          SleepHandler::uptime().seconds,
+          SleepHandler::sleeptime().seconds,
           (int)random());
 
   report.appendJsonString(reset, true);
@@ -643,41 +645,61 @@ static StringBuffer uptimeReportHQ(void) {
   return Scout.handler.report(report);
 }
 
-static numvar uptimeMillis(void) {
-  return Scout.getWallTime();
+static numvar uptimeAwakeMicros(void) {
+  return SleepHandler::waketime().us;
+}
+
+static numvar uptimeAwakeSeconds(void) {
+  return SleepHandler::waketime().seconds;
+}
+
+static numvar uptimeSleepingMicros(void) {
+  return SleepHandler::sleeptime().us;
+}
+
+static numvar uptimeSleepingSeconds(void) {
+  return SleepHandler::sleeptime().seconds;
+}
+
+static numvar uptimeMicros(void) {
+  return SleepHandler::uptime().us;
 }
 
 static numvar uptimeSeconds(void) {
-  return Scout.getWallTime()/1000;
+  return SleepHandler::uptime().seconds;
 }
 
-static numvar uptimeMinutes(void) {
-  return Scout.getWallTime()/1000/60;
-}
-
-static numvar uptimeHours(void) {
-  return Scout.getWallTime()/1000/60/60;
-}
-
-static numvar uptimeDays(void) {
-  return Scout.getWallTime()/1000/60/60/24;
-}
 
 static numvar uptimeReport(void) {
   speol(uptimeReportHQ());
   return true;
 }
 
-static numvar uptimeMillisAwake(void) {
-  return Scout.getCpuTime();
+static void appendTime(StringBuffer &b, Duration d) {
+  unsigned days = d.seconds / 3600 / 24;
+  unsigned hours = d.seconds / 3600 % 24;
+  unsigned minutes = d.seconds / 60 % 60;
+  unsigned seconds = d.seconds % 60;
+
+  b.appendSprintf("%u days, %u hours, %u minutes, %d.%06lu seconds",
+                  days, hours, minutes, seconds, d.us);
 }
 
-static numvar uptimeMillisSleep(void) {
-  return Scout.getSleepTime();
-}
+static numvar uptimeStatus(void) {
+  StringBuffer out(100);
+  out = F("Total: ");
+  appendTime(out, SleepHandler::uptime());
+  speol(out.c_str());
 
-static numvar getMicros(void) {
-  return micros();
+  out = F("Awake: ");
+  appendTime(out, SleepHandler::waketime());
+  speol(out.c_str());
+
+  out = F("Asleep: ");
+  appendTime(out, SleepHandler::sleeptime());
+  speol(out.c_str());
+
+  return true;
 }
 
 /****************************\
@@ -778,20 +800,27 @@ static numvar isBackpackVccEnabled(void) {
   return Scout.isBackpackVccEnabled();
 }
 
-static numvar sleep(void) {
+static numvar powerSleep(void) {
   if (!getarg(0) || getarg(0) > 2) {
     speol("usage: power.sleep(ms, [\"function\"])");
     return 0;
   }
 
-  const char *cmd = NULL;
+  const char *func = NULL;
   if (getarg(0) > 1) {
     if (isstringarg(2))
-      cmd = (char*)getstringarg(2);
+      func = (char*)getstringarg(2);
     else
-      cmd = keyGet(getarg(2));
+      func = keyGet(getarg(2));
   }
-  Scout.scheduleSleep(getarg(1), strdup(cmd));
+
+  if (func && !Shell.defined(func)) {
+    sp("Must be the name of function: ");
+    sp(func);
+    return 0;
+  }
+
+  Scout.scheduleSleep(getarg(1), func ? strdup(func) : NULL);
 
   return 1;
 }
@@ -813,6 +842,39 @@ static StringBuffer powerReportHQ(void) {
 
 static numvar powerReport(void) {
   speol(powerReportHQ());
+  return 1;
+}
+
+static numvar powerWakeupPin(void) {
+  if (!checkArgs(1, 2, F("usage: power.wakeup.pin(\"pinName\", [enable])"))) {
+    return 0;
+  }
+
+  int8_t pin = getPinFromArg(1);
+  bool enable = getarg(0) == 2 ? getarg(2) : 1;
+
+  if (pin == -1) {
+    speol(F("Invalid pin number"));
+    return 0;
+  }
+
+  if (!SleepHandler::pinWakeupSupported(pin)) {
+    speol(F("Wakeup not supported for this pin"));
+    return 0;
+  }
+
+  if (Scout.isPinReserved(pin)) {
+    speol(F("Cannot enable wakeup on a reserved pin"));
+    return 0;
+  }
+
+  if (!Scout.isInputPin(pin)) {
+    speol(F("Pin must be configured as input"));
+    return 0;
+  }
+
+  SleepHandler::setPinWakeup(pin, enable);
+
   return 1;
 }
 
@@ -1441,14 +1503,14 @@ static numvar pinWrite(void) {
   return 1;
 }
 
-static numvar pinList(void) {
-  if (!checkArgs(0, F("usage: pin.list"))) {
+static numvar pinStatus(void) {
+  if (!checkArgs(0, F("usage: pin.status"))) {
     return 0;
   }
 
   // TODO: This should use sp/speol, but that doesn't return the number
   // of characters printed to use for alignment...
-  Serial.println(F("Note: pin.list currently only works on Serial"));
+  Serial.println(F("Note: pin.status currently only works on Serial"));
   Serial.println(F("#   name    mode            value"));
   Serial.println(F("---------------------------------"));
   for (uint8_t pin = 0; pin < NUM_DIGITAL_PINS; ++pin) {
@@ -1457,9 +1519,28 @@ static numvar pinList(void) {
     int8_t mode = Scout.getPinMode(pin);
     printSpaces(16 - Serial.print(Scout.getNameForPinMode(mode) ?: F("unknown")));
     if (mode < 0)
-      Serial.println('-');
+      printSpaces(8 - Serial.print('-'));
     else
-      Serial.println(Scout.pinRead(pin));
+      printSpaces(8 - Serial.print(Scout.pinRead(pin)));
+
+    const char *prefix = "";
+    if (Scout.isPWMPin(pin)) {
+      Serial.print(prefix);
+      Serial.print("supports PWM");
+      prefix = ", ";
+    }
+    if (SleepHandler::pinWakeupSupported(pin)) {
+      Serial.print(prefix);
+      Serial.print("supports wakeup");
+      prefix = ", ";
+    }
+    if (SleepHandler::pinWakeupEnabled(pin)) {
+      Serial.print(prefix);
+      Serial.print("wakeup enabled");
+      prefix = ", ";
+    }
+
+    Serial.println();
   }
 
   return 1;

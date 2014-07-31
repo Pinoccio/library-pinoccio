@@ -91,13 +91,14 @@ PinoccioScout::PinoccioScout() {
   isFactoryResetReady = false;
 
   sleepPending = false;
-  Scout.postSleepCommand = NULL;
+  postSleepFunction = NULL;
 }
 
 PinoccioScout::~PinoccioScout() { }
 
 void PinoccioScout::setup(const char *sketchName, const char *sketchRevision, int32_t sketchBuild) {
   PinoccioClass::setup(sketchName, sketchRevision, sketchBuild);
+  SleepHandler::setup();
 
   pinMode(CHG_STATUS, INPUT_PULLUP);
   pinMode(BATT_ALERT, INPUT_PULLUP);
@@ -134,12 +135,12 @@ void PinoccioScout::loop() {
   if (sleepPending) {
     canSleep = canSleep && !NWK_Busy();
 
-    int32_t remaining = sleepUntil - millis();
-
     // if remaining <= 0, we won't actually sleep anymore, but still
     // call doSleep to run the callback and clean up
-    if (canSleep || remaining <= 0)
-      doSleep(remaining);
+    if (SleepHandler::scheduledTicksLeft() == 0)
+      doSleep(true);
+    else if (canSleep)
+      doSleep(false);
   }
 }
 
@@ -377,13 +378,13 @@ bool PinoccioScout::pinWrite(uint8_t pin, uint8_t value) {
 }
 
 uint16_t PinoccioScout::pinRead(uint8_t pin) {
-  switch(Scout.getPinMode(pin)) {
+  switch(getPinMode(pin)) {
     case PINMODE_PWM:
       return pinStates[pin];
 
     case PINMODE_INPUT:
     case PINMODE_INPUT_PULLUP:
-      if (Scout.isAnalogPin(pin))
+      if (isAnalogPin(pin))
         return analogRead(pin - A0);
       else
         return digitalRead(pin);
@@ -459,9 +460,9 @@ bool PinoccioScout::isPinReserved(uint8_t pin) {
 }
 
 bool PinoccioScout::updatePinState(uint8_t pin, int16_t val, int8_t mode) {
-  if (Scout.pinStates[pin] != val || Scout.pinModes[pin] != mode) {
-    Scout.pinStates[pin] = val;
-    Scout.pinModes[pin] = mode;
+  if (pinStates[pin] != val || pinModes[pin] != mode) {
+    pinStates[pin] = val;
+    pinModes[pin] = mode;
 
     if (isDigitalPin(pin) && digitalPinEventHandler != 0) {
       if (eventVerboseOutput) {
@@ -477,7 +478,7 @@ bool PinoccioScout::updatePinState(uint8_t pin, int16_t val, int8_t mode) {
     }
 
     if (isAnalogPin(pin) && analogPinEventHandler != 0) {
-      if (Scout.eventVerboseOutput) {
+      if (eventVerboseOutput) {
         Serial.print(F("Running: analogPinEventHandler("));
         Serial.print(pin - A0);
         Serial.print(F(","));
@@ -486,7 +487,7 @@ bool PinoccioScout::updatePinState(uint8_t pin, int16_t val, int8_t mode) {
         Serial.print(mode);
         Serial.println(F(")"));
       }
-      Scout.analogPinEventHandler(pin - A0, val, mode);
+      analogPinEventHandler(pin - A0, val, mode);
     }
 
     return true;
@@ -577,46 +578,60 @@ static void scoutPeripheralStateChangeTimerHandler(SYS_Timer_t *timer) {
   }
 }
 
-void PinoccioScout::scheduleSleep(uint32_t ms, char *cmd) {
-  Scout.sleepUntil = millis() + ms;
-  Scout.sleepPending = (ms > 0);
-  if (Scout.postSleepCommand)
-    free(Scout.postSleepCommand);
-  Scout.postSleepCommand = cmd;
+void PinoccioScout::scheduleSleep(uint32_t ms, char *func) {
+  if (ms) {
+    SleepHandler::scheduleSleep(ms);
+    sleepPending = true;
+  } else {
+    sleepPending = false;
+  }
+
+  if (postSleepFunction)
+    free(postSleepFunction);
+  postSleepFunction = func;
+  sleepMs = ms;
 }
 
-void PinoccioScout::doSleep(int32_t ms) {
+void PinoccioScout::doSleep(bool pastEnd) {
   // Copy the pointer, so the post command can set a new sleep
   // timeout again.
-  char *cmd = postSleepCommand;
-  postSleepCommand = NULL;
+  char *func = postSleepFunction;
+  postSleepFunction = NULL;
   sleepPending = false;
 
-  if (ms > 0) {
+  if (!pastEnd) {
     NWK_SleepReq();
 
     // TODO: suspend more stuff? Wait for UART byte completion?
 
-    SleepHandler::doSleep(ms, true);
+    SleepHandler::doSleep(true);
     NWK_WakeupReq();
   }
 
   // TODO: Allow ^C to stop running callbacks like this one
-  if (cmd) {
-    doCommand(cmd);
+  if (func) {
+    StringBuffer cmd(64, 16);
+    uint32_t left = SleepHandler::ticksToMs(SleepHandler::scheduledTicksLeft());
+    cmd += func;
+    cmd += "(";
+    cmd.appendSprintf("%lu", sleepMs);
+    cmd.appendSprintf(",%lu", left);
+    cmd += ")";
+
+    uint32_t ret = doCommand((char*)cmd.c_str());
+
+    if (!left || !ret || sleepPending) {
+      // If the callback returned false, or it scheduled a new sleep or
+      // we finished our previous sleep, then we're done with this
+      // callback.
+      free(func);
+    } else {
+      // If the callback returned true, and it did not schedule a new
+      // sleep interval, and we're not done sleeping yet, this means we
+      // should continue sleeping (though note that at least one loop
+      // cycle is ran before actually sleeping again).
+      sleepPending = true;
+      postSleepFunction = func;
+    }
   }
-
-  free(cmd);
-}
-
-uint32_t PinoccioScout::getWallTime() {
-  return getCpuTime() + getSleepTime();
-}
-
-uint32_t PinoccioScout::getCpuTime() {
-  return millis();
-}
-
-uint32_t PinoccioScout::getSleepTime() {
-  return SleepHandler::sleepMillis;
 }

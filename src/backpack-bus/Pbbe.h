@@ -107,6 +107,10 @@ public:
         return 0;
     }
 
+    bool in(mask_t check) {
+      return check & mask();
+    }
+
     uint8_t val;
   };
 
