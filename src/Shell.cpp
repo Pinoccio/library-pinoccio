@@ -732,14 +732,21 @@ static numvar powerSleep(void) {
     return 0;
   }
 
-  const char *cmd = NULL;
+  const char *func = NULL;
   if (getarg(0) > 1) {
     if (isstringarg(2))
-      cmd = (char*)getstringarg(2);
+      func = (char*)getstringarg(2);
     else
-      cmd = keyGet(getarg(2));
+      func = keyGet(getarg(2));
   }
-  Scout.scheduleSleep(getarg(1), strdup(cmd));
+
+  if (func && !Shell.defined(func)) {
+    sp("Must be the name of function: ");
+    sp(func);
+    return 0;
+  }
+
+  Scout.scheduleSleep(getarg(1), strdup(func));
 
   return 1;
 }

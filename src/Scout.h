@@ -145,7 +145,7 @@ class PinoccioScout : public PinoccioClass {
     SYS_Timer_t peripheralStateChangeTimer;
 
     bool sleepPending;
-    char * postSleepCommand;
+    char * postSleepFunction;
 };
 
 extern PinoccioScout Scout;

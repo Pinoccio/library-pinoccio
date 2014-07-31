@@ -91,7 +91,7 @@ PinoccioScout::PinoccioScout() {
   isFactoryResetReady = false;
 
   sleepPending = false;
-  Scout.postSleepCommand = NULL;
+  Scout.postSleepFunction = NULL;
 }
 
 PinoccioScout::~PinoccioScout() { }
@@ -576,7 +576,7 @@ static void scoutPeripheralStateChangeTimerHandler(SYS_Timer_t *timer) {
   }
 }
 
-void PinoccioScout::scheduleSleep(uint32_t ms, char *cmd) {
+void PinoccioScout::scheduleSleep(uint32_t ms, char *func) {
   if (ms) {
     SleepHandler::scheduleSleep(ms);
     Scout.sleepPending = true;
@@ -584,16 +584,16 @@ void PinoccioScout::scheduleSleep(uint32_t ms, char *cmd) {
     Scout.sleepPending = false;
   }
 
-  if (Scout.postSleepCommand)
-    free(Scout.postSleepCommand);
-  Scout.postSleepCommand = cmd;
+  if (Scout.postSleepFunction)
+    free(Scout.postSleepFunction);
+  Scout.postSleepFunction = func;
 }
 
 void PinoccioScout::doSleep() {
   // Copy the pointer, so the post command can set a new sleep
   // timeout again.
-  char *cmd = postSleepCommand;
-  postSleepCommand = NULL;
+  char *func = postSleepFunction;
+  postSleepFunction = NULL;
   sleepPending = false;
 
   if (!SleepHandler::pastScheduledEnd()) {
@@ -606,9 +606,9 @@ void PinoccioScout::doSleep() {
   }
 
   // TODO: Allow ^C to stop running callbacks like this one
-  if (cmd) {
-    doCommand(cmd);
+  if (func) {
+    doCommand(func);
   }
 
-  free(cmd);
+  free(func);
 }
