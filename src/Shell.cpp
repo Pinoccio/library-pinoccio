@@ -366,13 +366,34 @@ void PinoccioShell::setup() {
   
 }
 
+// update a memory cache of which functions are defined
+StringBuffer customScripts;
+void PinoccioShell::refresh(void)
+{
+  customScripts = "";
+  setOutputHandler(&printToString<&customScripts>);
+  doCommand("ls");
+  resetOutputHandler();
+
+  // parse and condense the "ls" bitlash format of "function name {...}\n" into just "name "
+  int nl, sp;
+  while((nl = customScripts.indexOf('\n')) >= 0)
+  {
+    if(customScripts.startsWith("function ") && (sp = customScripts.indexOf(' ',9)) < nl)
+    {
+      customScripts += customScripts.substring(9,sp);
+    }
+    customScripts = customScripts.substring(nl+1);
+  }
+}
+
 // just a safe wrapper around bitlash checks
 bool PinoccioShell::defined(char *cmd)
 {
-  // TODO, use our own lookup table
   if(!cmd) return false;
   if(find_user_function(cmd)) return true;
-  if(findKey(cmd) >= 0) return true; // don't use findscript(), it's not re-entrant safe
+//  if(findKey(cmd) >= 0) return true; // don't use findscript(), it's not re-entrant safe
+  if(customScripts.indexOf(cmd) >- 0) return true;
   return false;
 }
 
@@ -498,6 +519,7 @@ void PinoccioShell::loop() {
         resetOutputHandler();
         Serial.print(serialOutgoing.c_str());
         serialIncoming = serialOutgoing = (char*)NULL;
+        Shell.refresh();
         prompt();
       }else{
         serialIncoming += c;
@@ -519,6 +541,8 @@ void PinoccioShell::startShell() {
   initTaskList();
   vinit();
   
+  // init our defined cache and start up
+  Shell.refresh();
   pinoccioBanner();
 
   snprintf(buf, sizeof(buf), "startup", i);
