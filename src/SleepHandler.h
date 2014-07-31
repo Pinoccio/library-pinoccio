@@ -32,6 +32,9 @@ class SleepHandler {
 
     static void setPinWakeup(uint8_t pin, bool enable);
     static bool pinWakeupSupported(uint8_t pin);
+    static bool pinWakeupEnabled(uint8_t pin) {
+      return Pbbe::LogicalPin(pin).in(pinWakeups);
+    }
 
     // A timer tick is always 16μs, so the tick count overflows after
     // 2^32 * 16 / 1000 == 68,719,476 ms (±19 hours). ms should not be

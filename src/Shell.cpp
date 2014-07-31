@@ -1438,9 +1438,28 @@ static numvar pinStatus(void) {
     int8_t mode = Scout.getPinMode(pin);
     printSpaces(16 - Serial.print(Scout.getNameForPinMode(mode) ?: F("unknown")));
     if (mode < 0)
-      Serial.println('-');
+      printSpaces(8 - Serial.print('-'));
     else
-      Serial.println(Scout.pinRead(pin));
+      printSpaces(8 - Serial.print(Scout.pinRead(pin)));
+
+    const char *prefix = "";
+    if (Scout.isPWMPin(pin)) {
+      Serial.print(prefix);
+      Serial.print("supports PWM");
+      prefix = ", ";
+    }
+    if (SleepHandler::pinWakeupSupported(pin)) {
+      Serial.print(prefix);
+      Serial.print("supports wakeup");
+      prefix = ", ";
+    }
+    if (SleepHandler::pinWakeupEnabled(pin)) {
+      Serial.print(prefix);
+      Serial.print("wakeup enabled");
+      prefix = ", ";
+    }
+
+    Serial.println();
   }
 
   return 1;
