@@ -105,7 +105,7 @@ static numvar pinSetMode(void);
 static numvar pinRead(void);
 static numvar pinWrite(void);
 static numvar pinSave(void);
-static numvar pinList(void);
+static numvar pinStatus(void);
 static numvar pinNumber(void);
 static numvar pinOthersDisconnected(void);
 static numvar digitalPinReport(void);
@@ -291,7 +291,7 @@ void PinoccioShell::setup() {
   addBitlashFunction("pin.read", (bitlash_function) pinRead);
   addBitlashFunction("pin.write", (bitlash_function) pinWrite);
   addBitlashFunction("pin.save", (bitlash_function) pinSave);
-  addBitlashFunction("pin.list", (bitlash_function) pinList);
+  addBitlashFunction("pin.status", (bitlash_function) pinStatus);
   addBitlashFunction("pin.number", (bitlash_function) pinNumber);
   addBitlashFunction("pin.othersdisconnected", (bitlash_function) pinOthersDisconnected);
   addBitlashFunction("pin.report.digital", (bitlash_function) digitalPinReport);
@@ -1422,14 +1422,14 @@ static numvar pinWrite(void) {
   return 1;
 }
 
-static numvar pinList(void) {
-  if (!checkArgs(0, F("usage: pin.list"))) {
+static numvar pinStatus(void) {
+  if (!checkArgs(0, F("usage: pin.status"))) {
     return 0;
   }
 
   // TODO: This should use sp/speol, but that doesn't return the number
   // of characters printed to use for alignment...
-  Serial.println(F("Note: pin.list currently only works on Serial"));
+  Serial.println(F("Note: pin.status currently only works on Serial"));
   Serial.println(F("#   name    mode            value"));
   Serial.println(F("---------------------------------"));
   for (uint8_t pin = 0; pin < NUM_DIGITAL_PINS; ++pin) {
