@@ -385,7 +385,7 @@ void PinoccioShell::refresh(void)
   {
     if(customScripts.startsWith("function ") && (sp = customScripts.indexOf(' ',9)) < nl)
     {
-      customScripts += customScripts.substring(9,sp);
+      customScripts += customScripts.substring(9,sp+1);
     }
     customScripts = customScripts.substring(nl+1);
   }
@@ -397,7 +397,8 @@ bool PinoccioShell::defined(const char *cmd)
   if(!cmd) return false;
   if(find_user_function((char*)cmd)) return true;
 //  if(findKey(cmd) >= 0) return true; // don't use findscript(), it's not re-entrant safe
-  if(customScripts.indexOf(cmd) >- 0) return true;
+  int at = customScripts.indexOf(cmd);
+  if(at >= 0 && customScripts.charAt(at+strlen(cmd)) == ' ') return true;
   return false;
 }
 
