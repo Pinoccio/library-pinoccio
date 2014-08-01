@@ -166,8 +166,6 @@ static numvar keyNumber(void);
 static numvar keySave(void);
 
 static int8_t getPinFromArg(uint8_t arg);
-static bool checkArgs(uint8_t min, uint8_t max, const __FlashStringHelper *errorMsg);
-static bool checkArgs(uint8_t exactly, const __FlashStringHelper *errorMsg);
 
 static StringBuffer scoutReportHQ(void);
 static StringBuffer uptimeReportHQ(void);
@@ -1639,7 +1637,7 @@ static int8_t getPinFromArg(uint8_t arg) {
   }
 }
 
-static bool checkArgs(uint8_t exactly, const __FlashStringHelper *errorMsg) {
+bool checkArgs(uint8_t exactly, const __FlashStringHelper *errorMsg) {
   if (getarg(0) != exactly) {
       speol(errorMsg);
       return false;
@@ -1647,7 +1645,7 @@ static bool checkArgs(uint8_t exactly, const __FlashStringHelper *errorMsg) {
   return true;
 }
 
-static bool checkArgs(uint8_t min, uint8_t max, const __FlashStringHelper *errorMsg) {
+bool checkArgs(uint8_t min, uint8_t max, const __FlashStringHelper *errorMsg) {
   if (getarg(0) < min || getarg(0) > max) {
       speol(errorMsg);
       return false;
