@@ -67,4 +67,7 @@ extern PinoccioShell Shell;
 
 void bitlashFilter(byte b); // watches bitlash output for channel announcements
 
+bool checkArgs(uint8_t min, uint8_t max, const __FlashStringHelper *errorMsg);
+bool checkArgs(uint8_t exactly, const __FlashStringHelper *errorMsg);
+
 #endif

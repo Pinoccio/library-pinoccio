@@ -41,9 +41,6 @@ static numvar wifiWakeup(void);
 static numvar wifiVerbose(void);
 static numvar wifiStats(void);
 
-// jsut copy/pasting to prep for refactor
-static bool checkArgs(uint8_t exactly, const __FlashStringHelper *errorMsg);
-
 static void print_line(const uint8_t *buf, uint16_t len, void *data) {
   while (len--)
     spb(*buf++);
@@ -444,14 +441,6 @@ static numvar wifiStats(void) {
   speol(wifi->apConnCount);
   sp(F("Number of connections to HQ since boot: "));
   speol(wifi->hqConnCount);
-}
-
-static bool checkArgs(uint8_t exactly, const __FlashStringHelper *errorMsg) {
-  if (getarg(0) != exactly) {
-      speol(errorMsg);
-      return false;
-  }
-  return true;
 }
 
 /* commands for auto-config
