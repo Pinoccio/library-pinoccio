@@ -727,7 +727,7 @@ static numvar uptimeStatus(void) {
 \****************************/
 
 static numvar keyMap(void) {
-  if (!checkArgs(1, 2, F("usage: key(\"string\") [, temp_flag]"))) {
+  if (!checkArgs(1, 2, F("usage: key(\"string\" [, temp_flag])"))) {
     return 0;
   }
   unsigned long at = 0;
