@@ -509,12 +509,18 @@ void PinoccioShell::print(const char *str) {
 }
 
 static StringBuffer serialIncoming;
+static char lastc;
+
 StringBuffer serialOutgoing;
 void PinoccioShell::loop() {
   if (isShellEnabled) {
     while(Serial.available())
     {
       char c = Serial.read();
+      if(c == '\n' && lastc != '\r') {
+        Serial.write('\r');
+      }
+
       Serial.write(c); // echo everything back
       outWait = true; // reading stuff, don't print anything else out
       if(c == '\n')
@@ -529,6 +535,7 @@ void PinoccioShell::loop() {
       }else{
         serialIncoming += c;
       }
+      lastc = c;
     }
     // bitlash loop
     runBackgroundTasks();
