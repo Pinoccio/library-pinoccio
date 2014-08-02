@@ -10,6 +10,8 @@
 #include <Scout.h>
 #include "hello.h"
 
+// NOTE: this is an example for adding modules into the main library, see examples/ModuleDemo/ for adding them to any sketch
+
 static numvar hello();
 
 void HelloModule::setup() {
