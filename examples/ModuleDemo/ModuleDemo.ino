@@ -15,17 +15,14 @@
 #include <js0n.h>
 
 // include the module header file
-#include "Example.h"
-
-// can either just create the module somewhere like this, this adds the "example" function in scoutscript
-ExampleModule example;
+#include "./Example.h"
 
 void setup() {
   Scout.setup("Module");
 
-  // or can get it dynamically, this will return the same module instance (is a singleton)
-  ExampleModule *example2 = (ExampleModule*)ModuleHandler::load("example");
-  Serial.println(example2->foo());
+  // get it dynamically, this will always return the same module instance (is a singleton)
+  ExampleModule *example = (ExampleModule*)ModuleHandler::load("example");
+  Serial.println(example->foo());
 }
 
 void loop() {
