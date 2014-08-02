@@ -252,13 +252,13 @@ void WifiModule::printFirmwareVersions(Print& p) {
   runDirectCommand(p, "AT+VER=?");
 }
 
-int WiFiBackpack::getHardwareMajorRevision() {
+int WifiModule::getHardwareMajorRevision() {
   Pbbe::UniqueId &id = Backpacks::info[0].id;
   Pbbe::MajorMinor rev = Pbbe::extractMajorMinor(id.revision);
   return rev.major;
 }
 
-int WiFiBackpack::getHardwareMinorRevision() {
+int WifiModule::getHardwareMinorRevision() {
   Pbbe::UniqueId &id = Backpacks::info[0].id;
   Pbbe::MajorMinor rev = Pbbe::extractMajorMinor(id.revision);
   return rev.minor;
