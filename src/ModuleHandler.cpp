@@ -12,19 +12,7 @@
 
 LinkedList<PinoccioModule*> moduleList = LinkedList<PinoccioModule*>();
 
-static bool didSetup = false;
-
-void ModuleHandler::add(PinoccioModule* module) {
-  // TODO fix, for some reason module is a pointer to the base when created with "new"??
-  if(didSetup) return;
-  moduleList.add(module);
-}
-
 void ModuleHandler::setup() {
-  for (uint8_t i=0; i<moduleList.size(); i++) {
-    (moduleList.get(i))->setup();
-  }
-  didSetup = true;
 }
 
 void ModuleHandler::loop() {

@@ -16,7 +16,6 @@
 class ModuleHandler {
   public:
     ModuleHandler();
-    static void add(PinoccioModule* module);
 
     static void setup();
     static void loop();

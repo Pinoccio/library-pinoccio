@@ -10,9 +10,7 @@
 #include <Scout.h>
 #include "modules/PinoccioModule.h"
 
-PinoccioModule::PinoccioModule() {
-  ModuleHandler::add(this);
-}
+PinoccioModule::PinoccioModule() { }
 
 PinoccioModule::~PinoccioModule() { }
 
