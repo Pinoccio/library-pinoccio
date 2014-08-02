@@ -31,6 +31,8 @@ void PinoccioClass::setup(const char *sketchName, const char *sketchRevision, in
   pinMode(SS, OUTPUT);
   Serial.begin(115200);
 
+  Serial.begin(115200);
+
   loadSettingsFromEeprom();
 }
 
@@ -85,10 +87,19 @@ const char* PinoccioClass::getLastResetCause() {
 
 int8_t PinoccioClass::getTemperature() {
   if (isExternalAref == false) {
-    return HAL_MeasureTemperature();
+    return HAL_MeasureTemperature() + tempOffset;
   } else {
     return -127;
   }
+}
+
+int8_t PinoccioClass::getTemperatureOffset(void) {
+  return tempOffset;
+}
+
+void PinoccioClass::setTemperatureOffset(int8_t offset) {
+  eeprom_update_byte((uint8_t *)8124, (uint8_t)offset);
+  tempOffset = offset;
 }
 
 void PinoccioClass::setHQToken(const char *token) {
@@ -134,6 +145,7 @@ void PinoccioClass::sendStateToHQ() {
 }
 
 void PinoccioClass::loadSettingsFromEeprom() {
+  // Address 8124 - 1 byte   - Temperature offset
   // Address 8125 - 1 byte   - Initiate OTA flag
   // Address 8126 - 1 byte   - Data rate
   // Address 8127 - 3 bytes  - Torch color (R,G,B)
@@ -172,6 +184,9 @@ void PinoccioClass::loadSettingsFromEeprom() {
   if (eeprom_read_byte((uint8_t *)8126) != 0xFF) {
     meshSetDataRate(eeprom_read_byte((uint8_t *)8126));
   }
+  if (eeprom_read_byte((uint8_t *)8124) != 0xFF) {
+    tempOffset = (int8_t)eeprom_read_byte((uint8_t *)8124);
+  }
 }
 
 void PinoccioClass::meshSetRadio(const uint16_t theAddress, const uint16_t thePanId, const uint8_t theChannel) {
@@ -199,7 +214,6 @@ void PinoccioClass::meshSetRadio(const uint16_t theAddress, const uint16_t thePa
   }
 
 }
-
 
 void PinoccioClass::meshSetPower(const uint8_t theTxPower) {
   /* Page 116 of the 256RFR2 datasheet

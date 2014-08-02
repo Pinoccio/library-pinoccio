@@ -112,10 +112,6 @@ class PinoccioScout : public PinoccioClass {
 
     bool eventVerboseOutput;
 
-    uint32_t getWallTime();
-    uint32_t getCpuTime();
-    uint32_t getSleepTime();
-
     PBBP bp;
     ScoutHandler handler;
 
@@ -137,7 +133,7 @@ class PinoccioScout : public PinoccioClass {
   protected:
     void checkStateChange();
 
-    void doSleep(int32_t ms);
+    void doSleep(bool pastEnd);
 
     bool isVccEnabled;
     bool isStateSaved;
@@ -148,8 +144,11 @@ class PinoccioScout : public PinoccioClass {
     SYS_Timer_t peripheralStateChangeTimer;
 
     bool sleepPending;
-    uint32_t sleepUntil;
-    char * postSleepCommand;
+    // The original sleep time, used to pass to the callback and to
+    // re-sleep. The actual sleep time for the next sleep is stored by
+    // SleepHandler instead.
+    uint32_t sleepMs;
+    char * postSleepFunction;
 };
 
 extern PinoccioScout Scout;

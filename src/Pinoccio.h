@@ -39,6 +39,8 @@ class PinoccioClass {
     void goToSleep(uint32_t sleepForMs);
 
     int8_t getTemperature();
+    int8_t getTemperatureOffset(void);
+    void setTemperatureOffset(int8_t offset);
     void enableExternalAref();
     void disableExternalAref();
     bool getExternalAref();
@@ -93,6 +95,7 @@ class PinoccioClass {
     uint8_t channel;
     uint8_t txPower;
     uint8_t dataRate;
+    int8_t tempOffset;
 
     // Name of the sketch (e.g. "Bootstrap")
     const char* sketchName;

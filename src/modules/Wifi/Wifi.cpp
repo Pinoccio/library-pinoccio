@@ -10,6 +10,7 @@
 #include <Scout.h>
 #include <SPI.h>
 #include "Wifi.h"
+#include "../../backpacks/Backpacks.h"
 #include "../../ScoutHandler.h"
 #include "../../hq/HqHandler.h"
 #include "src/bitlash.h"
@@ -126,7 +127,11 @@ void WifiModule::setup() {
   gs.eventData = this;
   Scout.handler.client = new GSTcpClient(gs);
 
-  if (!gs.begin(7)) return;
+  if (getHardwareMajorRevision() == 1 && getHardwareMinorRevision() == 1) {
+    if (!gs.begin(7, 5)) return;
+  } else {
+    if (!gs.begin(7)) return;
+  }
 
   if (HqHandler::cacert_len)
     gs.addCert(CA_CERTNAME_HQ, /* to_flash */ false, HqHandler::cacert, HqHandler::cacert_len);
@@ -247,6 +252,18 @@ void WifiModule::printFirmwareVersions(Print& p) {
   runDirectCommand(p, "AT+VER=?");
 }
 
+int WiFiBackpack::getHardwareMajorRevision() {
+  Pbbe::UniqueId &id = Backpacks::info[0].id;
+  Pbbe::MajorMinor rev = Pbbe::extractMajorMinor(id.revision);
+  return rev.major;
+}
+
+int WiFiBackpack::getHardwareMinorRevision() {
+  Pbbe::UniqueId &id = Backpacks::info[0].id;
+  Pbbe::MajorMinor rev = Pbbe::extractMajorMinor(id.revision);
+  return rev.minor;
+}
+ 
 bool WifiModule::isAPConnected() {
   return gs.isAssociated();
 }
@@ -317,7 +334,7 @@ static numvar wifiList(void) {
 }
 
 static numvar wifixConfig(void) {
-  if (!checkArgs(2, F("usage: wifi.config(\"wifiAPName\", \"wifiAPPassword\")"))) {
+  if (!checkArgs(1, 2, F("usage: wifi.config(\"wifiAPName\", \"wifiAPPassword\")"))) {
     return 0;
   }
 

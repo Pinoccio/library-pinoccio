@@ -31,12 +31,15 @@ class PinoccioShell {
     void loop();
     void allReportHQ();
     void delay(uint32_t at, char *command);
-    bool defined(char *fn);
+    bool defined(const char *fn);
 
     void startShell();
     void disableShell();
+    void prompt();
+    void refresh();
+    void print(const char *str);
+    bool outWait;
 
-    char *bitlashOutput;
     /**
      * Parse a single hexadecimal character. Supports both uppercase and
      * lowercase A-Z. If the character is not a valid hex character,
@@ -66,6 +69,8 @@ class PinoccioShell {
 extern PinoccioShell Shell;
 
 void bitlashFilter(byte b); // watches bitlash output for channel announcements
+bool checkArgs(uint8_t min, uint8_t max, const __FlashStringHelper *errorMsg);
+bool checkArgs(uint8_t exactly, const __FlashStringHelper *errorMsg);
 
 bool checkArgs(uint8_t min, uint8_t max, const __FlashStringHelper *errorMsg);
 bool checkArgs(uint8_t exactly, const __FlashStringHelper *errorMsg);

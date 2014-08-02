@@ -176,6 +176,7 @@ static bool fieldCommands(NWK_DataInd_t *ind) {
   fieldCommand = (char*)NULL;
 
   resetOutputHandler();
+  Shell.refresh();
 
   if (hqVerboseOutput) {
     Serial.print(F("got result "));
@@ -546,6 +547,7 @@ void leadIncoming(const char *packet, size_t len, unsigned short *index) {
       setOutputHandler(&printToString<&leadCommandOutput>);
       doCommand(command);
       resetOutputHandler();
+      Shell.refresh();
 
       StringBuffer report;
       report.appendSprintf("{\"type\":\"reply\",\"from\":%d,\"id\":%lu,\"end\":true,\"reply\":", to, id);
@@ -641,8 +643,8 @@ static void leadCommandChunk() {
 void leadSignal(const String &json) {
   if (Scout.handler.isBridged) {
     int i = 0;
-    Serial.print("[hq-bridge] ");
-    Serial.print(json);
+    Shell.print("[hq-bridge] ");
+    Shell.print(json.c_str());
     return;
   }
 
