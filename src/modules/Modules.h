@@ -4,6 +4,7 @@
 
 #include "Hello/Hello.h"
 #include "Motion/Motion.h"
+#include "Pixels/Pixels.h"
 #include "SerialFlash/SerialFlash.h"
 #include "Servo/Servo.h"
 #include "Wifi/Wifi.h"
