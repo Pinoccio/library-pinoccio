@@ -71,7 +71,7 @@ static SerialFlashModule* flashChipAvailable(int8_t csPin) {
 }
 
 static numvar flashInitialize(void) {
-  if (!checkArgs(1, F("usage: flash->initialize(csPin)"))) {
+  if (!checkArgs(1, F("usage: serialflash.initialize(csPin)"))) {
     return 0;
   }
   SerialFlashModule* sf;
@@ -82,7 +82,7 @@ static numvar flashInitialize(void) {
   return 1;
 }
 static numvar flashWrite(void) {
-  if (!checkArgs(2, F("usage: flash->write(address, \"string\"|integer)"))) {
+  if (!checkArgs(2, F("usage: serialflash.write(address, \"string\"|integer)"))) {
     return 0;
   }
 
@@ -151,7 +151,7 @@ static numvar flashWrite(void) {
 }
 
 static numvar flashRead(void) {
-  if (!checkArgs(1, F("usage: flash->read(address)"))) {
+  if (!checkArgs(1, F("usage: serialflash.read(address)"))) {
     return 0;
   }
 
@@ -174,7 +174,7 @@ static numvar flashRead(void) {
 }
 
 static numvar flashEraseSubsector(void) {
-  if (!checkArgs(1, F("usage: flash->erase.subsector(address)"))) {
+  if (!checkArgs(1, F("usage: serialflash.erase.subsector(address)"))) {
     return 0;
   }
 
@@ -188,7 +188,7 @@ static numvar flashEraseSubsector(void) {
 }
 
 static numvar flashEraseSector(void) {
-  if (!checkArgs(1, F("usage: flash->erase.sector(address)"))) {
+  if (!checkArgs(1, F("usage: serialflash.erase.sector(address)"))) {
     return 0;
   }
 
@@ -202,7 +202,7 @@ static numvar flashEraseSector(void) {
 }
 
 static numvar flashEraseBulk(void) {
-  if (!checkArgs(0, F("usage: flash->erase.bulk()"))) {
+  if (!checkArgs(0, F("usage: serialflash.erase.bulk()"))) {
     return 0;
   }
 

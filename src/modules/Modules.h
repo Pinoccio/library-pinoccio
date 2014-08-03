@@ -3,6 +3,7 @@
 #include "PinoccioModule.h"
 
 #include "Hello/Hello.h"
+#include "Motion/Motion.h"
 #include "SerialFlash/SerialFlash.h"
 #include "Servo/Servo.h"
 #include "Wifi/Wifi.h"
