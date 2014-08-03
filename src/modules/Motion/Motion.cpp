@@ -1,0 +1,239 @@
+/**************************************************************************\
+* Pinoccio Library                                                         *
+* https://github.com/Pinoccio/library-pinoccio                             *
+* Copyright (c) 2012-2014, Pinoccio Inc. All rights reserved.              *
+* ------------------------------------------------------------------------ *
+*  This program is free software; you can redistribute it and/or modify it *
+*  under the terms of the BSD License as described in license.txt.         *
+\**************************************************************************/
+#include <Arduino.h>
+#include <Scout.h>
+#include "modules/Motion/Motion.h"
+#include "modules/Motion/Adafruit_GPS.h"
+//#include "modules/Motion/MPU9150.h"
+#include "modules/Motion/MS561101BA.h"
+extern "C" {
+#include "key/key.h"
+}
+
+static void baroMovingAvgTimerHandler(SYS_Timer_t *timer);
+static void gpsTimerHandler(SYS_Timer_t *timer);
+
+static numvar verbose(void);
+
+static numvar gpsTime(void);
+static numvar gpsSatFix(void);
+static numvar gpsSatFixQuality(void);
+static numvar gpsSatCount(void);
+static numvar gpsLatitude(void);
+static numvar gpsLongitude(void);
+static numvar gpsSpeed(void);
+static numvar gpsAngle(void);
+
+static numvar baroPressure(void);
+static numvar baroAltitude(void);
+static numvar baroTemperature(void);
+
+MotionModule::MotionModule() {
+  gps = new Adafruit_GPS();
+  //mpu = new MPU9150();
+  ms = new MS561101BA();
+
+  msMovingAvgCtr = 0;
+  isVerbose = false;
+}
+
+MotionModule::~MotionModule() {
+  if (gps != NULL) {
+    SYS_TimerStop(&gpsTimer);
+    delete gps;
+  }
+  //if (mpu != NULL) {
+  //  delete mpu;
+  //}
+  if (ms != NULL) {
+    SYS_TimerStop(&baroMovingAvgTimer);
+    delete ms;
+  }
+}
+
+void MotionModule::setup() {
+  pinMode(6, INPUT);
+  pinMode(7, INPUT);
+  pinMode(8, INPUT);
+  
+  addBitlashFunction("motion.verbose", (bitlash_function) verbose);
+  
+  addBitlashFunction("motion.gps.time", (bitlash_function) gpsTime);
+  addBitlashFunction("motion.gps.sat.fix", (bitlash_function) gpsSatFix);
+  addBitlashFunction("motion.gps.sat.fixquality", (bitlash_function) gpsSatFixQuality);
+  addBitlashFunction("motion.gps.sat.count", (bitlash_function) gpsSatCount);
+  addBitlashFunction("motion.gps.latitude", (bitlash_function) gpsLatitude);
+  addBitlashFunction("motion.gps.longitude", (bitlash_function) gpsLongitude);
+  addBitlashFunction("motion.gps.speed", (bitlash_function) gpsSpeed);
+  addBitlashFunction("motion.gps.angle", (bitlash_function) gpsAngle);
+  /*
+  addBitlashFunction("motion.mpu.gyro.yaw", (bitlash_function) mpuGyroYaw);
+  addBitlashFunction("motion.mpu.gyro.pitch", (bitlash_function) mpuGyroPitch);
+  addBitlashFunction("motion.mpu.gyro.roll", (bitlash_function) mpuGyroRoll);
+  addBitlashFunction("motion.mpu.accel.x", (bitlash_function) mpuAccelX);
+  addBitlashFunction("motion.mpu.accel.y", (bitlash_function) mpuAccelY);
+  addBitlashFunction("motion.mpu.accel.z", (bitlash_function) mpuAccelZ);
+  addBitlashFunction("motion.mpu.mag.heading", (bitlash_function) mpuMagHeading);
+  */
+  addBitlashFunction("motion.baro.pressure", (bitlash_function) baroPressure);
+  addBitlashFunction("motion.baro.altitude", (bitlash_function) baroAltitude);
+  addBitlashFunction("motion.baro.temperature", (bitlash_function) baroTemperature);
+
+  gps->begin(9600);
+  //gps->sendCommand(PMTK_SET_BAUD_115200);
+  //gps->begin(115200);
+  // uncomment this line to turn on RMC (recommended minimum) and GGA (fix data) including altitude
+  gps->sendCommand(PMTK_SET_NMEA_OUTPUT_RMCGGA);
+  // uncomment this line to turn on only the "minimum recommended" data
+  //gps->sendCommand(PMTK_SET_NMEA_OUTPUT_RMCONLY);
+  gps->sendCommand(PMTK_SET_NMEA_UPDATE_1HZ); // 1 Hz update rate
+  //Serial1.println(PMTK_Q_RELEASE);
+  
+  gpsTimer.interval = 50;
+  gpsTimer.mode = SYS_TIMER_PERIODIC_MODE;
+  gpsTimer.handler = gpsTimerHandler;
+  SYS_TimerStart(&gpsTimer);
+
+  //mpu->initialize();
+  //speol(mpu.testConnection() ? F("MPU9150 connection successful") : F("MPU9150 not found"));
+
+  ms->init(MS561101BA_ADDR_CSB_LOW);
+  delay(100);
+  ms->getTemperature(MS561101BA_OSR_4096); // need an initial getTemperature() to get started for some reason
+  for(int i=0; i<MOVAVG_SIZE; i++) {
+    msMovingAvgBuffer[i] = ms->getPressure(MS561101BA_OSR_4096);
+  }
+    
+  baroMovingAvgTimer.interval = 50;
+  baroMovingAvgTimer.mode = SYS_TIMER_PERIODIC_MODE;
+  baroMovingAvgTimer.handler = baroMovingAvgTimerHandler;
+  SYS_TimerStart(&baroMovingAvgTimer);
+}
+
+void MotionModule::loop() {
+  if (isVerbose) {
+    while (Serial1.available()) {
+      Serial.write(Serial1.read());
+    }
+  }
+}
+
+const char* MotionModule::name() {
+  return "motion";
+}
+
+float MotionModule::msGetPressure(void) {
+  float sum = 0.0;
+  for(int i=0; i<MOVAVG_SIZE; i++) {
+    sum += msMovingAvgBuffer[i];
+  }
+  return sum / MOVAVG_SIZE;
+}
+
+void MotionModule::msPushMovingAvg(float val) {
+  msMovingAvgBuffer[msMovingAvgCtr] = val;
+  msMovingAvgCtr = (msMovingAvgCtr + 1) % MOVAVG_SIZE;
+}
+
+static void gpsTimerHandler(SYS_Timer_t *timer) {
+  MotionModule* m = (MotionModule*)ModuleHandler::load("motion");
+  m->gps->read();
+  if (m->gps->newNMEAreceived()) {
+    m->gps->parse(m->gps->lastNMEA());
+  }
+}
+
+static numvar verbose(void) {
+  if (!checkArgs(1, F("usage: motion.verbose(flag)"))) {
+    return 0;
+  }
+  MotionModule* m = (MotionModule*)ModuleHandler::load("motion");
+  m->isVerbose = getarg(1);
+}
+  
+static numvar gpsTime(void) {
+  MotionModule* m = (MotionModule*)ModuleHandler::load("motion");
+  if (m->gps->fix == 0) {
+    speol("No satellite fix. Time not available");
+    return 0;
+  }
+  sp("20");
+  sp(m->gps->year);
+  sp("-");
+  sp(m->gps->month);
+  sp("-");
+  sp(m->gps->day);
+  sp(" ");
+  sp(m->gps->hour);
+  sp(":");
+  sp(m->gps->minute);
+  sp(":");
+  sp(m->gps->seconds);
+  sp("/");
+  speol(m->gps->milliseconds);
+  return 1;
+}
+
+static numvar gpsSatFix(void) {
+  MotionModule* m = (MotionModule*)ModuleHandler::load("motion");
+  return m->gps->fix;
+}
+
+static numvar gpsSatFixQuality(void) {
+  MotionModule* m = (MotionModule*)ModuleHandler::load("motion");
+  return m->gps->fixquality;
+}
+
+static numvar gpsSatCount(void) {
+  MotionModule* m = (MotionModule*)ModuleHandler::load("motion");
+  return m->gps->satellites;
+}
+
+static numvar gpsLatitude(void) {
+  MotionModule* m = (MotionModule*)ModuleHandler::load("motion");
+  return m->gps->lat;
+}
+
+static numvar gpsLongitude(void) {
+  MotionModule* m = (MotionModule*)ModuleHandler::load("motion");
+  return m->gps->lon;
+}
+
+static numvar gpsSpeed(void) {
+  MotionModule* m = (MotionModule*)ModuleHandler::load("motion");
+  return m->gps->speed;
+}
+
+static numvar gpsAngle(void) {
+  MotionModule* m = (MotionModule*)ModuleHandler::load("motion");
+  return m->gps->angle;
+}
+
+
+static void baroMovingAvgTimerHandler(SYS_Timer_t *timer) {
+  MotionModule* m = (MotionModule*)ModuleHandler::load("motion");
+  m->msPushMovingAvg(m->ms->getPressure(MS561101BA_OSR_4096));
+}
+
+static numvar baroPressure(void) {
+  MotionModule* m = (MotionModule*)ModuleHandler::load("motion");
+
+  return m->msGetPressure();
+}
+
+static numvar baroAltitude(void) {
+  MotionModule* m = (MotionModule*)ModuleHandler::load("motion");
+
+  return ((pow((1013.25 / m->msGetPressure()), 1/5.257) - 1.0) * (m->ms->getTemperature(MS561101BA_OSR_4096) + 273.15)) / 0.0065;
+}
+
+static numvar baroTemperature(void) {
+  MotionModule* m = (MotionModule*)ModuleHandler::load("motion");
+  return m->ms->getTemperature(MS561101BA_OSR_4096);
+}
