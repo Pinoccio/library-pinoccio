@@ -29,6 +29,7 @@ class PinoccioShell {
 
     void setup();
     void loop();
+    void addFunction(const char *name, numvar (*func)(void));
     void allReportHQ();
     void delay(uint32_t at, char *command);
     bool defined(const char *fn);
