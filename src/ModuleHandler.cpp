@@ -11,6 +11,7 @@
 #include <ModuleHandler.h>
 
 LinkedList<PinoccioModule*> ModuleHandler::loadedModules;
+const PinoccioModuleInfoBase* ModuleHandler::moduleInfo = NULL;
 
 void ModuleHandler::setup() {
 }
@@ -22,7 +23,11 @@ void ModuleHandler::loop() {
 }
 
 void ModuleHandler::list() {
-  ModulesPrint();
+  const PinoccioModuleInfoBase *info = moduleInfo;
+  while (info) {
+    speol(info->name);
+    info = info->next;
+  }
 }
 
 bool ModuleHandler::loaded(char *name) {
@@ -34,18 +39,23 @@ bool ModuleHandler::loaded(char *name) {
 }
 
 PinoccioModule *ModuleHandler::load(char *name) {
-  PinoccioModule* module;
   for (uint8_t i=0; i<loadedModules.size(); i++) {
     PinoccioModule *module = loadedModules.get(i);
     if(strcmp(module->name(),name) == 0) return module;
   }
 
-  module = ModulesNamed(name);
-  if(module) {
-    loadedModules.add(module);
-    module->setup();
+  const PinoccioModuleInfoBase *info = moduleInfo;
+  while (info) {
+    if (strcmp(info->name, name) == 0) {
+      PinoccioModule *module = info->load();
+      loadedModules.add(module);
+      module->setup();
+      return module;
+    }
+    info = info->next;
   }
-  return module;
+
+  return NULL;
 }
 
 void ModuleHandler::loaded() {

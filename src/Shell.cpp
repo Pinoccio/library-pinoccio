@@ -16,6 +16,7 @@
 #include "src/bitlash.h"
 #include "util/String.h"
 #include "util/PrintToString.h"
+#include "modules/Wifi/Wifi.h"
 extern "C" {
 #include "key/key.h"
 #include "util/memdebug.h"

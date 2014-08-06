@@ -14,6 +14,8 @@ extern "C" {
 #include "key/key.h"
 }
 
+static PinoccioModuleInfo<SerialFlashModule> serialFlashInfo("serialflash");
+
 static SerialFlashModule* flashChipAvailable(int8_t csPin=-1);
 static numvar flashInitialize(void);
 static numvar flashWrite(void);

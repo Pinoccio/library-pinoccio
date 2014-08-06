@@ -34,6 +34,8 @@ static numvar baroPressure(void);
 static numvar baroAltitude(void);
 static numvar baroTemperature(void);
 
+static PinoccioModuleInfo<MotionModule> motionInfo("motion");
+
 MotionModule::MotionModule() {
   gps = new Adafruit_GPS();
   //mpu = new MPU9150();
