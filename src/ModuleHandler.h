@@ -24,6 +24,9 @@ class ModuleHandler {
     static bool loaded(char *name);
     static void list();
     static void loaded();
+
+  protected:
+    static LinkedList<PinoccioModule*> loadedModules;
 };
 
 #endif
