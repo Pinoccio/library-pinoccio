@@ -18,14 +18,9 @@ extern "C" {
 #include "key/key.h"
 }
 
-// Be careful with using non-alphanumerics like '-' here, they might
-// silently cause SSL to fail
-#define CA_CERTNAME_HQ "hq.ca"
-#define NTP_SERVER "pool.ntp.org"
-// Sync on connect and every 24 hours thereafter
-#define NTP_INTERVAL (3600L * 24)
 
 static numvar wifiReport(void);
+static numvar wifiHQ(void);
 static numvar wifiStatus(void);
 static numvar wifiList(void);
 static numvar wifixConfig(void);
@@ -55,46 +50,20 @@ const char *WifiModule::name() {
 void WifiModule::onAssociate(void *data) {
   WifiModule& wifi = *(WifiModule*)data;
 
-  #ifdef USE_TLS
-  // Do a timesync
-  IPAddress ip = wifi.gs.dnsLookup(NTP_SERVER);
-  if (ip == INADDR_NONE ||
-      !wifi.gs.timeSync(ip, NTP_INTERVAL)) {
-    Serial.println("Time sync failed, reassociating to retry");
-    wifi.autoConnectHq();
-  }
-  #endif
-  
   wifi.apConnCount++;
-}
 
-void WifiModule::onNcmConnect(void *data, GSCore::cid_t cid) {
-  WifiModule& wifi = *(WifiModule*)data;
-
-  *(Scout.handler.client) = cid;
-
-  if (HqHandler::cacert_len != 0) {
-    if (!Scout.handler.client->enableTls(CA_CERTNAME_HQ)) {
-      // If enableTls fails, the NCM doesn't retry the TCP
-      // connection. We restart the entire association to get NCM to
-      // retry the TCP connection instead.
-      Serial.println("SSL negotiation to HQ failed, reassociating to retry");
-      wifi.autoConnectHq();
-      return;
-    }
+  // TODO, update GSTcpClient to support hostnames
+  IPAddress ip;
+  wifi.gs.parseIpAddress(&ip,wifi.hq_host);
+  if(Scout.handler.client->connect(ip, wifi.hq_port))
+  {
+    wifi.hqConnCount++;
+    leadHQConnect();
   }
   
-  wifi.hqConnCount++;
-
-  // TODO: Don't call leadHQConnect directly?
-  leadHQConnect();
 }
 
-void WifiModule::onNcmDisconnect(void *data) {
-  WifiModule& wifi = *(WifiModule*)data;
 
-  *(Scout.handler.client) = GSCore::INVALID_CID;
-}
 
 // this is our singleton object for c function pointer convenience
 WifiModule *wifi;
@@ -102,6 +71,7 @@ void WifiModule::setup() {
 
   wifi = this;
   addBitlashFunction("wifi.report", (bitlash_function) wifiReport);
+  addBitlashFunction("wifi.hq", (bitlash_function) wifiHQ);
   addBitlashFunction("wifi.status", (bitlash_function) wifiStatus);
   addBitlashFunction("wifi.list", (bitlash_function) wifiList);
   addBitlashFunction("wifi.config", (bitlash_function) wifixConfig);
@@ -122,27 +92,34 @@ void WifiModule::setup() {
   SPI.setClockDivider(SPI_CLOCK_DIV16);
 
   gs.onAssociate = onAssociate;
-  gs.onNcmConnect = onNcmConnect;
-  gs.onNcmDisconnect = onNcmDisconnect;
   gs.eventData = this;
-  Scout.handler.client = new GSTcpClient(gs);
 
   if (getHardwareMajorRevision() == 1 && getHardwareMinorRevision() == 1) {
     if (!gs.begin(7, 5)) return;
   } else {
     if (!gs.begin(7)) return;
   }
+  
+  if(!hq_host)
+  {
+//    hq_host = strdup("pool.base.pinocc.io");
+    hq_host = strdup("23.239.2.207");
+    hq_port = 22756;
+  }
+  Scout.handler.client = new GSTcpClient(gs);
 
-  if (HqHandler::cacert_len)
-    gs.addCert(CA_CERTNAME_HQ, /* to_flash */ false, HqHandler::cacert, HqHandler::cacert_len);
-
-  autoConnectHq();
+  reassociate();
   
 }
 
 void WifiModule::loop() {
   gs.loop();
-  *(Scout.handler.client) = gs.getNcmCid();
+
+  // best to just try over completely if not connected
+  if(isAPConnected() && !Scout.handler.client->connected())
+  {
+    reassociate();
+  }
 }
 
 static bool isWepKey(const char *key) {
@@ -200,24 +177,15 @@ bool WifiModule::wifiStatic(IPAddress ip, IPAddress netmask, IPAddress gw, IPAdd
   return ok;
 }
 
-bool WifiModule::autoConnectHq() {
-  // Try to disable the NCM in case it's already running
-  gs.setNcm(false);
+bool WifiModule::reassociate() {
+  disassociate();
 
   // When association fails, keep retrying indefinately (at least it
   // seems that a retry count of 0 means that, even though the
   // documentation says it should be >= 1).
   gs.setNcmParam(GSModule::GS_NCM_L3_CONNECT_RETRY_COUNT, 0);
 
-  // When association succeeds, but the TCP connection fails, keep
-  // retrying to connect (but not as fast as the default 500ms between
-  // attempts) indefinately (at least it seems that a retry count of 0
-  // means that, documentation doesn't say).
-  gs.setParam(GSModule::GS_PARAM_L4_RETRY_PERIOD, 1000 /* x 10ms */);
-  gs.setParam(GSModule::GS_PARAM_L4_RETRY_COUNT, 0);
-
-  return gs.setAutoConnectClient(HqHandler::host, HqHandler::port) &&
-         gs.setNcm(/* enable */ true, /* associate_only */ false, /* remember */ false);
+  return gs.setNcm(/* enable */ true, /* associate_only */ true, /* remember */ false);
 }
 
 void WifiModule::disassociate() {
@@ -393,8 +361,21 @@ static numvar wifiDisassociate(void) {
 }
 
 static numvar wifiReassociate(void) {
-  // This restart the NCM
-  return wifi->autoConnectHq();
+  return wifi->reassociate();
+}
+
+static numvar wifiHQ(void) {
+  if (!checkArgs(1, 2, F("usage: wifi.hq(\"host\" [,port])"))) {
+    return 0;
+  }
+  free(wifi->hq_host);
+  wifi->hq_host = strdup((char*)getstringarg(1));
+  if(getarg(0) > 1)
+  {
+    wifi->hq_port = getarg(2);
+  }
+  wifi->reassociate();
+  return 1;
 }
 
 static numvar wifiCommand(void) {

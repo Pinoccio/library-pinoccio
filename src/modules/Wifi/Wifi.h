@@ -18,6 +18,8 @@ class WifiModule : public PinoccioModule {
 
     void setup();
     const char *name();
+    char *hq_host;
+    uint16_t hq_port;
     void loop();
 
     // Does not take effect until autoConnectHq() is called
@@ -28,7 +30,7 @@ class WifiModule : public PinoccioModule {
     bool wifiStatic(IPAddress ip, IPAddress netmask, IPAddress gw, IPAddress dns);
 
     // (Re-)connects the wifi and HQ connection
-    bool autoConnectHq();
+    bool reassociate();
     void disassociate();
 
     bool printAPs(Print& p);
@@ -59,8 +61,6 @@ class WifiModule : public PinoccioModule {
 
     // Event handlers
     static void onAssociate(void *data);
-    static void onNcmConnect(void *data, GSCore::cid_t cid);
-    static void onNcmDisconnect(void *data);
 
 };
 
