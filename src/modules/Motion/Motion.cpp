@@ -62,28 +62,28 @@ void MotionModule::setup() {
   pinMode(7, INPUT);
   pinMode(8, INPUT);
   
-  addBitlashFunction("motion.verbose", (bitlash_function) verbose);
+  Shell.addFunction("motion.verbose", verbose);
   
-  addBitlashFunction("motion.gps.time", (bitlash_function) gpsTime);
-  addBitlashFunction("motion.gps.sat.fix", (bitlash_function) gpsSatFix);
-  addBitlashFunction("motion.gps.sat.fixquality", (bitlash_function) gpsSatFixQuality);
-  addBitlashFunction("motion.gps.sat.count", (bitlash_function) gpsSatCount);
-  addBitlashFunction("motion.gps.latitude", (bitlash_function) gpsLatitude);
-  addBitlashFunction("motion.gps.longitude", (bitlash_function) gpsLongitude);
-  addBitlashFunction("motion.gps.speed", (bitlash_function) gpsSpeed);
-  addBitlashFunction("motion.gps.angle", (bitlash_function) gpsAngle);
+  Shell.addFunction("motion.gps.time", gpsTime);
+  Shell.addFunction("motion.gps.sat.fix", gpsSatFix);
+  Shell.addFunction("motion.gps.sat.fixquality", gpsSatFixQuality);
+  Shell.addFunction("motion.gps.sat.count", gpsSatCount);
+  Shell.addFunction("motion.gps.latitude", gpsLatitude);
+  Shell.addFunction("motion.gps.longitude", gpsLongitude);
+  Shell.addFunction("motion.gps.speed", gpsSpeed);
+  Shell.addFunction("motion.gps.angle", gpsAngle);
   /*
-  addBitlashFunction("motion.mpu.gyro.yaw", (bitlash_function) mpuGyroYaw);
-  addBitlashFunction("motion.mpu.gyro.pitch", (bitlash_function) mpuGyroPitch);
-  addBitlashFunction("motion.mpu.gyro.roll", (bitlash_function) mpuGyroRoll);
-  addBitlashFunction("motion.mpu.accel.x", (bitlash_function) mpuAccelX);
-  addBitlashFunction("motion.mpu.accel.y", (bitlash_function) mpuAccelY);
-  addBitlashFunction("motion.mpu.accel.z", (bitlash_function) mpuAccelZ);
-  addBitlashFunction("motion.mpu.mag.heading", (bitlash_function) mpuMagHeading);
+  Shell.addFunction("motion.mpu.gyro.yaw", mpuGyroYaw);
+  Shell.addFunction("motion.mpu.gyro.pitch", mpuGyroPitch);
+  Shell.addFunction("motion.mpu.gyro.roll", mpuGyroRoll);
+  Shell.addFunction("motion.mpu.accel.x", mpuAccelX);
+  Shell.addFunction("motion.mpu.accel.y", mpuAccelY);
+  Shell.addFunction("motion.mpu.accel.z", mpuAccelZ);
+  Shell.addFunction("motion.mpu.mag.heading", mpuMagHeading);
   */
-  addBitlashFunction("motion.baro.pressure", (bitlash_function) baroPressure);
-  addBitlashFunction("motion.baro.altitude", (bitlash_function) baroAltitude);
-  addBitlashFunction("motion.baro.temperature", (bitlash_function) baroTemperature);
+  Shell.addFunction("motion.baro.pressure", baroPressure);
+  Shell.addFunction("motion.baro.altitude", baroAltitude);
+  Shell.addFunction("motion.baro.temperature", baroTemperature);
 
   gps->begin(9600);
   //gps->sendCommand(PMTK_SET_BAUD_115200);

@@ -15,7 +15,7 @@
 static numvar hello();
 
 void HelloModule::setup() {
-  addBitlashFunction("hello", (bitlash_function)hello);
+  Shell.addFunction("hello", hello);
   Serial.println("hello setup");
 }
 

@@ -191,136 +191,136 @@ PinoccioShell::~PinoccioShell() { }
 void PinoccioShell::setup() {
   keyInit();
 
-  addBitlashFunction("power.ischarging", (bitlash_function) isBatteryCharging);
-  addBitlashFunction("power.hasbattery", (bitlash_function) isBatteryConnected);
-  addBitlashFunction("power.percent", (bitlash_function) getBatteryPercentage);
-  addBitlashFunction("power.voltage", (bitlash_function) getBatteryVoltage);
-  addBitlashFunction("power.enablevcc", (bitlash_function) enableBackpackVcc);
-  addBitlashFunction("power.disablevcc", (bitlash_function) disableBackpackVcc);
-  addBitlashFunction("power.isvccenabled", (bitlash_function) isBackpackVccEnabled);
-  addBitlashFunction("power.sleep", (bitlash_function) powerSleep);
-  addBitlashFunction("power.report", (bitlash_function) powerReport);
-  addBitlashFunction("power.wakeup.pin", (bitlash_function) powerWakeupPin);
+  addFunction("power.ischarging", isBatteryCharging);
+  addFunction("power.hasbattery", isBatteryConnected);
+  addFunction("power.percent", getBatteryPercentage);
+  addFunction("power.voltage", getBatteryVoltage);
+  addFunction("power.enablevcc", enableBackpackVcc);
+  addFunction("power.disablevcc", disableBackpackVcc);
+  addFunction("power.isvccenabled", isBackpackVccEnabled);
+  addFunction("power.sleep", powerSleep);
+  addFunction("power.report", powerReport);
+  addFunction("power.wakeup.pin", powerWakeupPin);
 
-  addBitlashFunction("mesh.config", (bitlash_function) meshConfig);
-  addBitlashFunction("mesh.setpower", (bitlash_function) meshSetPower);
-  addBitlashFunction("mesh.setdatarate", (bitlash_function) meshSetDataRate);
-  addBitlashFunction("mesh.setkey", (bitlash_function) meshSetKey);
-  addBitlashFunction("mesh.getkey", (bitlash_function) meshGetKey);
-  addBitlashFunction("mesh.resetkey", (bitlash_function) meshResetKey);
-  addBitlashFunction("mesh.joingroup", (bitlash_function) meshJoinGroup);
-  addBitlashFunction("mesh.leavegroup", (bitlash_function) meshLeaveGroup);
-  addBitlashFunction("mesh.ingroup", (bitlash_function) meshIsInGroup);
-  addBitlashFunction("mesh.verbose", (bitlash_function) meshVerbose);
-  addBitlashFunction("mesh.report", (bitlash_function) meshReport);
-  addBitlashFunction("mesh.routing", (bitlash_function) meshRouting);
-  addBitlashFunction("mesh.signal", (bitlash_function) meshSignal);
-  addBitlashFunction("mesh.loss", (bitlash_function) meshLoss);
+  addFunction("mesh.config", meshConfig);
+  addFunction("mesh.setpower", meshSetPower);
+  addFunction("mesh.setdatarate", meshSetDataRate);
+  addFunction("mesh.setkey", meshSetKey);
+  addFunction("mesh.getkey", meshGetKey);
+  addFunction("mesh.resetkey", meshResetKey);
+  addFunction("mesh.joingroup", meshJoinGroup);
+  addFunction("mesh.leavegroup", meshLeaveGroup);
+  addFunction("mesh.ingroup", meshIsInGroup);
+  addFunction("mesh.verbose", meshVerbose);
+  addFunction("mesh.report", meshReport);
+  addFunction("mesh.routing", meshRouting);
+  addFunction("mesh.signal", meshSignal);
+  addFunction("mesh.loss", meshLoss);
 
-  addBitlashFunction("message.scout", (bitlash_function) messageScout);
-  addBitlashFunction("message.group", (bitlash_function) messageGroup);
+  addFunction("message.scout", messageScout);
+  addFunction("message.group", messageGroup);
 
-  addBitlashFunction("temperature.c", (bitlash_function) getTemperatureC);
-  addBitlashFunction("temperature.f", (bitlash_function) getTemperatureF);
-  addBitlashFunction("temperature.report", (bitlash_function) temperatureReport);
-  addBitlashFunction("temperature.setoffset", (bitlash_function) setTemperatureOffset);
-  addBitlashFunction("temperature.calibrate", (bitlash_function) temperatureCalibrate);
-  addBitlashFunction("randomnumber", (bitlash_function) getRandomNumber);
-  addBitlashFunction("memory.report", (bitlash_function) memoryReport);
+  addFunction("temperature.c", getTemperatureC);
+  addFunction("temperature.f", getTemperatureF);
+  addFunction("temperature.report", temperatureReport);
+  addFunction("temperature.setoffset", setTemperatureOffset);
+  addFunction("temperature.calibrate", temperatureCalibrate);
+  addFunction("randomnumber", getRandomNumber);
+  addFunction("memory.report", memoryReport);
 
-  addBitlashFunction("report", (bitlash_function) allReport);
-  addBitlashFunction("verbose", (bitlash_function) allVerbose);
+  addFunction("report", allReport);
+  addFunction("verbose", allVerbose);
 
-  addBitlashFunction("uptime.awake.micros", (bitlash_function) uptimeAwakeMicros);
-  addBitlashFunction("uptime.awake.seconds", (bitlash_function) uptimeAwakeSeconds);
-  addBitlashFunction("uptime.sleeping.micros", (bitlash_function) uptimeSleepingMicros);
-  addBitlashFunction("uptime.sleeping.seconds", (bitlash_function) uptimeSleepingSeconds);
-  addBitlashFunction("uptime.seconds", (bitlash_function) uptimeSeconds);
-  addBitlashFunction("uptime.micros", (bitlash_function) uptimeMicros);
-  addBitlashFunction("uptime.report", (bitlash_function) uptimeReport);
-  addBitlashFunction("uptime.getlastreset", (bitlash_function) getLastResetCause);
-  addBitlashFunction("uptime.status", (bitlash_function) uptimeStatus);
+  addFunction("uptime.awake.micros", uptimeAwakeMicros);
+  addFunction("uptime.awake.seconds", uptimeAwakeSeconds);
+  addFunction("uptime.sleeping.micros", uptimeSleepingMicros);
+  addFunction("uptime.sleeping.seconds", uptimeSleepingSeconds);
+  addFunction("uptime.seconds", uptimeSeconds);
+  addFunction("uptime.micros", uptimeMicros);
+  addFunction("uptime.report", uptimeReport);
+  addFunction("uptime.getlastreset", getLastResetCause);
+  addFunction("uptime.status", uptimeStatus);
 
-  addBitlashFunction("led.on", (bitlash_function) ledTorch); // alias
-  addBitlashFunction("led.off", (bitlash_function) ledOff);
-  addBitlashFunction("led.red", (bitlash_function) ledRed);
-  addBitlashFunction("led.green", (bitlash_function) ledGreen);
-  addBitlashFunction("led.blue", (bitlash_function) ledBlue);
-  addBitlashFunction("led.cyan", (bitlash_function) ledCyan);
-  addBitlashFunction("led.purple", (bitlash_function) ledPurple);
-  addBitlashFunction("led.beccapurple", (bitlash_function) ledBeccaPurple);
-  addBitlashFunction("led.magenta", (bitlash_function) ledMagenta);
-  addBitlashFunction("led.yellow", (bitlash_function) ledYellow);
-  addBitlashFunction("led.orange", (bitlash_function) ledOrange);
-  addBitlashFunction("led.white", (bitlash_function) ledWhite);
-  addBitlashFunction("led.torch", (bitlash_function) ledTorch);
-  addBitlashFunction("led.blink", (bitlash_function) ledBlink);
-  addBitlashFunction("led.sethex", (bitlash_function) ledSetHex);
-  addBitlashFunction("led.gethex", (bitlash_function) ledGetHex);
-  addBitlashFunction("led.setrgb", (bitlash_function) ledSetRgb);
-  addBitlashFunction("led.isoff", (bitlash_function) ledIsOff);
-  addBitlashFunction("led.savetorch", (bitlash_function) ledSaveTorch);
-  addBitlashFunction("led.report", (bitlash_function) ledReport);
+  addFunction("led.on", ledTorch); // alias
+  addFunction("led.off", ledOff);
+  addFunction("led.red", ledRed);
+  addFunction("led.green", ledGreen);
+  addFunction("led.blue", ledBlue);
+  addFunction("led.cyan", ledCyan);
+  addFunction("led.purple", ledPurple);
+  addFunction("led.beccapurple", ledBeccaPurple);
+  addFunction("led.magenta", ledMagenta);
+  addFunction("led.yellow", ledYellow);
+  addFunction("led.orange", ledOrange);
+  addFunction("led.white", ledWhite);
+  addFunction("led.torch", ledTorch);
+  addFunction("led.blink", ledBlink);
+  addFunction("led.sethex", ledSetHex);
+  addFunction("led.gethex", ledGetHex);
+  addFunction("led.setrgb", ledSetRgb);
+  addFunction("led.isoff", ledIsOff);
+  addFunction("led.savetorch", ledSaveTorch);
+  addFunction("led.report", ledReport);
 
-  addBitlashFunction("high", (bitlash_function) pinConstHigh);
-  addBitlashFunction("low", (bitlash_function) pinConstLow);
-  addBitlashFunction("disconnected", (bitlash_function) pinConstDisconnected);
-  addBitlashFunction("disabled", (bitlash_function) pinConstDisabled);
-  addBitlashFunction("input", (bitlash_function) pinConstInput);
-  addBitlashFunction("output", (bitlash_function) pinConstOutput);
-  addBitlashFunction("input_pullup", (bitlash_function) pinConstInputPullup);
-  addBitlashFunction("pwm", (bitlash_function) pinConstPWM);
+  addFunction("high", pinConstHigh);
+  addFunction("low", pinConstLow);
+  addFunction("disconnected", pinConstDisconnected);
+  addFunction("disabled", pinConstDisabled);
+  addFunction("input", pinConstInput);
+  addFunction("output", pinConstOutput);
+  addFunction("input_pullup", pinConstInputPullup);
+  addFunction("pwm", pinConstPWM);
 
-  addBitlashFunction("pin.makeinput", (bitlash_function) pinMakeInput);
-  addBitlashFunction("pin.makeoutput", (bitlash_function) pinMakeOutput);
-  addBitlashFunction("pin.makepwm", (bitlash_function) pinMakePWM);
-  addBitlashFunction("pin.makedisconnected", (bitlash_function) pinMakeDisconnected);
-  addBitlashFunction("pin.disable", (bitlash_function) pinDisable);
-  addBitlashFunction("pin.setmode", (bitlash_function) pinSetMode);
-  addBitlashFunction("pin.read", (bitlash_function) pinRead);
-  addBitlashFunction("pin.write", (bitlash_function) pinWrite);
-  addBitlashFunction("pin.save", (bitlash_function) pinSave);
-  addBitlashFunction("pin.status", (bitlash_function) pinStatus);
-  addBitlashFunction("pin.number", (bitlash_function) pinNumber);
-  addBitlashFunction("pin.othersdisconnected", (bitlash_function) pinOthersDisconnected);
-  addBitlashFunction("pin.report.digital", (bitlash_function) digitalPinReport);
-  addBitlashFunction("pin.report.analog", (bitlash_function) analogPinReport);
+  addFunction("pin.makeinput", pinMakeInput);
+  addFunction("pin.makeoutput", pinMakeOutput);
+  addFunction("pin.makepwm", pinMakePWM);
+  addFunction("pin.makedisconnected", pinMakeDisconnected);
+  addFunction("pin.disable", pinDisable);
+  addFunction("pin.setmode", pinSetMode);
+  addFunction("pin.read", pinRead);
+  addFunction("pin.write", pinWrite);
+  addFunction("pin.save", pinSave);
+  addFunction("pin.status", pinStatus);
+  addFunction("pin.number", pinNumber);
+  addFunction("pin.othersdisconnected", pinOthersDisconnected);
+  addFunction("pin.report.digital", digitalPinReport);
+  addFunction("pin.report.analog", analogPinReport);
 
-  addBitlashFunction("backpack.report", (bitlash_function) backpackReport);
-  addBitlashFunction("backpack.list", (bitlash_function) backpackList);
-  addBitlashFunction("backpack.eeprom", (bitlash_function) backpackEeprom);
-  addBitlashFunction("backpack.eeprom.update", (bitlash_function) backpackUpdateEeprom);
-  addBitlashFunction("backpack.detail", (bitlash_function) backpackDetail);
-  addBitlashFunction("backpack.resources", (bitlash_function) backpackResources);
+  addFunction("backpack.report", backpackReport);
+  addFunction("backpack.list", backpackList);
+  addFunction("backpack.eeprom", backpackEeprom);
+  addFunction("backpack.eeprom.update", backpackUpdateEeprom);
+  addFunction("backpack.detail", backpackDetail);
+  addFunction("backpack.resources", backpackResources);
 
-  addBitlashFunction("scout.report", (bitlash_function) scoutReport);
-  addBitlashFunction("scout.isleadscout", (bitlash_function) isScoutLeadScout);
-  addBitlashFunction("scout.delay", (bitlash_function) scoutDelay);
-  addBitlashFunction("scout.daisy", (bitlash_function) daisyWipe);
-  addBitlashFunction("scout.boot", (bitlash_function) boot);
-  addBitlashFunction("scout.otaboot", (bitlash_function) otaBoot);
+  addFunction("scout.report", scoutReport);
+  addFunction("scout.isleadscout", isScoutLeadScout);
+  addFunction("scout.delay", scoutDelay);
+  addFunction("scout.daisy", daisyWipe);
+  addFunction("scout.boot", boot);
+  addFunction("scout.otaboot", otaBoot);
 
-  addBitlashFunction("module.list", (bitlash_function) moduleList);
-  addBitlashFunction("module.load", (bitlash_function) moduleLoad);
-  addBitlashFunction("module.loaded", (bitlash_function) moduleLoaded);
+  addFunction("module.list", moduleList);
+  addFunction("module.load", moduleLoad);
+  addFunction("module.loaded", moduleLoaded);
 
-  addBitlashFunction("hq.settoken", (bitlash_function) setHQToken);
-  addBitlashFunction("hq.gettoken", (bitlash_function) getHQToken);
-  addBitlashFunction("hq.verbose", (bitlash_function) hqVerbose);
-  addBitlashFunction("hq.print", (bitlash_function) hqPrint);
-  addBitlashFunction("hq.report", (bitlash_function) hqReport);
-  addBitlashFunction("hq.bridge", (bitlash_function) hqBridge);
+  addFunction("hq.settoken", setHQToken);
+  addFunction("hq.gettoken", getHQToken);
+  addFunction("hq.verbose", hqVerbose);
+  addFunction("hq.print", hqPrint);
+  addFunction("hq.report", hqReport);
+  addFunction("hq.bridge", hqBridge);
 
-  addBitlashFunction("events.start", (bitlash_function) startStateChangeEvents);
-  addBitlashFunction("events.stop", (bitlash_function) stopStateChangeEvents);
-  addBitlashFunction("events.setcycle", (bitlash_function) setEventCycle);
-  addBitlashFunction("events.verbose", (bitlash_function) setEventVerbose);
+  addFunction("events.start", startStateChangeEvents);
+  addFunction("events.stop", stopStateChangeEvents);
+  addFunction("events.setcycle", setEventCycle);
+  addFunction("events.verbose", setEventVerbose);
 
-  addBitlashFunction("key", (bitlash_function) keySer);
-  addBitlashFunction("key.free", (bitlash_function) keyFree);
-  addBitlashFunction("key.print", (bitlash_function) keyPrint);
-  addBitlashFunction("key.number", (bitlash_function) keyNumber);
-  addBitlashFunction("key.save", (bitlash_function) keySave);
+  addFunction("key", keySer);
+  addFunction("key.free", keyFree);
+  addFunction("key.print", keyPrint);
+  addFunction("key.number", keyNumber);
+  addFunction("key.save", keySave);
 
   // set up event handlers
   Scout.digitalPinEventHandler = digitalPinEventHandler;
@@ -340,6 +340,10 @@ void PinoccioShell::setup() {
     Shell.allReportHQ(); // lead scout reports on hq connect
   }
   
+}
+
+void PinoccioShell::addFunction(const char *name, numvar (*func)(void)) {
+  addBitlashFunction(name, (bitlash_function)func);
 }
 
 // update a memory cache of which functions are defined

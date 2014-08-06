@@ -28,15 +28,15 @@ ServoModule::ServoModule() { }
 ServoModule::~ServoModule() { }
 
 void ServoModule::setup() {
-  addBitlashFunction("servo.initialize", (bitlash_function)servoInitialize);
-  addBitlashFunction("servo.setPeriod", (bitlash_function)servoSetPeriod);
-  addBitlashFunction("servo.start", (bitlash_function)servoStart);
-  addBitlashFunction("servo.stop", (bitlash_function)servoStop);
-  addBitlashFunction("servo.restart", (bitlash_function)servoRestart);
-  addBitlashFunction("servo.resume", (bitlash_function)servoResume);
-  addBitlashFunction("servo.pwm", (bitlash_function)servoPwm);
-  addBitlashFunction("servo.setPwmDuty", (bitlash_function)servoSetPwmDuty);
-  addBitlashFunction("servo.disablePwm", (bitlash_function)servoDisablePwm);
+  Shell.addFunction("servo.initialize", servoInitialize);
+  Shell.addFunction("servo.setPeriod", servoSetPeriod);
+  Shell.addFunction("servo.start", servoStart);
+  Shell.addFunction("servo.stop", servoStop);
+  Shell.addFunction("servo.restart", servoRestart);
+  Shell.addFunction("servo.resume", servoResume);
+  Shell.addFunction("servo.pwm", servoPwm);
+  Shell.addFunction("servo.setPwmDuty", servoSetPwmDuty);
+  Shell.addFunction("servo.disablePwm", servoDisablePwm);
 }
 
 void ServoModule::loop() { }

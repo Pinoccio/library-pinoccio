@@ -33,12 +33,12 @@ SerialFlashModule::~SerialFlashModule() {
 }
 
 void SerialFlashModule::setup() {
-  addBitlashFunction("serialflash.initialize", (bitlash_function)flashInitialize);
-  addBitlashFunction("serialflash.write", (bitlash_function) flashWrite);
-  addBitlashFunction("serialflash.read", (bitlash_function) flashRead);
-  addBitlashFunction("serialflash.erase.subsector", (bitlash_function) flashEraseSubsector);
-  addBitlashFunction("serialflash.erase.sector", (bitlash_function) flashEraseSector);
-  addBitlashFunction("serialflash.erase.bulk", (bitlash_function) flashEraseBulk);
+  Shell.addFunction("serialflash.initialize", flashInitialize);
+  Shell.addFunction("serialflash.write", flashWrite);
+  Shell.addFunction("serialflash.read", flashRead);
+  Shell.addFunction("serialflash.erase.subsector", flashEraseSubsector);
+  Shell.addFunction("serialflash.erase.sector", flashEraseSector);
+  Shell.addFunction("serialflash.erase.bulk", flashEraseBulk);
 }
 
 void SerialFlashModule::loop() { }

@@ -94,12 +94,12 @@ static numvar pixelsConfig(void) {
   
 void PixelsModule::setup() {
 
-  addBitlashFunction("pixels.add", (bitlash_function) pixelsConfig);
-  addBitlashFunction("pixels.setrgb", (bitlash_function) pixelsSetRGB);
-  addBitlashFunction("pixels.sethsv", (bitlash_function) pixelsSetHSV);
-  addBitlashFunction("pixels.sethue", (bitlash_function) pixelsSetHue);
-  addBitlashFunction("pixels.setbrightness", (bitlash_function) pixelsSetBrightness);
-  addBitlashFunction("pixels.off", (bitlash_function) pixelsOff);
+  Shell.addFunction("pixels.add", pixelsConfig);
+  Shell.addFunction("pixels.setrgb", pixelsSetRGB);
+  Shell.addFunction("pixels.sethsv", pixelsSetHSV);
+  Shell.addFunction("pixels.sethue", pixelsSetHue);
+  Shell.addFunction("pixels.setbrightness", pixelsSetBrightness);
+  Shell.addFunction("pixels.off", pixelsOff);
 }
 
 void PixelsModule::loop() { }
