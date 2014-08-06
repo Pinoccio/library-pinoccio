@@ -12,7 +12,6 @@
 #include "Wifi.h"
 #include "../../backpacks/Backpacks.h"
 #include "../../ScoutHandler.h"
-#include "../../hq/HqHandler.h"
 #include "src/bitlash.h"
 extern "C" {
 #include "key/key.h"
@@ -189,6 +188,7 @@ bool WifiModule::reassociate() {
 }
 
 void WifiModule::disassociate() {
+  if(!isAPConnected()) return;
   // this delay is important--The Gainspan module with 2.5.1 firmware
   // will hang if the NCM disassociate is called too soon after boot.
   if (millis() < 5000) {
