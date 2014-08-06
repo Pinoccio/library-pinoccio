@@ -17,6 +17,7 @@ extern "C" {
 #include "key/key.h"
 }
 
+static PinoccioModuleInfo<WifiModule> wifiInfo("wifi");
 
 static numvar wifiReport(void);
 static numvar wifiHQ(void);

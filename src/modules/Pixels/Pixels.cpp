@@ -11,6 +11,8 @@
 #include "FastLED/FastLED.h"
 #include "Pixels.h"
 
+static PinoccioModuleInfo<PixelsModule> pixelsInfo("pixels");
+
 // Define the array of leds
 CRGB *pixels = NULL;
 uint8_t num_leds = 0;
