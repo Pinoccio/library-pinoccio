@@ -59,7 +59,11 @@ class SleepHandler {
 
     // Returns the total time since startup
     static Duration uptime() {
-      return lastOverflow + (uint64_t)read_sccnt() * US_PER_TICK;
+      // Atomically read the lastOverflow value
+      SCIRQM &= ~(1 << IRQMOF);
+      Duration last = lastOverflow;
+      SCIRQM |= (1 << IRQMOF);
+      return last + (uint64_t)read_sccnt() * US_PER_TICK;
     }
 
     // Returns the time slept since startup
