@@ -111,13 +111,28 @@ void WifiModule::setup() {
   
 }
 
+uint32_t deadman_check = 0;
 void WifiModule::loop() {
   gs.loop();
 
-  // best to just try over completely if not connected
-  if(isAPConnected() && !Scout.handler.client->connected())
-  {
-    reassociate();
+  if(isAPConnected()) {
+    // best to just try over completely if not connected
+    if(!Scout.handler.client->connected())
+    {
+      reassociate();
+    }
+  }else{
+    if(millis() - deadman_check > 60*1000)
+    {
+      gs.writeCommand("AT");
+      if(!gs.readResponse())
+      {
+        Serial.println("gainspan timed out, restarting");
+        delay(500);
+        Scout.reboot();
+      }
+      deadman_check = millis();
+    }
   }
 }
 
