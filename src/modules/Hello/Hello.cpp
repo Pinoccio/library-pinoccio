@@ -8,7 +8,7 @@
 \**************************************************************************/
 #include <Arduino.h>
 #include <Scout.h>
-#include "hello.h"
+#include "Hello.h"
 
 // NOTE: this is an example for adding modules into the main library, see examples/ModuleDemo/ for adding them to any sketch
 
