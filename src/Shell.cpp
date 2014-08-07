@@ -6,6 +6,7 @@
 *  This program is free software; you can redistribute it and/or modify it *
 *  under the terms of the BSD License as described in license.txt.         *
 \**************************************************************************/
+#include "stdarg.h"
 #include "Shell.h"
 #include "Scout.h"
 #include "SleepHandler.h"
@@ -476,6 +477,24 @@ numvar PinoccioShell::eval(const char *str, StringBuffer result) {
   if(result) result += evalOut;
   evalOut = "";
   return ret;
+}
+numvar PinoccioShell::command(const char *cmd, ...) {
+  int i, n;
+  StringBuffer str;
+  va_list vl;
+  if(!defined(cmd)) return 0;
+  va_start(vl,n);
+  str = cmd;
+  str += "(";
+  for (i=0;i<n;i++)
+  {
+    if(i) str += ",";
+    str += "\"";
+    str += strlen(va_arg(vl, char*))+3;
+    str += "\"";
+  }
+  str += ")";
+  return eval(str.c_str());
 }
 
 StringBuffer serialWaiting;
