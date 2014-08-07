@@ -465,6 +465,9 @@ static numvar allVerbose(void) {
 }
 
 // only print to serial if/when we are not handling bitlash
+numvar PinoccioShell::eval(const char *str) {
+  return eval(str, NULL);
+}
 StringBuffer evalOut;
 numvar PinoccioShell::eval(const char *str, StringBuffer result) {
   numvar ret;
