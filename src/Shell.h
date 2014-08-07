@@ -20,6 +20,7 @@
 #include "lwm/sys/sysTimer.h"
 #include "peripherals/halTemperature.h"
 #include "avr/sleep.h"
+#include "util/StringBuffer.h"
 
 class PinoccioShell {
 
@@ -30,6 +31,7 @@ class PinoccioShell {
     void setup();
     void loop();
     void addFunction(const char *name, numvar (*func)(void));
+    numvar eval(const char *str, StringBuffer result);
     void allReportHQ();
     void delay(uint32_t at, char *command);
     bool defined(const char *fn);
