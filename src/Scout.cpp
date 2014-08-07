@@ -216,6 +216,12 @@ bool PinoccioScout::factoryReset() {
   }
 }
 
+void PinoccioScout::reboot() {
+  cli();
+  wdt_enable(WDTO_15MS);
+  while(1);
+}
+
 void PinoccioScout::startDigitalStateChangeEvents() {
   SYS_TimerStart(&digitalStateChangeTimer);
 }

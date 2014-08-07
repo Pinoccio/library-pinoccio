@@ -2126,18 +2126,12 @@ static numvar daisyWipe(void) {
 }
 
 static numvar boot(void) {
-  cli();
-  wdt_enable(WDTO_15MS);
-  while(1);
-  return 1;
+  Scout.reboot();
 }
 
 static numvar otaBoot(void) {
   Scout.setOTAFlag();
-  cli();
-  wdt_enable(WDTO_15MS);
-  while(1);
-  return 1;
+  Scout.reboot();
 }
 
 
