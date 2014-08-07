@@ -64,6 +64,7 @@ class PinoccioScout : public PinoccioClass {
 
     bool isLeadScout();
     bool factoryReset();
+    void reboot();
 
     void startDigitalStateChangeEvents();
     void stopDigitalStateChangeEvents();
