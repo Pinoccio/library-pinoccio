@@ -31,6 +31,7 @@ class PinoccioShell {
     void setup();
     void loop();
     void addFunction(const char *name, numvar (*func)(void));
+    numvar eval(const char *str);
     numvar eval(const char *str, StringBuffer result);
     void allReportHQ();
     void delay(uint32_t at, char *command);
