@@ -13,7 +13,6 @@
 #include "SleepHandler.h"
 #include "bitlash.h"
 #include "src/bitlash.h"
-#include "util/StringBuffer.h"
 #include "util/String.h"
 #include "util/PrintToString.h"
 extern "C" {
@@ -462,6 +461,18 @@ static numvar allVerbose(void) {
   isMeshVerbose = getarg(1);
   Scout.eventVerboseOutput = getarg(1);
   return 1;
+}
+
+// only print to serial if/when we are not handling bitlash
+StringBuffer evalOut;
+numvar PinoccioShell::eval(const char *str, StringBuffer result) {
+  numvar ret;
+  setOutputHandler(&printToString<&evalOut>);
+  ret = doCommand((char*)str);
+  resetOutputHandler();
+  if(result) result += evalOut;
+  evalOut = "";
+  return ret;
 }
 
 StringBuffer serialWaiting;
