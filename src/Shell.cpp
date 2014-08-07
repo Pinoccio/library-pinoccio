@@ -471,12 +471,19 @@ numvar PinoccioShell::eval(const char *str) {
 StringBuffer evalOut;
 numvar PinoccioShell::eval(const char *str, StringBuffer result) {
   numvar ret;
+  evalOut = "";
   setOutputHandler(&printToString<&evalOut>);
   ret = doCommand((char*)str);
   resetOutputHandler();
   if(result) result += evalOut;
-  evalOut = "";
   return ret;
+}
+const char *PinoccioShell::exec(const char *str) {
+  numvar ret;
+  ret = eval(str);
+  // nice convenience
+  if(evalOut == "") evalOut.appendSprintf("%ld",ret);
+  return evalOut.c_str();
 }
 numvar PinoccioShell::command(const char *cmd, ...) {
   int i, n;
