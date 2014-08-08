@@ -112,29 +112,23 @@ void WifiModule::setup() {
   gs.setNcm(/* enable */ true, /* associate_only */ true, /* remember */ false);
 }
 
-uint32_t cron_minute = 0;
+uint32_t down_check = 0;
 void WifiModule::loop() {
   gs.loop();
 
-  if(millis() - cron_minute > 60*1000)
+  uint32_t now = millis();
+  // only validate/reset when no hq is active and no more than once a minute
+  if(now - Scout.handler.active > 5*1000 && now - down_check > 5*1000)
   {
-    cron_minute = millis();
+    down_check = now;
     // check if gainspan is still responding
-    if(!isAPConnected())
+    if(!gs.writeCommandCheckOk("AT"))
     {
-      gs.writeCommand("AT");
-      if(!gs.readResponse())
-      {
-        Serial.println("gainspan timed out, restarting");
-        delay(500);
-        Scout.reboot();
-      }
+      Serial.println("gainspan timed out, restarting");
+      Scout.reboot();
     }
-    // just reassociate if not connected
-    if(!Scout.handler.client->connected())
-    {
-      reassociate();
-    }
+    // just reassociate to try reconnecting clean
+    reassociate();
   }
 }
 

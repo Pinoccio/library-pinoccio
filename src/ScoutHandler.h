@@ -30,6 +30,7 @@ class ScoutHandler {
     void setBridged(bool flag);
 
     GSTcpClient *client;
+    uint32_t active;
 
   protected:
 };
