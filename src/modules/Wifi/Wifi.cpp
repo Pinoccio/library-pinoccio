@@ -118,7 +118,7 @@ void WifiModule::loop() {
 
   uint32_t now = millis();
   // only validate/reset when no hq is active and no more than once a minute
-  if(now - Scout.handler.active > 5*1000 && now - down_check > 5*1000)
+  if(now - Scout.handler.active > 65*1000 && now - down_check > 65*1000)
   {
     down_check = now;
     // check if gainspan is still responding
