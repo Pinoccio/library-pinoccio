@@ -50,7 +50,6 @@ void WifiModule::onAssociate(void *data) {
   WifiModule& wifi = *(WifiModule*)data;
 
   wifi.apConnCount++;
-
   // TODO, update GSTcpClient to support hostnames
   IPAddress ip;
   wifi.gs.parseIpAddress(&ip,wifi.hq_host);
@@ -61,7 +60,6 @@ void WifiModule::onAssociate(void *data) {
   }
   
 }
-
 
 
 // this is our singleton object for c function pointer convenience
@@ -93,12 +91,6 @@ void WifiModule::setup() {
   gs.onAssociate = onAssociate;
   gs.eventData = this;
 
-  if (getHardwareMajorRevision() == 1 && getHardwareMinorRevision() == 1) {
-    if (!gs.begin(7, 5)) return;
-  } else {
-    if (!gs.begin(7)) return;
-  }
-  
   if(!hq_host)
   {
 //    hq_host = strdup("pool.base.pinocc.io");
@@ -107,22 +99,28 @@ void WifiModule::setup() {
   }
   Scout.handler.client = new GSTcpClient(gs);
 
-  reassociate();
+  if (getHardwareMajorRevision() == 1 && getHardwareMinorRevision() == 1) {
+    if (!gs.begin(7, 5)) return;
+  } else {
+    if (!gs.begin(7)) return;
+  }
   
+  // When association fails, keep retrying indefinately (at least it
+  // seems that a retry count of 0 means that, even though the
+  // documentation says it should be >= 1).
+  gs.setNcmParam(GSModule::GS_NCM_L3_CONNECT_RETRY_COUNT, 0);
+  gs.setNcm(/* enable */ true, /* associate_only */ true, /* remember */ false);
 }
 
-uint32_t deadman_check = 0;
+uint32_t cron_minute = 0;
 void WifiModule::loop() {
   gs.loop();
 
-  if(isAPConnected()) {
-    // best to just try over completely if not connected
-    if(!Scout.handler.client->connected())
-    {
-      reassociate();
-    }
-  }else{
-    if(millis() - deadman_check > 60*1000)
+  if(millis() - cron_minute > 60*1000)
+  {
+    cron_minute = millis();
+    // check if gainspan is still responding
+    if(!isAPConnected())
     {
       gs.writeCommand("AT");
       if(!gs.readResponse())
@@ -131,7 +129,11 @@ void WifiModule::loop() {
         delay(500);
         Scout.reboot();
       }
-      deadman_check = millis();
+    }
+    // just reassociate if not connected
+    if(!Scout.handler.client->connected())
+    {
+      reassociate();
     }
   }
 }
@@ -193,11 +195,6 @@ bool WifiModule::wifiStatic(IPAddress ip, IPAddress netmask, IPAddress gw, IPAdd
 
 bool WifiModule::reassociate() {
   disassociate();
-
-  // When association fails, keep retrying indefinately (at least it
-  // seems that a retry count of 0 means that, even though the
-  // documentation says it should be >= 1).
-  gs.setNcmParam(GSModule::GS_NCM_L3_CONNECT_RETRY_COUNT, 0);
 
   return gs.setNcm(/* enable */ true, /* associate_only */ true, /* remember */ false);
 }
@@ -383,8 +380,9 @@ static numvar wifiHQ(void) {
   if (!checkArgs(1, 2, F("usage: wifi.hq(\"host\" [,port])"))) {
     return 0;
   }
+  char *host = (char*)getstringarg(1);
   free(wifi->hq_host);
-  wifi->hq_host = strdup((char*)getstringarg(1));
+  wifi->hq_host = strdup(host);
   if(getarg(0) > 1)
   {
     wifi->hq_port = getarg(2);
