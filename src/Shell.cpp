@@ -39,6 +39,7 @@ static numvar uptimeSleepingMicros(void);
 static numvar uptimeSleepingSeconds(void);
 static numvar uptimeMicros(void);
 static numvar uptimeSeconds(void);
+static numvar uptimeDays(void);
 static numvar uptimePrint(void);
 static numvar uptimeReport(void);
 static numvar uptimeStatus(void);
@@ -238,6 +239,7 @@ void PinoccioShell::setup() {
   addFunction("uptime.sleeping.micros", uptimeSleepingMicros);
   addFunction("uptime.sleeping.seconds", uptimeSleepingSeconds);
   addFunction("uptime.seconds", uptimeSeconds);
+  addFunction("uptime.days", uptimeDays);
   addFunction("uptime.micros", uptimeMicros);
   addFunction("uptime.report", uptimeReport);
   addFunction("uptime.getlastreset", getLastResetCause);
@@ -720,6 +722,9 @@ static numvar uptimeSeconds(void) {
   return SleepHandler::uptime().seconds;
 }
 
+static numvar uptimeDays(void) {
+  return SleepHandler::uptime().seconds/86400;
+}
 
 static numvar uptimeReport(void) {
   speol(uptimeReportHQ());
