@@ -146,6 +146,10 @@ void PinoccioScout::loop() {
   }
 }
 
+uint32_t PinoccioScout::uptime() {
+  return SleepHandler::uptime().seconds;
+}
+
 bool PinoccioScout::isBatteryCharging() {
   return isBattCharging;
 }

@@ -62,6 +62,7 @@ class PinoccioScout : public PinoccioClass {
     bool isLeadScout();
     bool factoryReset();
     void reboot();
+    uint32_t uptime(); // in seconds
 
     void startDigitalStateChangeEvents();
     void stopDigitalStateChangeEvents();

@@ -235,6 +235,7 @@ void PinoccioShell::setup() {
   addFunction("uptime.awake.seconds", uptimeAwakeSeconds);
   addFunction("uptime.sleeping.micros", uptimeSleepingMicros);
   addFunction("uptime.sleeping.seconds", uptimeSleepingSeconds);
+  addFunction("uptime", uptimeSeconds);
   addFunction("uptime.seconds", uptimeSeconds);
   addFunction("uptime.micros", uptimeMicros);
   addFunction("uptime.report", uptimeReport);
