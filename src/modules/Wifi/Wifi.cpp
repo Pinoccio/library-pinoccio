@@ -118,15 +118,25 @@ void WifiModule::setup() {
   gs.setNcm(/* enable */ true, /* associate_only */ true, /* remember */ false);
 }
 
+// 5 minutes until check/reconnect
+#define DOWN_TIMEOUT (60*5)+5
 uint32_t down_check = 0;
 void WifiModule::loop() {
   gs.loop();
 
   uint32_t now = Scout.uptime();
-  // only validate/reset when no hq is active and no more than once a minute
-  if(now - Scout.handler.active > 125 && now - down_check > 65)
+  // only validate/reset when no hq is active and not too fast
+  if(now - Scout.handler.active > DOWN_TIMEOUT && now - down_check > DOWN_TIMEOUT)
   {
-    if(verbose) Serial.println("wifi validation check");
+    if(verbose)
+    {
+      Serial.print("wifi validation check at ");
+      Serial.print(now);
+      Serial.print(" hq ");
+      Serial.print(Scout.handler.active);
+      Serial.print(" check ");
+      Serial.println(down_check);
+    }
     down_check = now;
     // check if gainspan is still responding
     if(!gs.writeCommandCheckOk("AT"))
