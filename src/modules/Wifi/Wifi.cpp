@@ -46,27 +46,33 @@ const char *WifiModule::name() {
   return "wifi";
 }
 
-void WifiModule::onAssociate(void *data) {
-  WifiModule& wifi = *(WifiModule*)data;
+// this is our singleton object for c function pointer convenience
+WifiModule *wifi;
 
-  wifi.apConnCount++;
+void WifiModule::onAssociate(void *data) {
+
+  if(wifi->verbose) Serial.println("associated, connecting to hq");
+  wifi->apConnCount++;
   // TODO, update GSTcpClient to support hostnames
   IPAddress ip;
-  wifi.gs.parseIpAddress(&ip,wifi.hq_host);
-  if(Scout.handler.client->connect(ip, wifi.hq_port))
+  wifi->gs.parseIpAddress(&ip,wifi->hq_host);
+  if(Scout.handler.client->connect(ip, wifi->hq_port))
   {
-    wifi.hqConnCount++;
+    if(wifi->verbose) Serial.println("connected to hq");
+    wifi->hqConnCount++;
     leadHQConnect();
+  }else{
+    if(wifi->verbose) Serial.println("connection failed");
   }
   
 }
 
-
-// this is our singleton object for c function pointer convenience
-WifiModule *wifi;
 void WifiModule::setup() {
 
+  // our global singleton
   wifi = this;
+
+  // scripting is fun
   Shell.addFunction("wifi.report", wifiReport);
   Shell.addFunction("wifi.hq", wifiHQ);
   Shell.addFunction("wifi.status", wifiStatus);
@@ -116,10 +122,11 @@ uint32_t down_check = 0;
 void WifiModule::loop() {
   gs.loop();
 
-  uint32_t now = millis();
+  uint32_t now = Scout.uptime();
   // only validate/reset when no hq is active and no more than once a minute
-  if(now - Scout.handler.active > 65*1000 && now - down_check > 65*1000)
+  if(now - Scout.handler.active > 125 && now - down_check > 65)
   {
+    if(verbose) Serial.println("wifi validation check");
     down_check = now;
     // check if gainspan is still responding
     if(!gs.writeCommandCheckOk("AT"))
@@ -188,6 +195,7 @@ bool WifiModule::wifiStatic(IPAddress ip, IPAddress netmask, IPAddress gw, IPAdd
 }
 
 bool WifiModule::reassociate() {
+  if(verbose) Serial.println("reassociating");
   disassociate();
 
   return gs.setNcm(/* enable */ true, /* associate_only */ true, /* remember */ false);
@@ -437,8 +445,13 @@ static numvar wifiWakeup(void) {
 }
 
 static numvar wifiVerbose(void) {
-  // TODO
-  return 1;
+  if(getarg(0) == 1 && getarg(1) == 0)
+  {
+    wifi->verbose = false;
+  }else{
+    wifi->verbose = true;
+  }
+  return wifi->verbose?1:0;
 }
 
 static numvar wifiStats(void) {

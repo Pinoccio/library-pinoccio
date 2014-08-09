@@ -473,7 +473,7 @@ void leadHQHandle(void) {
 
   // only continue if new data to process
   if(rsize <= 0) return;
-  Scout.handler.active = millis();
+  Scout.handler.active = Scout.uptime();
   
   // Read a block of data and look for packets
   while((nl = hqIncoming.indexOf('\n')) >= 0) {

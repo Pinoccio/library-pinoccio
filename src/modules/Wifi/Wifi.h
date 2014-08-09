@@ -20,6 +20,7 @@ class WifiModule : public PinoccioModule {
     const char *name();
     char *hq_host;
     uint16_t hq_port;
+    bool verbose;
     void loop();
 
     // Does not take effect until autoConnectHq() is called
