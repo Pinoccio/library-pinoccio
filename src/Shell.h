@@ -11,9 +11,7 @@
 
 #include "bitlash.h"
 #include "src/bitlash.h"
-
 #include "lwm/sys/sysConfig.h"
-#include "lwm/phy/phy.h"
 #include "lwm/hal/hal.h"
 #include "lwm/sys/sys.h"
 #include "lwm/nwk/nwk.h"

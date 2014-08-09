@@ -10,7 +10,6 @@
 #include <Pinoccio.h>
 #include <avr/eeprom.h>
 #include <src/bitlash.h>
-#include <lwm/phy/atmegarfr2.h>
 
 PinoccioClass::PinoccioClass() {
   // this has to be called as early as possible before other code uses the register
@@ -29,8 +28,6 @@ void PinoccioClass::setup(const char *sketchName, const char *sketchRevision, in
 
   digitalWrite(SS, HIGH);
   pinMode(SS, OUTPUT);
-  Serial.begin(115200);
-
   Serial.begin(115200);
 
   loadSettingsFromEeprom();
@@ -240,6 +237,7 @@ void PinoccioClass::meshSetPower(const uint8_t theTxPower) {
 }
 
 void PinoccioClass::meshSetDataRate(const uint8_t theRate) {
+  #ifdef PHY_ATMEGA256RFR2
   /* Page 123 of the 256RFR2 datasheet
     0   250 kb/s  | -100 dBm
     1   500 kb/s  |  -96 dBm
@@ -247,6 +245,18 @@ void PinoccioClass::meshSetDataRate(const uint8_t theRate) {
     3   2000 kb/s |  -86 dBm
   */
   TRX_CTRL_2_REG_s.oqpskDataRate = theRate;
+  #else
+  #ifdef PHY_AT86RF212
+  /* Page 116 of the AT86RF212B datasheet
+    0   250 kb/s  | -100 dBm
+    1   500 kb/s  |  -96 dBm
+    2   1000 kb/s |  -94 dBm
+  */
+  // TODO
+  //TRX_CTRL_2_REG.oqpskDataRate = theRate;
+  #endif
+  #endif
+  
   dataRate = theRate;
   eeprom_update_byte((uint8_t *)8126, theRate);
 }
