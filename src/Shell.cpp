@@ -470,13 +470,14 @@ numvar PinoccioShell::eval(const char *str) {
   return eval(str, NULL);
 }
 StringBuffer evalOut;
-numvar PinoccioShell::eval(const char *str, StringBuffer result) {
+numvar PinoccioShell::eval(const char *str, StringBuffer *result) {
   numvar ret;
   evalOut = "";
   setOutputHandler(&printToString<&evalOut>);
   ret = doCommand((char*)str);
   resetOutputHandler();
-  if(result) result += evalOut;
+  if(result) *result += evalOut;
+  refresh();
   return ret;
 }
 const char *PinoccioShell::exec(const char *str) {
@@ -542,13 +543,10 @@ void PinoccioShell::loop() {
       } if (c == '\r' || c == '\n') {
         Serial.println();
         if (serialIncoming.length()) {
-          setOutputHandler(&printToString<&serialOutgoing>);
-          doCommand((char*)serialIncoming.c_str());
-          resetOutputHandler();
+          eval(serialIncoming.c_str(), &serialOutgoing);
           Serial.print(serialOutgoing.c_str());
           prevCommand = serialIncoming;
           serialIncoming = serialOutgoing = (char*)NULL;
-          Shell.refresh();
         }
         prompt();
       } else if (c == '\b') {
