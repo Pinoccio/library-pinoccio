@@ -32,7 +32,7 @@ class PinoccioShell {
     void loop();
     void addFunction(const char *name, numvar (*func)(void));
     numvar eval(const char *str);
-    numvar eval(const char *str, StringBuffer result);
+    numvar eval(const char *str, StringBuffer *result);
     const char *exec(const char *str); // return the string output
     numvar command(const char *cmd, ...); // pass in strings only, just runs eval: cmd("a","b","c")
     void allReportHQ();
