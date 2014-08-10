@@ -183,6 +183,7 @@ static void printSpaces(int8_t number) {
 }
 
 PinoccioShell Shell;
+StringBuffer bitlashOutput;
 
 PinoccioShell::PinoccioShell() {
   isShellEnabled = true;
@@ -354,10 +355,10 @@ void PinoccioShell::addFunction(const char *name, numvar (*func)(void)) {
 StringBuffer customScripts;
 void PinoccioShell::refresh(void)
 {
-  customScripts = "";
-  setOutputHandler(&printToString<&customScripts>);
+  bitlashOutput = "";
   doCommand("ls");
-  resetOutputHandler();
+  customScripts = bitlashOutput;
+  bitlashOutput = (char*)NULL;
 
   // parse and condense the "ls" bitlash format of "function name {...}\n" into just "name "
   int nl, sp;
@@ -472,23 +473,23 @@ static numvar allVerbose(void) {
 numvar PinoccioShell::eval(const char *str) {
   return eval(str, NULL);
 }
-StringBuffer evalOut;
 numvar PinoccioShell::eval(const char *str, StringBuffer *result) {
   numvar ret;
-  evalOut = "";
-  setOutputHandler(&printToString<&evalOut>);
+  bitlashOutput = "";
   ret = doCommand((char*)str);
-  resetOutputHandler();
-  if(result) *result += evalOut;
+  if(result) *result += bitlashOutput;
+  bitlashOutput = (char*)NULL;
   refresh();
   return ret;
 }
+StringBuffer execOut;
 const char *PinoccioShell::exec(const char *str) {
   numvar ret;
-  ret = eval(str);
+  execOut = "";
+  ret = eval(str,&execOut);
   // nice convenience
-  if(evalOut == "") evalOut.appendSprintf("%ld",ret);
-  return evalOut.c_str();
+  if(execOut == "") execOut.appendSprintf("%ld",ret);
+  return execOut.c_str();
 }
 numvar PinoccioShell::command(const char *cmd, ...) {
   int i, n;
@@ -557,6 +558,8 @@ void PinoccioShell::loop() {
     }
     // bitlash loop
     runBackgroundTasks();
+    Serial.print(bitlashOutput.c_str());
+    bitlashOutput = (char*)NULL;
   }
   keyLoop(millis());
 }
@@ -568,6 +571,7 @@ void PinoccioShell::startShell() {
   isShellEnabled = true;
 
   // init bitlash internals, don't use initBitlash so we do our own serial
+  setOutputHandler(&printToString<&bitlashOutput>);
   initTaskList();
   vinit();
   
@@ -596,6 +600,9 @@ void PinoccioShell::startShell() {
     }
   }
 
+  // print anything that may have shown up from startup
+  Serial.print(bitlashOutput.c_str());
+  bitlashOutput = (char*)NULL;
   prompt();
 }
 
