@@ -31,8 +31,6 @@ void PinoccioClass::setup(const char *sketchName, const char *sketchRevision, in
   pinMode(SS, OUTPUT);
   Serial.begin(115200);
 
-  Serial.begin(115200);
-
   loadSettingsFromEeprom();
 }
 
