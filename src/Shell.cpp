@@ -508,20 +508,22 @@ void PinoccioShell::print(const char *str) {
 }
 
 static StringBuffer serialIncoming;
-static char lastc;
+static char lastc = 0;
 
 StringBuffer serialOutgoing;
 void PinoccioShell::loop() {
   if (isShellEnabled) {
     while (Serial.available()) {
       char c = Serial.read();
-      if (c == '\n' && lastc != '\r') {
-        Serial.write('\r');
-      }
 
-      Serial.write(c); // echo everything back
-      outWait = true; // reading stuff, don't print anything else out
-      if (c == '\n') {
+      if (c == '\n' && lastc == '\r') {
+        // Ignore the \n in \r\n to prevent interpreting \r\n as two
+        // newlines. Note that we cannot just ignore newlines when the
+        // buffer is empty, since that doesn't allow forcing a new
+        // prompt by sending a newline (when the terminal is messed up
+        // by debug output for example).
+      } if (c == '\r' || c == '\n') {
+        Serial.println();
         setOutputHandler(&printToString<&serialOutgoing>);
         doCommand((char*)serialIncoming.c_str());
         resetOutputHandler();
@@ -530,6 +532,8 @@ void PinoccioShell::loop() {
         Shell.refresh();
         prompt();
       } else {
+        outWait = true; // reading stuff, don't print anything else out
+        Serial.write(c); // echo everything back
         serialIncoming += c;
       }
       lastc = c;
