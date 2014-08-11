@@ -19,6 +19,7 @@
 #include "lwm/nwk/nwk.h"
 #include "lwm/sys/sysTimer.h"
 #include "peripherals/halTemperature.h"
+#include "peripherals/TimerThree.h"
 #include "avr/sleep.h"
 
 class PinoccioShell {
