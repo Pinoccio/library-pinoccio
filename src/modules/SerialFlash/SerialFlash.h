@@ -9,21 +9,28 @@
 #ifndef LIB_PINOCCIO_SERIAL_FLASH_MODULE_H_
 #define LIB_PINOCCIO_SERIAL_FLASH_MODULE_H_
 
+#include "../Module.h"
 #include "Flash.h"
-#define SERIAL_FLASH_BUFSIZE 65
 
-class SerialFlashModule : public PinoccioModule {
+namespace pinoccio {
+  const uint8_t SERIAL_FLASH_BUFSIZE = 65;
 
-  public:
-    SerialFlashModule();
-    ~SerialFlashModule();
+  class SerialFlashModule : public Module {
+    public:
+      bool load();
+      void loop();
+      const __FlashStringHelper *name() const;
 
-    void setup();
-    void loop();
-    const char *name();
+      uint8_t csPin;
+      FlashClass *flash;
 
-    uint8_t csPin;    
-    FlashClass *flash;
-};
+    // Ensure there is always exactly one instance by declaring it here
+    // and making our constructor private
+    private:
+      using Module::Module;
+    public:
+      static SerialFlashModule instance;
+  };
+} // namespace pinoccio
 
 #endif

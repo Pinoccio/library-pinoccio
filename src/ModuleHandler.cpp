@@ -7,59 +7,74 @@
 *  under the terms of the BSD License as described in license.txt.         *
 \**************************************************************************/
 #include <Arduino.h>
-#include <Scout.h>
-#include <ModuleHandler.h>
+#include "Scout.h"
+#include "ModuleHandler.h"
+#include "modules/Module.h"
 
-LinkedList<PinoccioModule*> ModuleHandler::loadedModules;
-const PinoccioModuleInfoBase* ModuleHandler::moduleInfo = NULL;
+using namespace pinoccio;
+
+Module* ModuleHandler::_modules = NULL;
 
 void ModuleHandler::setup() {
 }
 
 void ModuleHandler::loop() {
-  for (uint8_t i=0; i<loadedModules.size(); i++) {
-    (loadedModules.get(i))->loop();
+  // TODO: Make sure that loaded modules are always at the front of the
+  //       list, so we don't have to iterate all non-loaded modules as
+  //       well?
+  Module *module = modules();
+  while (module) {
+    if (module->loaded())
+      module->loop();
+    module = module->next();
   }
 }
 
 void ModuleHandler::list() {
-  const PinoccioModuleInfoBase *info = moduleInfo;
-  while (info) {
-    speol(info->name);
-    info = info->next;
+  const Module *module = modules();
+  while (module) {
+    speol(module->name());
+    module = module->next();
   }
 }
 
-bool ModuleHandler::loaded(char *name) {
-  for (uint8_t i=0; i<loadedModules.size(); i++) {
-    if(strcmp(loadedModules.get(i)->name(),name) == 0) return true;
+bool ModuleHandler::loaded(const char *name) {
+  const Module *module = modules();
+  while (module) {
+    if (strcmp_P(name, (const char*)module->name()) == 0)
+      return module->loaded();
+
+    module = module->next();
   }
-  
   return false;
 }
 
-PinoccioModule *ModuleHandler::load(char *name) {
-  for (uint8_t i=0; i<loadedModules.size(); i++) {
-    PinoccioModule *module = loadedModules.get(i);
-    if(strcmp(module->name(),name) == 0) return module;
-  }
+Module *ModuleHandler::load(const char *name) {
+  Module *module = modules();
+  while (module) {
+    if (strcmp_P(name, (const char*)module->name()) == 0) {
+      if (module->loaded())
+        return module;
 
-  const PinoccioModuleInfoBase *info = moduleInfo;
-  while (info) {
-    if (strcmp(info->name, name) == 0) {
-      PinoccioModule *module = info->load();
-      loadedModules.add(module);
-      module->setup();
-      return module;
+      if (module->load()) {
+        module->_loaded = true;
+        return module;
+      }
+
+      return NULL;
     }
-    info = info->next;
+    module = module->next();
   }
 
+  speol("No such module");
   return NULL;
 }
 
 void ModuleHandler::loaded() {
-  for (uint8_t i=0; i<loadedModules.size(); i++) {
-    speol((loadedModules.get(i))->name());
+  const Module *module = modules();
+  while (module) {
+    if (module->loaded())
+      speol(module->name());
+    module = module->next();
   }
 }

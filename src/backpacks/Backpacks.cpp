@@ -10,6 +10,8 @@
 #include "Backpacks.h"
 #include "Scout.h"
 
+using namespace pinoccio;
+
 uint8_t Backpacks::num_backpacks = 0;
 BackpackInfo *Backpacks::info = NULL;
 PBBP Backpacks::pbbp;

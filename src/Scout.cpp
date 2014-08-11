@@ -15,6 +15,8 @@
 #include <avr/eeprom.h>
 #include <avr/pgmspace.h>
 
+using namespace pinoccio;
+
 static void scoutDigitalStateChangeTimerHandler(SYS_Timer_t *timer);
 static void scoutAnalogStateChangeTimerHandler(SYS_Timer_t *timer);
 static void scoutPeripheralStateChangeTimerHandler(SYS_Timer_t *timer);

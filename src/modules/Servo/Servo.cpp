@@ -11,39 +11,11 @@
 #include "modules/Servo/Servo.h"
 #include "TimerThree.h"
 
+using namespace pinoccio;
+
+ServoModule ServoModule::instance;
+
 // TODO Timer3 should be created dynamically when the module is loaded, not static
-
-static numvar servoInitialize();
-static numvar servoSetPeriod();
-static numvar servoStart();
-static numvar servoStop();
-static numvar servoRestart();
-static numvar servoResume();
-static numvar servoPwm();
-static numvar servoSetPwmDuty();
-static numvar servoDisablePwm();
-
-ServoModule::ServoModule() { }
-
-ServoModule::~ServoModule() { }
-
-void ServoModule::setup() {
-  Shell.addFunction("servo.initialize", servoInitialize);
-  Shell.addFunction("servo.setPeriod", servoSetPeriod);
-  Shell.addFunction("servo.start", servoStart);
-  Shell.addFunction("servo.stop", servoStop);
-  Shell.addFunction("servo.restart", servoRestart);
-  Shell.addFunction("servo.resume", servoResume);
-  Shell.addFunction("servo.pwm", servoPwm);
-  Shell.addFunction("servo.setPwmDuty", servoSetPwmDuty);
-  Shell.addFunction("servo.disablePwm", servoDisablePwm);
-}
-
-void ServoModule::loop() { }
-
-const char *ServoModule::name() {
-  return "servo";
-}
 
 static numvar servoInitialize() {
   Timer3.initialize(getarg(1));
@@ -80,3 +52,24 @@ static numvar servoSetPwmDuty() {
 static numvar servoDisablePwm() {
   Timer3.disablePwm(getarg(1));
 }
+
+bool ServoModule::load() {
+  Shell.addFunction("servo.initialize", servoInitialize);
+  Shell.addFunction("servo.setPeriod", servoSetPeriod);
+  Shell.addFunction("servo.start", servoStart);
+  Shell.addFunction("servo.stop", servoStop);
+  Shell.addFunction("servo.restart", servoRestart);
+  Shell.addFunction("servo.resume", servoResume);
+  Shell.addFunction("servo.pwm", servoPwm);
+  Shell.addFunction("servo.setPwmDuty", servoSetPwmDuty);
+  Shell.addFunction("servo.disablePwm", servoDisablePwm);
+
+  return true;
+}
+
+void ServoModule::loop() { }
+
+const __FlashStringHelper *ServoModule::name() const {
+  return F("servo");
+}
+

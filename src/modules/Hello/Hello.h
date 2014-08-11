@@ -9,13 +9,22 @@
 #ifndef LIB_PINOCCIO_HELLO_MODULE_H_
 #define LIB_PINOCCIO_HELLO_MODULE_H_
 
-class HelloModule : public PinoccioModule {
+#include "../Module.h"
 
-  public:
-    void setup();
-    void loop();
-    const char *name();
+namespace pinoccio {
+  class HelloModule : public Module {
+    public:
+      bool load();
+      void loop();
+      const __FlashStringHelper *name() const;
 
-};
+    // Ensure there is always exactly one instance by declaring it here
+    // and making our constructor private
+    private:
+      using Module::Module;
+    public:
+      static HelloModule instance;
+  };
+} // namespace pinoccio
 
 #endif

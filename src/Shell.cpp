@@ -22,6 +22,8 @@ extern "C" {
 #include "util/memdebug.h"
 }
 
+using namespace pinoccio;
+
 static numvar pinoccioBanner(void);
 
 static numvar getTemperatureC(void);
@@ -2119,8 +2121,8 @@ static numvar daisyWipe(void) {
   report.appendSprintf("[%d,[%d],[\"bye\"]]",keyMap("daisy",0),keyMap("dave",0));
   Scout.handler.report(report);
 
-  if (ModuleHandler::loaded("wifi")) {
-    WifiModule *wifi = (WifiModule*)ModuleHandler::load("wifi");
+  WifiModule *wifi = &WifiModule::instance;
+  if (wifi->loaded()) {
     if (!wifi->runDirectCommand(Serial, "AT&F")) {
        sp(F("Error: Wi-Fi direct command failed"));
        ret = false;
@@ -2168,6 +2170,10 @@ static numvar moduleLoad(void) {
     return 0;
   }
   if(ModuleHandler::load((char*)getstringarg(1))) return 1;
+  sp(F("Failed to load module "));
+  sp((const char *)getstringarg(1));
+  speol();
+
   return 0;
 }
 

@@ -10,21 +10,24 @@
 #include <Scout.h>
 #include "Hello.h"
 
-// NOTE: this is an example for adding modules into the main library, see examples/ModuleDemo/ for adding them to any sketch
+using namespace pinoccio;
 
-static PinoccioModuleInfo<HelloModule> helloInfo("hello");
+HelloModule HelloModule::instance;
+
+// NOTE: this is an example for adding modules into the main library, see examples/ModuleDemo/ for adding them to any sketch
 
 static numvar hello();
 
-void HelloModule::setup() {
+bool HelloModule::load() {
   Shell.addFunction("hello", hello);
-  Serial.println("hello setup");
+  Serial.println("hello loaded");
+  return true;
 }
 
 void HelloModule::loop() { }
 
-const char *HelloModule::name() {
-  return "hello";
+const __FlashStringHelper *HelloModule::name() const {
+  return F("hello");
 }
 
 static numvar hello() {

@@ -16,56 +16,109 @@ extern "C" {
 #include "key/key.h"
 }
 
-static void baroMovingAvgTimerHandler(SYS_Timer_t *timer);
-static void gpsTimerHandler(SYS_Timer_t *timer);
+using namespace pinoccio;
 
-static numvar verbose(void);
+MotionModule MotionModule::instance;
 
-static numvar gpsTime(void);
-static numvar gpsSatFix(void);
-static numvar gpsSatFixQuality(void);
-static numvar gpsSatCount(void);
-static numvar gpsLatitude(void);
-static numvar gpsLongitude(void);
-static numvar gpsSpeed(void);
-static numvar gpsAngle(void);
+static void gpsTimerHandler(SYS_Timer_t *timer) {
+  MotionModule* m = &MotionModule::instance;
+  m->gps->read();
+  if (m->gps->newNMEAreceived()) {
+    m->gps->parse(m->gps->lastNMEA());
+  }
+}
 
-static numvar baroPressure(void);
-static numvar baroAltitude(void);
-static numvar baroTemperature(void);
+static numvar verbose(void) {
+  if (!checkArgs(1, F("usage: motion.verbose(flag)"))) {
+    return 0;
+  }
+  MotionModule::instance.isVerbose = getarg(1);
+}
 
-static PinoccioModuleInfo<MotionModule> motionInfo("motion");
+static numvar gpsTime(void) {
+  MotionModule* m = &MotionModule::instance;
+  if (m->gps->fix == 0) {
+    speol("No satellite fix. Time not available");
+    return 0;
+  }
+  sp("20");
+  sp(m->gps->year);
+  sp("-");
+  sp(m->gps->month);
+  sp("-");
+  sp(m->gps->day);
+  sp(" ");
+  sp(m->gps->hour);
+  sp(":");
+  sp(m->gps->minute);
+  sp(":");
+  sp(m->gps->seconds);
+  sp("/");
+  speol(m->gps->milliseconds);
+  return 1;
+}
 
-MotionModule::MotionModule() {
+static numvar gpsSatFix(void) {
+  return MotionModule::instance.gps->fix;
+}
+
+static numvar gpsSatFixQuality(void) {
+  return MotionModule::instance.gps->fixquality;
+}
+
+static numvar gpsSatCount(void) {
+  return MotionModule::instance.gps->satellites;
+}
+
+static numvar gpsLatitude(void) {
+  return MotionModule::instance.gps->lat;
+}
+
+static numvar gpsLongitude(void) {
+  return MotionModule::instance.gps->lon;
+}
+
+static numvar gpsSpeed(void) {
+  return MotionModule::instance.gps->speed;
+}
+
+static numvar gpsAngle(void) {
+  return MotionModule::instance.gps->angle;
+}
+
+
+static void baroMovingAvgTimerHandler(SYS_Timer_t *timer) {
+  MotionModule* m = &MotionModule::instance;
+  m->msPushMovingAvg(m->ms->getPressure(MS561101BA_OSR_4096));
+}
+
+static numvar baroPressure(void) {
+  return MotionModule::instance.msGetPressure();
+}
+
+static numvar baroAltitude(void) {
+  MotionModule* m = &MotionModule::instance;
+  return ((pow((1013.25 / m->msGetPressure()), 1/5.257) - 1.0) * (m->ms->getTemperature(MS561101BA_OSR_4096) + 273.15)) / 0.0065;
+}
+
+static numvar baroTemperature(void) {
+  return MotionModule::instance.ms->getTemperature(MS561101BA_OSR_4096);
+}
+
+bool MotionModule::load() {
+  pinMode(6, INPUT);
+  pinMode(7, INPUT);
+  pinMode(8, INPUT);
+
   gps = new Adafruit_GPS();
   //mpu = new MPU9150();
   ms = new MS561101BA();
 
   msMovingAvgCtr = 0;
   isVerbose = false;
-}
 
-MotionModule::~MotionModule() {
-  if (gps != NULL) {
-    SYS_TimerStop(&gpsTimer);
-    delete gps;
-  }
-  //if (mpu != NULL) {
-  //  delete mpu;
-  //}
-  if (ms != NULL) {
-    SYS_TimerStop(&baroMovingAvgTimer);
-    delete ms;
-  }
-}
-
-void MotionModule::setup() {
-  pinMode(6, INPUT);
-  pinMode(7, INPUT);
-  pinMode(8, INPUT);
-  
   Shell.addFunction("motion.verbose", verbose);
-  
+
   Shell.addFunction("motion.gps.time", gpsTime);
   Shell.addFunction("motion.gps.sat.fix", gpsSatFix);
   Shell.addFunction("motion.gps.sat.fixquality", gpsSatFixQuality);
@@ -96,7 +149,7 @@ void MotionModule::setup() {
   //gps->sendCommand(PMTK_SET_NMEA_OUTPUT_RMCONLY);
   gps->sendCommand(PMTK_SET_NMEA_UPDATE_1HZ); // 1 Hz update rate
   //Serial1.println(PMTK_Q_RELEASE);
-  
+
   gpsTimer.interval = 50;
   gpsTimer.mode = SYS_TIMER_PERIODIC_MODE;
   gpsTimer.handler = gpsTimerHandler;
@@ -111,11 +164,12 @@ void MotionModule::setup() {
   for(int i=0; i<MOVAVG_SIZE; i++) {
     msMovingAvgBuffer[i] = ms->getPressure(MS561101BA_OSR_4096);
   }
-    
+
   baroMovingAvgTimer.interval = 50;
   baroMovingAvgTimer.mode = SYS_TIMER_PERIODIC_MODE;
   baroMovingAvgTimer.handler = baroMovingAvgTimerHandler;
   SYS_TimerStart(&baroMovingAvgTimer);
+  return true;
 }
 
 void MotionModule::loop() {
@@ -126,8 +180,8 @@ void MotionModule::loop() {
   }
 }
 
-const char* MotionModule::name() {
-  return "motion";
+const __FlashStringHelper* MotionModule::name() const {
+  return F("motion");
 }
 
 float MotionModule::msGetPressure(void) {
@@ -143,99 +197,3 @@ void MotionModule::msPushMovingAvg(float val) {
   msMovingAvgCtr = (msMovingAvgCtr + 1) % MOVAVG_SIZE;
 }
 
-static void gpsTimerHandler(SYS_Timer_t *timer) {
-  MotionModule* m = (MotionModule*)ModuleHandler::load("motion");
-  m->gps->read();
-  if (m->gps->newNMEAreceived()) {
-    m->gps->parse(m->gps->lastNMEA());
-  }
-}
-
-static numvar verbose(void) {
-  if (!checkArgs(1, F("usage: motion.verbose(flag)"))) {
-    return 0;
-  }
-  MotionModule* m = (MotionModule*)ModuleHandler::load("motion");
-  m->isVerbose = getarg(1);
-}
-  
-static numvar gpsTime(void) {
-  MotionModule* m = (MotionModule*)ModuleHandler::load("motion");
-  if (m->gps->fix == 0) {
-    speol("No satellite fix. Time not available");
-    return 0;
-  }
-  sp("20");
-  sp(m->gps->year);
-  sp("-");
-  sp(m->gps->month);
-  sp("-");
-  sp(m->gps->day);
-  sp(" ");
-  sp(m->gps->hour);
-  sp(":");
-  sp(m->gps->minute);
-  sp(":");
-  sp(m->gps->seconds);
-  sp("/");
-  speol(m->gps->milliseconds);
-  return 1;
-}
-
-static numvar gpsSatFix(void) {
-  MotionModule* m = (MotionModule*)ModuleHandler::load("motion");
-  return m->gps->fix;
-}
-
-static numvar gpsSatFixQuality(void) {
-  MotionModule* m = (MotionModule*)ModuleHandler::load("motion");
-  return m->gps->fixquality;
-}
-
-static numvar gpsSatCount(void) {
-  MotionModule* m = (MotionModule*)ModuleHandler::load("motion");
-  return m->gps->satellites;
-}
-
-static numvar gpsLatitude(void) {
-  MotionModule* m = (MotionModule*)ModuleHandler::load("motion");
-  return m->gps->lat;
-}
-
-static numvar gpsLongitude(void) {
-  MotionModule* m = (MotionModule*)ModuleHandler::load("motion");
-  return m->gps->lon;
-}
-
-static numvar gpsSpeed(void) {
-  MotionModule* m = (MotionModule*)ModuleHandler::load("motion");
-  return m->gps->speed;
-}
-
-static numvar gpsAngle(void) {
-  MotionModule* m = (MotionModule*)ModuleHandler::load("motion");
-  return m->gps->angle;
-}
-
-
-static void baroMovingAvgTimerHandler(SYS_Timer_t *timer) {
-  MotionModule* m = (MotionModule*)ModuleHandler::load("motion");
-  m->msPushMovingAvg(m->ms->getPressure(MS561101BA_OSR_4096));
-}
-
-static numvar baroPressure(void) {
-  MotionModule* m = (MotionModule*)ModuleHandler::load("motion");
-
-  return m->msGetPressure();
-}
-
-static numvar baroAltitude(void) {
-  MotionModule* m = (MotionModule*)ModuleHandler::load("motion");
-
-  return ((pow((1013.25 / m->msGetPressure()), 1/5.257) - 1.0) * (m->ms->getTemperature(MS561101BA_OSR_4096) + 273.15)) / 0.0065;
-}
-
-static numvar baroTemperature(void) {
-  MotionModule* m = (MotionModule*)ModuleHandler::load("motion");
-  return m->ms->getTemperature(MS561101BA_OSR_4096);
-}

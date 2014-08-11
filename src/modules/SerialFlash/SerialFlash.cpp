@@ -7,54 +7,19 @@
 *  under the terms of the BSD License as described in license.txt.         *
 \**************************************************************************/
 #include <Arduino.h>
-#include <Scout.h>
-#include "modules/SerialFlash/SerialFlash.h"
-#include "modules/SerialFlash/Flash.h"
+#include "../../Scout.h"
+#include "SerialFlash.h"
+#include "Flash.h"
 extern "C" {
-#include "key/key.h"
+#include "../../key/key.h"
 }
 
-static PinoccioModuleInfo<SerialFlashModule> serialFlashInfo("serialflash");
+using namespace pinoccio;
 
-static SerialFlashModule* flashChipAvailable(int8_t csPin=-1);
-static numvar flashInitialize(void);
-static numvar flashWrite(void);
-static numvar flashRead(void);
-static numvar flashEraseSubsector(void);
-static numvar flashEraseSector(void);
-static numvar flashEraseBulk(void);
+SerialFlashModule SerialFlashModule::instance;
 
-SerialFlashModule::SerialFlashModule() {
-  flash = new FlashClass(csPin, SPI);
-}
-
-SerialFlashModule::~SerialFlashModule() {
-  if (flash != NULL) {
-    delete flash;
-  }
-}
-
-void SerialFlashModule::setup() {
-  Shell.addFunction("serialflash.initialize", flashInitialize);
-  Shell.addFunction("serialflash.write", flashWrite);
-  Shell.addFunction("serialflash.read", flashRead);
-  Shell.addFunction("serialflash.erase.subsector", flashEraseSubsector);
-  Shell.addFunction("serialflash.erase.sector", flashEraseSector);
-  Shell.addFunction("serialflash.erase.bulk", flashEraseBulk);
-}
-
-void SerialFlashModule::loop() { }
-
-const char *SerialFlashModule::name() {
-  return "serialflash";
-}
-
-static SerialFlashModule* flashChipAvailable(int8_t csPin) {
-  SerialFlashModule* sf = (SerialFlashModule*)ModuleHandler::load("serialflash");
-  if (sf == NULL) {
-    speol("Module serialflash is not loaded");
-    return 0;
-  }
+static SerialFlashModule* flashChipAvailable(int8_t csPin = -1) {
+  SerialFlashModule* sf = &SerialFlashModule::instance;
 
   uint32_t start = millis();
   if (csPin < 0) { // start up SPI again, but don't set a new chip select pin=
@@ -68,7 +33,7 @@ static SerialFlashModule* flashChipAvailable(int8_t csPin) {
       return 0;
     }
   }
-  
+
   return sf;
 }
 
@@ -159,7 +124,6 @@ static numvar flashRead(void) {
 
   int32_t addr = getarg(1);
   byte dataRead[65];
-  int len;
 
   SerialFlashModule* sf;
   if (!(sf = flashChipAvailable())) {
@@ -216,3 +180,23 @@ static numvar flashEraseBulk(void) {
   sf->flash->end();
   return 1;
 }
+
+bool SerialFlashModule::load() {
+  flash = new FlashClass(csPin, SPI);
+
+  Shell.addFunction("serialflash.initialize", flashInitialize);
+  Shell.addFunction("serialflash.write", flashWrite);
+  Shell.addFunction("serialflash.read", flashRead);
+  Shell.addFunction("serialflash.erase.subsector", flashEraseSubsector);
+  Shell.addFunction("serialflash.erase.sector", flashEraseSector);
+  Shell.addFunction("serialflash.erase.bulk", flashEraseBulk);
+
+  return true;
+}
+
+void SerialFlashModule::loop() { }
+
+const __FlashStringHelper *SerialFlashModule::name() const {
+  return F("serialflash");
+}
+

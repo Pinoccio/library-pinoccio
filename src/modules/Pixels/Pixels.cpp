@@ -11,15 +11,16 @@
 #include "FastLED/FastLED.h"
 #include "Pixels.h"
 
-static PinoccioModuleInfo<PixelsModule> pixelsInfo("pixels");
+using namespace pinoccio;
+
+PixelsModule PixelsModule::instance;
 
 // Define the array of leds
-CRGB *pixels = NULL;
-uint8_t num_leds = 0;
+static CRGB *pixels = NULL;
+static uint8_t num_leds = 0;
 
 // Exposing to Bitlash
 static numvar pixelsSetRGB(void) {
-  
   FastLED.clear();
   for (int i=0; i<num_leds; i++) {
     pixels[i].setRGB(getarg(1), getarg(2), getarg(3));
@@ -93,19 +94,20 @@ static numvar pixelsConfig(void) {
   FastLED.clear();
   return 1;
 }
-  
-void PixelsModule::setup() {
 
+bool PixelsModule::load() {
   Shell.addFunction("pixels.add", pixelsConfig);
   Shell.addFunction("pixels.setrgb", pixelsSetRGB);
   Shell.addFunction("pixels.sethsv", pixelsSetHSV);
   Shell.addFunction("pixels.sethue", pixelsSetHue);
   Shell.addFunction("pixels.setbrightness", pixelsSetBrightness);
   Shell.addFunction("pixels.off", pixelsOff);
+
+  return true;
 }
 
 void PixelsModule::loop() { }
 
-const char *PixelsModule::name() {
-  return "pixels";
+const __FlashStringHelper *PixelsModule::name() const {
+  return F("pixels");
 }

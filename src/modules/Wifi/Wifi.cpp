@@ -17,25 +17,9 @@ extern "C" {
 #include "key/key.h"
 }
 
-static PinoccioModuleInfo<WifiModule> wifiInfo("wifi");
+using pinoccio::WifiModule;
 
-static numvar wifiReport(void);
-static numvar wifiHQ(void);
-static numvar wifiStatus(void);
-static numvar wifiList(void);
-static numvar wifixConfig(void);
-static numvar wifixDhcp(void);
-static numvar wifixStatic(void);
-static numvar wifiReassociate(void);
-static numvar wifiDisassociate(void);
-static numvar wifiCommand(void);
-static numvar wifiPing(void);
-static numvar wifiDNSLookup(void);
-static numvar wifiGetTime(void);
-static numvar wifiSleep(void);
-static numvar wifiWakeup(void);
-static numvar wifiVerbose(void);
-static numvar wifiStats(void);
+WifiModule WifiModule::instance;
 
 static void print_line(const uint8_t *buf, uint16_t len, void *data) {
   while (len--)
@@ -43,36 +27,236 @@ static void print_line(const uint8_t *buf, uint16_t len, void *data) {
   speol();
 }
 
-const char *WifiModule::name() {
-  return "wifi";
+static StringBuffer wifiReportHQ(void) {
+  StringBuffer report(100);
+  report.appendSprintf("[%d,[%d,%d],[%s,%s]]",
+          keyMap("wifi", 0),
+          keyMap("connected", 0),
+          keyMap("hq", 0),
+          WifiModule::instance.isAPConnected() ? "true" : "false",
+          Scout.handler.client->connected() ? "true" : "false");
+  return Scout.handler.report(report);
 }
 
-// this is our singleton object for c function pointer convenience
-WifiModule *wifi;
+numvar wifiReport(void) {
+  speol(wifiReportHQ());
+  return 1;
+}
+
+numvar wifiStatus(void) {
+  if (getarg(0) > 0 && getarg(1) == 1) {
+    WifiModule::instance.printProfiles(Serial);
+  } else {
+    WifiModule::instance.printFirmwareVersions(Serial);
+    WifiModule::instance.printCurrentNetworkStatus(Serial);
+  }
+  return 1;
+}
+
+static numvar wifiList(void) {
+  if (!WifiModule::instance.printAPs(Serial)) {
+    speol(F("Error: Scan failed"));
+    return 0;
+  }
+  return 1;
+}
+
+static numvar wifixConfig(void) {
+  if (!checkArgs(1, 2, F("usage: wifi.config(\"wifiAPName\", \"wifiAPPassword\")"))) {
+    return 0;
+  }
+
+  if (!WifiModule::instance.wifiConfig((const char *)getstringarg(1), (const char *)getstringarg(2))) {
+    speol(F("Error: saving WifiModule::instance.configuration data failed"));
+  }
+  return 1;
+}
+
+static numvar wifixDhcp(void) {
+  const char *host = (getarg(0) >= 1 ? (const char*)getstringarg(1) : NULL);
+
+  if (!WifiModule::instance.wifiDhcp(host)) {
+    speol(F("Error: saving WifiModule::instance.configuration data failed"));
+  }
+  return 1;
+}
+
+static numvar wifixStatic(void) {
+  if (!checkArgs(4, F("usage: wifi.static(\"ip\", \"netmask\", \"gateway\", \"dns\")"))) {
+    return 0;
+  }
+
+  IPAddress ip, nm, gw, dns;
+
+  if (!GSCore::parseIpAddress(&ip, (const char *)getstringarg(1))) {
+    speol(F("Error: Invalid IP address"));
+    return 0;
+  }
+
+  if (!GSCore::parseIpAddress(&nm, (const char *)getstringarg(2))) {
+    speol(F("Error: Invalid netmask"));
+    return 0;
+  }
+
+  if (!GSCore::parseIpAddress(&gw, (const char *)getstringarg(3))) {
+    speol(F("Error: Invalid gateway"));
+    return 0;
+  }
+
+  if (!GSCore::parseIpAddress(&dns, (const char *)getstringarg(3))) {
+    speol(F("Error: Invalid dns server"));
+    return 0;
+  }
+
+  if (!WifiModule::instance.wifiStatic(ip, nm, gw, dns)) {
+    speol(F("Error: saving WifiModule::instance.configuration data failed"));
+    return 0;
+  }
+  return 1;
+}
+
+static numvar wifiDisassociate(void) {
+  WifiModule::instance.disassociate();
+  return 1;
+}
+
+static numvar wifiReassociate(void) {
+  return WifiModule::instance.reassociate();
+}
+
+static numvar wifiHQ(void) {
+  if (!checkArgs(1, 2, F("usage: wifi.hq(\"host\" [,port])"))) {
+    return 0;
+  }
+  char *host = (char*)getstringarg(1);
+  free(WifiModule::instance.hq_host);
+  WifiModule::instance.hq_host = strdup(host);
+  if(getarg(0) > 1)
+  {
+    WifiModule::instance.hq_port = getarg(2);
+  }
+  WifiModule::instance.reassociate();
+  return 1;
+}
+
+static numvar wifiCommand(void) {
+  if (!checkArgs(1, F("usage: wifi.command(\"command\")"))) {
+    return 0;
+  }
+  if (!WifiModule::instance.runDirectCommand(Serial, (const char *)getstringarg(1))) {
+     speol(F("Error: Wi-Fi direct command failed"));
+  }
+  return 1;
+}
+
+static numvar wifiPing(void) {
+  if (!checkArgs(1, F("usage: wifi.ping(\"hostname\")"))) {
+    return 0;
+  }
+  if (!WifiModule::instance.ping(Serial, (const char *)getstringarg(1))) {
+     speol(F("Error: Wi-Fi ping command failed"));
+  }
+  return 1;
+}
+
+static numvar wifiDNSLookup(void) {
+  if (!checkArgs(1, F("usage: wifi.dnslookup(\"hostname\")"))) {
+    return 0;
+  }
+  if (!WifiModule::instance.dnsLookup(Serial, (const char *)getstringarg(1))) {
+     speol(F("Error: Wi-Fi DNS lookup command failed"));
+  }
+  return 1;
+}
+
+static numvar wifiGetTime(void) {
+  if (!WifiModule::instance.printTime(Serial)) {
+     speol(F("Error: Wi-Fi NTP time lookup command failed"));
+  }
+  return 1;
+}
+
+static numvar wifiSleep(void) {
+  if (!WifiModule::instance.goToSleep()) {
+     speol(F("Error: Wi-Fi sleep command failed"));
+  }
+  return 1;
+}
+
+static numvar wifiWakeup(void) {
+  if (!WifiModule::instance.wakeUp()) {
+     speol(F("Error: Wi-Fi wakeup command failed"));
+  }
+  return 1;
+}
+
+static numvar wifiVerbose(void) {
+  if(getarg(0) == 1 && getarg(1) == 0)
+  {
+    WifiModule::instance.verbose = false;
+  }else{
+    WifiModule::instance.verbose = true;
+  }
+  return WifiModule::instance.verbose?1:0;
+}
+
+static numvar wifiStats(void) {
+  sp(F("Number of connections to AP since boot: "));
+  speol(WifiModule::instance.apConnCount);
+  sp(F("Number of connections to HQ since boot: "));
+  speol(WifiModule::instance.hqConnCount);
+}
+
+/* commands for auto-config
+AT+WWPA=password
+AT+WAUTO=0,"SSID"
+ATC1
+AT&W0
+AT&Y0
+AT+WA="SSID"
+
+AT+NCTCP=192.168.1.83,80
+AT+STORENWCONN
+
+// run after wake up from sleep
+AT+RESTORENWCONN
+
+// list AP stats
+AT+NSTAT=?
+
+// list current connections
+AT+CID=?
+
+// list config profiles
+AT&V
+
+// enter deep sleep
+AT+PSDPSLEEP
+*/
 
 void WifiModule::onAssociate(void *data) {
 
-  if(wifi->verbose) Serial.println("associated, connecting to hq");
-  wifi->apConnCount++;
+  if(WifiModule::instance.verbose) Serial.println("associated, connecting to hq");
+  WifiModule::instance.apConnCount++;
   // TODO, update GSTcpClient to support hostnames
   IPAddress ip;
-  wifi->gs.parseIpAddress(&ip,wifi->hq_host);
-  if(Scout.handler.client->connect(ip, wifi->hq_port))
+  WifiModule::instance.gs.parseIpAddress(&ip,WifiModule::instance.hq_host);
+  if(Scout.handler.client->connect(ip, WifiModule::instance.hq_port))
   {
-    if(wifi->verbose) Serial.println("connected to hq");
-    wifi->hqConnCount++;
+    if(WifiModule::instance.verbose) Serial.println("connected to hq");
+    WifiModule::instance.hqConnCount++;
     leadHQConnect();
   }else{
-    if(wifi->verbose) Serial.println("connection failed");
+    if(WifiModule::instance.verbose) Serial.println("connection failed");
   }
   
 }
 
-void WifiModule::setup() {
+const __FlashStringHelper *WifiModule::name() const {
+  return F("wifi");
+}
 
-  // our global singleton
-  wifi = this;
-
+bool WifiModule::load() {
   // scripting is fun
   Shell.addFunction("wifi.report", wifiReport);
   Shell.addFunction("wifi.hq", wifiHQ);
@@ -107,16 +291,17 @@ void WifiModule::setup() {
   Scout.handler.client = new GSTcpClient(gs);
 
   if (getHardwareMajorRevision() == 1 && getHardwareMinorRevision() == 1) {
-    if (!gs.begin(7, 5)) return;
+    if (!gs.begin(7, 5)) return false;
   } else {
-    if (!gs.begin(7)) return;
+    if (!gs.begin(7)) return false;
   }
-  
+
   // When association fails, keep retrying indefinately (at least it
   // seems that a retry count of 0 means that, even though the
   // documentation says it should be >= 1).
   gs.setNcmParam(GSModule::GS_NCM_L3_CONNECT_RETRY_COUNT, 0);
   gs.setNcm(/* enable */ true, /* associate_only */ true, /* remember */ false);
+  return true;
 }
 
 // 5 minutes until check/reconnect
@@ -291,210 +476,3 @@ bool WifiModule::wakeUp() {
 bool WifiModule::printTime(Print &p) {
   return runDirectCommand(p, "AT+GETTIME=?");
 }
-
-static StringBuffer wifiReportHQ(void) {
-  StringBuffer report(100);
-  report.appendSprintf("[%d,[%d,%d],[%s,%s]]",
-          keyMap("wifi", 0),
-          keyMap("connected", 0),
-          keyMap("hq", 0),
-          wifi->isAPConnected() ? "true" : "false",
-          Scout.handler.client->connected() ? "true" : "false");
-  return Scout.handler.report(report);
-}
-
-numvar wifiReport(void) {
-  speol(wifiReportHQ());
-  return 1;
-}
-
-numvar wifiStatus(void) {
-  if (getarg(0) > 0 && getarg(1) == 1) {
-    wifi->printProfiles(Serial);
-  } else {
-    wifi->printFirmwareVersions(Serial);
-    wifi->printCurrentNetworkStatus(Serial);
-  }
-  return 1;
-}
-
-static numvar wifiList(void) {
-  if (!wifi->printAPs(Serial)) {
-    speol(F("Error: Scan failed"));
-    return 0;
-  }
-  return 1;
-}
-
-static numvar wifixConfig(void) {
-  if (!checkArgs(1, 2, F("usage: wifi.config(\"wifiAPName\", \"wifiAPPassword\")"))) {
-    return 0;
-  }
-
-  if (!wifi->wifiConfig((const char *)getstringarg(1), (const char *)getstringarg(2))) {
-    speol(F("Error: saving wifi->configuration data failed"));
-  }
-  return 1;
-}
-
-static numvar wifixDhcp(void) {
-  const char *host = (getarg(0) >= 1 ? (const char*)getstringarg(1) : NULL);
-
-  if (!wifi->wifiDhcp(host)) {
-    speol(F("Error: saving wifi->configuration data failed"));
-  }
-  return 1;
-}
-
-static numvar wifixStatic(void) {
-  if (!checkArgs(4, F("usage: wifi.static(\"ip\", \"netmask\", \"gateway\", \"dns\")"))) {
-    return 0;
-  }
-
-  IPAddress ip, nm, gw, dns;
-
-  if (!GSCore::parseIpAddress(&ip, (const char *)getstringarg(1))) {
-    speol(F("Error: Invalid IP address"));
-    return 0;
-  }
-
-  if (!GSCore::parseIpAddress(&nm, (const char *)getstringarg(2))) {
-    speol(F("Error: Invalid netmask"));
-    return 0;
-  }
-
-  if (!GSCore::parseIpAddress(&gw, (const char *)getstringarg(3))) {
-    speol(F("Error: Invalid gateway"));
-    return 0;
-  }
-
-  if (!GSCore::parseIpAddress(&dns, (const char *)getstringarg(3))) {
-    speol(F("Error: Invalid dns server"));
-    return 0;
-  }
-
-  if (!wifi->wifiStatic(ip, nm, gw, dns)) {
-    speol(F("Error: saving wifi->configuration data failed"));
-    return 0;
-  }
-  return 1;
-}
-
-static numvar wifiDisassociate(void) {
-  wifi->disassociate();
-  return 1;
-}
-
-static numvar wifiReassociate(void) {
-  return wifi->reassociate();
-}
-
-static numvar wifiHQ(void) {
-  if (!checkArgs(1, 2, F("usage: wifi.hq(\"host\" [,port])"))) {
-    return 0;
-  }
-  char *host = (char*)getstringarg(1);
-  free(wifi->hq_host);
-  wifi->hq_host = strdup(host);
-  if(getarg(0) > 1)
-  {
-    wifi->hq_port = getarg(2);
-  }
-  wifi->reassociate();
-  return 1;
-}
-
-static numvar wifiCommand(void) {
-  if (!checkArgs(1, F("usage: wifi.command(\"command\")"))) {
-    return 0;
-  }
-  if (!wifi->runDirectCommand(Serial, (const char *)getstringarg(1))) {
-     speol(F("Error: Wi-Fi direct command failed"));
-  }
-  return 1;
-}
-
-static numvar wifiPing(void) {
-  if (!checkArgs(1, F("usage: wifi.ping(\"hostname\")"))) {
-    return 0;
-  }
-  if (!wifi->ping(Serial, (const char *)getstringarg(1))) {
-     speol(F("Error: Wi-Fi ping command failed"));
-  }
-  return 1;
-}
-
-static numvar wifiDNSLookup(void) {
-  if (!checkArgs(1, F("usage: wifi.dnslookup(\"hostname\")"))) {
-    return 0;
-  }
-  if (!wifi->dnsLookup(Serial, (const char *)getstringarg(1))) {
-     speol(F("Error: Wi-Fi DNS lookup command failed"));
-  }
-  return 1;
-}
-
-static numvar wifiGetTime(void) {
-  if (!wifi->printTime(Serial)) {
-     speol(F("Error: Wi-Fi NTP time lookup command failed"));
-  }
-  return 1;
-}
-
-static numvar wifiSleep(void) {
-  if (!wifi->goToSleep()) {
-     speol(F("Error: Wi-Fi sleep command failed"));
-  }
-  return 1;
-}
-
-static numvar wifiWakeup(void) {
-  if (!wifi->wakeUp()) {
-     speol(F("Error: Wi-Fi wakeup command failed"));
-  }
-  return 1;
-}
-
-static numvar wifiVerbose(void) {
-  if(getarg(0) == 1 && getarg(1) == 0)
-  {
-    wifi->verbose = false;
-  }else{
-    wifi->verbose = true;
-  }
-  return wifi->verbose?1:0;
-}
-
-static numvar wifiStats(void) {
-  sp(F("Number of connections to AP since boot: "));
-  speol(wifi->apConnCount);
-  sp(F("Number of connections to HQ since boot: "));
-  speol(wifi->hqConnCount);
-}
-
-/* commands for auto-config
-AT+WWPA=password
-AT+WAUTO=0,"SSID"
-ATC1
-AT&W0
-AT&Y0
-AT+WA="SSID"
-
-AT+NCTCP=192.168.1.83,80
-AT+STORENWCONN
-
-// run after wake up from sleep
-AT+RESTORENWCONN
-
-// list AP stats
-AT+NSTAT=?
-
-// list current connections
-AT+CID=?
-
-// list config profiles
-AT&V
-
-// enter deep sleep
-AT+PSDPSLEEP
-*/
