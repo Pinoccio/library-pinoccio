@@ -6,14 +6,24 @@
 *  This program is free software; you can redistribute it and/or modify it *
 *  under the terms of the BSD License as described in license.txt.         *
 \**************************************************************************/
-#include <Arduino.h>
-#include <Scout.h>
-#include "Backpack.h"
+#ifndef LIB_PINOCCIO_SERIAL_FLASH_MODULE_H_
+#define LIB_PINOCCIO_SERIAL_FLASH_MODULE_H_
 
-PinoccioBackpack::PinoccioBackpack() { }
+#include "Flash.h"
+#define SERIAL_FLASH_BUFSIZE 65
 
-PinoccioBackpack::~PinoccioBackpack() { }
+class SerialFlashModule : public PinoccioModule {
 
-void PinoccioBackpack::setup() { }
+  public:
+    SerialFlashModule();
+    ~SerialFlashModule();
 
-void PinoccioBackpack::loop() { }
+    void setup();
+    void loop();
+    const char *name();
+
+    uint8_t csPin;    
+    FlashClass *flash;
+};
+
+#endif

@@ -23,20 +23,13 @@ void Backpacks::setup()
   pbbp.begin(BACKPACK_BUS);
   detect();
 
-  // manually set up wifi here for now
-  if(Backpacks::isModelPresent(0x0001))
-  {
-    Scout.wifi.setup();
-    Scout.wifi.autoConnectHq();
-  }
+  // load modules based on their backpack model
+  if(Backpacks::isModelPresent(0x0001)) ModuleHandler::load("wifi");
+
 }
 
 void Backpacks::loop()
 {
-  if(Backpacks::isModelPresent(0x0001))
-  {
-    Scout.wifi.loop();
-  }
 }
 
 bool Backpacks::detect()

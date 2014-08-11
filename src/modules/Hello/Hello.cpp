@@ -6,35 +6,26 @@
 *  This program is free software; you can redistribute it and/or modify it *
 *  under the terms of the BSD License as described in license.txt.         *
 \**************************************************************************/
-#ifndef LIB_PINOCCIO_SCOUTHANDLER_H_
-#define LIB_PINOCCIO_SCOUTHANDLER_H_
+#include <Arduino.h>
+#include <Scout.h>
+#include "Hello.h"
 
-#include <Pinoccio.h>
-#include <GS.h>
-#include "util/StringBuffer.h"
+// NOTE: this is an example for adding modules into the main library, see examples/ModuleDemo/ for adding them to any sketch
 
-class ScoutHandler {
+static numvar hello();
 
-  public:
-    ScoutHandler();
-    ~ScoutHandler();
+void HelloModule::setup() {
+  Shell.addFunction("hello", hello);
+  Serial.println("hello setup");
+}
 
-    void setup();
-    void loop();
-    void announce(uint16_t group, const String& message);
-    void setVerbose(bool flag);
-    StringBuffer report(StringBuffer& report);
-    
-    bool isBridged;
-    StringBuffer bridge;
-    void setBridged(bool flag);
+void HelloModule::loop() { }
 
-    GSTcpClient *client;
-    uint32_t active;
+const char *HelloModule::name() {
+  return "hello";
+}
 
-  protected:
-};
-
-void leadHQConnect();
-
-#endif
+static numvar hello() {
+  speol("world");
+  return 0;
+}

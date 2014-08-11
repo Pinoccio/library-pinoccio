@@ -6,35 +6,24 @@
 *  This program is free software; you can redistribute it and/or modify it *
 *  under the terms of the BSD License as described in license.txt.         *
 \**************************************************************************/
-#ifndef LIB_PINOCCIO_SCOUTHANDLER_H_
-#define LIB_PINOCCIO_SCOUTHANDLER_H_
+#ifndef LIB_PINOCCIO_MODULE_HANDLER_H_
+#define LIB_PINOCCIO_MODULE_HANDLER_H_
 
-#include <Pinoccio.h>
-#include <GS.h>
-#include "util/StringBuffer.h"
+#include "util/LinkedList.h"
+#include <modules/PinoccioModule.h>
+#include <modules/Modules.h>
 
-class ScoutHandler {
-
+class ModuleHandler {
   public:
-    ScoutHandler();
-    ~ScoutHandler();
+    ModuleHandler();
 
-    void setup();
-    void loop();
-    void announce(uint16_t group, const String& message);
-    void setVerbose(bool flag);
-    StringBuffer report(StringBuffer& report);
+    static void setup();
+    static void loop();
     
-    bool isBridged;
-    StringBuffer bridge;
-    void setBridged(bool flag);
-
-    GSTcpClient *client;
-    uint32_t active;
-
-  protected:
+    static PinoccioModule *load(char *name);
+    static bool loaded(char *name);
+    static void list();
+    static void loaded();
 };
-
-void leadHQConnect();
 
 #endif

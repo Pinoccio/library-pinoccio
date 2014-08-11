@@ -61,6 +61,10 @@ void FlashClass::begin(int chipSelectPin, SPIClass &SPIDriver) {
   this->SPI.setClockDivider(SPI_CLOCK_DIV8);
 }
 
+void FlashClass::begin() {
+  begin(this->CS, this->SPI);
+}
+
 void FlashClass::end() {
   this->SPI.end();
   digitalWrite(this->CS, HIGH);

@@ -28,6 +28,7 @@ public:
   void bulkErase(void);
 
   void begin(int chipSelectPin, SPIClass &SPIDriver);
+  void begin();
   void end();
 
   FlashClass(int chipSelectPin, SPIClass &SPIDriver);

@@ -6,6 +6,7 @@
 *  This program is free software; you can redistribute it and/or modify it *
 *  under the terms of the BSD License as described in license.txt.         *
 \**************************************************************************/
+#include "stdarg.h"
 #include "Shell.h"
 #include "Scout.h"
 #include "SleepHandler.h"
@@ -13,7 +14,6 @@
 #include "SleepHandler.h"
 #include "bitlash.h"
 #include "src/bitlash.h"
-#include "util/StringBuffer.h"
 #include "util/String.h"
 #include "util/PrintToString.h"
 extern "C" {
@@ -39,6 +39,8 @@ static numvar uptimeSleepingMicros(void);
 static numvar uptimeSleepingSeconds(void);
 static numvar uptimeMicros(void);
 static numvar uptimeSeconds(void);
+static numvar uptimeDays(void);
+static numvar uptimePrint(void);
 static numvar uptimeReport(void);
 static numvar uptimeStatus(void);
 static numvar getLastResetCause(void);
@@ -132,6 +134,10 @@ static numvar daisyWipe(void);
 static numvar boot(void);
 static numvar otaBoot(void);
 
+static numvar moduleList(void);
+static numvar moduleLoad(void);
+static numvar moduleLoaded(void);
+
 static numvar hqVerbose(void);
 static numvar hqPrint(void);
 static numvar hqReport(void);
@@ -142,24 +148,7 @@ static numvar stopStateChangeEvents(void);
 static numvar setEventCycle(void);
 static numvar setEventVerbose(void);
 
-static numvar wifiReport(void);
-static numvar wifiStatus(void);
-static numvar wifiList(void);
-static numvar wifiConfig(void);
-static numvar wifiDhcp(void);
-static numvar wifiStatic(void);
-static numvar wifiReassociate(void);
-static numvar wifiDisassociate(void);
-static numvar wifiCommand(void);
-static numvar wifiPing(void);
-static numvar wifiDNSLookup(void);
-static numvar wifiGetTime(void);
-static numvar wifiSleep(void);
-static numvar wifiWakeup(void);
-static numvar wifiVerbose(void);
-static numvar wifiStats(void);
-
-static numvar keyMap(void);
+static numvar keySer(void);
 static numvar keyFree(void);
 static numvar keyPrint(void);
 static numvar keyNumber(void);
@@ -194,6 +183,7 @@ static void printSpaces(int8_t number) {
 }
 
 PinoccioShell Shell;
+StringBuffer bitlashOutput;
 
 PinoccioShell::PinoccioShell() {
   isShellEnabled = true;
@@ -204,151 +194,138 @@ PinoccioShell::~PinoccioShell() { }
 void PinoccioShell::setup() {
   keyInit();
 
-  addBitlashFunction("power.ischarging", (bitlash_function) isBatteryCharging);
-  addBitlashFunction("power.hasbattery", (bitlash_function) isBatteryConnected);
-  addBitlashFunction("power.percent", (bitlash_function) getBatteryPercentage);
-  addBitlashFunction("power.voltage", (bitlash_function) getBatteryVoltage);
-  addBitlashFunction("power.enablevcc", (bitlash_function) enableBackpackVcc);
-  addBitlashFunction("power.disablevcc", (bitlash_function) disableBackpackVcc);
-  addBitlashFunction("power.isvccenabled", (bitlash_function) isBackpackVccEnabled);
-  addBitlashFunction("power.sleep", (bitlash_function) powerSleep);
-  addBitlashFunction("power.report", (bitlash_function) powerReport);
-  addBitlashFunction("power.wakeup.pin", (bitlash_function) powerWakeupPin);
+  addFunction("power.ischarging", isBatteryCharging);
+  addFunction("power.hasbattery", isBatteryConnected);
+  addFunction("power.percent", getBatteryPercentage);
+  addFunction("power.voltage", getBatteryVoltage);
+  addFunction("power.enablevcc", enableBackpackVcc);
+  addFunction("power.disablevcc", disableBackpackVcc);
+  addFunction("power.isvccenabled", isBackpackVccEnabled);
+  addFunction("power.sleep", powerSleep);
+  addFunction("power.report", powerReport);
+  addFunction("power.wakeup.pin", powerWakeupPin);
 
-  addBitlashFunction("mesh.config", (bitlash_function) meshConfig);
-  addBitlashFunction("mesh.setpower", (bitlash_function) meshSetPower);
-  addBitlashFunction("mesh.setdatarate", (bitlash_function) meshSetDataRate);
-  addBitlashFunction("mesh.setkey", (bitlash_function) meshSetKey);
-  addBitlashFunction("mesh.getkey", (bitlash_function) meshGetKey);
-  addBitlashFunction("mesh.resetkey", (bitlash_function) meshResetKey);
-  addBitlashFunction("mesh.joingroup", (bitlash_function) meshJoinGroup);
-  addBitlashFunction("mesh.leavegroup", (bitlash_function) meshLeaveGroup);
-  addBitlashFunction("mesh.ingroup", (bitlash_function) meshIsInGroup);
-  addBitlashFunction("mesh.verbose", (bitlash_function) meshVerbose);
-  addBitlashFunction("mesh.report", (bitlash_function) meshReport);
-  addBitlashFunction("mesh.routing", (bitlash_function) meshRouting);
-  addBitlashFunction("mesh.signal", (bitlash_function) meshSignal);
-  addBitlashFunction("mesh.loss", (bitlash_function) meshLoss);
+  addFunction("mesh.config", meshConfig);
+  addFunction("mesh.setpower", meshSetPower);
+  addFunction("mesh.setdatarate", meshSetDataRate);
+  addFunction("mesh.setkey", meshSetKey);
+  addFunction("mesh.getkey", meshGetKey);
+  addFunction("mesh.resetkey", meshResetKey);
+  addFunction("mesh.joingroup", meshJoinGroup);
+  addFunction("mesh.leavegroup", meshLeaveGroup);
+  addFunction("mesh.ingroup", meshIsInGroup);
+  addFunction("mesh.verbose", meshVerbose);
+  addFunction("mesh.report", meshReport);
+  addFunction("mesh.routing", meshRouting);
+  addFunction("mesh.signal", meshSignal);
+  addFunction("mesh.loss", meshLoss);
 
-  addBitlashFunction("message.scout", (bitlash_function) messageScout);
-  addBitlashFunction("message.group", (bitlash_function) messageGroup);
+  addFunction("message.scout", messageScout);
+  addFunction("message.group", messageGroup);
 
-  addBitlashFunction("temperature.c", (bitlash_function) getTemperatureC);
-  addBitlashFunction("temperature.f", (bitlash_function) getTemperatureF);
-  addBitlashFunction("temperature.report", (bitlash_function) temperatureReport);
-  addBitlashFunction("temperature.setoffset", (bitlash_function) setTemperatureOffset);
-  addBitlashFunction("temperature.calibrate", (bitlash_function) temperatureCalibrate);
-  addBitlashFunction("randomnumber", (bitlash_function) getRandomNumber);
-  addBitlashFunction("memory.report", (bitlash_function) memoryReport);
+  addFunction("temperature.c", getTemperatureC);
+  addFunction("temperature.f", getTemperatureF);
+  addFunction("temperature.report", temperatureReport);
+  addFunction("temperature.setoffset", setTemperatureOffset);
+  addFunction("temperature.calibrate", temperatureCalibrate);
+  addFunction("randomnumber", getRandomNumber);
+  addFunction("memory.report", memoryReport);
 
-  addBitlashFunction("report", (bitlash_function) allReport);
-  addBitlashFunction("verbose", (bitlash_function) allVerbose);
+  addFunction("report", allReport);
+  addFunction("verbose", allVerbose);
 
-  addBitlashFunction("uptime.awake.micros", (bitlash_function) uptimeAwakeMicros);
-  addBitlashFunction("uptime.awake.seconds", (bitlash_function) uptimeAwakeSeconds);
-  addBitlashFunction("uptime.sleeping.micros", (bitlash_function) uptimeSleepingMicros);
-  addBitlashFunction("uptime.sleeping.seconds", (bitlash_function) uptimeSleepingSeconds);
-  addBitlashFunction("uptime.seconds", (bitlash_function) uptimeSeconds);
-  addBitlashFunction("uptime.micros", (bitlash_function) uptimeMicros);
-  addBitlashFunction("uptime.report", (bitlash_function) uptimeReport);
-  addBitlashFunction("uptime.getlastreset", (bitlash_function) getLastResetCause);
-  addBitlashFunction("uptime.status", (bitlash_function) uptimeStatus);
+  addFunction("uptime", uptimePrint);
+  addFunction("uptime.awake.micros", uptimeAwakeMicros);
+  addFunction("uptime.awake.seconds", uptimeAwakeSeconds);
+  addFunction("uptime.sleeping.micros", uptimeSleepingMicros);
+  addFunction("uptime.sleeping.seconds", uptimeSleepingSeconds);
+  addFunction("uptime.seconds", uptimeSeconds);
+  addFunction("uptime.days", uptimeDays);
+  addFunction("uptime.micros", uptimeMicros);
+  addFunction("uptime.report", uptimeReport);
+  addFunction("uptime.getlastreset", getLastResetCause);
+  addFunction("uptime.status", uptimeStatus);
 
-  addBitlashFunction("led.on", (bitlash_function) ledTorch); // alias
-  addBitlashFunction("led.off", (bitlash_function) ledOff);
-  addBitlashFunction("led.red", (bitlash_function) ledRed);
-  addBitlashFunction("led.green", (bitlash_function) ledGreen);
-  addBitlashFunction("led.blue", (bitlash_function) ledBlue);
-  addBitlashFunction("led.cyan", (bitlash_function) ledCyan);
-  addBitlashFunction("led.purple", (bitlash_function) ledPurple);
-  addBitlashFunction("led.beccapurple", (bitlash_function) ledBeccaPurple);
-  addBitlashFunction("led.magenta", (bitlash_function) ledMagenta);
-  addBitlashFunction("led.yellow", (bitlash_function) ledYellow);
-  addBitlashFunction("led.orange", (bitlash_function) ledOrange);
-  addBitlashFunction("led.white", (bitlash_function) ledWhite);
-  addBitlashFunction("led.torch", (bitlash_function) ledTorch);
-  addBitlashFunction("led.blink", (bitlash_function) ledBlink);
-  addBitlashFunction("led.sethex", (bitlash_function) ledSetHex);
-  addBitlashFunction("led.gethex", (bitlash_function) ledGetHex);
-  addBitlashFunction("led.setrgb", (bitlash_function) ledSetRgb);
-  addBitlashFunction("led.isoff", (bitlash_function) ledIsOff);
-  addBitlashFunction("led.savetorch", (bitlash_function) ledSaveTorch);
-  addBitlashFunction("led.report", (bitlash_function) ledReport);
+  addFunction("led.on", ledTorch); // alias
+  addFunction("led.off", ledOff);
+  addFunction("led.red", ledRed);
+  addFunction("led.green", ledGreen);
+  addFunction("led.blue", ledBlue);
+  addFunction("led.cyan", ledCyan);
+  addFunction("led.purple", ledPurple);
+  addFunction("led.beccapurple", ledBeccaPurple);
+  addFunction("led.magenta", ledMagenta);
+  addFunction("led.yellow", ledYellow);
+  addFunction("led.orange", ledOrange);
+  addFunction("led.white", ledWhite);
+  addFunction("led.torch", ledTorch);
+  addFunction("led.blink", ledBlink);
+  addFunction("led.sethex", ledSetHex);
+  addFunction("led.gethex", ledGetHex);
+  addFunction("led.setrgb", ledSetRgb);
+  addFunction("led.isoff", ledIsOff);
+  addFunction("led.savetorch", ledSaveTorch);
+  addFunction("led.report", ledReport);
 
-  addBitlashFunction("high", (bitlash_function) pinConstHigh);
-  addBitlashFunction("low", (bitlash_function) pinConstLow);
-  addBitlashFunction("disconnected", (bitlash_function) pinConstDisconnected);
-  addBitlashFunction("disabled", (bitlash_function) pinConstDisabled);
-  addBitlashFunction("input", (bitlash_function) pinConstInput);
-  addBitlashFunction("output", (bitlash_function) pinConstOutput);
-  addBitlashFunction("input_pullup", (bitlash_function) pinConstInputPullup);
-  addBitlashFunction("pwm", (bitlash_function) pinConstPWM);
+  addFunction("high", pinConstHigh);
+  addFunction("low", pinConstLow);
+  addFunction("disconnected", pinConstDisconnected);
+  addFunction("disabled", pinConstDisabled);
+  addFunction("input", pinConstInput);
+  addFunction("output", pinConstOutput);
+  addFunction("input_pullup", pinConstInputPullup);
+  addFunction("pwm", pinConstPWM);
 
-  addBitlashFunction("pin.makeinput", (bitlash_function) pinMakeInput);
-  addBitlashFunction("pin.makeoutput", (bitlash_function) pinMakeOutput);
-  addBitlashFunction("pin.makepwm", (bitlash_function) pinMakePWM);
-  addBitlashFunction("pin.makedisconnected", (bitlash_function) pinMakeDisconnected);
-  addBitlashFunction("pin.disable", (bitlash_function) pinDisable);
-  addBitlashFunction("pin.setmode", (bitlash_function) pinSetMode);
-  addBitlashFunction("pin.read", (bitlash_function) pinRead);
-  addBitlashFunction("pin.write", (bitlash_function) pinWrite);
-  addBitlashFunction("pin.save", (bitlash_function) pinSave);
-  addBitlashFunction("pin.status", (bitlash_function) pinStatus);
-  addBitlashFunction("pin.number", (bitlash_function) pinNumber);
-  addBitlashFunction("pin.othersdisconnected", (bitlash_function) pinOthersDisconnected);
-  addBitlashFunction("pin.report.digital", (bitlash_function) digitalPinReport);
-  addBitlashFunction("pin.report.analog", (bitlash_function) analogPinReport);
+  addFunction("pin.makeinput", pinMakeInput);
+  addFunction("pin.makeoutput", pinMakeOutput);
+  addFunction("pin.makepwm", pinMakePWM);
+  addFunction("pin.makedisconnected", pinMakeDisconnected);
+  addFunction("pin.disable", pinDisable);
+  addFunction("pin.setmode", pinSetMode);
+  addFunction("pin.read", pinRead);
+  addFunction("pin.write", pinWrite);
+  addFunction("pin.save", pinSave);
+  addFunction("pin.status", pinStatus);
+  addFunction("pin.number", pinNumber);
+  addFunction("pin.othersdisconnected", pinOthersDisconnected);
+  addFunction("pin.report.digital", digitalPinReport);
+  addFunction("pin.report.analog", analogPinReport);
 
-  addBitlashFunction("backpack.report", (bitlash_function) backpackReport);
-  addBitlashFunction("backpack.list", (bitlash_function) backpackList);
-  addBitlashFunction("backpack.eeprom", (bitlash_function) backpackEeprom);
-  addBitlashFunction("backpack.eeprom.update", (bitlash_function) backpackUpdateEeprom);
-  addBitlashFunction("backpack.detail", (bitlash_function) backpackDetail);
-  addBitlashFunction("backpack.resources", (bitlash_function) backpackResources);
+  addFunction("backpack.report", backpackReport);
+  addFunction("backpack.list", backpackList);
+  addFunction("backpack.eeprom", backpackEeprom);
+  addFunction("backpack.eeprom.update", backpackUpdateEeprom);
+  addFunction("backpack.detail", backpackDetail);
+  addFunction("backpack.resources", backpackResources);
 
-  addBitlashFunction("scout.report", (bitlash_function) scoutReport);
-  addBitlashFunction("scout.isleadscout", (bitlash_function) isScoutLeadScout);
-  addBitlashFunction("scout.delay", (bitlash_function) scoutDelay);
-  addBitlashFunction("scout.daisy", (bitlash_function) daisyWipe);
-  addBitlashFunction("scout.boot", (bitlash_function) boot);
-  addBitlashFunction("scout.otaboot", (bitlash_function) otaBoot);
+  addFunction("scout.report", scoutReport);
+  addFunction("scout.isleadscout", isScoutLeadScout);
+  addFunction("scout.delay", scoutDelay);
+  addFunction("scout.daisy", daisyWipe);
+  addFunction("scout.boot", boot);
+  addFunction("scout.otaboot", otaBoot);
 
-  addBitlashFunction("hq.settoken", (bitlash_function) setHQToken);
-  addBitlashFunction("hq.gettoken", (bitlash_function) getHQToken);
-  addBitlashFunction("hq.verbose", (bitlash_function) hqVerbose);
-  addBitlashFunction("hq.print", (bitlash_function) hqPrint);
-  addBitlashFunction("hq.report", (bitlash_function) hqReport);
-  addBitlashFunction("hq.bridge", (bitlash_function) hqBridge);
+  addFunction("module.list", moduleList);
+  addFunction("module.load", moduleLoad);
+  addFunction("module.loaded", moduleLoaded);
 
-  addBitlashFunction("events.start", (bitlash_function) startStateChangeEvents);
-  addBitlashFunction("events.stop", (bitlash_function) stopStateChangeEvents);
-  addBitlashFunction("events.setcycle", (bitlash_function) setEventCycle);
-  addBitlashFunction("events.verbose", (bitlash_function) setEventVerbose);
+  addFunction("hq.settoken", setHQToken);
+  addFunction("hq.gettoken", getHQToken);
+  addFunction("hq.verbose", hqVerbose);
+  addFunction("hq.print", hqPrint);
+  addFunction("hq.report", hqReport);
+  addFunction("hq.bridge", hqBridge);
 
-  addBitlashFunction("key", (bitlash_function) keyMap);
-  addBitlashFunction("key.free", (bitlash_function) keyFree);
-  addBitlashFunction("key.print", (bitlash_function) keyPrint);
-  addBitlashFunction("key.number", (bitlash_function) keyNumber);
-  addBitlashFunction("key.save", (bitlash_function) keySave);
+  addFunction("events.start", startStateChangeEvents);
+  addFunction("events.stop", stopStateChangeEvents);
+  addFunction("events.setcycle", setEventCycle);
+  addFunction("events.verbose", setEventVerbose);
 
-  if (Scout.isLeadScout()) {
-    addBitlashFunction("wifi.report", (bitlash_function) wifiReport);
-    addBitlashFunction("wifi.status", (bitlash_function) wifiStatus);
-    addBitlashFunction("wifi.list", (bitlash_function) wifiList);
-    addBitlashFunction("wifi.config", (bitlash_function) wifiConfig);
-    addBitlashFunction("wifi.dhcp", (bitlash_function) wifiDhcp);
-    addBitlashFunction("wifi.static", (bitlash_function) wifiStatic);
-    addBitlashFunction("wifi.reassociate", (bitlash_function) wifiReassociate);
-    addBitlashFunction("wifi.disassociate", (bitlash_function) wifiDisassociate);
-    addBitlashFunction("wifi.command", (bitlash_function) wifiCommand);
-    addBitlashFunction("wifi.ping", (bitlash_function) wifiPing);
-    addBitlashFunction("wifi.dnslookup", (bitlash_function) wifiDNSLookup);
-    addBitlashFunction("wifi.gettime", (bitlash_function) wifiGetTime);
-    addBitlashFunction("wifi.sleep", (bitlash_function) wifiSleep);
-    addBitlashFunction("wifi.wakeup", (bitlash_function) wifiWakeup);
-    addBitlashFunction("wifi.verbose", (bitlash_function) wifiVerbose);
-    addBitlashFunction("wifi.stats", (bitlash_function) wifiStats);
-  }
+  addFunction("key", keySer);
+  addFunction("key.free", keyFree);
+  addFunction("key.print", keyPrint);
+  addFunction("key.number", keyNumber);
+  addFunction("key.save", keySave);
 
   // set up event handlers
   Scout.digitalPinEventHandler = digitalPinEventHandler;
@@ -370,14 +347,18 @@ void PinoccioShell::setup() {
   
 }
 
+void PinoccioShell::addFunction(const char *name, numvar (*func)(void)) {
+  addBitlashFunction(name, (bitlash_function)func);
+}
+
 // update a memory cache of which functions are defined
 StringBuffer customScripts;
 void PinoccioShell::refresh(void)
 {
-  customScripts = "";
-  setOutputHandler(&printToString<&customScripts>);
+  bitlashOutput = "";
   doCommand("ls");
-  resetOutputHandler();
+  customScripts = bitlashOutput;
+  bitlashOutput = (char*)NULL;
 
   // parse and condense the "ls" bitlash format of "function name {...}\n" into just "name "
   int nl, sp;
@@ -488,6 +469,47 @@ static numvar allVerbose(void) {
   return 1;
 }
 
+// only print to serial if/when we are not handling bitlash
+numvar PinoccioShell::eval(const char *str) {
+  return eval(str, NULL);
+}
+numvar PinoccioShell::eval(const char *str, StringBuffer *result) {
+  numvar ret;
+  bitlashOutput = "";
+  ret = doCommand((char*)str);
+  if(result) *result += bitlashOutput;
+  bitlashOutput = (char*)NULL;
+  refresh();
+  return ret;
+}
+StringBuffer execOut;
+const char *PinoccioShell::exec(const char *str) {
+  numvar ret;
+  execOut = "";
+  ret = eval(str,&execOut);
+  // nice convenience
+  if(execOut == "") execOut.appendSprintf("%ld",ret);
+  return execOut.c_str();
+}
+numvar PinoccioShell::command(const char *cmd, ...) {
+  int i, n;
+  StringBuffer str;
+  va_list vl;
+  if(!defined(cmd)) return 0;
+  va_start(vl,n);
+  str = cmd;
+  str += "(";
+  for (i=0;i<n;i++)
+  {
+    if(i) str += ",";
+    str += "\"";
+    str += strlen(va_arg(vl, char*))+3;
+    str += "\"";
+  }
+  str += ")";
+  return eval(str.c_str());
+}
+
 StringBuffer serialWaiting;
 void PinoccioShell::prompt(void) {
   Serial.print(F("> "));
@@ -524,12 +546,9 @@ void PinoccioShell::loop() {
         // by debug output for example).
       } if (c == '\r' || c == '\n') {
         Serial.println();
-        setOutputHandler(&printToString<&serialOutgoing>);
-        doCommand((char*)serialIncoming.c_str());
-        resetOutputHandler();
+        eval(serialIncoming.c_str(), &serialOutgoing);
         Serial.print(serialOutgoing.c_str());
         serialIncoming = serialOutgoing = (char*)NULL;
-        Shell.refresh();
         prompt();
       } else {
         outWait = true; // reading stuff, don't print anything else out
@@ -540,6 +559,8 @@ void PinoccioShell::loop() {
     }
     // bitlash loop
     runBackgroundTasks();
+    Serial.print(bitlashOutput.c_str());
+    bitlashOutput = (char*)NULL;
   }
   keyLoop(millis());
 }
@@ -551,6 +572,7 @@ void PinoccioShell::startShell() {
   isShellEnabled = true;
 
   // init bitlash internals, don't use initBitlash so we do our own serial
+  setOutputHandler(&printToString<&bitlashOutput>);
   initTaskList();
   vinit();
   
@@ -579,6 +601,9 @@ void PinoccioShell::startShell() {
     }
   }
 
+  // print anything that may have shown up from startup
+  Serial.print(bitlashOutput.c_str());
+  bitlashOutput = (char*)NULL;
   prompt();
 }
 
@@ -694,10 +719,18 @@ static numvar uptimeMicros(void) {
   return SleepHandler::uptime().us;
 }
 
+static numvar uptimePrint(void) {
+  speol(SleepHandler::uptime().seconds);
+  return SleepHandler::uptime().seconds;
+}
+
 static numvar uptimeSeconds(void) {
   return SleepHandler::uptime().seconds;
 }
 
+static numvar uptimeDays(void) {
+  return SleepHandler::uptime().seconds/86400;
+}
 
 static numvar uptimeReport(void) {
   speol(uptimeReportHQ());
@@ -735,7 +768,7 @@ static numvar uptimeStatus(void) {
 *        KEY HANDLERS        *
 \****************************/
 
-static numvar keyMap(void) {
+static numvar keySer(void) {
   if (!checkArgs(1, 2, F("usage: key(\"string\" [, temp_flag])"))) {
     return 0;
   }
@@ -2085,12 +2118,13 @@ static numvar daisyWipe(void) {
   report.appendSprintf("[%d,[%d],[\"bye\"]]",keyMap("daisy",0),keyMap("dave",0));
   Scout.handler.report(report);
 
-  if (Scout.isLeadScout()) {
-    if (!Scout.wifi.runDirectCommand(Serial, "AT&F")) {
+  if (ModuleHandler::loaded("wifi")) {
+    WifiModule *wifi = (WifiModule*)ModuleHandler::load("wifi");
+    if (!wifi->runDirectCommand(Serial, "AT&F")) {
        sp(F("Error: Wi-Fi direct command failed"));
        ret = false;
     }
-    if (!Scout.wifi.runDirectCommand(Serial, "AT&W0")) {
+    if (!wifi->runDirectCommand(Serial, "AT&W0")) {
        sp(F("Error: Wi-Fi direct command failed"));
        ret = false;
     }
@@ -2110,20 +2144,36 @@ static numvar daisyWipe(void) {
 }
 
 static numvar boot(void) {
-  cli();
-  wdt_enable(WDTO_15MS);
-  while(1);
-  return 1;
+  Scout.reboot();
 }
 
 static numvar otaBoot(void) {
   Scout.setOTAFlag();
-  cli();
-  wdt_enable(WDTO_15MS);
-  while(1);
+  Scout.reboot();
+}
+
+
+/****************************\
+ *    MODULES HANDLERS       *
+\****************************/
+
+static numvar moduleList(void) {
+  ModuleHandler::list();
   return 1;
 }
 
+static numvar moduleLoad(void) {
+  if (!checkArgs(1, F("usage: module.load(\"string\""))) {
+    return 0;
+  }
+  if(ModuleHandler::load((char*)getstringarg(1))) return 1;
+  return 0;
+}
+
+static numvar moduleLoaded(void) {
+  ModuleHandler::loaded();
+  return 1;
+}
 
 /****************************\
  *        HQ HANDLERS       *
@@ -2206,172 +2256,6 @@ static numvar setEventCycle(void) {
 static numvar setEventVerbose(void) {
   Scout.eventVerboseOutput = getarg(1);
   return 1;
-}
-
-
-/****************************\
- *   SCOUT.WIFI.HANDLERS    *
-\****************************/
-
-static StringBuffer wifiReportHQ(void) {
-  StringBuffer report(100);
-  report.appendSprintf("[%d,[%d,%d],[%s,%s]]",
-          keyMap("wifi", 0),
-          keyMap("connected", 0),
-          keyMap("hq", 0),
-          Scout.wifi.isAPConnected() ? "true" : "false",
-          Scout.wifi.isHQConnected() ? "true" : "false");
-  return Scout.handler.report(report);
-}
-
-static numvar wifiReport(void) {
-  speol(wifiReportHQ());
-  return 1;
-}
-
-static numvar wifiStatus(void) {
-  if (getarg(0) > 0 && getarg(1) == 1) {
-    Scout.wifi.printProfiles(Serial);
-  } else {
-    Scout.wifi.printFirmwareVersions(Serial);
-    Scout.wifi.printCurrentNetworkStatus(Serial);
-  }
-  return 1;
-}
-
-static numvar wifiList(void) {
-  if (!Scout.wifi.printAPs(Serial)) {
-    speol(F("Error: Scan failed"));
-    return 0;
-  }
-  return 1;
-}
-
-static numvar wifiConfig(void) {
-  if (!checkArgs(1, 2, F("usage: wifi.config(\"wifiAPName\", \"wifiAPPassword\")"))) {
-    return 0;
-  }
-
-  if (!Scout.wifi.wifiConfig((const char *)getstringarg(1), (const char *)getstringarg(2))) {
-    speol(F("Error: saving Scout.wifi.configuration data failed"));
-  }
-  return 1;
-}
-
-static numvar wifiDhcp(void) {
-  const char *host = (getarg(0) >= 1 ? (const char*)getstringarg(1) : NULL);
-
-  if (!Scout.wifi.wifiDhcp(host)) {
-    speol(F("Error: saving Scout.wifi.configuration data failed"));
-  }
-  return 1;
-}
-
-static numvar wifiStatic(void) {
-  if (!checkArgs(4, F("usage: wifi.static(\"ip\", \"netmask\", \"gateway\", \"dns\")"))) {
-    return 0;
-  }
-
-  IPAddress ip, nm, gw, dns;
-
-  if (!GSCore::parseIpAddress(&ip, (const char *)getstringarg(1))) {
-    speol(F("Error: Invalid IP address"));
-    return 0;
-  }
-
-  if (!GSCore::parseIpAddress(&nm, (const char *)getstringarg(2))) {
-    speol(F("Error: Invalid netmask"));
-    return 0;
-  }
-
-  if (!GSCore::parseIpAddress(&gw, (const char *)getstringarg(3))) {
-    speol(F("Error: Invalid gateway"));
-    return 0;
-  }
-
-  if (!GSCore::parseIpAddress(&dns, (const char *)getstringarg(3))) {
-    speol(F("Error: Invalid dns server"));
-    return 0;
-  }
-
-  if (!Scout.wifi.wifiStatic(ip, nm, gw, dns)) {
-    speol(F("Error: saving Scout.wifi.configuration data failed"));
-    return 0;
-  }
-  return 1;
-}
-
-static numvar wifiDisassociate(void) {
-  Scout.wifi.disassociate();
-  return 1;
-}
-
-static numvar wifiReassociate(void) {
-  // This restart the NCM
-  return Scout.wifi.autoConnectHq();
-}
-
-static numvar wifiCommand(void) {
-  if (!checkArgs(1, F("usage: wifi.command(\"command\")"))) {
-    return 0;
-  }
-  if (!Scout.wifi.runDirectCommand(Serial, (const char *)getstringarg(1))) {
-     speol(F("Error: Wi-Fi direct command failed"));
-  }
-  return 1;
-}
-
-static numvar wifiPing(void) {
-  if (!checkArgs(1, F("usage: wifi.ping(\"hostname\")"))) {
-    return 0;
-  }
-  if (!Scout.wifi.ping(Serial, (const char *)getstringarg(1))) {
-     speol(F("Error: Wi-Fi ping command failed"));
-  }
-  return 1;
-}
-
-static numvar wifiDNSLookup(void) {
-  if (!checkArgs(1, F("usage: wifi.dnslookup(\"hostname\")"))) {
-    return 0;
-  }
-  if (!Scout.wifi.dnsLookup(Serial, (const char *)getstringarg(1))) {
-     speol(F("Error: Wi-Fi DNS lookup command failed"));
-  }
-  return 1;
-}
-
-static numvar wifiGetTime(void) {
-  if (!Scout.wifi.printTime(Serial)) {
-     speol(F("Error: Wi-Fi NTP time lookup command failed"));
-  }
-  return 1;
-}
-
-static numvar wifiSleep(void) {
-  if (!Scout.wifi.goToSleep()) {
-     speol(F("Error: Wi-Fi sleep command failed"));
-  }
-  return 1;
-}
-
-static numvar wifiWakeup(void) {
-  if (!Scout.wifi.wakeUp()) {
-     speol(F("Error: Wi-Fi wakeup command failed"));
-  }
-  return 1;
-}
-
-static numvar wifiVerbose(void) {
-  // TODO
-  return 1;
-}
-
-static numvar wifiStats(void) {
-  sp(F("Number of connections to AP since boot: "));
-  speol(Scout.wifi.apConnCount);
-  sp(F("Number of connections to HQ since boot: "));
-  speol(Scout.wifi.hqConnCount);
 }
 
 

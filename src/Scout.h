@@ -12,8 +12,8 @@
 #include <Pinoccio.h>
 #include <Shell.h>
 #include <ScoutHandler.h>
+#include <ModuleHandler.h>
 #include "backpack-bus/PBBP.h"
-#include "backpacks/wifi/WiFiBackpack.h"
 #include <Wire.h>
 
 #include "lwm/phy/phy.h"
@@ -61,6 +61,8 @@ class PinoccioScout : public PinoccioClass {
 
     bool isLeadScout();
     bool factoryReset();
+    void reboot();
+    uint32_t uptime(); // in seconds
 
     void startDigitalStateChangeEvents();
     void stopDigitalStateChangeEvents();
@@ -113,8 +115,7 @@ class PinoccioScout : public PinoccioClass {
     bool eventVerboseOutput;
 
     PBBP bp;
-    WiFiBackpack wifi;
-    PinoccioScoutHandler handler;
+    ScoutHandler handler;
 
     // Schedule a sleep that lasts until now + ms. The optional bitlash
     // command is executed after the sleep and then free()'d. A previous

@@ -6,21 +6,18 @@
 *  This program is free software; you can redistribute it and/or modify it *
 *  under the terms of the BSD License as described in license.txt.         *
 \**************************************************************************/
-#ifndef LIB_PINOCCIO_BACKPACK_H_
-#define LIB_PINOCCIO_BACKPACK_H_
+#ifndef LIB_PINOCCIO_MODULE_H_
+#define LIB_PINOCCIO_MODULE_H_
 
-#include <Pinoccio.h>
-
-class PinoccioBackpack {
+class PinoccioModule {
 
   public:
-    PinoccioBackpack();
-    ~PinoccioBackpack();
+    PinoccioModule();
+    ~PinoccioModule();
 
-    void setup();
-    void loop();
+    virtual void setup() = 0;
+    virtual void loop() = 0;
+    virtual const char *name() = 0;
 };
-
-typedef PinoccioBackpack Backpack;
 
 #endif

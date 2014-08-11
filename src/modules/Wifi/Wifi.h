@@ -6,21 +6,21 @@
 *  This program is free software; you can redistribute it and/or modify it *
 *  under the terms of the BSD License as described in license.txt.         *
 \**************************************************************************/
-#ifndef LIB_PINOCCIO_WIFI_BACKPACK_H_
-#define LIB_PINOCCIO_WIFI_BACKPACK_H_
+#ifndef LIB_PINOCCIO_WIFI_MODULE_H_
+#define LIB_PINOCCIO_WIFI_MODULE_H_
 
 #include <Pinoccio.h>
-#include "../Backpack.h"
 #include <GS.h>
 
-class WiFiBackpack : public Backpack {
+class WifiModule : public PinoccioModule {
 
   public:
-    WiFiBackpack();
-    ~WiFiBackpack();
 
-    bool setup();
-    bool init();
+    void setup();
+    const char *name();
+    char *hq_host;
+    uint16_t hq_port;
+    bool verbose;
     void loop();
 
     // Does not take effect until autoConnectHq() is called
@@ -31,7 +31,7 @@ class WiFiBackpack : public Backpack {
     bool wifiStatic(IPAddress ip, IPAddress netmask, IPAddress gw, IPAddress dns);
 
     // (Re-)connects the wifi and HQ connection
-    bool autoConnectHq();
+    bool reassociate();
     void disassociate();
 
     bool printAPs(Print& p);
@@ -43,7 +43,6 @@ class WiFiBackpack : public Backpack {
     int getHardwareMinorRevision();
 
     bool isAPConnected();
-    bool isHQConnected();
 
     bool dnsLookup(Print &p, const char *host);
     bool ping(Print &p, const char *host);
@@ -53,8 +52,6 @@ class WiFiBackpack : public Backpack {
 
     bool goToSleep();
     bool wakeUp();
-
-    GSTcpClient client;
     
     uint16_t apConnCount;
     uint16_t hqConnCount;
@@ -65,8 +62,7 @@ class WiFiBackpack : public Backpack {
 
     // Event handlers
     static void onAssociate(void *data);
-    static void onNcmConnect(void *data, GSCore::cid_t cid);
-    static void onNcmDisconnect(void *data);
+
 };
 
-#endif // LIB_PINOCCIO_WIFI_BACKPACK_H_
+#endif

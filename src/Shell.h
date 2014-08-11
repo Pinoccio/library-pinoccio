@@ -20,6 +20,7 @@
 #include "lwm/sys/sysTimer.h"
 #include "peripherals/halTemperature.h"
 #include "avr/sleep.h"
+#include "util/StringBuffer.h"
 
 class PinoccioShell {
 
@@ -29,6 +30,11 @@ class PinoccioShell {
 
     void setup();
     void loop();
+    void addFunction(const char *name, numvar (*func)(void));
+    numvar eval(const char *str);
+    numvar eval(const char *str, StringBuffer *result);
+    const char *exec(const char *str); // return the string output
+    numvar command(const char *cmd, ...); // pass in strings only, just runs eval: cmd("a","b","c")
     void allReportHQ();
     void delay(uint32_t at, char *command);
     bool defined(const char *fn);
@@ -69,6 +75,9 @@ class PinoccioShell {
 extern PinoccioShell Shell;
 
 void bitlashFilter(byte b); // watches bitlash output for channel announcements
+bool checkArgs(uint8_t min, uint8_t max, const __FlashStringHelper *errorMsg);
+bool checkArgs(uint8_t exactly, const __FlashStringHelper *errorMsg);
+
 bool checkArgs(uint8_t min, uint8_t max, const __FlashStringHelper *errorMsg);
 bool checkArgs(uint8_t exactly, const __FlashStringHelper *errorMsg);
 

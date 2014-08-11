@@ -115,6 +115,7 @@ void PinoccioScout::setup(const char *sketchName, const char *sketchRevision, in
 
   saveState();
   handler.setup();
+  ModuleHandler::setup();
 
   startDigitalStateChangeEvents();
   startAnalogStateChangeEvents();
@@ -130,6 +131,7 @@ void PinoccioScout::loop() {
   PinoccioClass::loop();
   Shell.loop();
   handler.loop();
+  ModuleHandler::loop();
   Backpacks::loop();
 
   if (sleepPending) {
@@ -142,6 +144,10 @@ void PinoccioScout::loop() {
     else if (canSleep)
       doSleep(false);
   }
+}
+
+uint32_t PinoccioScout::uptime() {
+  return SleepHandler::uptime().seconds;
 }
 
 bool PinoccioScout::isBatteryCharging() {
@@ -212,6 +218,12 @@ bool PinoccioScout::factoryReset() {
   } else {
     return true;
   }
+}
+
+void PinoccioScout::reboot() {
+  cli();
+  wdt_enable(WDTO_15MS);
+  while(1);
 }
 
 void PinoccioScout::startDigitalStateChangeEvents() {

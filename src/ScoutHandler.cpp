@@ -11,7 +11,6 @@
 #include <Shell.h>
 #include <Scout.h>
 #include "backpack-bus/PBBP.h"
-#include "backpacks/wifi/WiFiBackpack.h"
 #include "util/StringBuffer.h"
 #include "util/String.h"
 #include "util/PrintToString.h"
@@ -87,11 +86,11 @@ static void leadSignal(const String& json);
 static bool leadAnswers(NWK_DataInd_t *ind);
 
 
-PinoccioScoutHandler::PinoccioScoutHandler() { }
+ScoutHandler::ScoutHandler() { }
 
-PinoccioScoutHandler::~PinoccioScoutHandler() { }
+ScoutHandler::~ScoutHandler() { }
 
-void PinoccioScoutHandler::setup() {
+void ScoutHandler::setup() {
   isBridged = false;
   if (Scout.isLeadScout()) {
     Scout.meshListen(3, leadAnswers);
@@ -111,13 +110,13 @@ void PinoccioScoutHandler::setup() {
   memset(announceQ,0,announceQsize*sizeof(char*));
 }
 
-void PinoccioScoutHandler::loop() {
+void ScoutHandler::loop() {
   if (Scout.isLeadScout()) {
     leadHQHandle();
   }
 }
 
-void PinoccioScoutHandler::setBridged(bool flag) {
+void ScoutHandler::setBridged(bool flag) {
   isBridged = flag;
   if(isBridged)
   {
@@ -129,12 +128,12 @@ void PinoccioScoutHandler::setBridged(bool flag) {
   }
 }
 
-void PinoccioScoutHandler::setVerbose(bool flag) {
+void ScoutHandler::setVerbose(bool flag) {
   hqVerboseOutput = flag;
 }
 
 static bool fieldCommands(NWK_DataInd_t *ind) {
-  int ret;
+  numvar ret;
   if (hqVerboseOutput) {
     Serial.print(F("Received command"));
     Serial.print(F("lqi: "));
@@ -168,16 +167,8 @@ static bool fieldCommands(NWK_DataInd_t *ind) {
     Serial.println(fieldCommand);
   }
 
-  // run the command and chunk back the results
-  setOutputHandler(&printToString<&fieldCommandOutput>);
-
-  // TODO: Once bitlash fixes const-correctness, this and similar casts
-  // should be removed.
-  ret = (int)doCommand(const_cast<char *>(fieldCommand.c_str()));
+  ret = Shell.eval(fieldCommand.c_str(),&fieldCommandOutput);
   fieldCommand = (char*)NULL;
-
-  resetOutputHandler();
-  Shell.refresh();
 
   if (hqVerboseOutput) {
     Serial.print(F("got result "));
@@ -264,7 +255,7 @@ static void announceConfirm(NWK_DataReq_t *req) {
   announceQSend();
 }
 
-void PinoccioScoutHandler::announce(uint16_t group, const String& message) {
+void ScoutHandler::announce(uint16_t group, const String& message) {
   // when lead scout, share
   if (Scout.isLeadScout()) {
     leadAnnouncementSend(group, Scout.getAddress(), message);
@@ -428,7 +419,7 @@ static void leadAnnouncementSend(uint16_t group, uint16_t from, const ConstBuf& 
 }
 
 // [3,[0,1,2],[v,v,v],4]
-StringBuffer PinoccioScoutHandler::report(StringBuffer &report) {
+StringBuffer ScoutHandler::report(StringBuffer &report) {
   report.setCharAt(report.length() - 1, ',');
   report.appendSprintf("%lu]",millis());
   Scout.handler.announce(0xBEEF, report);
@@ -440,7 +431,7 @@ StringBuffer PinoccioScoutHandler::report(StringBuffer &report) {
 
 void leadHQConnect() {
 
-  if (Scout.handler.isBridged || Scout.wifi.client.connected()) {
+  if (Scout.handler.isBridged || (Scout.handler.client && Scout.handler.client->connected())) {
     char token[33];
     StringBuffer auth(64);
     token[32] = 0;
@@ -467,13 +458,14 @@ void leadHQHandle(void) {
     hqIncoming += Scout.handler.bridge;
     Scout.handler.bridge = "";
   }else{
-    if (Scout.wifi.client.available()) {
-      rsize = hqIncoming.readClient(Scout.wifi.client, 128);
+    if (Scout.handler.client && Scout.handler.client->available()) {
+      rsize = hqIncoming.readClient(*(Scout.handler.client), 128);
     }
   }
 
   // only continue if new data to process
   if(rsize <= 0) return;
+  Scout.handler.active = Scout.uptime();
   
   // Read a block of data and look for packets
   while((nl = hqIncoming.indexOf('\n')) >= 0) {
@@ -545,10 +537,7 @@ void leadIncoming(const char *packet, size_t len, unsigned short *index) {
 
     // handle internal ones first
     if (to == Scout.getAddress()) {
-      setOutputHandler(&printToString<&leadCommandOutput>);
-      doCommand(command);
-      resetOutputHandler();
-      Shell.refresh();
+      Shell.eval(command,&leadCommandOutput);
 
       StringBuffer report;
       report.appendSprintf("{\"type\":\"reply\",\"from\":%d,\"id\":%lu,\"end\":true,\"reply\":", to, id);
@@ -649,7 +638,7 @@ void leadSignal(const String &json) {
     return;
   }
 
-  if (!Scout.wifi.client.connected()) {
+  if (!(Scout.handler.client && Scout.handler.client->connected())) {
     if (hqVerboseOutput) {
       Serial.println(F("HQ offline, can't signal"));
       Serial.println(json);
@@ -661,8 +650,8 @@ void leadSignal(const String &json) {
     Serial.println(json);
   }
 
-  Scout.wifi.client.print(json);
-  Scout.wifi.client.flush();
+  Scout.handler.client->print(json);
+  Scout.handler.client->flush();
 }
 
 // called whenever another scout sends an answer back to us
