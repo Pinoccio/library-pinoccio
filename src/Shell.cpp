@@ -522,36 +522,37 @@ void PinoccioShell::prompt(void) {
 
 // only print to serial if/when we are not handling bitlash
 void PinoccioShell::print(const char *str) {
-  if(outWait)
-  {
+  if(outWait) {
     serialWaiting += str;
-  }else{
+  } else {
     Serial.print(str);
   }
 }
 
 static StringBuffer serialIncoming;
-static char lastc;
+static char lastc = 0;
 
 StringBuffer serialOutgoing;
 void PinoccioShell::loop() {
   if (isShellEnabled) {
-    while(Serial.available())
-    {
+    while (Serial.available()) {
       char c = Serial.read();
-      if(c == '\n' && lastc != '\r') {
-        Serial.write('\r');
-      }
 
-      Serial.write(c); // echo everything back
-      outWait = true; // reading stuff, don't print anything else out
-      if(c == '\n')
-      {
-        eval(serialIncoming.c_str(),&serialOutgoing);
+      if (c == '\n' && lastc == '\r') {
+        // Ignore the \n in \r\n to prevent interpreting \r\n as two
+        // newlines. Note that we cannot just ignore newlines when the
+        // buffer is empty, since that doesn't allow forcing a new
+        // prompt by sending a newline (when the terminal is messed up
+        // by debug output for example).
+      } if (c == '\r' || c == '\n') {
+        Serial.println();
+        eval(serialIncoming.c_str(), &serialOutgoing);
         Serial.print(serialOutgoing.c_str());
         serialIncoming = serialOutgoing = (char*)NULL;
         prompt();
-      }else{
+      } else {
+        outWait = true; // reading stuff, don't print anything else out
+        Serial.write(c); // echo everything back
         serialIncoming += c;
       }
       lastc = c;
