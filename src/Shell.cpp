@@ -506,7 +506,9 @@ void PinoccioShell::print(const char *str) {
 }
 
 static StringBuffer serialIncoming;
+static String prevCommand;
 static char lastc = 0;
+static bool esc_sequence = false;
 
 StringBuffer serialOutgoing;
 void PinoccioShell::loop() {
@@ -526,6 +528,7 @@ void PinoccioShell::loop() {
         doCommand((char*)serialIncoming.c_str());
         resetOutputHandler();
         Serial.print(serialOutgoing.c_str());
+        prevCommand = serialIncoming;
         serialIncoming = serialOutgoing = (char*)NULL;
         Shell.refresh();
         prompt();
@@ -539,6 +542,23 @@ void PinoccioShell::loop() {
           // Nothing to erase, send a bell
           Serial.write('\a');
         }
+      } else if (c == '\x1b') {
+        esc_sequence = true;
+      } else if (esc_sequence && lastc == '\x1b') {
+        // Ignore the first character after the escape
+      } else if (esc_sequence && lastc != '\x1b') {
+        if (lastc == '[' && c == 'A') { // ESC[A == arrow up
+          // Erase existing command
+          Serial.write('\r');
+          for (size_t i = 0; i < serialIncoming.length(); ++i)
+            Serial.write(' ');
+          Serial.write('\r');
+          // Load and show previous command
+          prompt();
+          serialIncoming = prevCommand;
+          Serial.print(serialIncoming);
+        }
+        esc_sequence = false;
       } else {
         Serial.write(c); // echo everything back
         serialIncoming += c;
