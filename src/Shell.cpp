@@ -524,13 +524,15 @@ void PinoccioShell::loop() {
         // by debug output for example).
       } if (c == '\r' || c == '\n') {
         Serial.println();
-        setOutputHandler(&printToString<&serialOutgoing>);
-        doCommand((char*)serialIncoming.c_str());
-        resetOutputHandler();
-        Serial.print(serialOutgoing.c_str());
-        prevCommand = serialIncoming;
-        serialIncoming = serialOutgoing = (char*)NULL;
-        Shell.refresh();
+        if (serialIncoming.length()) {
+          setOutputHandler(&printToString<&serialOutgoing>);
+          doCommand((char*)serialIncoming.c_str());
+          resetOutputHandler();
+          Serial.print(serialOutgoing.c_str());
+          prevCommand = serialIncoming;
+          serialIncoming = serialOutgoing = (char*)NULL;
+          Shell.refresh();
+        }
         prompt();
       } else if (c == '\b') {
         if (serialIncoming.length()) {
