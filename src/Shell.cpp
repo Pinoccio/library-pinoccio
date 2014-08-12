@@ -491,8 +491,6 @@ static numvar allVerbose(void) {
 StringBuffer serialWaiting;
 void PinoccioShell::prompt(void) {
   Serial.print(F("> "));
-  // no longer blocking any other output
-  outWait = false;
   // dump and clear any waiting output
   Serial.print(serialWaiting.c_str());
   serialWaiting = (char*)NULL;
@@ -532,11 +530,13 @@ void PinoccioShell::loop() {
         Shell.refresh();
         prompt();
       } else {
-        outWait = true; // reading stuff, don't print anything else out
         Serial.write(c); // echo everything back
         serialIncoming += c;
       }
       lastc = c;
+
+      // Don't print stuff halfway through a command
+      outWait = (serialIncoming.length() != 0);
     }
     // bitlash loop
     runBackgroundTasks();
