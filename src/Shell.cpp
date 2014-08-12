@@ -529,6 +529,16 @@ void PinoccioShell::loop() {
         serialIncoming = serialOutgoing = (char*)NULL;
         Shell.refresh();
         prompt();
+      } else if (c == '\b') {
+        if (serialIncoming.length()) {
+          // Erase last character (backspace only moves the cursor back,
+          // so print a space to actually erase)
+          Serial.write("\b \b");
+          serialIncoming.remove(serialIncoming.length() - 1);
+        } else {
+          // Nothing to erase, send a bell
+          Serial.write('\a');
+        }
       } else {
         Serial.write(c); // echo everything back
         serialIncoming += c;
