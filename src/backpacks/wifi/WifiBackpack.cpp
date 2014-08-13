@@ -14,6 +14,8 @@
 #include "../../hq/HqHandler.h"
 #include "src/bitlash.h"
 
+using namespace pinoccio;
+
 // Be careful with using non-alphanumerics like '-' here, they might
 // silently cause SSL to fail
 #define CA_CERTNAME_HQ "hq.ca"

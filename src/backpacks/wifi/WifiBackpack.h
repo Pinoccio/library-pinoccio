@@ -13,60 +13,62 @@
 #include "../Backpack.h"
 #include <GS.h>
 
-class WifiBackpack : public Backpack {
+namespace pinoccio {
+  class WifiBackpack : public Backpack {
 
-  public:
-    WifiBackpack();
-    ~WifiBackpack();
+    public:
+      WifiBackpack();
+      ~WifiBackpack();
 
-    bool setup();
-    bool init();
-    void loop();
+      bool setup();
+      bool init();
+      void loop();
 
-    // Does not take effect until autoConnectHq() is called
-    bool wifiConfig(const char *ssid, const char *passphrase);
-    // Takes effect immediately
-    bool wifiDhcp(const char *hostname);
-    // Takes effect immediately
-    bool wifiStatic(IPAddress ip, IPAddress netmask, IPAddress gw, IPAddress dns);
+      // Does not take effect until autoConnectHq() is called
+      bool wifiConfig(const char *ssid, const char *passphrase);
+      // Takes effect immediately
+      bool wifiDhcp(const char *hostname);
+      // Takes effect immediately
+      bool wifiStatic(IPAddress ip, IPAddress netmask, IPAddress gw, IPAddress dns);
 
-    // (Re-)connects the wifi and HQ connection
-    bool autoConnectHq();
-    void disassociate();
+      // (Re-)connects the wifi and HQ connection
+      bool autoConnectHq();
+      void disassociate();
 
-    bool printAPs(Print& p);
-    void printProfiles(Print& p);
-    void printCurrentNetworkStatus(Print& p);
-    bool printTime(Print& p);
-    void printFirmwareVersions(Print& p);
-    int getHardwareMajorRevision();
-    int getHardwareMinorRevision();
+      bool printAPs(Print& p);
+      void printProfiles(Print& p);
+      void printCurrentNetworkStatus(Print& p);
+      bool printTime(Print& p);
+      void printFirmwareVersions(Print& p);
+      int getHardwareMajorRevision();
+      int getHardwareMinorRevision();
 
-    bool isAPConnected();
-    bool isHQConnected();
+      bool isAPConnected();
+      bool isHQConnected();
 
-    bool dnsLookup(Print &p, const char *host);
-    bool ping(Print &p, const char *host);
+      bool dnsLookup(Print &p, const char *host);
+      bool ping(Print &p, const char *host);
 
-    /** Run a command and print the results */
-    bool runDirectCommand(Print& p, const char *command);
+      /** Run a command and print the results */
+      bool runDirectCommand(Print& p, const char *command);
 
-    bool goToSleep();
-    bool wakeUp();
+      bool goToSleep();
+      bool wakeUp();
 
-    GSTcpClient client;
-    
-    uint16_t apConnCount;
-    uint16_t hqConnCount;
-    
-    GSModule gs;
-    
-  protected:
+      GSTcpClient client;
 
-    // Event handlers
-    static void onAssociate(void *data);
-    static void onNcmConnect(void *data, GSCore::cid_t cid);
-    static void onNcmDisconnect(void *data);
-};
+      uint16_t apConnCount;
+      uint16_t hqConnCount;
+
+      GSModule gs;
+
+    protected:
+
+      // Event handlers
+      static void onAssociate(void *data);
+      static void onNcmConnect(void *data, GSCore::cid_t cid);
+      static void onNcmDisconnect(void *data);
+  };
+} // namespace pinoccio
 
 #endif // LIB_PINOCCIO_WIFI_BACKPACK_H_

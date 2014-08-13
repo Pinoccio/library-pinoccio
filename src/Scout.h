@@ -38,7 +38,9 @@
 } while(0)
 */
 
-using pinoccio::ScoutHandler; // TODO: remove this line when this class is put in the pinoccio namespace
+// TODO: remove these when this class is put in the pinoccio namespace
+using pinoccio::ScoutHandler;
+using pinoccio::WifiBackpack;
 
 class PinoccioScout : public PinoccioClass {
 
