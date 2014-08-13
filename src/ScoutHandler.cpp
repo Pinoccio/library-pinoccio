@@ -7,11 +7,9 @@
 *  under the terms of the BSD License as described in license.txt.         *
 \**************************************************************************/
 #include <Arduino.h>
-#include <ScoutHandler.h>
 #include <Shell.h>
 #include <Scout.h>
 #include "backpack-bus/PBBP.h"
-#include "backpacks/wifi/WiFiBackpack.h"
 #include "util/StringBuffer.h"
 #include "util/String.h"
 #include "util/PrintToString.h"
