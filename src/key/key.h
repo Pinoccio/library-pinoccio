@@ -17,6 +17,7 @@ int keyLoop(unsigned long now);
 
 // at is current millis, if set will expire it at next key_loop call
 int keyMap(const char *key, unsigned long at);
+int keyMapRO(const char *key, unsigned long at);
 
 const char* keyGet(int i);
 
