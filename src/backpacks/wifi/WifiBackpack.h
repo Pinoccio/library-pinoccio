@@ -10,6 +10,7 @@
 #define LIB_PINOCCIO_WIFI_BACKPACK_H_
 
 #include <Pinoccio.h>
+#include "backpacks/Backpacks.h"
 #include "../Backpack.h"
 #include <GS.h>
 
@@ -20,7 +21,7 @@ namespace pinoccio {
       WifiBackpack();
       ~WifiBackpack();
 
-      bool setup();
+      bool setup(BackpackInfo *info);
       bool init();
       void loop();
 
@@ -40,8 +41,6 @@ namespace pinoccio {
       void printCurrentNetworkStatus(Print& p);
       bool printTime(Print& p);
       void printFirmwareVersions(Print& p);
-      int getHardwareMajorRevision();
-      int getHardwareMinorRevision();
 
       bool isAPConnected();
       bool isHQConnected();

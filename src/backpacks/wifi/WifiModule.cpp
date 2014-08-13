@@ -11,6 +11,7 @@
 #include "../../key/key.h"
 #include "../../Scout.h"
 #include "../../Shell.h"
+#include "../Backpacks.h"
 #include "WifiModule.h"
 
 using namespace pinoccio;
@@ -191,28 +192,37 @@ const __FlashStringHelper *WifiModule::name() const {
 }
 
 bool WifiModule::enable() {
-  Shell.addFunction("wifi.report", wifiReport);
-  Shell.addFunction("wifi.status", wifiStatus);
-  Shell.addFunction("wifi.list", wifiList);
-  Shell.addFunction("wifi.config", wifiConfig);
-  Shell.addFunction("wifi.dhcp", wifiDhcp);
-  Shell.addFunction("wifi.static", wifiStatic);
-  Shell.addFunction("wifi.reassociate", wifiReassociate);
-  Shell.addFunction("wifi.disassociate", wifiDisassociate);
-  Shell.addFunction("wifi.command", wifiCommand);
-  Shell.addFunction("wifi.ping", wifiPing);
-  Shell.addFunction("wifi.dnslookup", wifiDNSLookup);
-  Shell.addFunction("wifi.gettime", wifiGetTime);
-  Shell.addFunction("wifi.sleep", wifiSleep);
-  Shell.addFunction("wifi.wakeup", wifiWakeup);
-  Shell.addFunction("wifi.verbose", wifiVerbose);
-  Shell.addFunction("wifi.stats", wifiStats);
+  for (uint8_t i = 0; i < Backpacks::num_backpacks; ++i) {
+    if (Backpacks::info[i].id.model == 0x0001) {
+      _bp = new WifiBackpack();
+      if (!_bp)
+        return false;
+      if (!_bp->setup(&Backpacks::info[i]) || !_bp->autoConnectHq())
+        return false;
 
-  _bp = new WifiBackpack();
-  if (!_bp)
-    return false;
+      Shell.addFunction("wifi.report", wifiReport);
+      Shell.addFunction("wifi.status", wifiStatus);
+      Shell.addFunction("wifi.list", wifiList);
+      Shell.addFunction("wifi.config", wifiConfig);
+      Shell.addFunction("wifi.dhcp", wifiDhcp);
+      Shell.addFunction("wifi.static", wifiStatic);
+      Shell.addFunction("wifi.reassociate", wifiReassociate);
+      Shell.addFunction("wifi.disassociate", wifiDisassociate);
+      Shell.addFunction("wifi.command", wifiCommand);
+      Shell.addFunction("wifi.ping", wifiPing);
+      Shell.addFunction("wifi.dnslookup", wifiDNSLookup);
+      Shell.addFunction("wifi.gettime", wifiGetTime);
+      Shell.addFunction("wifi.sleep", wifiSleep);
+      Shell.addFunction("wifi.wakeup", wifiWakeup);
+      Shell.addFunction("wifi.verbose", wifiVerbose);
+      Shell.addFunction("wifi.stats", wifiStats);
 
-  _bp->setup() && _bp->autoConnectHq();
+      return true;
+    }
+  }
+
+  speol("No wifi backpack found");
+  return false;
 }
 
 void WifiModule::loop() {

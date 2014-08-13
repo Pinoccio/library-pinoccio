@@ -9,7 +9,6 @@
 #include <Arduino.h>
 #include <SPI.h>
 #include "WifiBackpack.h"
-#include "backpacks/Backpacks.h"
 #include "../../ScoutHandler.h"
 #include "../../hq/HqHandler.h"
 #include "src/bitlash.h"
@@ -77,7 +76,7 @@ void WifiBackpack::onNcmDisconnect(void *data) {
   wifi.client = GSCore::INVALID_CID;
 }
 
-bool WifiBackpack::setup() {
+bool WifiBackpack::setup(BackpackInfo *info) {
   Backpack::setup();
 
   // Alternatively, use the UART for Wifi backpacks that still have the
@@ -93,7 +92,7 @@ bool WifiBackpack::setup() {
   gs.onNcmDisconnect = onNcmDisconnect;
   gs.eventData = this;
 
-  if (getHardwareMajorRevision() == 1 && getHardwareMinorRevision() == 1) {
+  if (info->id.revision == 0x11) {
     if (!gs.begin(7, 5)) {
       return false;
     }
@@ -262,18 +261,6 @@ bool WifiBackpack::wakeUp() {
 
 bool WifiBackpack::printTime(Print &p) {
   return runDirectCommand(p, "AT+GETTIME=?");
-}
-
-int WifiBackpack::getHardwareMajorRevision() {
-  Pbbe::UniqueId &id = Backpacks::info[0].id;
-  Pbbe::MajorMinor rev = Pbbe::extractMajorMinor(id.revision);
-  return rev.major;
-}
-
-int WifiBackpack::getHardwareMinorRevision() {
-  Pbbe::UniqueId &id = Backpacks::info[0].id;
-  Pbbe::MajorMinor rev = Pbbe::extractMajorMinor(id.revision);
-  return rev.minor;
 }
 
 /* commands for auto-config
