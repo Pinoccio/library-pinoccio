@@ -87,7 +87,7 @@ void keyFree(int i) {
 
 // loads json array of strings, outs is optional
 void keyLoad(const char *array, int *outs, unsigned long at) {
-  unsigned int *index;
+  unsigned short *index;
   unsigned int i;
   unsigned int oi=1;
 
@@ -95,15 +95,15 @@ void keyLoad(const char *array, int *outs, unsigned long at) {
     return;
   }
 
-  index = malloc(strlen(array));
+  index = (unsigned short*)malloc(strlen(array));
   if (!index) {
     outs[0] = 0;
     return;
   }
-  j0g(array, index, strlen(array));
+  j0g((char*)array, index, strlen(array));
 
   for (i=0; index[i]; i+=2) {
-    int k = keyMap(j0g_safe(i, array, index), at);
+    int k = keyMap(j0g_safe(i, (char*)array, index), at);
     if (outs) {
       outs[oi++] = k;
     }
