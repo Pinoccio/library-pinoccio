@@ -13,11 +13,11 @@
 #include "../Backpack.h"
 #include <GS.h>
 
-class WiFiBackpack : public Backpack {
+class WifiBackpack : public Backpack {
 
   public:
-    WiFiBackpack();
-    ~WiFiBackpack();
+    WifiBackpack();
+    ~WifiBackpack();
 
     bool setup();
     bool init();

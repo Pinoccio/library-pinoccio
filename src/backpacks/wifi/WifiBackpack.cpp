@@ -8,7 +8,7 @@
 \**************************************************************************/
 #include <Arduino.h>
 #include <SPI.h>
-#include "WiFiBackpack.h"
+#include "WifiBackpack.h"
 #include "backpacks/Backpacks.h"
 #include "../../ScoutHandler.h"
 #include "../../hq/HqHandler.h"
@@ -27,12 +27,12 @@ static void print_line(const uint8_t *buf, uint16_t len, void *data) {
   speol();
 }
 
-WiFiBackpack::WiFiBackpack() : client(gs) { }
+WifiBackpack::WifiBackpack() : client(gs) { }
 
-WiFiBackpack::~WiFiBackpack() { }
+WifiBackpack::~WifiBackpack() { }
 
-void WiFiBackpack::onAssociate(void *data) {
-  WiFiBackpack& wifi = *(WiFiBackpack*)data;
+void WifiBackpack::onAssociate(void *data) {
+  WifiBackpack& wifi = *(WifiBackpack*)data;
 
   #ifdef USE_TLS
   // Do a timesync
@@ -47,8 +47,8 @@ void WiFiBackpack::onAssociate(void *data) {
   wifi.apConnCount++;
 }
 
-void WiFiBackpack::onNcmConnect(void *data, GSCore::cid_t cid) {
-  WiFiBackpack& wifi = *(WiFiBackpack*)data;
+void WifiBackpack::onNcmConnect(void *data, GSCore::cid_t cid) {
+  WifiBackpack& wifi = *(WifiBackpack*)data;
 
   wifi.client = cid;
 
@@ -69,13 +69,13 @@ void WiFiBackpack::onNcmConnect(void *data, GSCore::cid_t cid) {
   leadHQConnect();
 }
 
-void WiFiBackpack::onNcmDisconnect(void *data) {
-  WiFiBackpack& wifi = *(WiFiBackpack*)data;
+void WifiBackpack::onNcmDisconnect(void *data) {
+  WifiBackpack& wifi = *(WifiBackpack*)data;
 
   wifi.client = GSCore::INVALID_CID;
 }
 
-bool WiFiBackpack::setup() {
+bool WifiBackpack::setup() {
   Backpack::setup();
 
   // Alternatively, use the UART for Wifi backpacks that still have the
@@ -106,7 +106,7 @@ bool WiFiBackpack::setup() {
   return true;
 }
 
-void WiFiBackpack::loop() {
+void WifiBackpack::loop() {
   Backpack::loop();
   gs.loop();
   client = gs.getNcmCid();
@@ -123,7 +123,7 @@ static bool isWepKey(const char *key) {
   return len == 10 || len == 26;
 }
 
-bool WiFiBackpack::wifiConfig(const char *ssid, const char *passphrase) {
+bool WifiBackpack::wifiConfig(const char *ssid, const char *passphrase) {
   bool ok = true;
   ok = ok && gs.setSecurity(GSModule::GS_SECURITY_AUTO);
   if (passphrase && *passphrase) {
@@ -142,7 +142,7 @@ bool WiFiBackpack::wifiConfig(const char *ssid, const char *passphrase) {
   return ok;
 }
 
-bool WiFiBackpack::wifiDhcp(const char *hostname) {
+bool WifiBackpack::wifiDhcp(const char *hostname) {
   bool ok = true;
   ok = ok && gs.setDhcp(true, hostname);
   // Remember these settings through a reboot
@@ -153,7 +153,7 @@ bool WiFiBackpack::wifiDhcp(const char *hostname) {
   return ok;
 }
 
-bool WiFiBackpack::wifiStatic(IPAddress ip, IPAddress netmask, IPAddress gw, IPAddress dns) {
+bool WifiBackpack::wifiStatic(IPAddress ip, IPAddress netmask, IPAddress gw, IPAddress dns) {
   bool ok = true;
   ok = ok && gs.setDhcp(false);
   ok = ok && gs.setStaticIp(ip, netmask, gw);
@@ -167,7 +167,7 @@ bool WiFiBackpack::wifiStatic(IPAddress ip, IPAddress netmask, IPAddress gw, IPA
   return ok;
 }
 
-bool WiFiBackpack::autoConnectHq() {
+bool WifiBackpack::autoConnectHq() {
   // Try to disable the NCM in case it's already running
   gs.setNcm(false);
 
@@ -187,7 +187,7 @@ bool WiFiBackpack::autoConnectHq() {
          gs.setNcm(/* enable */ true, /* associate_only */ false, /* remember */ false);
 }
 
-void WiFiBackpack::disassociate() {
+void WifiBackpack::disassociate() {
   // this delay is important--The Gainspan module with 2.5.1 firmware
   // will hang if the NCM disassociate is called too soon after boot.
   if (millis() < 5000) {
@@ -197,7 +197,7 @@ void WiFiBackpack::disassociate() {
   gs.disassociate();
 }
 
-bool WiFiBackpack::printAPs(Print& p) {
+bool WifiBackpack::printAPs(Print& p) {
   // this delay is important--The Gainspan module with 2.5.1 firmware
   // will hang if AT+WS is called too soon after boot.
   if (millis() < 5000) {
@@ -206,24 +206,24 @@ bool WiFiBackpack::printAPs(Print& p) {
   return runDirectCommand(p, "AT+WS");
 }
 
-void WiFiBackpack::printProfiles(Print& p) {
+void WifiBackpack::printProfiles(Print& p) {
   runDirectCommand(p, "AT&V");
 }
 
-void WiFiBackpack::printCurrentNetworkStatus(Print& p) {
+void WifiBackpack::printCurrentNetworkStatus(Print& p) {
   runDirectCommand(p, "AT+NSTAT=?");
   runDirectCommand(p, "AT+CID=?");
 }
 
-void WiFiBackpack::printFirmwareVersions(Print& p) {
+void WifiBackpack::printFirmwareVersions(Print& p) {
   runDirectCommand(p, "AT+VER=?");
 }
 
-bool WiFiBackpack::isAPConnected() {
+bool WifiBackpack::isAPConnected() {
   return gs.isAssociated();
 }
 
-bool WiFiBackpack::isHQConnected() {
+bool WifiBackpack::isHQConnected() {
   #ifdef USE_TLS
   return client.connected() && client.sslConnected();
   #else
@@ -231,44 +231,44 @@ bool WiFiBackpack::isHQConnected() {
   #endif
 }
 
-bool WiFiBackpack::dnsLookup(Print& p, const char *host) {
+bool WifiBackpack::dnsLookup(Print& p, const char *host) {
   // TODO
   return false;
 }
 
-bool WiFiBackpack::ping(Print &p, const char *host) {
+bool WifiBackpack::ping(Print &p, const char *host) {
   // TODO
   return false;
 }
 
-bool WiFiBackpack::runDirectCommand(Print &p, const char *command) {
+bool WifiBackpack::runDirectCommand(Print &p, const char *command) {
   gs.writeCommand("%s", command);
   return (gs.readResponse(print_line, NULL) == GSCore::GS_SUCCESS);
 }
 
-bool WiFiBackpack::goToSleep() {
+bool WifiBackpack::goToSleep() {
   // TODO
   //Gainspan.send_cmd(CMD_PSDPSLEEP);
   return false;
 }
 
-bool WiFiBackpack::wakeUp() {
+bool WifiBackpack::wakeUp() {
   // TODO
   // Gainspan.send_cmd_w_resp(CMD_AT);
   return false;
 }
 
-bool WiFiBackpack::printTime(Print &p) {
+bool WifiBackpack::printTime(Print &p) {
   return runDirectCommand(p, "AT+GETTIME=?");
 }
 
-int WiFiBackpack::getHardwareMajorRevision() {
+int WifiBackpack::getHardwareMajorRevision() {
   Pbbe::UniqueId &id = Backpacks::info[0].id;
   Pbbe::MajorMinor rev = Pbbe::extractMajorMinor(id.revision);
   return rev.major;
 }
 
-int WiFiBackpack::getHardwareMinorRevision() {
+int WifiBackpack::getHardwareMinorRevision() {
   Pbbe::UniqueId &id = Backpacks::info[0].id;
   Pbbe::MajorMinor rev = Pbbe::extractMajorMinor(id.revision);
   return rev.minor;
