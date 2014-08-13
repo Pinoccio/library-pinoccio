@@ -19,9 +19,7 @@
 #include "modules/ModuleHandler.h"
 #include "modules/Module.h"
 #include "key/key.h"
-extern "C" {
 #include "util/memdebug.h"
-}
 
 using namespace pinoccio;
 
