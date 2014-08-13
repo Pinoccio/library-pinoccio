@@ -13,10 +13,10 @@
 #include "util/StringBuffer.h"
 #include "util/String.h"
 #include "util/PrintToString.h"
+#include "key/key.h"
 extern "C" {
 #include <js0n.h>
 #include <j0g.h>
-#include "key/key.h"
 #include "lwm/sys/sysTimer.h"
 }
 

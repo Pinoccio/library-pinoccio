@@ -8,7 +8,9 @@
 \**************************************************************************/
 #include "key.h"
 #include "keys.h" // has KEYS_BUNDLE
-#include "j0g.h"
+extern "C" {
+  #include "j0g.h"
+}
 #include <string.h>
 #include <stdlib.h>
 

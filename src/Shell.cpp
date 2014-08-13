@@ -18,8 +18,8 @@
 #include "util/PrintToString.h"
 #include "modules/ModuleHandler.h"
 #include "modules/Module.h"
-extern "C" {
 #include "key/key.h"
+extern "C" {
 #include "util/memdebug.h"
 }
 
