@@ -38,6 +38,8 @@
 } while(0)
 */
 
+using pinoccio::ScoutHandler; // TODO: remove this line when this class is put in the pinoccio namespace
+
 class PinoccioScout : public PinoccioClass {
 
   public:
@@ -115,7 +117,7 @@ class PinoccioScout : public PinoccioClass {
 
     PBBP bp;
     WiFiBackpack wifi;
-    PinoccioScoutHandler handler;
+    ScoutHandler handler;
 
     // Schedule a sleep that lasts until now + ms. The optional bitlash
     // command is executed after the sleep and then free()'d. A previous

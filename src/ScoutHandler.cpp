@@ -26,6 +26,8 @@ extern "C" {
                 const typeof( ((type *)0)->member ) *__mptr = (ptr); \
                 (type *)( (char *)__mptr - offsetof(type,member) );})
 
+using namespace pinoccio;
+
 static bool hqVerboseOutput;
 
 static StringBuffer fieldCommand(0, 16);
@@ -87,11 +89,11 @@ static void leadSignal(const String& json);
 static bool leadAnswers(NWK_DataInd_t *ind);
 
 
-PinoccioScoutHandler::PinoccioScoutHandler() { }
+ScoutHandler::ScoutHandler() { }
 
-PinoccioScoutHandler::~PinoccioScoutHandler() { }
+ScoutHandler::~ScoutHandler() { }
 
-void PinoccioScoutHandler::setup() {
+void ScoutHandler::setup() {
   isBridged = false;
   if (Scout.isLeadScout()) {
     Scout.meshListen(3, leadAnswers);
@@ -111,13 +113,13 @@ void PinoccioScoutHandler::setup() {
   memset(announceQ,0,announceQsize*sizeof(char*));
 }
 
-void PinoccioScoutHandler::loop() {
+void ScoutHandler::loop() {
   if (Scout.isLeadScout()) {
     leadHQHandle();
   }
 }
 
-void PinoccioScoutHandler::setBridged(bool flag) {
+void ScoutHandler::setBridged(bool flag) {
   isBridged = flag;
   if(isBridged)
   {
@@ -129,7 +131,7 @@ void PinoccioScoutHandler::setBridged(bool flag) {
   }
 }
 
-void PinoccioScoutHandler::setVerbose(bool flag) {
+void ScoutHandler::setVerbose(bool flag) {
   hqVerboseOutput = flag;
 }
 
@@ -264,7 +266,7 @@ static void announceConfirm(NWK_DataReq_t *req) {
   announceQSend();
 }
 
-void PinoccioScoutHandler::announce(uint16_t group, const String& message) {
+void ScoutHandler::announce(uint16_t group, const String& message) {
   // when lead scout, share
   if (Scout.isLeadScout()) {
     leadAnnouncementSend(group, Scout.getAddress(), message);
@@ -428,7 +430,7 @@ static void leadAnnouncementSend(uint16_t group, uint16_t from, const ConstBuf& 
 }
 
 // [3,[0,1,2],[v,v,v],4]
-StringBuffer PinoccioScoutHandler::report(StringBuffer &report) {
+StringBuffer ScoutHandler::report(StringBuffer &report) {
   report.setCharAt(report.length() - 1, ',');
   report.appendSprintf("%lu]",millis());
   Scout.handler.announce(0xBEEF, report);
