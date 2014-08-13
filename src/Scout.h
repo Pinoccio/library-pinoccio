@@ -12,6 +12,7 @@
 #include <Pinoccio.h>
 #include <Shell.h>
 #include <ScoutHandler.h>
+#include "modules/ModuleHandler.h"
 #include "backpack-bus/PBBP.h"
 #include "backpacks/wifi/WiFiBackpack.h"
 #include <Wire.h>

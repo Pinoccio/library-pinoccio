@@ -15,6 +15,8 @@
 #include <avr/eeprom.h>
 #include <avr/pgmspace.h>
 
+using namespace pinoccio;
+
 static void scoutDigitalStateChangeTimerHandler(SYS_Timer_t *timer);
 static void scoutAnalogStateChangeTimerHandler(SYS_Timer_t *timer);
 static void scoutPeripheralStateChangeTimerHandler(SYS_Timer_t *timer);
@@ -115,6 +117,7 @@ void PinoccioScout::setup(const char *sketchName, const char *sketchRevision, in
 
   saveState();
   handler.setup();
+  ModuleHandler::setup();
 
   startDigitalStateChangeEvents();
   startAnalogStateChangeEvents();
@@ -130,6 +133,7 @@ void PinoccioScout::loop() {
   PinoccioClass::loop();
   Shell.loop();
   handler.loop();
+  ModuleHandler::loop();
   Backpacks::loop();
 
   if (sleepPending) {

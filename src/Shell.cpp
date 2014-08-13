@@ -16,10 +16,14 @@
 #include "util/StringBuffer.h"
 #include "util/String.h"
 #include "util/PrintToString.h"
+#include "modules/ModuleHandler.h"
+#include "modules/Module.h"
 extern "C" {
 #include "key/key.h"
 #include "util/memdebug.h"
 }
+
+using namespace pinoccio;
 
 static numvar pinoccioBanner(void);
 
@@ -131,6 +135,9 @@ static numvar memoryReport(void);
 static numvar daisyWipe(void);
 static numvar boot(void);
 static numvar otaBoot(void);
+
+static numvar moduleStatus(void);
+static numvar moduleEnable(void);
 
 static numvar hqVerbose(void);
 static numvar hqPrint(void);
@@ -312,6 +319,9 @@ void PinoccioShell::setup() {
   addFunction("scout.daisy", daisyWipe);
   addFunction("scout.boot", boot);
   addFunction("scout.otaboot", otaBoot);
+
+  addFunction("module.status", moduleStatus);
+  addFunction("module.enable", moduleEnable);
 
   addFunction("hq.settoken", setHQToken);
   addFunction("hq.gettoken", getHQToken);
@@ -2160,6 +2170,39 @@ static numvar otaBoot(void) {
   return 1;
 }
 
+
+/****************************\
+ *    MODULES HANDLERS       *
+\****************************/
+
+static numvar moduleStatus(void) {
+  Serial.println(F("enabled   name"));
+  Serial.println(F("--------------"));
+
+  const Module *module = ModuleHandler::modules();
+  while (module) {
+    if (module->enabled())
+      sp("yes       ");
+    else
+      sp("no        ");
+    speol(module->name());
+
+    module = module->next();
+  }
+  return 1;
+}
+
+static numvar moduleEnable(void) {
+  if (!checkArgs(1, F("usage: module.enable(\"string\""))) {
+    return 0;
+  }
+  if(ModuleHandler::enable((char*)getstringarg(1))) return 1;
+  sp(F("Failed to enable module "));
+  sp((const char *)getstringarg(1));
+  speol();
+
+  return 0;
+}
 
 /****************************\
  *        HQ HANDLERS       *
