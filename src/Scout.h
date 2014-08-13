@@ -14,7 +14,6 @@
 #include <ScoutHandler.h>
 #include "modules/ModuleHandler.h"
 #include "backpack-bus/PBBP.h"
-#include "backpacks/wifi/WifiBackpack.h"
 #include <Wire.h>
 
 #include "lwm/phy/phy.h"
@@ -40,7 +39,6 @@
 
 // TODO: remove these when this class is put in the pinoccio namespace
 using pinoccio::ScoutHandler;
-using pinoccio::WifiBackpack;
 
 class PinoccioScout : public PinoccioClass {
 
@@ -119,7 +117,6 @@ class PinoccioScout : public PinoccioClass {
     bool eventVerboseOutput;
 
     PBBP bp;
-    WifiBackpack wifi;
     ScoutHandler handler;
 
     // Schedule a sleep that lasts until now + ms. The optional bitlash

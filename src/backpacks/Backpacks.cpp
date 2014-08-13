@@ -9,6 +9,9 @@
 #include <Arduino.h>
 #include "Backpacks.h"
 #include "Scout.h"
+#include "../modules/ModuleHandler.h"
+
+using namespace pinoccio;
 
 uint8_t Backpacks::num_backpacks = 0;
 BackpackInfo *Backpacks::info = NULL;
@@ -26,17 +29,12 @@ void Backpacks::setup()
   // manually set up wifi here for now
   if(Backpacks::isModelPresent(0x0001))
   {
-    Scout.wifi.setup();
-    Scout.wifi.autoConnectHq();
+    ModuleHandler::enable("wifi");
   }
 }
 
 void Backpacks::loop()
 {
-  if(Backpacks::isModelPresent(0x0001))
-  {
-    Scout.wifi.loop();
-  }
 }
 
 bool Backpacks::detect()
