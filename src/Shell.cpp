@@ -24,413 +24,51 @@
 
 using namespace pinoccio;
 
-static numvar pinoccioBanner(void);
+PinoccioShell Shell;
 
-static numvar getTemperatureC(void);
-static numvar getTemperatureF(void);
-static numvar temperatureReport(void);
-static numvar setTemperatureOffset(void);
-static numvar temperatureCalibrate(void);
-static numvar getRandomNumber(void);
+static bool isMeshVerbose;
+static int lastMeshRssi = 0;
+static int lastMeshLqi = 0;
 
-static numvar allReport(void);
-static numvar allVerbose(void);
 
-static numvar uptimeAwakeMicros(void);
-static numvar uptimeAwakeSeconds(void);
-static numvar uptimeSleepingMicros(void);
-static numvar uptimeSleepingSeconds(void);
-static numvar uptimeMicros(void);
-static numvar uptimeSeconds(void);
-static numvar uptimeReport(void);
-static numvar uptimeStatus(void);
-static numvar getLastResetCause(void);
-
-static numvar isBatteryCharging(void);
-static numvar isBatteryConnected(void);
-static numvar getBatteryPercentage(void);
-static numvar getBatteryVoltage(void);
-static numvar enableBackpackVcc(void);
-static numvar disableBackpackVcc(void);
-static numvar isBackpackVccEnabled(void);
-static numvar powerSleep(void);
-static numvar powerReport(void);
-static numvar powerWakeupPin(void);
-
-static numvar ledBlink(void);
-static numvar ledOff(void);
-static numvar ledRed(void);
-static numvar ledGreen(void);
-static numvar ledBlue(void);
-static numvar ledCyan(void);
-static numvar ledPurple(void);
-static numvar ledBeccaPurple(void);
-static numvar ledMagenta(void);
-static numvar ledYellow(void);
-static numvar ledOrange(void);
-static numvar ledWhite(void);
-static numvar ledTorch(void);
-static numvar ledSetHex(void);
-static numvar ledGetHex(void);
-static numvar ledSetRgb(void);
-static numvar ledIsOff(void);
-static numvar ledSaveTorch(void);
-static numvar ledReport(void);
-
-static numvar meshConfig(void);
-static numvar meshSetPower(void);
-static numvar meshSetDataRate(void);
-static numvar meshSetKey(void);
-static numvar meshGetKey(void);
-static numvar meshResetKey(void);
-static numvar meshJoinGroup(void);
-static numvar meshLeaveGroup(void);
-static numvar meshIsInGroup(void);
-static numvar meshVerbose(void);
-static numvar meshReport(void);
-static numvar meshRouting(void);
-static numvar meshSignal(void);
-static numvar meshLoss(void);
-
-static numvar messageScout(void);
-static numvar messageGroup(void);
-
-static numvar pinConstHigh(void);
-static numvar pinConstLow(void);
-static numvar pinConstDisconnected(void);
-static numvar pinConstDisabled(void);
-static numvar pinConstInput(void);
-static numvar pinConstOutput(void);
-static numvar pinConstInputPullup(void);
-static numvar pinConstPWM(void);
-static numvar pinMakeInput(void);
-static numvar pinMakeOutput(void);
-static numvar pinMakePWM(void);
-static numvar pinMakeDisconnected(void);
-static numvar pinDisable(void);
-static numvar pinSetMode(void);
-static numvar pinRead(void);
-static numvar pinWrite(void);
-static numvar pinSave(void);
-static numvar pinStatus(void);
-static numvar pinNumber(void);
-static numvar pinOthersDisconnected(void);
-static numvar digitalPinReport(void);
-static numvar analogPinReport(void);
-
-static numvar backpackReport(void);
-static numvar backpackList(void);
-static numvar backpackEeprom(void);
-static numvar backpackUpdateEeprom(void);
-static numvar backpackDetail(void);
-static numvar backpackResources(void);
-
-static numvar scoutReport(void);
-static numvar isScoutLeadScout(void);
-static numvar setHQToken(void);
-static numvar getHQToken(void);
-static numvar scoutDelay(void);
-static numvar memoryReport(void);
-static numvar daisyWipe(void);
-static numvar boot(void);
-static numvar otaBoot(void);
-
-static numvar moduleStatus(void);
-static numvar moduleEnable(void);
-
-static numvar hqVerbose(void);
-static numvar hqPrint(void);
-static numvar hqReport(void);
-static numvar hqBridge(void);
-
-static numvar startStateChangeEvents(void);
-static numvar stopStateChangeEvents(void);
-static numvar setEventCycle(void);
-static numvar setEventVerbose(void);
-
-static numvar keyMap(void);
-static numvar keyFree(void);
-static numvar keyPrint(void);
-static numvar keyNumber(void);
-static numvar keySave(void);
-
-static int8_t getPinFromArg(uint8_t arg);
-
-static StringBuffer scoutReportHQ(void);
-static StringBuffer uptimeReportHQ(void);
-static StringBuffer powerReportHQ(void);
-static StringBuffer backpackReportHQ(void);
-static StringBuffer digitalPinReportHQ(void);
-static StringBuffer analogPinReportHQ(void);
-static StringBuffer meshReportHQ(void);
-static StringBuffer tempReportHQ(void);
-static StringBuffer ledReportHQ(void);
-
-static bool receiveMessage(NWK_DataInd_t *ind);
-static void sendMessage(int address, const String&);
-static void sendConfirm(NWK_DataReq_t *req);
-
-static void digitalPinEventHandler(uint8_t pin, int16_t value, int8_t mode);
-static void analogPinEventHandler(uint8_t pin, int16_t value, int8_t mode);
-static void batteryPercentageEventHandler(uint8_t value);
-static void batteryChargingEventHandler(uint8_t value);
-static void temperatureEventHandler(int8_t tempC, int8_t tempF);
-static void ledEventHandler(uint8_t redValue, uint8_t greenValue, uint8_t blueValue);
+/****************************\
+ *     HELPER FUNCTIONS     *
+\****************************/
 
 static void printSpaces(int8_t number) {
   while (number-- > 0)
     Serial.write(' ');
 }
 
-PinoccioShell Shell;
-
-PinoccioShell::PinoccioShell() {
-  isShellEnabled = true;
-}
-
-PinoccioShell::~PinoccioShell() { }
-
-void PinoccioShell::setup() {
-  keyInit();
-
-  addFunction("power.ischarging", isBatteryCharging);
-  addFunction("power.hasbattery", isBatteryConnected);
-  addFunction("power.percent", getBatteryPercentage);
-  addFunction("power.voltage", getBatteryVoltage);
-  addFunction("power.enablevcc", enableBackpackVcc);
-  addFunction("power.disablevcc", disableBackpackVcc);
-  addFunction("power.isvccenabled", isBackpackVccEnabled);
-  addFunction("power.sleep", powerSleep);
-  addFunction("power.report", powerReport);
-  addFunction("power.wakeup.pin", powerWakeupPin);
-
-  addFunction("mesh.config", meshConfig);
-  addFunction("mesh.setpower", meshSetPower);
-  addFunction("mesh.setdatarate", meshSetDataRate);
-  addFunction("mesh.setkey", meshSetKey);
-  addFunction("mesh.getkey", meshGetKey);
-  addFunction("mesh.resetkey", meshResetKey);
-  addFunction("mesh.joingroup", meshJoinGroup);
-  addFunction("mesh.leavegroup", meshLeaveGroup);
-  addFunction("mesh.ingroup", meshIsInGroup);
-  addFunction("mesh.verbose", meshVerbose);
-  addFunction("mesh.report", meshReport);
-  addFunction("mesh.routing", meshRouting);
-  addFunction("mesh.signal", meshSignal);
-  addFunction("mesh.loss", meshLoss);
-
-  addFunction("message.scout", messageScout);
-  addFunction("message.group", messageGroup);
-
-  addFunction("temperature.c", getTemperatureC);
-  addFunction("temperature.f", getTemperatureF);
-  addFunction("temperature.report", temperatureReport);
-  addFunction("temperature.setoffset", setTemperatureOffset);
-  addFunction("temperature.calibrate", temperatureCalibrate);
-  addFunction("randomnumber", getRandomNumber);
-  addFunction("memory.report", memoryReport);
-
-  addFunction("report", allReport);
-  addFunction("verbose", allVerbose);
-
-  addFunction("uptime.awake.micros", uptimeAwakeMicros);
-  addFunction("uptime.awake.seconds", uptimeAwakeSeconds);
-  addFunction("uptime.sleeping.micros", uptimeSleepingMicros);
-  addFunction("uptime.sleeping.seconds", uptimeSleepingSeconds);
-  addFunction("uptime.seconds", uptimeSeconds);
-  addFunction("uptime.micros", uptimeMicros);
-  addFunction("uptime.report", uptimeReport);
-  addFunction("uptime.getlastreset", getLastResetCause);
-  addFunction("uptime.status", uptimeStatus);
-
-  addFunction("led.on", ledTorch); // alias
-  addFunction("led.off", ledOff);
-  addFunction("led.red", ledRed);
-  addFunction("led.green", ledGreen);
-  addFunction("led.blue", ledBlue);
-  addFunction("led.cyan", ledCyan);
-  addFunction("led.purple", ledPurple);
-  addFunction("led.beccapurple", ledBeccaPurple);
-  addFunction("led.magenta", ledMagenta);
-  addFunction("led.yellow", ledYellow);
-  addFunction("led.orange", ledOrange);
-  addFunction("led.white", ledWhite);
-  addFunction("led.torch", ledTorch);
-  addFunction("led.blink", ledBlink);
-  addFunction("led.sethex", ledSetHex);
-  addFunction("led.gethex", ledGetHex);
-  addFunction("led.setrgb", ledSetRgb);
-  addFunction("led.isoff", ledIsOff);
-  addFunction("led.savetorch", ledSaveTorch);
-  addFunction("led.report", ledReport);
-
-  addFunction("high", pinConstHigh);
-  addFunction("low", pinConstLow);
-  addFunction("disconnected", pinConstDisconnected);
-  addFunction("disabled", pinConstDisabled);
-  addFunction("input", pinConstInput);
-  addFunction("output", pinConstOutput);
-  addFunction("input_pullup", pinConstInputPullup);
-  addFunction("pwm", pinConstPWM);
-
-  addFunction("pin.makeinput", pinMakeInput);
-  addFunction("pin.makeoutput", pinMakeOutput);
-  addFunction("pin.makepwm", pinMakePWM);
-  addFunction("pin.makedisconnected", pinMakeDisconnected);
-  addFunction("pin.disable", pinDisable);
-  addFunction("pin.setmode", pinSetMode);
-  addFunction("pin.read", pinRead);
-  addFunction("pin.write", pinWrite);
-  addFunction("pin.save", pinSave);
-  addFunction("pin.status", pinStatus);
-  addFunction("pin.number", pinNumber);
-  addFunction("pin.othersdisconnected", pinOthersDisconnected);
-  addFunction("pin.report.digital", digitalPinReport);
-  addFunction("pin.report.analog", analogPinReport);
-
-  addFunction("backpack.report", backpackReport);
-  addFunction("backpack.list", backpackList);
-  addFunction("backpack.eeprom", backpackEeprom);
-  addFunction("backpack.eeprom.update", backpackUpdateEeprom);
-  addFunction("backpack.detail", backpackDetail);
-  addFunction("backpack.resources", backpackResources);
-
-  addFunction("scout.report", scoutReport);
-  addFunction("scout.isleadscout", isScoutLeadScout);
-  addFunction("scout.delay", scoutDelay);
-  addFunction("scout.daisy", daisyWipe);
-  addFunction("scout.boot", boot);
-  addFunction("scout.otaboot", otaBoot);
-
-  addFunction("module.status", moduleStatus);
-  addFunction("module.enable", moduleEnable);
-
-  addFunction("hq.settoken", setHQToken);
-  addFunction("hq.gettoken", getHQToken);
-  addFunction("hq.verbose", hqVerbose);
-  addFunction("hq.print", hqPrint);
-  addFunction("hq.report", hqReport);
-  addFunction("hq.bridge", hqBridge);
-
-  addFunction("events.start", startStateChangeEvents);
-  addFunction("events.stop", stopStateChangeEvents);
-  addFunction("events.setcycle", setEventCycle);
-  addFunction("events.verbose", setEventVerbose);
-
-  addFunction("key", keyMap);
-  addFunction("key.free", keyFree);
-  addFunction("key.print", keyPrint);
-  addFunction("key.number", keyNumber);
-  addFunction("key.save", keySave);
-
-  // set up event handlers
-  Scout.digitalPinEventHandler = digitalPinEventHandler;
-  Scout.analogPinEventHandler = analogPinEventHandler;
-  Scout.batteryPercentageEventHandler = batteryPercentageEventHandler;
-  Scout.batteryChargingEventHandler = batteryChargingEventHandler;
-  Scout.temperatureEventHandler = temperatureEventHandler;
-  Led.ledEventHandler = ledEventHandler;
-
-  if (isShellEnabled) {
-    startShell();
-  }
-
-  Scout.meshListen(1, receiveMessage);
-
-  if (!Scout.isLeadScout()) {
-    Shell.allReportHQ(); // lead scout reports on hq connect
-  }
-  
-}
-
-void PinoccioShell::addFunction(const char *name, numvar (*func)(void)) {
-  addBitlashFunction(name, (bitlash_function)func);
-}
-
-// update a memory cache of which functions are defined
-StringBuffer customScripts;
-void PinoccioShell::refresh(void)
-{
-  customScripts = "";
-  setOutputHandler(&printToString<&customScripts>);
-  doCommand("ls");
-  resetOutputHandler();
-
-  // parse and condense the "ls" bitlash format of "function name {...}\n" into just "name "
-  int nl, sp;
-  while((nl = customScripts.indexOf('\n')) >= 0)
-  {
-    if(customScripts.startsWith("function ") && (sp = customScripts.indexOf(' ',9)) < nl)
-    {
-      customScripts += customScripts.substring(9,sp+1);
-    }
-    customScripts = customScripts.substring(nl+1);
+static int8_t getPinFromArg(uint8_t arg) {
+  if (isstringarg(arg)) {
+    return Scout.getPinFromName((const char*)getstringarg(arg));
+  } else if (getarg(arg) >= 0 && getarg(arg) < NUM_DIGITAL_PINS) {
+    return getarg(arg);
+  } else {
+    return -1;
   }
 }
 
-// just a safe wrapper around bitlash checks
-bool PinoccioShell::defined(const char *cmd)
-{
-  if(!cmd) return false;
-  if(find_user_function((char*)cmd)) return true;
-//  if(findKey(cmd) >= 0) return true; // don't use findscript(), it's not re-entrant safe
-  int at = customScripts.indexOf(cmd);
-  if(at >= 0 && customScripts.charAt(at+strlen(cmd)) == ' ') return true;
-  return false;
+bool checkArgs(uint8_t exactly, const __FlashStringHelper *errorMsg) {
+  if (getarg(0) != exactly) {
+      speol(errorMsg);
+      return false;
+  }
+  return true;
 }
 
-static bool isMeshVerbose;
-static int lastMeshRssi = 0;
-static int lastMeshLqi = 0;
-
-// report all transient settings when asked
-void PinoccioShell::allReportHQ() {
-  scoutReportHQ();
-  uptimeReportHQ();
-  powerReportHQ();
-  backpackReportHQ();
-  digitalPinReportHQ();
-  analogPinReportHQ();
-  meshReportHQ();
-  tempReportHQ();
-  ledReportHQ();
+bool checkArgs(uint8_t min, uint8_t max, const __FlashStringHelper *errorMsg) {
+  if (getarg(0) < min || getarg(0) > max) {
+      speol(errorMsg);
+      return false;
+  }
+  return true;
 }
 
-uint8_t PinoccioShell::parseHex(char c) {
-  if (c >= '0' && c <= '9') {
-    return c - '0';
-  }
-
-  if (c >= 'a' && c <= 'z') {
-    return c - 'a' + 10;
-  }
-
-  if (c >= 'A' && c <= 'Z') {
-    return c - 'A' + 10;
-  }
-  // TODO: Better error message
-  unexpected(M_number);
-}
-
-void PinoccioShell::parseHex(const char *str, size_t length, uint8_t *out) {
-  // TODO: Better error message
-  if (length % 2) {
-    unexpected(M_number);
-  }
-
-  // Convert each digit in turn. If the string ends before we reach
-  // length, parseHex will error out on the trailling \0
-  for (size_t i = 0; i < length; i += 2) {
-    out[i / 2] = parseHex(str[i]) << 4 | parseHex(str[i + 1]);
-  }
-
-  // See if the string is really finished
-  // TODO: Better error message
-  if (str[length]) {
-    unexpected(M_number);
-  }
-}
-
+/****************************\
+*      BUILT-IN HANDLERS    *
+\****************************/
 
 static numvar pinoccioBanner(void) {
   speol(F("Hello from Pinoccio!"));
@@ -464,143 +102,6 @@ static numvar allVerbose(void) {
   Scout.eventVerboseOutput = getarg(1);
   return 1;
 }
-
-StringBuffer serialWaiting;
-void PinoccioShell::prompt(void) {
-  Serial.print(F("> "));
-  // dump and clear any waiting output
-  Serial.print(serialWaiting.c_str());
-  serialWaiting = (char*)NULL;
-}
-
-// only print to serial if/when we are not handling bitlash
-void PinoccioShell::print(const char *str) {
-  if(outWait) {
-    serialWaiting += str;
-  } else {
-    Serial.print(str);
-  }
-}
-
-static StringBuffer serialIncoming;
-static String prevCommand;
-static char lastc = 0;
-static bool esc_sequence = false;
-
-StringBuffer serialOutgoing;
-void PinoccioShell::loop() {
-  if (isShellEnabled) {
-    while (Serial.available()) {
-      char c = Serial.read();
-
-      if (c == '\n' && lastc == '\r') {
-        // Ignore the \n in \r\n to prevent interpreting \r\n as two
-        // newlines. Note that we cannot just ignore newlines when the
-        // buffer is empty, since that doesn't allow forcing a new
-        // prompt by sending a newline (when the terminal is messed up
-        // by debug output for example).
-      } if (c == '\r' || c == '\n') {
-        Serial.println();
-        if (serialIncoming.length()) {
-          setOutputHandler(&printToString<&serialOutgoing>);
-          doCommand((char*)serialIncoming.c_str());
-          resetOutputHandler();
-          Serial.print(serialOutgoing.c_str());
-          prevCommand = serialIncoming;
-          serialIncoming = serialOutgoing = (char*)NULL;
-          Shell.refresh();
-        }
-        prompt();
-      } else if (c == '\b') {
-        if (serialIncoming.length()) {
-          // Erase last character (backspace only moves the cursor back,
-          // so print a space to actually erase)
-          Serial.write("\b \b");
-          serialIncoming.remove(serialIncoming.length() - 1);
-        } else {
-          // Nothing to erase, send a bell
-          Serial.write('\a');
-        }
-      } else if (c == '\x1b') {
-        esc_sequence = true;
-      } else if (esc_sequence && lastc == '\x1b') {
-        // Ignore the first character after the escape
-      } else if (esc_sequence && lastc != '\x1b') {
-        if (lastc == '[' && c == 'A') { // ESC[A == arrow up
-          // Erase existing command
-          Serial.write('\r');
-          for (size_t i = 0; i < serialIncoming.length(); ++i)
-            Serial.write(' ');
-          Serial.write('\r');
-          // Load and show previous command
-          prompt();
-          serialIncoming = prevCommand;
-          Serial.print(serialIncoming);
-        }
-        esc_sequence = false;
-      } else {
-        Serial.write(c); // echo everything back
-        serialIncoming += c;
-      }
-      lastc = c;
-
-      // Don't print stuff halfway through a command
-      outWait = (serialIncoming.length() != 0);
-    }
-    // bitlash loop
-    runBackgroundTasks();
-  }
-  keyLoop(millis());
-}
-
-void PinoccioShell::startShell() {
-  char buf[32];
-  uint8_t i;
-
-  isShellEnabled = true;
-
-  // init bitlash internals, don't use initBitlash so we do our own serial
-  initTaskList();
-  vinit();
-  
-  // init our defined cache and start up
-  Shell.refresh();
-  pinoccioBanner();
-
-  snprintf(buf, sizeof(buf), "startup", i);
-  if (Shell.defined(buf)) {
-    doCommand(buf);
-  }
-
-  for (i='a'; i<'z'; i++) {
-    snprintf(buf, sizeof(buf), "startup.%c", i);
-    if (Shell.defined(buf)) {
-      doCommand(buf);
-    }
-  }
-
-  for (i=0; i<NUM_DIGITAL_PINS; ++i) {
-    strlcpy(buf, "startup.", sizeof(buf));
-    strlcat_P(buf, (const char*)Scout.getNameForPin(i), sizeof(buf));
-
-    if (Shell.defined(buf)) {
-      doCommand(buf);
-    }
-  }
-
-  prompt();
-}
-
-void PinoccioShell::disableShell() {
-  isShellEnabled = false;
-}
-
-static NWK_DataReq_t sendDataReq;
-static bool sendDataReqBusy;
-
-/****************************\
-*      BUILT-IN HANDLERS    *
-\****************************/
 
 static StringBuffer tempReportHQ(void) {
   StringBuffer report(100);
@@ -1126,6 +627,140 @@ static numvar ledReport(void) {
 }
 
 /****************************\
+ *     MESH HELPERS
+\****************************/
+
+static NWK_DataReq_t sendDataReq;
+static bool sendDataReqBusy;
+
+static bool receiveMessage(NWK_DataInd_t *ind) {
+  char buf[64];
+  char *data = (char*)ind->data;
+  int keys[10];
+
+  if (isMeshVerbose) {
+    Serial.print(F("Received message of "));
+    Serial.print(data);
+    Serial.print(F(" from "));
+    Serial.print(ind->srcAddr, DEC);
+    Serial.print(F(" lqi "));
+    Serial.print(ind->lqi, DEC);
+    Serial.print(F(" rssi "));
+    Serial.println(abs(ind->rssi), DEC);
+  }
+  lastMeshRssi = abs(ind->rssi);
+  lastMeshLqi = ind->lqi;
+  NWK_SetAckControl(abs(ind->rssi));
+
+  if (strlen(data) <3 || data[0] != '[') {
+    return false;
+  }
+
+  // parse the array payload into keys, [1, "foo", "bar"]
+  keyLoad(data, keys, millis());
+  uint32_t time = millis();
+
+  snprintf(buf, sizeof(buf),"on.message.scout");
+  if (Shell.defined(buf)) {
+    snprintf(buf, sizeof(buf), "on.message.scout(%d", ind->srcAddr);
+    for (int i=2; i<=keys[0]; i++) {
+      snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf), ",%d", keys[i]);
+    }
+    snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf), ")");
+    doCommand(buf);
+  }
+
+  if (Scout.eventVerboseOutput) {
+    Serial.print(F("on.message.scout event handler took "));
+    Serial.print(millis() - time);
+    Serial.println(F("ms"));
+  }
+  return true;
+}
+
+static void sendConfirm(NWK_DataReq_t *req) {
+   sendDataReqBusy = false;
+   free(req->data);
+
+   if (isMeshVerbose) {
+    if (req->status == NWK_SUCCESS_STATUS) {
+      Serial.print(F("-  Message successfully sent to Scout "));
+      Serial.print(req->dstAddr);
+      if (req->control) {
+        Serial.print(F(" (Confirmed with control byte: "));
+        Serial.print(req->control);
+        Serial.print(F(")"));
+      }
+      Serial.println();
+    } else {
+      Serial.print(F("Error: "));
+      switch (req->status) {
+        case NWK_OUT_OF_MEMORY_STATUS:
+          Serial.print(F("Out of memory: "));
+          break;
+        case NWK_NO_ACK_STATUS:
+        case NWK_PHY_NO_ACK_STATUS:
+          Serial.print(F("No acknowledgement received: "));
+          break;
+        case NWK_NO_ROUTE_STATUS:
+          Serial.print(F("No route to destination: "));
+          break;
+        case NWK_PHY_CHANNEL_ACCESS_FAILURE_STATUS:
+          Serial.print(F("Physical channel access failure: "));
+          break;
+        default:
+          Serial.print(F("unknown failure: "));
+      }
+      Serial.print(F("("));
+      Serial.print(req->status, HEX);
+      Serial.println(F(")"));
+    }
+  }
+  lastMeshRssi = req->control;
+
+  // run the Bitlash callback ack function
+  char buf[32];
+  uint32_t time = millis();
+
+  snprintf(buf, sizeof(buf),"on.message.signal");
+  if (Shell.defined(buf)) {
+    snprintf(buf, sizeof(buf), "on.message.signal(%d, %d)", req->dstAddr, (req->status == NWK_SUCCESS_STATUS) ? req->control : 0);
+    doCommand(buf);
+  }
+
+  if (Scout.eventVerboseOutput) {
+    Serial.print(F("on.message.signal event handler took "));
+    Serial.print(millis() - time);
+    Serial.println(F("ms"));
+  }
+}
+
+static void sendMessage(int address, const String &data) {
+  if (sendDataReqBusy) {
+    return;
+  }
+
+  sendDataReq.dstAddr = address;
+  sendDataReq.dstEndpoint = 1;
+  sendDataReq.srcEndpoint = 1;
+  sendDataReq.options = NWK_OPT_ACK_REQUEST|NWK_OPT_ENABLE_SECURITY;
+  sendDataReq.data = (uint8_t*)strdup(data.c_str());
+  sendDataReq.size = data.length() + 1;
+  sendDataReq.confirm = sendConfirm;
+  NWK_DataReq(&sendDataReq);
+
+  sendDataReqBusy = true;
+
+  if (isMeshVerbose) {
+    Serial.print(F("Sent message to Scout "));
+    Serial.print(address);
+    Serial.print(F(": "));
+    Serial.println(data);
+  }
+}
+
+
+/****************************\
 *    MESH RADIO HANDLERS    *
 \****************************/
 
@@ -1645,32 +1280,6 @@ static numvar analogPinReport(void) {
   return 1;
 }
 
-static int8_t getPinFromArg(uint8_t arg) {
-  if (isstringarg(arg)) {
-    return Scout.getPinFromName((const char*)getstringarg(arg));
-  } else if (getarg(arg) >= 0 && getarg(arg) < NUM_DIGITAL_PINS) {
-    return getarg(arg);
-  } else {
-    return -1;
-  }
-}
-
-bool checkArgs(uint8_t exactly, const __FlashStringHelper *errorMsg) {
-  if (getarg(0) != exactly) {
-      speol(errorMsg);
-      return false;
-  }
-  return true;
-}
-
-bool checkArgs(uint8_t min, uint8_t max, const __FlashStringHelper *errorMsg) {
-  if (getarg(0) < min || getarg(0) > max) {
-      speol(errorMsg);
-      return false;
-  }
-  return true;
-}
-
 /****************************\
 *     BACKPACK HANDLERS     *
 \****************************/
@@ -2031,19 +1640,6 @@ static void delayTimerHandler(SYS_Timer_t *timer) {
   free(timer);
 }
 
-void PinoccioShell::delay(uint32_t at, char *command) {
-  size_t clen = strlen(command) + 1;
-  // allocate space for the command after the timer pointer
-  SYS_Timer_t *delayTimer = (SYS_Timer_t *)malloc(sizeof(struct SYS_Timer_t) + clen);
-  memset(delayTimer,0,sizeof(struct SYS_Timer_t));
-  memcpy(((char*)delayTimer) + sizeof(struct SYS_Timer_t), command, clen);
-  // init timer
-  delayTimer->mode = SYS_TIMER_INTERVAL_MODE;
-  delayTimer->handler = delayTimerHandler;
-  delayTimer->interval = at;
-  SYS_TimerStart(delayTimer);
-}
-
 static numvar scoutDelay(void) {
   char *str;
   int i, args = getarg(0);
@@ -2244,138 +1840,6 @@ static numvar setEventVerbose(void) {
   return 1;
 }
 
-
-/****************************\
- *     HELPER FUNCTIONS     *
-\****************************/
-
-static bool receiveMessage(NWK_DataInd_t *ind) {
-  char buf[64];
-  char *data = (char*)ind->data;
-  int keys[10];
-
-  if (isMeshVerbose) {
-    Serial.print(F("Received message of "));
-    Serial.print(data);
-    Serial.print(F(" from "));
-    Serial.print(ind->srcAddr, DEC);
-    Serial.print(F(" lqi "));
-    Serial.print(ind->lqi, DEC);
-    Serial.print(F(" rssi "));
-    Serial.println(abs(ind->rssi), DEC);
-  }
-  lastMeshRssi = abs(ind->rssi);
-  lastMeshLqi = ind->lqi;
-  NWK_SetAckControl(abs(ind->rssi));
-
-  if (strlen(data) <3 || data[0] != '[') {
-    return false;
-  }
-
-  // parse the array payload into keys, [1, "foo", "bar"]
-  keyLoad(data, keys, millis());
-  uint32_t time = millis();
-
-  snprintf(buf, sizeof(buf),"on.message.scout");
-  if (Shell.defined(buf)) {
-    snprintf(buf, sizeof(buf), "on.message.scout(%d", ind->srcAddr);
-    for (int i=2; i<=keys[0]; i++) {
-      snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf), ",%d", keys[i]);
-    }
-    snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf), ")");
-    doCommand(buf);
-  }
-
-  if (Scout.eventVerboseOutput) {
-    Serial.print(F("on.message.scout event handler took "));
-    Serial.print(millis() - time);
-    Serial.println(F("ms"));
-  }
-  return true;
-}
-
-static void sendMessage(int address, const String &data) {
-  if (sendDataReqBusy) {
-    return;
-  }
-
-  sendDataReq.dstAddr = address;
-  sendDataReq.dstEndpoint = 1;
-  sendDataReq.srcEndpoint = 1;
-  sendDataReq.options = NWK_OPT_ACK_REQUEST|NWK_OPT_ENABLE_SECURITY;
-  sendDataReq.data = (uint8_t*)strdup(data.c_str());
-  sendDataReq.size = data.length() + 1;
-  sendDataReq.confirm = sendConfirm;
-  NWK_DataReq(&sendDataReq);
-
-  sendDataReqBusy = true;
-
-  if (isMeshVerbose) {
-    Serial.print(F("Sent message to Scout "));
-    Serial.print(address);
-    Serial.print(F(": "));
-    Serial.println(data);
-  }
-}
-
-static void sendConfirm(NWK_DataReq_t *req) {
-   sendDataReqBusy = false;
-   free(req->data);
-
-   if (isMeshVerbose) {
-    if (req->status == NWK_SUCCESS_STATUS) {
-      Serial.print(F("-  Message successfully sent to Scout "));
-      Serial.print(req->dstAddr);
-      if (req->control) {
-        Serial.print(F(" (Confirmed with control byte: "));
-        Serial.print(req->control);
-        Serial.print(F(")"));
-      }
-      Serial.println();
-    } else {
-      Serial.print(F("Error: "));
-      switch (req->status) {
-        case NWK_OUT_OF_MEMORY_STATUS:
-          Serial.print(F("Out of memory: "));
-          break;
-        case NWK_NO_ACK_STATUS:
-        case NWK_PHY_NO_ACK_STATUS:
-          Serial.print(F("No acknowledgement received: "));
-          break;
-        case NWK_NO_ROUTE_STATUS:
-          Serial.print(F("No route to destination: "));
-          break;
-        case NWK_PHY_CHANNEL_ACCESS_FAILURE_STATUS:
-          Serial.print(F("Physical channel access failure: "));
-          break;
-        default:
-          Serial.print(F("unknown failure: "));
-      }
-      Serial.print(F("("));
-      Serial.print(req->status, HEX);
-      Serial.println(F(")"));
-    }
-  }
-  lastMeshRssi = req->control;
-
-  // run the Bitlash callback ack function
-  char buf[32];
-  uint32_t time = millis();
-
-  snprintf(buf, sizeof(buf),"on.message.signal");
-  if (Shell.defined(buf)) {
-    snprintf(buf, sizeof(buf), "on.message.signal(%d, %d)", req->dstAddr, (req->status == NWK_SUCCESS_STATUS) ? req->control : 0);
-    doCommand(buf);
-  }
-
-  if (Scout.eventVerboseOutput) {
-    Serial.print(F("on.message.signal event handler took "));
-    Serial.print(millis() - time);
-    Serial.println(F("ms"));
-  }
-}
-
-
 /****************************\
  *      EVENT HANDLERS      *
 \****************************/
@@ -2490,3 +1954,393 @@ static void temperatureEventHandler(int8_t tempC, int8_t tempF) {
 static void ledEventHandler(uint8_t redValue, uint8_t greenValue, uint8_t blueValue) {
   ledReportHQ();
 }
+
+/****************************\
+ *      SHELL CLASS
+\****************************/
+
+PinoccioShell::PinoccioShell() {
+  isShellEnabled = true;
+}
+
+PinoccioShell::~PinoccioShell() { }
+
+void PinoccioShell::setup() {
+  keyInit();
+
+  addFunction("power.ischarging", isBatteryCharging);
+  addFunction("power.hasbattery", isBatteryConnected);
+  addFunction("power.percent", getBatteryPercentage);
+  addFunction("power.voltage", getBatteryVoltage);
+  addFunction("power.enablevcc", enableBackpackVcc);
+  addFunction("power.disablevcc", disableBackpackVcc);
+  addFunction("power.isvccenabled", isBackpackVccEnabled);
+  addFunction("power.sleep", powerSleep);
+  addFunction("power.report", powerReport);
+  addFunction("power.wakeup.pin", powerWakeupPin);
+
+  addFunction("mesh.config", meshConfig);
+  addFunction("mesh.setpower", meshSetPower);
+  addFunction("mesh.setdatarate", meshSetDataRate);
+  addFunction("mesh.setkey", meshSetKey);
+  addFunction("mesh.getkey", meshGetKey);
+  addFunction("mesh.resetkey", meshResetKey);
+  addFunction("mesh.joingroup", meshJoinGroup);
+  addFunction("mesh.leavegroup", meshLeaveGroup);
+  addFunction("mesh.ingroup", meshIsInGroup);
+  addFunction("mesh.verbose", meshVerbose);
+  addFunction("mesh.report", meshReport);
+  addFunction("mesh.routing", meshRouting);
+  addFunction("mesh.signal", meshSignal);
+  addFunction("mesh.loss", meshLoss);
+
+  addFunction("message.scout", messageScout);
+  addFunction("message.group", messageGroup);
+
+  addFunction("temperature.c", getTemperatureC);
+  addFunction("temperature.f", getTemperatureF);
+  addFunction("temperature.report", temperatureReport);
+  addFunction("temperature.setoffset", setTemperatureOffset);
+  addFunction("temperature.calibrate", temperatureCalibrate);
+  addFunction("randomnumber", getRandomNumber);
+  addFunction("memory.report", memoryReport);
+
+  addFunction("report", allReport);
+  addFunction("verbose", allVerbose);
+
+  addFunction("uptime.awake.micros", uptimeAwakeMicros);
+  addFunction("uptime.awake.seconds", uptimeAwakeSeconds);
+  addFunction("uptime.sleeping.micros", uptimeSleepingMicros);
+  addFunction("uptime.sleeping.seconds", uptimeSleepingSeconds);
+  addFunction("uptime.seconds", uptimeSeconds);
+  addFunction("uptime.micros", uptimeMicros);
+  addFunction("uptime.report", uptimeReport);
+  addFunction("uptime.getlastreset", getLastResetCause);
+  addFunction("uptime.status", uptimeStatus);
+
+  addFunction("led.on", ledTorch); // alias
+  addFunction("led.off", ledOff);
+  addFunction("led.red", ledRed);
+  addFunction("led.green", ledGreen);
+  addFunction("led.blue", ledBlue);
+  addFunction("led.cyan", ledCyan);
+  addFunction("led.purple", ledPurple);
+  addFunction("led.beccapurple", ledBeccaPurple);
+  addFunction("led.magenta", ledMagenta);
+  addFunction("led.yellow", ledYellow);
+  addFunction("led.orange", ledOrange);
+  addFunction("led.white", ledWhite);
+  addFunction("led.torch", ledTorch);
+  addFunction("led.blink", ledBlink);
+  addFunction("led.sethex", ledSetHex);
+  addFunction("led.gethex", ledGetHex);
+  addFunction("led.setrgb", ledSetRgb);
+  addFunction("led.isoff", ledIsOff);
+  addFunction("led.savetorch", ledSaveTorch);
+  addFunction("led.report", ledReport);
+
+  addFunction("high", pinConstHigh);
+  addFunction("low", pinConstLow);
+  addFunction("disconnected", pinConstDisconnected);
+  addFunction("disabled", pinConstDisabled);
+  addFunction("input", pinConstInput);
+  addFunction("output", pinConstOutput);
+  addFunction("input_pullup", pinConstInputPullup);
+  addFunction("pwm", pinConstPWM);
+
+  addFunction("pin.makeinput", pinMakeInput);
+  addFunction("pin.makeoutput", pinMakeOutput);
+  addFunction("pin.makepwm", pinMakePWM);
+  addFunction("pin.makedisconnected", pinMakeDisconnected);
+  addFunction("pin.disable", pinDisable);
+  addFunction("pin.setmode", pinSetMode);
+  addFunction("pin.read", pinRead);
+  addFunction("pin.write", pinWrite);
+  addFunction("pin.save", pinSave);
+  addFunction("pin.status", pinStatus);
+  addFunction("pin.number", pinNumber);
+  addFunction("pin.othersdisconnected", pinOthersDisconnected);
+  addFunction("pin.report.digital", digitalPinReport);
+  addFunction("pin.report.analog", analogPinReport);
+
+  addFunction("backpack.report", backpackReport);
+  addFunction("backpack.list", backpackList);
+  addFunction("backpack.eeprom", backpackEeprom);
+  addFunction("backpack.eeprom.update", backpackUpdateEeprom);
+  addFunction("backpack.detail", backpackDetail);
+  addFunction("backpack.resources", backpackResources);
+
+  addFunction("scout.report", scoutReport);
+  addFunction("scout.isleadscout", isScoutLeadScout);
+  addFunction("scout.delay", scoutDelay);
+  addFunction("scout.daisy", daisyWipe);
+  addFunction("scout.boot", boot);
+  addFunction("scout.otaboot", otaBoot);
+
+  addFunction("module.status", moduleStatus);
+  addFunction("module.enable", moduleEnable);
+
+  addFunction("hq.settoken", setHQToken);
+  addFunction("hq.gettoken", getHQToken);
+  addFunction("hq.verbose", hqVerbose);
+  addFunction("hq.print", hqPrint);
+  addFunction("hq.report", hqReport);
+  addFunction("hq.bridge", hqBridge);
+
+  addFunction("events.start", startStateChangeEvents);
+  addFunction("events.stop", stopStateChangeEvents);
+  addFunction("events.setcycle", setEventCycle);
+  addFunction("events.verbose", setEventVerbose);
+
+  addFunction("key", keyMap);
+  addFunction("key.free", keyFree);
+  addFunction("key.print", keyPrint);
+  addFunction("key.number", keyNumber);
+  addFunction("key.save", keySave);
+
+  // set up event handlers
+  Scout.digitalPinEventHandler = digitalPinEventHandler;
+  Scout.analogPinEventHandler = analogPinEventHandler;
+  Scout.batteryPercentageEventHandler = batteryPercentageEventHandler;
+  Scout.batteryChargingEventHandler = batteryChargingEventHandler;
+  Scout.temperatureEventHandler = temperatureEventHandler;
+  Led.ledEventHandler = ledEventHandler;
+
+  if (isShellEnabled) {
+    startShell();
+  }
+
+  Scout.meshListen(1, receiveMessage);
+
+  if (!Scout.isLeadScout()) {
+    Shell.allReportHQ(); // lead scout reports on hq connect
+  }
+}
+
+void PinoccioShell::addFunction(const char *name, numvar (*func)(void)) {
+  addBitlashFunction(name, (bitlash_function)func);
+}
+
+// update a memory cache of which functions are defined
+StringBuffer customScripts;
+void PinoccioShell::refresh(void)
+{
+  customScripts = "";
+  setOutputHandler(&printToString<&customScripts>);
+  doCommand("ls");
+  resetOutputHandler();
+
+  // parse and condense the "ls" bitlash format of "function name {...}\n" into just "name "
+  int nl, sp;
+  while((nl = customScripts.indexOf('\n')) >= 0)
+  {
+    if(customScripts.startsWith("function ") && (sp = customScripts.indexOf(' ',9)) < nl)
+    {
+      customScripts += customScripts.substring(9,sp+1);
+    }
+    customScripts = customScripts.substring(nl+1);
+  }
+}
+
+// just a safe wrapper around bitlash checks
+bool PinoccioShell::defined(const char *cmd)
+{
+  if(!cmd) return false;
+  if(find_user_function((char*)cmd)) return true;
+//  if(findKey(cmd) >= 0) return true; // don't use findscript(), it's not re-entrant safe
+  int at = customScripts.indexOf(cmd);
+  if(at >= 0 && customScripts.charAt(at+strlen(cmd)) == ' ') return true;
+  return false;
+}
+
+// report all transient settings when asked
+void PinoccioShell::allReportHQ() {
+  scoutReportHQ();
+  uptimeReportHQ();
+  powerReportHQ();
+  backpackReportHQ();
+  digitalPinReportHQ();
+  analogPinReportHQ();
+  meshReportHQ();
+  tempReportHQ();
+  ledReportHQ();
+}
+
+uint8_t PinoccioShell::parseHex(char c) {
+  if (c >= '0' && c <= '9') {
+    return c - '0';
+  }
+
+  if (c >= 'a' && c <= 'z') {
+    return c - 'a' + 10;
+  }
+
+  if (c >= 'A' && c <= 'Z') {
+    return c - 'A' + 10;
+  }
+  // TODO: Better error message
+  unexpected(M_number);
+}
+
+void PinoccioShell::parseHex(const char *str, size_t length, uint8_t *out) {
+  // TODO: Better error message
+  if (length % 2) {
+    unexpected(M_number);
+  }
+
+  // Convert each digit in turn. If the string ends before we reach
+  // length, parseHex will error out on the trailling \0
+  for (size_t i = 0; i < length; i += 2) {
+    out[i / 2] = parseHex(str[i]) << 4 | parseHex(str[i + 1]);
+  }
+
+  // See if the string is really finished
+  // TODO: Better error message
+  if (str[length]) {
+    unexpected(M_number);
+  }
+}
+
+StringBuffer serialWaiting;
+void PinoccioShell::prompt(void) {
+  Serial.print(F("> "));
+  // dump and clear any waiting output
+  Serial.print(serialWaiting.c_str());
+  serialWaiting = (char*)NULL;
+}
+
+// only print to serial if/when we are not handling bitlash
+void PinoccioShell::print(const char *str) {
+  if(outWait) {
+    serialWaiting += str;
+  } else {
+    Serial.print(str);
+  }
+}
+
+static StringBuffer serialIncoming;
+static String prevCommand;
+static char lastc = 0;
+static bool esc_sequence = false;
+
+StringBuffer serialOutgoing;
+void PinoccioShell::loop() {
+  if (isShellEnabled) {
+    while (Serial.available()) {
+      char c = Serial.read();
+
+      if (c == '\n' && lastc == '\r') {
+        // Ignore the \n in \r\n to prevent interpreting \r\n as two
+        // newlines. Note that we cannot just ignore newlines when the
+        // buffer is empty, since that doesn't allow forcing a new
+        // prompt by sending a newline (when the terminal is messed up
+        // by debug output for example).
+      } if (c == '\r' || c == '\n') {
+        Serial.println();
+        if (serialIncoming.length()) {
+          setOutputHandler(&printToString<&serialOutgoing>);
+          doCommand((char*)serialIncoming.c_str());
+          resetOutputHandler();
+          Serial.print(serialOutgoing.c_str());
+          prevCommand = serialIncoming;
+          serialIncoming = serialOutgoing = (char*)NULL;
+          Shell.refresh();
+        }
+        prompt();
+      } else if (c == '\b') {
+        if (serialIncoming.length()) {
+          // Erase last character (backspace only moves the cursor back,
+          // so print a space to actually erase)
+          Serial.write("\b \b");
+          serialIncoming.remove(serialIncoming.length() - 1);
+        } else {
+          // Nothing to erase, send a bell
+          Serial.write('\a');
+        }
+      } else if (c == '\x1b') {
+        esc_sequence = true;
+      } else if (esc_sequence && lastc == '\x1b') {
+        // Ignore the first character after the escape
+      } else if (esc_sequence && lastc != '\x1b') {
+        if (lastc == '[' && c == 'A') { // ESC[A == arrow up
+          // Erase existing command
+          Serial.write('\r');
+          for (size_t i = 0; i < serialIncoming.length(); ++i)
+            Serial.write(' ');
+          Serial.write('\r');
+          // Load and show previous command
+          prompt();
+          serialIncoming = prevCommand;
+          Serial.print(serialIncoming);
+        }
+        esc_sequence = false;
+      } else {
+        Serial.write(c); // echo everything back
+        serialIncoming += c;
+      }
+      lastc = c;
+
+      // Don't print stuff halfway through a command
+      outWait = (serialIncoming.length() != 0);
+    }
+    // bitlash loop
+    runBackgroundTasks();
+  }
+  keyLoop(millis());
+}
+
+void PinoccioShell::startShell() {
+  char buf[32];
+  uint8_t i;
+
+  isShellEnabled = true;
+
+  // init bitlash internals, don't use initBitlash so we do our own serial
+  initTaskList();
+  vinit();
+  
+  // init our defined cache and start up
+  Shell.refresh();
+  pinoccioBanner();
+
+  snprintf(buf, sizeof(buf), "startup", i);
+  if (Shell.defined(buf)) {
+    doCommand(buf);
+  }
+
+  for (i='a'; i<'z'; i++) {
+    snprintf(buf, sizeof(buf), "startup.%c", i);
+    if (Shell.defined(buf)) {
+      doCommand(buf);
+    }
+  }
+
+  for (i=0; i<NUM_DIGITAL_PINS; ++i) {
+    strlcpy(buf, "startup.", sizeof(buf));
+    strlcat_P(buf, (const char*)Scout.getNameForPin(i), sizeof(buf));
+
+    if (Shell.defined(buf)) {
+      doCommand(buf);
+    }
+  }
+
+  prompt();
+}
+
+void PinoccioShell::disableShell() {
+  isShellEnabled = false;
+}
+
+void PinoccioShell::delay(uint32_t at, char *command) {
+  size_t clen = strlen(command) + 1;
+  // allocate space for the command after the timer pointer
+  SYS_Timer_t *delayTimer = (SYS_Timer_t *)malloc(sizeof(struct SYS_Timer_t) + clen);
+  memset(delayTimer,0,sizeof(struct SYS_Timer_t));
+  memcpy(((char*)delayTimer) + sizeof(struct SYS_Timer_t), command, clen);
+  // init timer
+  delayTimer->mode = SYS_TIMER_INTERVAL_MODE;
+  delayTimer->handler = delayTimerHandler;
+  delayTimer->interval = at;
+  SYS_TimerStart(delayTimer);
+}
+
