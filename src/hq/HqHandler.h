@@ -33,6 +33,9 @@ public:
   static const uint8_t cacert[];
   /** The length of cacert. Is 0 when TLS should not be used. */
   static const size_t cacert_len;
+
+  /** Should tls be used? */
+  static const bool use_tls;
 };
 
 #endif // LIB_PINOCCIO_HQHANDLER_H_
