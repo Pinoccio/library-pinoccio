@@ -11,7 +11,6 @@
 #include "SleepHandler.h"
 #include "backpacks/Backpacks.h"
 #include "backpacks/wifi/WifiModule.h"
-#include "SleepHandler.h"
 #include "bitlash.h"
 #include "src/bitlash.h"
 #include "util/StringBuffer.h"
