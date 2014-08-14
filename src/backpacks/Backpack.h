@@ -18,6 +18,7 @@ namespace pinoccio {
     public:
       virtual bool setup(BackpackInfo *info) = 0;
       virtual void loop() = 0;
+      virtual ~Backpack() {};
   };
 } // namespace pinoccio
 

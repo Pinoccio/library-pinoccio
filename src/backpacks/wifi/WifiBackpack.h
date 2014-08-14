@@ -19,7 +19,7 @@ namespace pinoccio {
 
     public:
       WifiBackpack();
-      ~WifiBackpack();
+      virtual ~WifiBackpack();
 
       bool setup(BackpackInfo *info);
       bool init();
