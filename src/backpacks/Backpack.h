@@ -13,12 +13,12 @@
 
 class BackpackInfo;
 
-class PinoccioBackpack {
-  public:
-    virtual bool setup(BackpackInfo *info) = 0;
-    virtual void loop() = 0;
-};
-
-typedef PinoccioBackpack Backpack;
+namespace pinoccio {
+  class Backpack {
+    public:
+      virtual bool setup(BackpackInfo *info) = 0;
+      virtual void loop() = 0;
+  };
+} // namespace pinoccio
 
 #endif

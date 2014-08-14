@@ -9,3 +9,5 @@
 #include <Arduino.h>
 #include <Scout.h>
 #include "Backpack.h"
+
+using namespace pinoccio;
