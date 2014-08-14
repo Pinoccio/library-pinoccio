@@ -51,8 +51,8 @@ void WifiBackpack::onAssociate(void *data) {
 
 bool WifiBackpack::connectToHq() {
   IPAddress ip;
-  if (!gs.parseIpAddress(&ip, HqHandler::host())) {
-    ip = gs.dnsLookup(HqHandler::host());
+  if (!gs.parseIpAddress(&ip, HqHandler::host().c_str())) {
+    ip = gs.dnsLookup(HqHandler::host().c_str());
 
     if (ip == INADDR_NONE) {
       Serial.print(F("Failed to resolve "));

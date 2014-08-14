@@ -9,6 +9,7 @@
 #include "Shell.h"
 #include "Scout.h"
 #include "SleepHandler.h"
+#include "hq/HqHandler.h"
 #include "backpacks/Backpacks.h"
 #include "backpacks/wifi/WifiModule.h"
 #include "bitlash.h"
@@ -1810,6 +1811,18 @@ static numvar hqReport(void) {
   return true;
 }
 
+static numvar hqSetAddress(void) {
+  if (!checkArgs(1, 2, F("usage: hq.setaddress(\"host\"[, port]"))) {
+    return 0;
+  }
+  // Change the HQ address. Always disable TLS, since TLS checking needs
+  // the actual server certificate included in the sketch. There is no
+  // hostname checking and no CA certificates included...
+  if (getarg(0) == 2)
+    HqHandler::setHqAddress(ConstString((const char*)getstringarg(1)), false, getarg(2));
+  else
+    HqHandler::setHqAddress(ConstString((const char*)getstringarg(1)), false);
+}
 
 /****************************\
  *      EVENT HANDLERS      *
@@ -2085,6 +2098,7 @@ void PinoccioShell::setup() {
   addFunction("hq.print", hqPrint);
   addFunction("hq.report", hqReport);
   addFunction("hq.bridge", hqBridge);
+  addFunction("hq.setaddress", hqSetAddress);
 
   addFunction("events.start", startStateChangeEvents);
   addFunction("events.stop", stopStateChangeEvents);
