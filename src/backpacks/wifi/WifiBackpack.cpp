@@ -35,15 +35,15 @@ WifiBackpack::~WifiBackpack() { }
 void WifiBackpack::onAssociate(void *data) {
   WifiBackpack& wifi = *(WifiBackpack*)data;
 
-  #ifdef USE_TLS
-  // Do a timesync
-  IPAddress ip = wifi.gs.dnsLookup(NTP_SERVER);
-  if (ip == INADDR_NONE ||
-      !wifi.gs.timeSync(ip, NTP_INTERVAL)) {
-    Serial.println("Time sync failed, reassociating to retry");
-    wifi.autoConnectHq();
+  if (HqHandler::cacert_len != 0) {
+    // Do a timesync
+    IPAddress ip = wifi.gs.dnsLookup(NTP_SERVER);
+    if (ip == INADDR_NONE ||
+        !wifi.gs.timeSync(ip, NTP_INTERVAL)) {
+      Serial.println("Time sync failed, reassociating to retry");
+      wifi.autoConnectHq();
+    }
   }
-  #endif
   
   wifi.apConnCount++;
 }
@@ -222,11 +222,7 @@ bool WifiBackpack::isAPConnected() {
 }
 
 bool WifiBackpack::isHQConnected() {
-  #ifdef USE_TLS
-  return client.connected() && client.sslConnected();
-  #else
-  return client.connected();
-  #endif
+  return client.connected() && (HqHandler::cacert_len == 0 || client.sslConnected());
 }
 
 bool WifiBackpack::dnsLookup(Print& p, const char *host) {
