@@ -32,8 +32,8 @@ namespace pinoccio {
       // Takes effect immediately
       bool wifiStatic(IPAddress ip, IPAddress netmask, IPAddress gw, IPAddress dns);
 
-      // (Re-)connects the wifi and HQ connection
-      bool autoConnectHq();
+      // (Re-)associates the wifi (and afterwards autoconnects to HQ)
+      bool associate();
       void disassociate();
 
       bool printAPs(Print& p);
@@ -63,10 +63,16 @@ namespace pinoccio {
 
     protected:
 
-      // Event handlers
+      // Event handler
       static void onAssociate(void *data);
-      static void onNcmConnect(void *data, GSCore::cid_t cid);
-      static void onNcmDisconnect(void *data);
+
+      // Creates the TCP connection to HQ, to be called while already
+      // associated
+      bool connectToHq();
+
+      // To ensure that time is synced at least once before attempting
+      // SSL
+      bool timeSynced = false;
   };
 } // namespace pinoccio
 

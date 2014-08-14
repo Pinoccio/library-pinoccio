@@ -117,7 +117,7 @@ static numvar wifiDisassociate(void) {
 
 static numvar wifiReassociate(void) {
   // This restart the NCM
-  return WifiModule::instance.bp().autoConnectHq();
+  return WifiModule::instance.bp().associate();
 }
 
 static numvar wifiCommand(void) {
@@ -197,7 +197,7 @@ bool WifiModule::enable() {
       _bp = new WifiBackpack();
       if (!_bp)
         return false;
-      if (!_bp->setup(&Backpacks::info[i]) || !_bp->autoConnectHq())
+      if (!_bp->setup(&Backpacks::info[i]) || !_bp->associate())
         return false;
 
       Shell.addFunction("wifi.report", wifiReport);
