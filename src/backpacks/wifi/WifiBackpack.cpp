@@ -77,8 +77,6 @@ void WifiBackpack::onNcmDisconnect(void *data) {
 }
 
 bool WifiBackpack::setup(BackpackInfo *info) {
-  Backpack::setup();
-
   // Alternatively, use the UART for Wifi backpacks that still have the
   // UART firmware running on them
   // Serial1.begin(115200);
@@ -108,7 +106,6 @@ bool WifiBackpack::setup(BackpackInfo *info) {
 }
 
 void WifiBackpack::loop() {
-  Backpack::loop();
   gs.loop();
   client = gs.getNcmCid();
 }

@@ -11,14 +11,12 @@
 
 #include <Pinoccio.h>
 
+class BackpackInfo;
+
 class PinoccioBackpack {
-
   public:
-    PinoccioBackpack();
-    ~PinoccioBackpack();
-
-    void setup();
-    void loop();
+    virtual bool setup(BackpackInfo *info) = 0;
+    virtual void loop() = 0;
 };
 
 typedef PinoccioBackpack Backpack;
