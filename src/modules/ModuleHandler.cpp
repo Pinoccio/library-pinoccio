@@ -33,20 +33,24 @@ void ModuleHandler::loop() {
 Module *ModuleHandler::enable(const char *name) {
   Module *module = modules();
   while (module) {
-    if (strcmp_P(name, (const char*)module->name()) == 0) {
-      if (module->enabled())
-        return module;
+    if (strcmp_P(name, (const char*)module->name()) == 0)
+      return enable(module);
 
-      if (module->enable()) {
-        module->_enabled = true;
-        return module;
-      }
-
-      return NULL;
-    }
     module = module->next();
   }
 
   speol("No such module");
+  return NULL;
+}
+
+Module *ModuleHandler::enable(Module * module) {
+  if (module->enabled())
+    return module;
+
+  if (module->enable()) {
+    module->_enabled = true;
+    return module;
+  }
+
   return NULL;
 }
