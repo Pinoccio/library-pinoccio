@@ -113,7 +113,8 @@ bool WifiBackpack::setup(BackpackInfo *info) {
 void WifiBackpack::loop() {
   gs.loop();
 
-  if (isAPConnected() && !isHQConnected() &&
+  if (HqHandler::host().length() &&
+      isAPConnected() && !isHQConnected() &&
       (!HqHandler::use_tls() || timeSynced))
     connectToHq();
 }
