@@ -30,14 +30,21 @@ void ModuleHandler::loop() {
   }
 }
 
-Module *ModuleHandler::enable(const char *name) {
+Module *ModuleHandler::find(const char *name) {
   Module *module = modules();
   while (module) {
     if (strcmp_P(name, (const char*)module->name()) == 0)
-      return enable(module);
-
+      return module;
     module = module->next();
   }
+  return NULL;
+}
+
+Module *ModuleHandler::enable(const char *name) {
+  Module *module = find(name);
+
+  if (module)
+    return enable(module);
 
   speol("No such module");
   return NULL;
