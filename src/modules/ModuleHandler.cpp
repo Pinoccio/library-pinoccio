@@ -46,7 +46,7 @@ Module *ModuleHandler::enable(const char *name) {
   if (module)
     return enable(module);
 
-  speol("No such module");
+  speol(F("No such module"));
   return NULL;
 }
 
