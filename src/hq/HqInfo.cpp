@@ -15,18 +15,18 @@
 // is not possible due to a bug in the Gainspan firmware... e.g. if I
 // set google.com here, the gainspan module will try to connect to
 // "google.compinocc.io"...
-const char HqHandler::host[] = "pool.base.pinocc.io";
+const char HqHandler::_host[] = "pool.base.pinocc.io";
 
 #ifndef USE_TLS
 // 22757 for TLS, 22756 for plain
-const uint16_t HqHandler::port = 22756;
-const bool HqHandler::use_tls = false;
+const uint16_t HqHandler::_port = 22756;
+const bool HqHandler::_use_tls = false;
 const uint8_t HqHandler::cacert[] = {};
 const size_t HqHandler::cacert_len = 0;
 #else
 // 22757 for TLS, 22756 for plain
-const uint16_t HqHandler::port = 22757;
-const bool HqHandler::use_tls = true;
+const uint16_t HqHandler::_port = 22757;
+const bool HqHandler::_use_tls = true;
 
 // CA certificate that signed the server certificate.
 //  - Using the server certificate here doesn't work, only the CA that

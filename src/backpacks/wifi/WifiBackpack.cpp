@@ -36,7 +36,7 @@ void WifiBackpack::onAssociate(void *data) {
   WifiBackpack& wifi = *(WifiBackpack*)data;
   wifi.apConnCount++;
 
-  if (HqHandler::use_tls) {
+  if (HqHandler::use_tls()) {
     // Do a timesync
     IPAddress ip = wifi.gs.dnsLookup(NTP_SERVER);
     if (ip == INADDR_NONE ||
@@ -51,24 +51,24 @@ void WifiBackpack::onAssociate(void *data) {
 
 bool WifiBackpack::connectToHq() {
   IPAddress ip;
-  if (!gs.parseIpAddress(&ip, HqHandler::host)) {
-    ip = gs.dnsLookup(HqHandler::host);
+  if (!gs.parseIpAddress(&ip, HqHandler::host())) {
+    ip = gs.dnsLookup(HqHandler::host());
 
     if (ip == INADDR_NONE) {
       Serial.print(F("Failed to resolve "));
-      Serial.print(HqHandler::host);
+      Serial.print(HqHandler::host());
       Serial.println(F(", reassociating to retry"));
       return false;
     }
   }
 
-  if (!client.connect(ip, HqHandler::port)) {
+  if (!client.connect(ip, HqHandler::port())) {
     Serial.println(F("HQ connection failed, reassociating to retry"));
     associate();
     return false;
   }
 
-  if (HqHandler::use_tls) {
+  if (HqHandler::use_tls()) {
     if (!client.enableTls(CA_CERTNAME_HQ)) {
       // Failed SSL negotiation kills the connection
       Serial.println(F("SSL negotiation to HQ failed, reassociating to retry"));
@@ -114,7 +114,7 @@ void WifiBackpack::loop() {
   gs.loop();
 
   if (isAPConnected() && !isHQConnected() &&
-      (!HqHandler::use_tls || timeSynced))
+      (!HqHandler::use_tls() || timeSynced))
     connectToHq();
 }
 

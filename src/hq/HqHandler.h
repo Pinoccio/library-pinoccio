@@ -25,17 +25,22 @@ public:
   // These are defined in HQInfo.cpp
   /////////////////////////////////////////
 
-  /** Hostname of the hq server */
-  static const char host[];
-  /** Port of the hq server */
-  static const uint16_t port;
   /** The CA certificate for the hq server. */
   static const uint8_t cacert[];
   /** The length of cacert. Is 0 when TLS should not be used. */
   static const size_t cacert_len;
 
+  static const char* host() { return _host; }
+  static uint16_t port() { return _port; }
+  static bool use_tls() { return _use_tls; }
+
+protected:
   /** Should tls be used? */
-  static const bool use_tls;
+  static const bool _use_tls;
+  /** Hostname of the hq server */
+  static const char _host[];
+  /** Port of the hq server */
+  static const uint16_t _port;
 };
 
 #endif // LIB_PINOCCIO_HQHANDLER_H_
