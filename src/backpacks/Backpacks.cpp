@@ -20,6 +20,9 @@ Pbbe::LogicalPin::mask_t Backpacks::used_pins = 0;
 
 void Backpacks::setup()
 {
+  static auto toggleBackpackVccCallback = build_callback(onToggleBackpackVcc);
+  Scout.toggleBackpackVccCallbacks.prepend(toggleBackpackVccCallback);
+
   // Give the slaves on the backpack bus a bit of time to start up. 1ms
   // seems to be enough, but let's be generous.
   delay(5);
@@ -39,6 +42,15 @@ void Backpacks::setup()
 
 void Backpacks::loop()
 {
+}
+
+void Backpacks::onToggleBackpackVcc(bool on) {
+  if (on) {
+    delay(5);
+    detect();
+  } else {
+    freeBackpacks(true);
+  }
 }
 
 bool Backpacks::detect()

@@ -125,6 +125,7 @@ protected:
    */
   static void freeBackpacks(bool list);
 
+  static void onToggleBackpackVcc(bool on);
 
   /**
    * Print a Pbbp error. Prints the given prefix, followed by the
