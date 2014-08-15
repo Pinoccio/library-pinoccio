@@ -2357,19 +2357,6 @@ void PinoccioShell::delay(uint32_t at, char *command) {
   SYS_TimerStart(delayTimer);
 }
 
-/* 
-  // output looks like: http://jeremie.com/i/7319dcc3a7.png
-  Serial.println("SHELL EVAL TEST");
-  Serial.println(Shell.eval("uptime.status"));
-  Serial.println(Shell.eval("uptime.seconds"));
-  numvar ret;
-  Serial.println(Shell.eval("millis",&ret));
-  char arg[10];
-  sprintf(arg,"%d",ret);
-  Shell.eval("verbose(1)");
-  Serial.println(Shell.evalArgs(2,"hq.report","foo",arg));
-*/
-
 // do a composed shell command and return the string output
 StringBuffer evalOut;
 const char *PinoccioShell::eval(const char *str) {
@@ -2387,9 +2374,9 @@ numvar PinoccioShell::eval(const char *str, StringBuffer *result) {
     refresh();
   }
   evalOut.trim(); // remove any whitespace
-  // nice convenience to embed the return value if there was no output
-  if(evalOut == "") evalOut.appendSprintf("%ld",ret);
   if(result) result->concat(evalOut);
+  // nice convenience to embed the return value (in evalOut only) if there was no other output
+  if(evalOut == "") evalOut.appendSprintf("%ld",ret);
   return ret;
 }
 const char *PinoccioShell::eval(const char *str, numvar *result) {
