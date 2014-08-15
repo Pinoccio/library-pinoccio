@@ -89,6 +89,8 @@ const char *PinoccioShell::evalArgs(Cmd cmd, Args... args...) {
   buf.concat('(');
   Concatenator<QuoteStringsOnly>::concat(buf, ',', args...);
   buf.concat(')');
+  Serial.print("Evaluating: ");
+  Serial.println(buf);
   return eval(buf.c_str());
 }
 
