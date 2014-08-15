@@ -14,6 +14,7 @@
 #include <ScoutHandler.h>
 #include "modules/ModuleHandler.h"
 #include "backpack-bus/PBBP.h"
+#include "util/Callback.h"
 #include <Wire.h>
 
 #include "lwm/phy/phy.h"
@@ -39,6 +40,7 @@
 
 // TODO: remove these when this class is put in the pinoccio namespace
 using pinoccio::ScoutHandler;
+using pinoccio::CallbackList;
 
 class PinoccioScout : public PinoccioClass {
 
@@ -113,6 +115,8 @@ class PinoccioScout : public PinoccioClass {
     bool isBattCharging;
     bool isBattAlarmTriggered;
     uint8_t temperature;
+
+    CallbackList<void, bool> toggleBackpackVccCallbacks;
 
     bool eventVerboseOutput;
 

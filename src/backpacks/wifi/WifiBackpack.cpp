@@ -30,7 +30,9 @@ static void print_line(const uint8_t *buf, uint16_t len, void *data) {
 
 WifiBackpack::WifiBackpack() : client(gs) { }
 
-WifiBackpack::~WifiBackpack() { }
+WifiBackpack::~WifiBackpack() {
+  gs.end();
+}
 
 void WifiBackpack::onAssociate(void *data) {
   WifiBackpack& wifi = *(WifiBackpack*)data;

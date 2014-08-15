@@ -20,6 +20,9 @@ Pbbe::LogicalPin::mask_t Backpacks::used_pins = 0;
 
 void Backpacks::setup()
 {
+  static auto toggleBackpackVccCallback = build_callback(onToggleBackpackVcc);
+  Scout.toggleBackpackVccCallbacks.prepend(toggleBackpackVccCallback);
+
   // Give the slaves on the backpack bus a bit of time to start up. 1ms
   // seems to be enough, but let's be generous.
   delay(5);
@@ -31,17 +34,28 @@ void Backpacks::setup()
   {
     ModuleHandler::enable("wifi");
   }
+
+  // Free all cached info about backpacks to save memory (we can always
+  // re-request it if needed).
+  freeBackpacks(false);
 }
 
 void Backpacks::loop()
 {
 }
 
+void Backpacks::onToggleBackpackVcc(bool on) {
+  if (on) {
+    delay(5);
+    detect();
+  } else {
+    freeBackpacks(true);
+  }
+}
+
 bool Backpacks::detect()
 {
-  free(info);
-  num_backpacks = 0;
-  used_pins = 0;
+  freeBackpacks(true);
   if (!pbbp.enumerate(addBackpack))
     return printPbbpError("Backpack enumeration failed: ");
   updateUsedPins();
@@ -202,6 +216,20 @@ void Backpacks::addBackpack(uint8_t *unique_id)
   bp.used_pins = BackpackInfo::USED_PINS_UNKNOWN;
 
   memcpy(bp.id.raw_bytes, unique_id, sizeof(bp.id));
+}
+
+void Backpacks::freeBackpacks(bool list) {
+  for (uint8_t i = 0; i < num_backpacks; ++i) {
+    info[i].freeHeader();
+    info[i].freeEeprom();
+    info[i].freeAllDescriptors();
+  }
+  if (list) {
+    free(info);
+    info = 0;
+    num_backpacks = 0;
+    used_pins = 0;
+  }
 }
 
 bool Backpacks::isModelPresent(uint16_t modelid)
