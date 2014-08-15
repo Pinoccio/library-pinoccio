@@ -949,6 +949,30 @@ static numvar meshRouting(void) {
   return 1;
 }
 
+static numvar meshSleep(void) {
+  if (!checkArgs(0, 3, F("usage: mesh.sleep([seconds, nap ms, \"function\"])"))) {
+    return 0;
+  }
+  // will broadcast a sleep command until seconds, only we run the function on wake
+  // nap (if not 0) is the number of ms to wake up and check for alerts (less sleepy)
+  // anyone who wakes up early for any reason will broadcast alerts to try to wake others until they're happy
+  // alerts keep anyone from falling back alseep but don't change the cycle
+  // no arg just returns how many seconds are left to sleep, if any
+  return 1;
+}
+
+static numvar meshAlert(void) {
+  if (!checkArgs(0, 1, F("usage: mesh.alert([0 or 1])"))) {
+    return 0;
+  }
+  // used to wake the mesh up until some condition is met
+  // does nothing if not sleeping
+  // 0 clears any alert status
+  // no args returns current alert status
+  return 1;
+}
+
+
 static numvar messageScout(void) {
   if (!checkArgs(1, 99, F("usage: message.scout(scoutId, \"message\")"))) {
     return 0;
@@ -2005,6 +2029,7 @@ void PinoccioShell::setup() {
   addFunction("mesh.routing", meshRouting);
   addFunction("mesh.signal", meshSignal);
   addFunction("mesh.loss", meshLoss);
+  addFunction("mesh.sleep", meshSleep);
 
   addFunction("message.scout", messageScout);
   addFunction("message.group", messageGroup);
