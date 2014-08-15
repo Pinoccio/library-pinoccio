@@ -268,6 +268,18 @@ void WifiModule::_disable() {
 void WifiModule::loop() {
   if (_bp)
     _bp->loop();
+
+  if (_bp->gs.unrecoverableError) {
+    speol(F("Unrecoverable error in the wifi backpack. Cycling all backpack power to restart."));
+    Scout.disableBackpackVcc();
+    delay(100);
+    Scout.enableBackpackVcc();
+    if (!_bp) {
+      speol(F("Failed to initialize after power cycle. Rebooting scout..."));
+      Serial.flush();
+      Scout.reboot();
+    }
+  }
 }
 
 void WifiModule::onToggleBackpackVcc(bool on) {
