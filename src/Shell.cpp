@@ -2385,24 +2385,3 @@ const char *PinoccioShell::eval(const char *str, numvar *result) {
   if(result) *result = ret;
   return evalOut.c_str();
 }
-
-// just a friendly wrapper to compose the eval string
-// usage: Shell.evalArgs(3,"hq.report","myreport",chararg,Shell.eval("temperature.f"))
-const char *PinoccioShell::evalArgs(uint8_t args, const char *cmd, ...) {
-  uint8_t i;
-  StringBuffer str;
-  va_list vl;
-  if(!defined(cmd)) return 0;
-  va_start(vl,args);
-  str = cmd;
-  str += "(";
-  for (i=0;i<args;i++)
-  {
-    if(i) str += ",";
-    str += "\"";
-    str += (char*)va_arg(vl, char*);
-    str += "\"";
-  }
-  str += ")";
-  return eval(str.c_str());
-}
