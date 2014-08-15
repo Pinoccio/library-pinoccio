@@ -11,6 +11,7 @@
 #include "WifiBackpack.h"
 #include "../../ScoutHandler.h"
 #include "../../hq/HqHandler.h"
+#include "../../SleepHandler.h"
 #include "src/bitlash.h"
 
 using namespace pinoccio;

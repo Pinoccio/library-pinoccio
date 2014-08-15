@@ -9,6 +9,7 @@
 #include <Arduino.h>
 #include <Shell.h>
 #include <Scout.h>
+#include "SleepHandler.h"
 #include "backpack-bus/PBBP.h"
 #include "util/StringBuffer.h"
 #include "util/String.h"
