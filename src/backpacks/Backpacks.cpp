@@ -31,6 +31,10 @@ void Backpacks::setup()
   {
     ModuleHandler::enable("wifi");
   }
+
+  // Free all cached info about backpacks to save memory (we can always
+  // re-request it if needed).
+  freeBackpacks(false);
 }
 
 void Backpacks::loop()
@@ -39,7 +43,7 @@ void Backpacks::loop()
 
 bool Backpacks::detect()
 {
-  freeBackpacks();
+  freeBackpacks(true);
   if (!pbbp.enumerate(addBackpack))
     return printPbbpError("Backpack enumeration failed: ");
   updateUsedPins();
@@ -202,16 +206,18 @@ void Backpacks::addBackpack(uint8_t *unique_id)
   memcpy(bp.id.raw_bytes, unique_id, sizeof(bp.id));
 }
 
-void Backpacks::freeBackpacks() {
+void Backpacks::freeBackpacks(bool list) {
   for (uint8_t i = 0; i < num_backpacks; ++i) {
     info[i].freeHeader();
     info[i].freeEeprom();
     info[i].freeAllDescriptors();
   }
-  free(info);
-  info = 0;
-  num_backpacks = 0;
-  used_pins = 0;
+  if (list) {
+    free(info);
+    info = 0;
+    num_backpacks = 0;
+    used_pins = 0;
+  }
 }
 
 bool Backpacks::isModelPresent(uint16_t modelid)
