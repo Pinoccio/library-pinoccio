@@ -20,7 +20,7 @@ namespace pinoccio {
       const __FlashStringHelper *name() const;
       void loop();
 
-      WifiBackpack &bp() { return *_bp; }
+      WifiBackpack *bp() { return _bp; }
 
     protected:
       WifiBackpack *_bp;

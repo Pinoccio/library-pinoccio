@@ -1690,12 +1690,12 @@ static numvar daisyWipe(void) {
   report.appendSprintf("[%d,[%d],[\"bye\"]]",keyMap("daisy",0),keyMap("dave",0));
   Scout.handler.report(report);
 
-  if (WifiModule::instance.enabled()) {
-    if (!WifiModule::instance.bp().runDirectCommand(Serial, "AT&F")) {
+  if (WifiModule::instance.bp()) {
+    if (!WifiModule::instance.bp()->runDirectCommand(Serial, "AT&F")) {
        sp(F("Error: Wi-Fi direct command failed"));
        ret = false;
     }
-    if (!WifiModule::instance.bp().runDirectCommand(Serial, "AT&W0")) {
+    if (!WifiModule::instance.bp()->runDirectCommand(Serial, "AT&W0")) {
        sp(F("Error: Wi-Fi direct command failed"));
        ret = false;
     }

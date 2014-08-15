@@ -441,7 +441,7 @@ StringBuffer ScoutHandler::report(StringBuffer &report) {
 
 void leadHQConnect() {
 
-  if (Scout.handler.isBridged || WifiModule::instance.enabled() && WifiModule::instance.bp().client.connected()) {
+  if (Scout.handler.isBridged || (WifiModule::instance.bp() && WifiModule::instance.bp()->client.connected())) {
     char token[33];
     StringBuffer auth(64);
     token[32] = 0;
@@ -467,9 +467,9 @@ void leadHQHandle(void) {
     rsize = (int)Scout.handler.bridge.length();
     hqIncoming += Scout.handler.bridge;
     Scout.handler.bridge = "";
-  } else if (WifiModule::instance.enabled()) {
-    if (WifiModule::instance.bp().client.available()) {
-      rsize = hqIncoming.readClient(WifiModule::instance.bp().client, 128);
+  } else if (WifiModule::instance.bp()) {
+    if (WifiModule::instance.bp()->client.available()) {
+      rsize = hqIncoming.readClient(WifiModule::instance.bp()->client, 128);
     }
   }
 
@@ -650,7 +650,7 @@ void leadSignal(const String &json) {
     return;
   }
 
-  if (!WifiModule::instance.enabled() || !WifiModule::instance.bp().client.connected()) {
+  if (!WifiModule::instance.bp() || !WifiModule::instance.bp()->client.connected()) {
     if (hqVerboseOutput) {
       Serial.println(F("HQ offline, can't signal"));
       Serial.println(json);
@@ -662,8 +662,8 @@ void leadSignal(const String &json) {
     Serial.println(json);
   }
 
-  WifiModule::instance.bp().client.print(json);
-  WifiModule::instance.bp().client.flush();
+  WifiModule::instance.bp()->client.print(json);
+  WifiModule::instance.bp()->client.flush();
 }
 
 // called whenever another scout sends an answer back to us
