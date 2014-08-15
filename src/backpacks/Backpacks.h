@@ -120,6 +120,14 @@ protected:
   static void addBackpack(uint8_t *unique_id);
 
   /**
+   * Free the entire list of backpacks.
+   */
+  static void freeBackpacks();
+
+
+
+
+  /**
    * Print a Pbbp error. Prints the given prefix, followed by the
    * last pbbp error.
    *

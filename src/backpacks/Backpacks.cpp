@@ -39,9 +39,7 @@ void Backpacks::loop()
 
 bool Backpacks::detect()
 {
-  free(info);
-  num_backpacks = 0;
-  used_pins = 0;
+  freeBackpacks();
   if (!pbbp.enumerate(addBackpack))
     return printPbbpError("Backpack enumeration failed: ");
   updateUsedPins();
@@ -202,6 +200,18 @@ void Backpacks::addBackpack(uint8_t *unique_id)
   bp.used_pins = BackpackInfo::USED_PINS_UNKNOWN;
 
   memcpy(bp.id.raw_bytes, unique_id, sizeof(bp.id));
+}
+
+void Backpacks::freeBackpacks() {
+  for (uint8_t i = 0; i < num_backpacks; ++i) {
+    info[i].freeHeader();
+    info[i].freeEeprom();
+    info[i].freeAllDescriptors();
+  }
+  free(info);
+  info = 0;
+  num_backpacks = 0;
+  used_pins = 0;
 }
 
 bool Backpacks::isModelPresent(uint16_t modelid)
