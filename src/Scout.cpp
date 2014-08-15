@@ -194,10 +194,12 @@ int8_t PinoccioScout::getTemperatureF() {
 void PinoccioScout::enableBackpackVcc() {
   isVccEnabled = true;
   digitalWrite(VCC_ENABLE, HIGH);
+  toggleBackpackVccCallbacks.callAll(true);
 }
 
 void PinoccioScout::disableBackpackVcc() {
   isVccEnabled = false;
+  toggleBackpackVccCallbacks.callAll(false);
   digitalWrite(VCC_ENABLE, LOW);
 }
 
