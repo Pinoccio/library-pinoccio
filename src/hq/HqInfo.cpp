@@ -9,22 +9,24 @@
 #include "HqHandler.h"
 
 // Uncomment this in order to use TLS
-//#define USE_TLS
+#define USE_TLS
 
 // Warning: Setting an IP address here, or setting a _shorter_ hostname
 // is not possible due to a bug in the Gainspan firmware... e.g. if I
 // set google.com here, the gainspan module will try to connect to
 // "google.compinocc.io"...
-const char HqHandler::host[] = "pool.base.pinocc.io";
+String HqHandler::_host = "pool.base.pinocc.io";
 
 #ifndef USE_TLS
 // 22757 for TLS, 22756 for plain
-const uint16_t HqHandler::port = 22756;
+uint16_t HqHandler::_port = 22756;
+bool HqHandler::_use_tls = false;
 const uint8_t HqHandler::cacert[] = {};
 const size_t HqHandler::cacert_len = 0;
 #else
 // 22757 for TLS, 22756 for plain
-const uint16_t HqHandler::port = 22757;
+uint16_t HqHandler::_port = 22757;
+bool HqHandler::_use_tls = true;
 
 // CA certificate that signed the server certificate.
 //  - Using the server certificate here doesn't work, only the CA that
@@ -140,3 +142,12 @@ const uint8_t HqHandler::cacert[] = {
 };
 const size_t HqHandler::cacert_len = sizeof(cacert);
 #endif
+
+void HqHandler::setHqAddress(const String& host, bool use_tls, uint16_t port) {
+  if (port)
+    _port = port;
+  else
+    _port = use_tls ? 22757 : 22756;
+  _use_tls = use_tls;
+  _host = host;
+}

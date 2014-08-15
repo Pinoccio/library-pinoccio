@@ -34,51 +34,56 @@ WifiBackpack::~WifiBackpack() { }
 
 void WifiBackpack::onAssociate(void *data) {
   WifiBackpack& wifi = *(WifiBackpack*)data;
-
-  #ifdef USE_TLS
-  // Do a timesync
-  IPAddress ip = wifi.gs.dnsLookup(NTP_SERVER);
-  if (ip == INADDR_NONE ||
-      !wifi.gs.timeSync(ip, NTP_INTERVAL)) {
-    Serial.println("Time sync failed, reassociating to retry");
-    wifi.autoConnectHq();
-  }
-  #endif
-  
   wifi.apConnCount++;
+
+  if (HqHandler::use_tls()) {
+    // Do a timesync
+    IPAddress ip = wifi.gs.dnsLookup(NTP_SERVER);
+    if (ip == INADDR_NONE ||
+        !wifi.gs.timeSync(ip, NTP_INTERVAL)) {
+      Serial.println(F("Time sync failed, reassociating to retry"));
+      wifi.associate();
+    }
+    wifi.timeSynced = true;
+  }
+  // Connection to HQ will happen automatically from loop()
 }
 
-void WifiBackpack::onNcmConnect(void *data, GSCore::cid_t cid) {
-  WifiBackpack& wifi = *(WifiBackpack*)data;
+bool WifiBackpack::connectToHq() {
+  IPAddress ip;
+  if (!gs.parseIpAddress(&ip, HqHandler::host().c_str())) {
+    ip = gs.dnsLookup(HqHandler::host().c_str());
 
-  wifi.client = cid;
-
-  if (HqHandler::cacert_len != 0) {
-    if (!wifi.client.enableTls(CA_CERTNAME_HQ)) {
-      // If enableTls fails, the NCM doesn't retry the TCP
-      // connection. We restart the entire association to get NCM to
-      // retry the TCP connection instead.
-      Serial.println("SSL negotiation to HQ failed, reassociating to retry");
-      wifi.autoConnectHq();
-      return;
+    if (ip == INADDR_NONE) {
+      Serial.print(F("Failed to resolve "));
+      Serial.print(HqHandler::host());
+      Serial.println(F(", reassociating to retry"));
+      return false;
     }
   }
-  
-  wifi.hqConnCount++;
+
+  if (!client.connect(ip, HqHandler::port())) {
+    Serial.println(F("HQ connection failed, reassociating to retry"));
+    associate();
+    return false;
+  }
+
+  if (HqHandler::use_tls()) {
+    if (!client.enableTls(CA_CERTNAME_HQ)) {
+      // Failed SSL negotiation kills the connection
+      Serial.println(F("SSL negotiation to HQ failed, reassociating to retry"));
+      associate();
+      return false;
+    }
+  }
 
   // TODO: Don't call leadHQConnect directly?
   leadHQConnect();
-}
-
-void WifiBackpack::onNcmDisconnect(void *data) {
-  WifiBackpack& wifi = *(WifiBackpack*)data;
-
-  wifi.client = GSCore::INVALID_CID;
+  hqConnCount++;
+  return true;
 }
 
 bool WifiBackpack::setup(BackpackInfo *info) {
-  Backpack::setup();
-
   // Alternatively, use the UART for Wifi backpacks that still have the
   // UART firmware running on them
   // Serial1.begin(115200);
@@ -88,8 +93,6 @@ bool WifiBackpack::setup(BackpackInfo *info) {
   SPI.setClockDivider(SPI_CLOCK_DIV16);
 
   gs.onAssociate = onAssociate;
-  gs.onNcmConnect = onNcmConnect;
-  gs.onNcmDisconnect = onNcmDisconnect;
   gs.eventData = this;
 
   if (info->id.revision == 0x11) {
@@ -108,9 +111,12 @@ bool WifiBackpack::setup(BackpackInfo *info) {
 }
 
 void WifiBackpack::loop() {
-  Backpack::loop();
   gs.loop();
-  client = gs.getNcmCid();
+
+  if (HqHandler::host().length() &&
+      isAPConnected() && !isHQConnected() &&
+      (!HqHandler::use_tls() || timeSynced))
+    connectToHq();
 }
 
 static bool isWepKey(const char *key) {
@@ -168,24 +174,16 @@ bool WifiBackpack::wifiStatic(IPAddress ip, IPAddress netmask, IPAddress gw, IPA
   return ok;
 }
 
-bool WifiBackpack::autoConnectHq() {
+bool WifiBackpack::associate() {
   // Try to disable the NCM in case it's already running
-  gs.setNcm(false);
+  disassociate();
 
   // When association fails, keep retrying indefinately (at least it
   // seems that a retry count of 0 means that, even though the
   // documentation says it should be >= 1).
   gs.setNcmParam(GSModule::GS_NCM_L3_CONNECT_RETRY_COUNT, 0);
 
-  // When association succeeds, but the TCP connection fails, keep
-  // retrying to connect (but not as fast as the default 500ms between
-  // attempts) indefinately (at least it seems that a retry count of 0
-  // means that, documentation doesn't say).
-  gs.setParam(GSModule::GS_PARAM_L4_RETRY_PERIOD, 1000 /* x 10ms */);
-  gs.setParam(GSModule::GS_PARAM_L4_RETRY_COUNT, 0);
-
-  return gs.setAutoConnectClient(HqHandler::host, HqHandler::port) &&
-         gs.setNcm(/* enable */ true, /* associate_only */ false, /* remember */ false);
+  return gs.setNcm(/* enable */ true, /* associate_only */ true, /* remember */ false);
 }
 
 void WifiBackpack::disassociate() {
@@ -225,11 +223,7 @@ bool WifiBackpack::isAPConnected() {
 }
 
 bool WifiBackpack::isHQConnected() {
-  #ifdef USE_TLS
-  return client.connected() && client.sslConnected();
-  #else
-  return client.connected();
-  #endif
+  return client.connected() && (!HqHandler::use_tls || client.sslConnected());
 }
 
 bool WifiBackpack::dnsLookup(Print& p, const char *host) {

@@ -31,10 +31,10 @@ class PinoccioShell {
     void setup();
     void loop();
     void addFunction(const char *name, numvar (*func)(void));
-    numvar eval(const char *str);
+    const char *eval(const char *str);
+    const char *eval(const char *str, numvar *result);
     numvar eval(const char *str, StringBuffer *result);
-    const char *exec(const char *str); // return the string output
-    numvar command(const char *cmd, ...); // pass in strings only, just runs eval: cmd("a","b","c")
+    const char *evalArgs(uint8_t args, const char *cmd, ...);
     void allReportHQ();
     void delay(uint32_t at, char *command);
     bool defined(const char *fn);

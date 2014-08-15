@@ -9,6 +9,7 @@
 #ifndef LIB_PINOCCIO_HQHANDLER_H_
 #define LIB_PINOCCIO_HQHANDLER_H_
 
+#include <Arduino.h>
 #include <stddef.h>
 #include <stdint.h>
 
@@ -25,14 +26,25 @@ public:
   // These are defined in HQInfo.cpp
   /////////////////////////////////////////
 
-  /** Hostname of the hq server */
-  static const char host[];
-  /** Port of the hq server */
-  static const uint16_t port;
   /** The CA certificate for the hq server. */
   static const uint8_t cacert[];
   /** The length of cacert. Is 0 when TLS should not be used. */
   static const size_t cacert_len;
+
+  static const String& host() { return _host; }
+  static uint16_t port() { return _port; }
+  static bool use_tls() { return _use_tls; }
+
+  /**  Change the HQ address to connect to. */
+  static void setHqAddress(const String& host, bool use_tls = false, uint16_t port = 0);
+
+protected:
+  /** Should tls be used? */
+  static bool _use_tls;
+  /** Hostname of the hq server */
+  static String _host;
+  /** Port of the hq server */
+  static uint16_t _port;
 };
 
 #endif // LIB_PINOCCIO_HQHANDLER_H_

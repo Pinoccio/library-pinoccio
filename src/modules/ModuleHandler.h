@@ -29,6 +29,16 @@ namespace pinoccio {
       static Module *enable(const char *name);
 
       /**
+       * Enables the given module.
+       */
+      static Module *enable(Module *module);
+
+      /**
+       * Finds the module with the given name, or NULL.
+       */
+      static Module *find(const char *name);
+
+      /**
        * Return the first module in the list of all modules. Subsequent
        * modules can be iterated by calling the next() method on each
        * module.
