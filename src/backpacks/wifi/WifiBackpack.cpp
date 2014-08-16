@@ -11,6 +11,7 @@
 #include "WifiBackpack.h"
 #include "../../ScoutHandler.h"
 #include "../../hq/HqHandler.h"
+#include "../../SleepHandler.h"
 #include "src/bitlash.h"
 
 using namespace pinoccio;
@@ -51,7 +52,14 @@ void WifiBackpack::onAssociate(void *data) {
   // Connection to HQ will happen automatically from loop()
 }
 
+static uint32_t lastAttempt = 0;
 bool WifiBackpack::connectToHq() {
+
+  // only retry connecting no faster than once a minute
+  uint32_t now = SleepHandler::uptime().seconds;
+  if(lastAttempt && now - lastAttempt < 60) return false;
+  lastAttempt = now;
+
   IPAddress ip;
   if (!gs.parseIpAddress(&ip, HqHandler::host().c_str())) {
     ip = gs.dnsLookup(HqHandler::host().c_str());

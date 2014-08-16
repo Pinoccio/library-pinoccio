@@ -9,6 +9,7 @@
 #include <Arduino.h>
 #include <Shell.h>
 #include <Scout.h>
+#include "SleepHandler.h"
 #include "backpack-bus/PBBP.h"
 #include "util/StringBuffer.h"
 #include "util/String.h"
@@ -68,6 +69,7 @@ static int leadCommandRetries;
 static NWK_DataReq_t leadCommandReq;
 static void leadCommandChunk(void);
 static int leadAnswerID = 0;
+static uint32_t leadActive = 0;
 
 // this is called on the main loop to try to (re)connect to the HQ
 static void leadHQHandle(void);
@@ -115,6 +117,12 @@ void ScoutHandler::setup() {
 void ScoutHandler::loop() {
   if (Scout.isLeadScout()) {
     leadHQHandle();
+    // when the leadActive (most recent wifi read/write activity) is idle for 5+ minutes, paranoid reassociate
+    if(SleepHandler::uptime().seconds - leadActive > 5*60)
+    {
+      leadActive = SleepHandler::uptime().seconds;
+      WifiModule::instance.bp() && WifiModule::instance.bp()->associate();
+    }
   }
 }
 
@@ -464,6 +472,7 @@ void leadHQHandle(void) {
   } else if (WifiModule::instance.bp()) {
     if (WifiModule::instance.bp()->client.available()) {
       rsize = hqIncoming.readClient(WifiModule::instance.bp()->client, 128);
+      if(rsize > 0) leadActive = SleepHandler::uptime().seconds;
     }
   }
 
@@ -655,6 +664,7 @@ void leadSignal(const String &json) {
 
   WifiModule::instance.bp()->client.print(json);
   WifiModule::instance.bp()->client.flush();
+  leadActive = SleepHandler::uptime().seconds;
 }
 
 // called whenever another scout sends an answer back to us
