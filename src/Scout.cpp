@@ -115,10 +115,12 @@ void PinoccioScout::setup(const char *sketchName, const char *sketchRevision, in
   HAL_FuelGaugeConfig(20);   // Configure the MAX17048G's alert percentage to 20%
 
   saveState();
-  handler.setup();
   ModuleHandler::setup();
 
   Backpacks::setup();
+
+  // start after so any backpacks are ready
+  handler.setup();
 
   startDigitalStateChangeEvents();
   startAnalogStateChangeEvents();
