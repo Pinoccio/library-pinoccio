@@ -2128,10 +2128,6 @@ void PinoccioShell::setup() {
   if (!Scout.isLeadScout()) {
     Shell.allReportHQ(); // lead scout reports on hq connect
   }
-
-  speol(evalArgs("print", 1));
-  speol(evalArgs("pin.makeinput", "d2"));
-  speol(evalArgs("pin.status"));
 }
 
 void PinoccioShell::addFunction(const char *name, numvar (*func)(void)) {
