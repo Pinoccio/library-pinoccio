@@ -166,15 +166,17 @@ static bool fieldCommands(NWK_DataInd_t *ind) {
 
   if (hqVerboseOutput) {
     Serial.print(F("running command "));
-    Serial.println(fieldCommand);
+    Serial.println(fieldCommand.c_str());
   }
 
+  fieldCommandOutput = "";
   ret = Shell.eval(fieldCommand.c_str(),&fieldCommandOutput);
   fieldCommand = (char*)NULL;
 
   if (hqVerboseOutput) {
     Serial.print(F("got result "));
     Serial.println(ret);
+    Serial.println(fieldCommandOutput.c_str());
   }
 
   // send data back in chunks
