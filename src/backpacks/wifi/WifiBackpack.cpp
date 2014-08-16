@@ -47,19 +47,13 @@ void WifiBackpack::onAssociate(void *data) {
       Serial.println(F("Time sync failed, reassociating to retry"));
       wifi.associate();
     }
-    wifi.timeSynced = true;
   }
-  // Connection to HQ will happen automatically from loop()
+  // connect to HQ now
+  wifi.connectToHq();
 }
 
-static uint32_t lastAttempt = 0;
+
 bool WifiBackpack::connectToHq() {
-
-  // only retry connecting no faster than once a minute
-  uint32_t now = SleepHandler::uptime().seconds;
-  if(lastAttempt && now - lastAttempt < 60) return false;
-  lastAttempt = now;
-
   IPAddress ip;
   if (!gs.parseIpAddress(&ip, HqHandler::host().c_str())) {
     ip = gs.dnsLookup(HqHandler::host().c_str());
@@ -122,11 +116,6 @@ bool WifiBackpack::setup(BackpackInfo *info) {
 
 void WifiBackpack::loop() {
   gs.loop();
-
-  if (HqHandler::host().length() &&
-      isAPConnected() && !isHQConnected() &&
-      (!HqHandler::use_tls() || timeSynced))
-    connectToHq();
 }
 
 static bool isWepKey(const char *key) {
@@ -187,6 +176,7 @@ bool WifiBackpack::wifiStatic(IPAddress ip, IPAddress netmask, IPAddress gw, IPA
 bool WifiBackpack::associate() {
   // Try to disable the NCM in case it's already running
   disassociate();
+  associating = true;
 
   // When association fails, keep retrying indefinately (at least it
   // seems that a retry count of 0 means that, even though the
@@ -197,6 +187,9 @@ bool WifiBackpack::associate() {
 }
 
 void WifiBackpack::disassociate() {
+  // nothing to disassociate if not associating
+  if(!associating) return;
+
   // this delay is important--The Gainspan module with 2.5.1 firmware
   // will hang if the NCM disassociate is called too soon after boot.
   if (millis() < 5000) {
