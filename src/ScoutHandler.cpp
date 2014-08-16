@@ -481,18 +481,21 @@ void leadHQHandle(void) {
   
   // Read a block of data and look for packets
   while((nl = hqIncoming.indexOf('\n')) >= 0) {
-   // look for a packet
-    if (hqVerboseOutput) {
-      Serial.print(F("looking for packet in: "));
-      Serial.println(hqIncoming);
-    }
-
-    // Parse JSON up to the first newline
-    if (!js0n((const unsigned char*)hqIncoming.c_str(), nl, index, 32)) {
-      leadIncoming(hqIncoming.c_str(), nl, index);
-    } else {
+    // look for a packet
+    if(nl)
+    {
       if (hqVerboseOutput) {
-        Serial.println(F("JSON parse failed"));
+        Serial.print(F("looking for packet in: "));
+        Serial.println(hqIncoming);
+      }
+
+      // Parse JSON up to the first newline
+      if (!js0n((const unsigned char*)hqIncoming.c_str(), nl, index, 32)) {
+        leadIncoming(hqIncoming.c_str(), nl, index);
+      } else {
+        if (hqVerboseOutput) {
+          Serial.println(F("JSON parse failed"));
+        }
       }
     }
 
