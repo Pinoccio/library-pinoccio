@@ -6,6 +6,7 @@
 *  This program is free software; you can redistribute it and/or modify it *
 *  under the terms of the BSD License as described in license.txt.         *
 \**************************************************************************/
+#include "stdarg.h"
 #include "Shell.h"
 #include "Scout.h"
 #include "SleepHandler.h"
@@ -14,7 +15,6 @@
 #include "backpacks/wifi/WifiModule.h"
 #include "bitlash.h"
 #include "src/bitlash.h"
-#include "util/StringBuffer.h"
 #include "util/String.h"
 #include "util/PrintToString.h"
 #include "modules/ModuleHandler.h"
@@ -2357,3 +2357,31 @@ void PinoccioShell::delay(uint32_t at, char *command) {
   SYS_TimerStart(delayTimer);
 }
 
+// do a composed shell command and return the string output
+StringBuffer evalOut;
+const char *PinoccioShell::eval(const char *str) {
+  eval(str, (StringBuffer*)NULL);
+  return evalOut.c_str();
+}
+numvar PinoccioShell::eval(const char *str, StringBuffer *result) {
+  numvar ret = 0;
+  evalOut = "";
+  if(str)
+  {
+    setOutputHandler(&printToString<&evalOut>);
+    ret = doCommand((char*)str);
+    resetOutputHandler();
+    refresh();
+  }
+  evalOut.trim(); // remove any whitespace
+  if(result) result->concat(evalOut);
+  // nice convenience to embed the return value (in evalOut only) if there was no other output
+  if(evalOut == "") evalOut.appendSprintf("%ld",ret);
+  return ret;
+}
+const char *PinoccioShell::eval(const char *str, numvar *result) {
+  numvar ret;
+  ret = eval(str, (StringBuffer*)NULL);
+  if(result) *result = ret;
+  return evalOut.c_str();
+}

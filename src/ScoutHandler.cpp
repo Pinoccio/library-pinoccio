@@ -135,7 +135,7 @@ void ScoutHandler::setVerbose(bool flag) {
 }
 
 static bool fieldCommands(NWK_DataInd_t *ind) {
-  int ret;
+  numvar ret;
   if (hqVerboseOutput) {
     Serial.print(F("Received command"));
     Serial.print(F("lqi: "));
@@ -166,23 +166,17 @@ static bool fieldCommands(NWK_DataInd_t *ind) {
 
   if (hqVerboseOutput) {
     Serial.print(F("running command "));
-    Serial.println(fieldCommand);
+    Serial.println(fieldCommand.c_str());
   }
 
-  // run the command and chunk back the results
-  setOutputHandler(&printToString<&fieldCommandOutput>);
-
-  // TODO: Once bitlash fixes const-correctness, this and similar casts
-  // should be removed.
-  ret = (int)doCommand(const_cast<char *>(fieldCommand.c_str()));
+  fieldCommandOutput = "";
+  ret = Shell.eval(fieldCommand.c_str(),&fieldCommandOutput);
   fieldCommand = (char*)NULL;
-
-  resetOutputHandler();
-  Shell.refresh();
 
   if (hqVerboseOutput) {
     Serial.print(F("got result "));
     Serial.println(ret);
+    Serial.println(fieldCommandOutput.c_str());
   }
 
   // send data back in chunks
@@ -546,10 +540,7 @@ void leadIncoming(const char *packet, size_t len, unsigned short *index) {
 
     // handle internal ones first
     if (to == Scout.getAddress()) {
-      setOutputHandler(&printToString<&leadCommandOutput>);
-      doCommand(command);
-      resetOutputHandler();
-      Shell.refresh();
+      Shell.eval(command,&leadCommandOutput);
 
       StringBuffer report;
       report.appendSprintf("{\"type\":\"reply\",\"from\":%d,\"id\":%lu,\"end\":true,\"reply\":", to, id);
