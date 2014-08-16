@@ -2029,6 +2029,7 @@ void PinoccioShell::setup() {
   addFunction("uptime.report", uptimeReport);
   addFunction("uptime.getlastreset", getLastResetCause);
   addFunction("uptime.status", uptimeStatus);
+  addFunction("uptime", uptimeStatus);
 
   addFunction("led.on", ledTorch); // alias
   addFunction("led.off", ledOff);
