@@ -229,7 +229,7 @@ bool WifiBackpack::isAPConnected() {
 }
 
 bool WifiBackpack::isHQConnected() {
-  return client.connected() && (!HqHandler::use_tls || client.sslConnected());
+  return client.connected() && (!HqHandler::use_tls() || client.sslConnected());
 }
 
 bool WifiBackpack::dnsLookup(Print& p, const char *host) {
