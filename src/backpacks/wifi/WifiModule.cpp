@@ -270,13 +270,19 @@ void WifiModule::loop() {
     _bp->loop();
 
   if (_bp->gs.unrecoverableError) {
-    speol(F("Unrecoverable error in the wifi backpack. Cycling all backpack power to restart."));
+    if (Scout.handler.isVerbose)
+    {
+      Serial.println(F("Unrecoverable error in the wifi backpack. Cycling all backpack power to restart."));
+    }
     Scout.disableBackpackVcc();
     delay(100);
     Scout.enableBackpackVcc();
     if (!_bp) {
-      speol(F("Failed to initialize after power cycle. Rebooting scout..."));
-      Serial.flush();
+      if (Scout.handler.isVerbose)
+      {
+        Serial.println(F("Failed to initialize after power cycle. Rebooting scout..."));
+        Serial.flush();
+      }
       Scout.reboot();
     }
   }

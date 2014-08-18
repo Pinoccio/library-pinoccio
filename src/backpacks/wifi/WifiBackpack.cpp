@@ -9,6 +9,7 @@
 #include <Arduino.h>
 #include <SPI.h>
 #include "WifiBackpack.h"
+#include "../../Scout.h"
 #include "../../ScoutHandler.h"
 #include "../../hq/HqHandler.h"
 #include "../../SleepHandler.h"
@@ -44,7 +45,10 @@ void WifiBackpack::onAssociate(void *data) {
     IPAddress ip = wifi.gs.dnsLookup(NTP_SERVER);
     if (ip == INADDR_NONE ||
         !wifi.gs.timeSync(ip, NTP_INTERVAL)) {
-      Serial.println(F("Time sync failed, reassociating to retry"));
+      if (Scout.handler.isVerbose)
+      {
+        Serial.println(F("Time sync failed, reassociating to retry"));
+      }
       wifi.associate();
     }
   }
@@ -59,15 +63,21 @@ bool WifiBackpack::connectToHq() {
     ip = gs.dnsLookup(HqHandler::host().c_str());
 
     if (ip == INADDR_NONE) {
-      Serial.print(F("Failed to resolve "));
-      Serial.print(HqHandler::host());
-      Serial.println(F(", reassociating to retry"));
+      if (Scout.handler.isVerbose)
+      {
+        Serial.print(F("Failed to resolve "));
+        Serial.print(HqHandler::host());
+        Serial.println(F(", reassociating to retry"));
+      }
       return false;
     }
   }
 
   if (!client.connect(ip, HqHandler::port())) {
-    Serial.println(F("HQ connection failed, reassociating to retry"));
+    if (Scout.handler.isVerbose)
+    {
+      Serial.println(F("HQ connection failed, reassociating to retry"));
+    }
     associate();
     return false;
   }
@@ -75,7 +85,10 @@ bool WifiBackpack::connectToHq() {
   if (HqHandler::use_tls()) {
     if (!client.enableTls(CA_CERTNAME_HQ)) {
       // Failed SSL negotiation kills the connection
-      Serial.println(F("SSL negotiation to HQ failed, reassociating to retry"));
+      if (Scout.handler.isVerbose)
+      {
+        Serial.println(F("SSL negotiation to HQ failed, reassociating to retry"));
+      }
       associate();
       return false;
     }
