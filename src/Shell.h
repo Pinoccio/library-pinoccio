@@ -162,8 +162,6 @@ inline numvar PinoccioShell::eval(Print *out, const String &cmd) {
     setOutputHandler(evalPrint);
   }
 
-  Serial.println("Eval");
-  Serial.println(cmd);
   numvar ret = doCommand((char*)cmd.c_str());
 
   if (out)
