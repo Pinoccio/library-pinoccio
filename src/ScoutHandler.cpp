@@ -178,7 +178,7 @@ static bool fieldCommands(NWK_DataInd_t *ind) {
   }
 
   fieldCommandOutput = "";
-  ret = Shell.eval(fieldCommand.c_str(),&fieldCommandOutput);
+  ret = Shell.eval(PrintToString(fieldCommandOutput), fieldCommand);
   fieldCommand = (char*)NULL;
 
   if (hqVerboseOutput) {
@@ -552,7 +552,7 @@ void leadIncoming(const char *packet, size_t len, unsigned short *index) {
 
     // handle internal ones first
     if (to == Scout.getAddress()) {
-      Shell.eval(command,&leadCommandOutput);
+      Shell.eval(PrintToString(leadCommandOutput), command);
 
       StringBuffer report;
       report.appendSprintf("{\"type\":\"reply\",\"from\":%d,\"id\":%lu,\"end\":true,\"reply\":", to, id);

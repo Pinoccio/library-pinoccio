@@ -2357,32 +2357,3 @@ void PinoccioShell::delay(uint32_t at, char *command) {
   delayTimer->interval = at;
   SYS_TimerStart(delayTimer);
 }
-
-// do a composed shell command and return the string output
-StringBuffer evalOut;
-const char *PinoccioShell::eval(const char *str) {
-  eval(str, (StringBuffer*)NULL);
-  return evalOut.c_str();
-}
-numvar PinoccioShell::eval(const char *str, StringBuffer *result) {
-  numvar ret = 0;
-  evalOut = "";
-  if(str)
-  {
-    setOutputHandler(&printToString<&evalOut>);
-    ret = doCommand((char*)str);
-    resetOutputHandler();
-    refresh();
-  }
-  evalOut.trim(); // remove any whitespace
-  if(result) result->concat(evalOut);
-  // nice convenience to embed the return value (in evalOut only) if there was no other output
-  if(evalOut == "") evalOut.appendSprintf("%ld",ret);
-  return ret;
-}
-const char *PinoccioShell::eval(const char *str, numvar *result) {
-  numvar ret;
-  ret = eval(str, (StringBuffer*)NULL);
-  if(result) *result = ret;
-  return evalOut.c_str();
-}
