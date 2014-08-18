@@ -104,6 +104,8 @@ public:
   const CString s;
 
   // Initialize from a "regular" (nul-terminated) char* string.
+  // TODO: gcc doesn't seem to be inlining this constructor, which
+  // prevents strlen from being evaluated at compiletime.
   ConstString (const char *str) : s(str, strlen(str)) { }
 
   // Intialize from a string when you already know its length. The
