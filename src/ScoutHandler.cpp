@@ -28,8 +28,6 @@ extern "C" {
 
 using namespace pinoccio;
 
-static bool hqVerboseOutput;
-
 static StringBuffer fieldCommand(0, 16);
 static int fieldAnswerTo = 0;
 static char *fieldAnswerChunks;
@@ -139,12 +137,12 @@ void ScoutHandler::setBridged(bool flag) {
 }
 
 void ScoutHandler::setVerbose(bool flag) {
-  hqVerboseOutput = flag;
+  isVerbose = flag;
 }
 
 static bool fieldCommands(NWK_DataInd_t *ind) {
   numvar ret;
-  if (hqVerboseOutput) {
+  if (Scout.handler.isVerbose) {
     Serial.print(F("Received command"));
     Serial.print(F("lqi: "));
     Serial.print(ind->lqi);
@@ -154,7 +152,7 @@ static bool fieldCommands(NWK_DataInd_t *ind) {
   }
 
   if (fieldAnswerTo) {
-    if (hqVerboseOutput) {
+    if (Scout.handler.isVerbose) {
       Serial.println(F("can't receive command while sending answer"));
     }
     return false;
@@ -166,13 +164,13 @@ static bool fieldCommands(NWK_DataInd_t *ind) {
 
   // when null terminated, do the message
   if (fieldCommand[fieldCommand.length() - 1] != '\0') {
-    if (hqVerboseOutput) {
+    if (Scout.handler.isVerbose) {
       Serial.println(F("waiting for more"));
     }
     return true;
   }
 
-  if (hqVerboseOutput) {
+  if (Scout.handler.isVerbose) {
     Serial.print(F("running command "));
     Serial.println(fieldCommand.c_str());
   }
@@ -181,7 +179,7 @@ static bool fieldCommands(NWK_DataInd_t *ind) {
   ret = Shell.eval(PrintToString(fieldCommandOutput), fieldCommand);
   fieldCommand = (char*)NULL;
 
-  if (hqVerboseOutput) {
+  if (Scout.handler.isVerbose) {
     Serial.print(F("got result "));
     Serial.println(ret);
     Serial.println(fieldCommandOutput.c_str());
@@ -197,11 +195,11 @@ static bool fieldCommands(NWK_DataInd_t *ind) {
 }
 
 static void fieldAnswerChunkConfirm(NWK_DataReq_t *req) {
-  if (hqVerboseOutput) {
+  if (Scout.handler.isVerbose) {
     Serial.print(F("  Message confirmation - "));
   }
   if (req->status == NWK_SUCCESS_STATUS) {
-    if (hqVerboseOutput) {
+    if (Scout.handler.isVerbose) {
       Serial.println(F("success"));
     }
     if (fieldCommandOutput.length() - fieldAnswerChunksAt > 100) {
@@ -212,12 +210,12 @@ static void fieldAnswerChunkConfirm(NWK_DataReq_t *req) {
   } else {
     fieldAnswerRetries++;
     if (fieldAnswerRetries > 3) {
-      if (hqVerboseOutput) {
+      if (Scout.handler.isVerbose) {
         Serial.print(F("error: "));
         Serial.println(req->status);
       }
     } else {
-      if (hqVerboseOutput) {
+      if (Scout.handler.isVerbose) {
         Serial.println(F("RETRY"));
       }
       NWK_DataReq(req);
@@ -246,7 +244,7 @@ static void fieldAnswerChunk() {
   fieldAnswerReq.confirm = fieldAnswerChunkConfirm;
   NWK_DataReq(&fieldAnswerReq);
 
-  if (hqVerboseOutput) {
+  if (Scout.handler.isVerbose) {
     Serial.print(fieldAnswerTo);
     Serial.print(F(" len "));
     Serial.print(len);
@@ -255,7 +253,7 @@ static void fieldAnswerChunk() {
 }
 
 static void announceConfirm(NWK_DataReq_t *req) {
-  if (req->status != NWK_SUCCESS_STATUS && hqVerboseOutput) {
+  if (req->status != NWK_SUCCESS_STATUS && Scout.handler.isVerbose) {
     Serial.print(F("Mesh announce failed: "));
     Serial.println(req->status);
   }
@@ -273,7 +271,7 @@ void ScoutHandler::announce(uint16_t group, const String& message) {
     leadAnnouncementSend(group, Scout.getAddress(), message);
   }
 
-  if (hqVerboseOutput) {
+  if (Scout.handler.isVerbose) {
     // TODO: This writes to Serial directly, but if we use the bitlash
     // sp functions while we're called from inside a command, this debug
     // output is added to the  command output, which isn't quite what we
@@ -325,7 +323,7 @@ static bool fieldAnnouncements(NWK_DataInd_t *ind) {
     return true;
   }
 
-  if (hqVerboseOutput) {
+  if (Scout.handler.isVerbose) {
     Serial.print(F("multicast in "));
     Serial.println(ind->dstAddr);
   }
@@ -451,7 +449,7 @@ void leadHQConnect() {
     auth.appendSprintf("{\"type\":\"token\",\"token\":\"%s\"}\n", token);
     leadSignal(auth);
   } else {
-    if (hqVerboseOutput) {
+    if (Scout.handler.isVerbose) {
       Serial.println(F("server unvailable"));
     }
   }
@@ -484,7 +482,7 @@ void leadHQHandle(void) {
     // look for a packet
     if(nl)
     {
-      if (hqVerboseOutput) {
+      if (Scout.handler.isVerbose) {
         Serial.print(F("looking for packet in: "));
         Serial.println(hqIncoming);
       }
@@ -493,7 +491,7 @@ void leadHQHandle(void) {
       if (!js0n((const unsigned char*)hqIncoming.c_str(), nl, index, 32)) {
         leadIncoming(hqIncoming.c_str(), nl, index);
       } else {
-        if (hqVerboseOutput) {
+        if (Scout.handler.isVerbose) {
           Serial.println(F("JSON parse failed"));
         }
       }
@@ -524,7 +522,7 @@ void leadIncoming(const char *packet, size_t len, unsigned short *index) {
   unsigned long id;
 
   type = j0g_str("type", buffer, index);
-  if (hqVerboseOutput) {
+  if (Scout.handler.isVerbose) {
     Serial.println(type);
   }
 
@@ -537,7 +535,7 @@ void leadIncoming(const char *packet, size_t len, unsigned short *index) {
     id = strtoul(j0g_str("id", buffer, index), NULL, 10);
     command = j0g_str("command", buffer, index);
     if (strlen(j0g_str("to", buffer, index)) == 0 || !id || !command) {
-      if (hqVerboseOutput) {
+      if (Scout.handler.isVerbose) {
         Serial.println(F("invalid command, requires to, id, command"));
         Serial.print(F("to: "));
         Serial.println(to);
@@ -586,11 +584,11 @@ void leadIncoming(const char *packet, size_t len, unsigned short *index) {
 
 // mesh callback when sending command chunks
 static void leadCommandChunkConfirm(NWK_DataReq_t *req) {
-  if (hqVerboseOutput) {
+  if (Scout.handler.isVerbose) {
     Serial.print(F("  Message confirmation - "));
   }
   if (req->status == NWK_SUCCESS_STATUS) {
-    if (hqVerboseOutput) {
+    if (Scout.handler.isVerbose) {
       Serial.println(F("success"));
     }
     if (leadCommandChunks.length() - leadCommandChunksAt > 100) {
@@ -601,13 +599,13 @@ static void leadCommandChunkConfirm(NWK_DataReq_t *req) {
   } else {
     leadCommandRetries++;
     if (leadCommandRetries > 3) {
-      if (hqVerboseOutput) {
+      if (Scout.handler.isVerbose) {
         Serial.print(F("error: "));
         Serial.println(req->status);
       }
       leadCommandError(leadCommandTo, leadAnswerID, "no response");
     } else {
-      if (hqVerboseOutput) {
+      if (Scout.handler.isVerbose) {
         Serial.println(F("RETRY"));
       }
       NWK_DataReq(req);
@@ -636,7 +634,7 @@ static void leadCommandChunk() {
   leadCommandReq.confirm = leadCommandChunkConfirm;
   NWK_DataReq(&leadCommandReq);
 
-  if (hqVerboseOutput) {
+  if (Scout.handler.isVerbose) {
     Serial.print(leadCommandTo);
     Serial.print(F(" len "));
     Serial.print(len);
@@ -654,13 +652,13 @@ void leadSignal(const String &json) {
   }
 
   if (!WifiModule::instance.bp() || !WifiModule::instance.bp()->client.connected()) {
-    if (hqVerboseOutput) {
+    if (Scout.handler.isVerbose) {
       Serial.println(F("HQ offline, can't signal"));
       Serial.println(json);
     }
     return;
   }
-  if (hqVerboseOutput) {
+  if (Scout.handler.isVerbose) {
     Serial.println(F("Signalling HQ: "));
     Serial.println(json);
   }
@@ -676,13 +674,13 @@ bool leadAnswers(NWK_DataInd_t *ind) {
   StringBuffer buf(256);
 
   if (ind->options & NWK_IND_OPT_MULTICAST) {
-    if (hqVerboseOutput) {
+    if (Scout.handler.isVerbose) {
       Serial.println(F("MULTICAST on wrong endpoint"));
     }
     return true;
   }
 
-  if (hqVerboseOutput) {
+  if (Scout.handler.isVerbose) {
     Serial.print(F("Received answer from Scout "));
     Serial.print(ind->srcAddr);
     Serial.println(F(":"));

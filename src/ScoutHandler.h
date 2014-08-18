@@ -23,6 +23,7 @@ namespace pinoccio {
       void setup();
       void loop();
       void announce(uint16_t group, const String& message);
+      bool isVerbose;
       void setVerbose(bool flag);
       StringBuffer report(StringBuffer& report);
       
