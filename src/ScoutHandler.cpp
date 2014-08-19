@@ -118,6 +118,10 @@ void ScoutHandler::loop() {
     // when the leadActive (most recent wifi read/write activity) is idle for 5+ minutes, paranoid reassociate
     if(SleepHandler::uptime().seconds - leadActive > 5*60)
     {
+      if (isVerbose) {
+        Serial.print(SleepHandler::uptime().seconds - leadActive);
+        Serial.println(F(" seconds since last HQ activity, reconnecting"));
+      }
       leadActive = SleepHandler::uptime().seconds;
       WifiModule::instance.bp() && WifiModule::instance.bp()->associate();
     }
@@ -495,6 +499,10 @@ void leadHQHandle(void) {
           Serial.println(F("JSON parse failed"));
         }
       }
+    }else{
+      if (Scout.handler.isVerbose) {
+        Serial.println(F("HQ ack'd"));
+      }
     }
 
     // Remove up to and including the newline
@@ -665,7 +673,6 @@ void leadSignal(const String &json) {
 
   WifiModule::instance.bp()->client.print(json);
   WifiModule::instance.bp()->client.flush();
-  leadActive = SleepHandler::uptime().seconds;
 }
 
 // called whenever another scout sends an answer back to us
