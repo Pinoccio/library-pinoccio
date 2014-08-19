@@ -106,6 +106,7 @@ class PinoccioShell {
     void refresh();
     void print(const char *str);
     bool outWait;
+    bool isVerbose;
 
     /**
      * Parse a single hexadecimal character. Supports both uppercase and
@@ -157,6 +158,11 @@ static void evalPrint(uint8_t c) {
 }
 
 inline numvar PinoccioShell::eval(Print *out, const String &cmd) {
+  if (isVerbose) {
+    Serial.print(F("running eval of: "));
+    Serial.println((char*)cmd.c_str());
+  }
+
   if (out) {
     evalOutput = out;
     setOutputHandler(evalPrint);

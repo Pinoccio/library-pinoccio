@@ -26,7 +26,7 @@ using namespace pinoccio;
 
 PinoccioShell Shell;
 
-static bool isMeshVerbose;
+static bool isMeshVerbose = 0;
 static int lastMeshRssi = 0;
 static int lastMeshLqi = 0;
 
@@ -99,6 +99,7 @@ static numvar allReport(void) {
 static numvar allVerbose(void) {
   Scout.handler.setVerbose(getarg(1));
   isMeshVerbose = getarg(1);
+  Shell.isVerbose = getarg(1);
   Scout.eventVerboseOutput = getarg(1);
   return 1;
 }
@@ -1636,6 +1637,11 @@ static numvar getHQToken(void) {
 }
 
 static void delayTimerHandler(SYS_Timer_t *timer) {
+  if (Shell.isVerbose) {
+    Serial.print(F("running delay'd command: "));
+    Serial.println(((char*)timer) + (sizeof(struct SYS_Timer_t)));
+  }
+
   doCommand(((char*)timer) + (sizeof(struct SYS_Timer_t)));
   free(timer);
 }
@@ -2154,12 +2160,23 @@ void PinoccioShell::refresh(void)
     }
     customScripts = customScripts.substring(nl+1);
   }
+
+  if (Shell.isVerbose) {
+    Serial.print(F("refreshed custom commands index to: "));
+    Serial.println(customScripts);
+  }
+
 }
 
 // just a safe wrapper around bitlash checks
 bool PinoccioShell::defined(const char *cmd)
 {
   if(!cmd) return false;
+  if (Shell.isVerbose) {
+    Serial.print(F("looking for command "));
+    Serial.println(cmd);
+  }
+
   if(find_user_function((char*)cmd)) return true;
 //  if(findKey(cmd) >= 0) return true; // don't use findscript(), it's not re-entrant safe
   int at = customScripts.indexOf(cmd);
