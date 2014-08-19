@@ -966,6 +966,37 @@ static numvar messageGroup(void) {
   return 1;
 }
 
+static numvar commandScout(void) {
+  if (!checkArgs(2, 99, F("usage: command.scout(scoutId, \"command\" [,arg1,arg2])")) || !isstringarg(2)) {
+    return 0;
+  }
+  int to = getarg(1);
+  char *cmd = (char*)getarg(2);
+//  sendMessage(getarg(1), arg2array(1));
+  return 1;
+}
+
+static numvar commandScoutAck(void) {
+  if (!checkArgs(3, 99, F("usage: command.scout.ack(\"callback\", scoutId, \"command\" [,arg1,arg2])")) || !isstringarg(1) || !isstringarg(3)) {
+    return 0;
+  }
+  
+  char *cb = (char*)getarg(1);
+  int to = getarg(2);
+  char *cmd = (char*)getarg(3);
+//  sendMessage(getarg(1), arg2array(1));
+  return 1;
+}
+
+static numvar commandAll(void) {
+  if (!checkArgs(1, 99, F("usage: command.all(\"command\" [,arg1,arg2])")) || !isstringarg(1)) {
+    return 0;
+  }
+  char *cmd = (char*)getarg(1);
+//  sendMessage(getarg(1), arg2array(1));
+  return 1;
+}
+
 /****************************\
 *        I/O HANDLERS       *
 \****************************/
@@ -2011,6 +2042,11 @@ void PinoccioShell::setup() {
   addFunction("mesh.routing", meshRouting);
   addFunction("mesh.signal", meshSignal);
   addFunction("mesh.loss", meshLoss);
+
+  // these supplant/replace message.*
+  addFunction("command.scout", commandScout);
+  addFunction("command.scout.ack", commandScoutAck);
+  addFunction("command.all", commandAll);
 
   addFunction("message.scout", messageScout);
   addFunction("message.group", messageGroup);
