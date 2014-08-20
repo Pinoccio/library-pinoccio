@@ -98,8 +98,6 @@ void ScoutHandler::setup() {
     Scout.meshListen(3, leadAnswers);
     Scout.meshJoinGroup(0xBEEF); // our internal reporting channel
     Scout.meshJoinGroup(0); // reports to HQ
-  } else {
-    Scout.meshListen(2, fieldCommands);
   }
 
   // join a set of groups to listen for announcements
@@ -107,6 +105,8 @@ void ScoutHandler::setup() {
     Scout.meshJoinGroup(i);
   }
 
+  // anyone is commandable (TODO refactor this w/ the command stuff now in Shell)
+  Scout.meshListen(2, fieldCommands);
   Scout.meshListen(4, fieldAnnouncements);
   
   memset(announceQ,0,announceQsize*sizeof(char*));
@@ -166,6 +166,9 @@ static bool fieldCommands(NWK_DataInd_t *ind) {
     return false; // TODO we need to restart or something, no memory
   }
 
+  // ack w/ our rssi as control
+  NWK_SetAckControl(abs(ind->rssi));
+
   // when null terminated, do the message
   if (fieldCommand[fieldCommand.length() - 1] != '\0') {
     if (Scout.handler.isVerbose) {
@@ -187,6 +190,13 @@ static bool fieldCommands(NWK_DataInd_t *ind) {
     Serial.print(F("got result "));
     Serial.println(ret);
     Serial.println(fieldCommandOutput.c_str());
+  }
+  
+  // a command from the command endpoint doesn't get a response
+  if(ind->srcEndpoint == 2)
+  {
+    fieldCommandOutput = (char*)NULL;
+    return true;
   }
 
   // send data back in chunks
