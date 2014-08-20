@@ -188,6 +188,13 @@ static bool fieldCommands(NWK_DataInd_t *ind) {
     Serial.println(ret);
     Serial.println(fieldCommandOutput.c_str());
   }
+  
+  // a command from the command endpoint doesn't get a response
+  if(ind->srcEndpoint == 2)
+  {
+    fieldCommandOutput = (char*)NULL;
+    return true;
+  }
 
   // send data back in chunks
   fieldAnswerTo = ind->srcAddr;
