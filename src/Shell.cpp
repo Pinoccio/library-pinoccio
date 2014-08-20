@@ -569,6 +569,7 @@ static numvar ledWhite(void) {
 static numvar ledGetHex(void) {
   char hex[8];
   snprintf(hex, sizeof(hex),"%02x%02x%02x", Led.getRedValue(), Led.getGreenValue(), Led.getBlueValue());
+  speol(hex);
   return keyMap(hex, millis());
 }
 
@@ -811,7 +812,7 @@ static void commandConfirm(NWK_DataReq_t *req) {
 
 }
 
-static void sendCommand(int address, const String &data) {
+static void sendCommand(int address, const String *data) {
   if (sendDataReqBusy) {
     return;
   }
@@ -821,16 +822,15 @@ static void sendCommand(int address, const String &data) {
   {
     sendDataReq.dstAddr = 1; // a group everyone joins by default in ScoutHandler
     sendDataReq.options = NWK_OPT_MULTICAST|NWK_OPT_ENABLE_SECURITY;
-    sendDataReq.confirm = NULL;
   }else{
     sendDataReq.dstAddr = address;
     sendDataReq.options = NWK_OPT_ACK_REQUEST|NWK_OPT_ENABLE_SECURITY;
-    sendDataReq.confirm = commandConfirm;
   }
+  sendDataReq.confirm = commandConfirm;
   sendDataReq.dstEndpoint = 2;
   sendDataReq.srcEndpoint = 2;
-  sendDataReq.data = (uint8_t*)strdup(data.c_str());
-  sendDataReq.size = data.length() + 1;
+  sendDataReq.data = (uint8_t*)strdup(data->c_str());
+  sendDataReq.size = data->length() + 1;
   NWK_DataReq(&sendDataReq);
 
   sendDataReqBusy = true;
@@ -839,7 +839,9 @@ static void sendCommand(int address, const String &data) {
     Serial.print(F("Sent command to Scout "));
     Serial.print(address);
     Serial.print(F(": "));
-    Serial.println(data);
+    Serial.print(sendDataReq.size);
+    Serial.print(F(": "));
+    Serial.println((char*)sendDataReq.data);
   }
 }
 
@@ -1049,13 +1051,13 @@ static numvar messageGroup(void) {
 }
 
 // works inside bitlash handlers to serialize a command
-void commandArgs(StringBuffer out, int start) {
+void commandArgs(StringBuffer *out, int start) {
   StringBuffer backtick;
   int i;
   int args = getarg(0);
-  out = (char*)getstringarg(start);
-  out.concat('(');
-  for (i=start; i<=args; i++) {
+  *out = (char*)getstringarg(start);
+  out->concat('(');
+  for (i=start+1; i<=args; i++) {
     if(isstringarg(i))
     {
       char *arg = (char*)getstringarg(i);
@@ -1067,17 +1069,23 @@ void commandArgs(StringBuffer out, int start) {
         arg[len-1] = 0;
         arg++;
         Shell.eval(PrintToString(backtick), arg);
-        out.appendJsonString(backtick, true);
+        backtick.trim();
+        out->appendJsonString(backtick, true);
       }else{
-        out.appendJsonString(arg, true);
+        out->appendJsonString(arg, true);
       }
     }else{
       // just a number
-      out.concat(getarg(i));
+      out->concat(getarg(i));
     }
-    if(i+1 <= args) out.concat(',');
+    if(i+1 <= args) out->concat(',');
   }
-  out.concat(')');
+  out->concat(')');
+  if(Shell.isVerbose)
+  {
+    Serial.print("built command from args: ");
+    Serial.println(*out);
+  }
 }
 
 static numvar commandScout(void) {
@@ -1090,13 +1098,13 @@ static numvar commandScout(void) {
     return 0;
   }
   StringBuffer cmd;
-  commandArgs(cmd, 2);
+  commandArgs(&cmd, 2);
   if(cmd.length() > 100)
   {
     speol(F("command too long, 100 max"));
     return 0;
   }
-  sendCommand(getarg(1),cmd);
+  sendCommand(getarg(1),&cmd);
   return 1;
 }
 
@@ -1111,13 +1119,13 @@ static numvar commandScoutAck(void) {
   }
   commandAck = strdup((char*)getarg(1));
   StringBuffer cmd;
-  commandArgs(cmd, 3);
+  commandArgs(&cmd, 3);
   if(cmd.length() > 100)
   {
     speol(F("command too long, 100 max"));
     return 0;
   }
-  sendCommand(getarg(2),cmd);
+  sendCommand(getarg(2),&cmd);
 
   return 1;
 }
@@ -1132,13 +1140,13 @@ static numvar commandAll(void) {
     return 0;
   }
   StringBuffer cmd;
-  commandArgs(cmd, 1);
+  commandArgs(&cmd, 1);
   if(cmd.length() > 100)
   {
     speol(F("command too long, 100 max"));
     return 0;
   }
-  sendCommand(0,cmd);
+  sendCommand(0,&cmd);
   return 1;
 }
 
