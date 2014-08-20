@@ -922,6 +922,10 @@ static numvar meshReport(void) {
   return 1;
 }
 
+static numvar meshId(void) {
+  return Scout.getAddress();
+}
+
 static numvar meshRouting(void) {
   sp(F("|    Fixed    |  Multicast  |    Score    |    DstAdd   | NextHopAddr |    Rank     |     LQI     |"));
   speol();
@@ -2011,6 +2015,7 @@ void PinoccioShell::setup() {
   addFunction("mesh.routing", meshRouting);
   addFunction("mesh.signal", meshSignal);
   addFunction("mesh.loss", meshLoss);
+  addFunction("mesh.id", meshId);
 
   addFunction("message.scout", messageScout);
   addFunction("message.group", messageGroup);
