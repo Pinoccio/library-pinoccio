@@ -172,6 +172,10 @@ inline numvar PinoccioShell::eval(Print *out, const String &cmd) {
 
   if (out)
     resetOutputHandler();
+
+  // important, if we eval'd a new function update our cache
+  if(cmd.startsWith("function ")) refresh();
+
   return ret;
 }
 
