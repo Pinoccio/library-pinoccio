@@ -272,8 +272,11 @@ void WifiModule::loop() {
   if (_bp->gs.unrecoverableError) {
     if (Scout.handler.isVerbose)
     {
-      Serial.println(F("Unrecoverable error in the wifi backpack. Cycling all backpack power to restart."));
+      Serial.println(F("Unrecoverable error in the wifi backpack, rebooting scout...."));
+      Serial.flush();
     }
+    Scout.reboot();
+    /* this doesn't appear to be working, somehow memory is corrupted and/or things seem to have gone badly, which may be the real problem :)
     Scout.disableBackpackVcc();
     delay(100);
     Scout.enableBackpackVcc();
@@ -285,6 +288,7 @@ void WifiModule::loop() {
       }
       Scout.reboot();
     }
+    */
   }
 }
 
