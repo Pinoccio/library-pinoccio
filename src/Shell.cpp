@@ -1048,6 +1048,38 @@ static numvar messageGroup(void) {
   return 1;
 }
 
+// works inside bitlash handlers to serialize a command
+void commandArgs(StringBuffer out, int start) {
+  StringBuffer backtick;
+  int i;
+  int args = getarg(0);
+  out = (char*)getstringarg(start);
+  out.concat('(');
+  for (i=start; i<=args; i++) {
+    if(isstringarg(i))
+    {
+      char *arg = (char*)getstringarg(i);
+      int len = strlen(arg);
+      // detect backticks to eval and embed any string output
+      if(len > 2 && arg[0] == '`' && arg[len-1] == '`')
+      {
+        backtick = "";
+        arg[len-1] = 0;
+        arg++;
+        Shell.eval(PrintToString(backtick), arg);
+        out.appendJsonString(backtick, true);
+      }else{
+        out.appendJsonString(arg, true);
+      }
+    }else{
+      // just a number
+      out.concat(getarg(i));
+    }
+    if(i+1 <= args) out.concat(',');
+  }
+  out.concat(')');
+}
+
 static numvar commandScout(void) {
   if (!checkArgs(2, 99, F("usage: command.scout(scoutId, \"command\" [,arg1,arg2])")) || !isstringarg(2)) {
     return 0;
@@ -1057,9 +1089,14 @@ static numvar commandScout(void) {
     speol(F("busy commanding already"));
     return 0;
   }
-  int to = getarg(1);
-  char *cmd = (char*)getarg(2);
-//  sendMessage(getarg(1), arg2array(1));
+  StringBuffer cmd;
+  commandArgs(cmd, 2);
+  if(cmd.length() > 100)
+  {
+    speol(F("command too long, 100 max"));
+    return 0;
+  }
+  sendCommand(getarg(1),cmd);
   return 1;
 }
 
@@ -1073,9 +1110,15 @@ static numvar commandScoutAck(void) {
     return 0;
   }
   commandAck = strdup((char*)getarg(1));
-  int to = getarg(2);
-  char *cmd = (char*)getarg(3);
-//  sendMessage(getarg(1), arg2array(1));
+  StringBuffer cmd;
+  commandArgs(cmd, 3);
+  if(cmd.length() > 100)
+  {
+    speol(F("command too long, 100 max"));
+    return 0;
+  }
+  sendCommand(getarg(2),cmd);
+
   return 1;
 }
 
@@ -1088,8 +1131,14 @@ static numvar commandAll(void) {
     speol(F("busy commanding already"));
     return 0;
   }
-  char *cmd = (char*)getarg(1);
-//  sendMessage(getarg(1), arg2array(1));
+  StringBuffer cmd;
+  commandArgs(cmd, 1);
+  if(cmd.length() > 100)
+  {
+    speol(F("command too long, 100 max"));
+    return 0;
+  }
+  sendCommand(0,cmd);
   return 1;
 }
 
