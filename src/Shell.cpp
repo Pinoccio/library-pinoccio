@@ -805,9 +805,11 @@ static void commandConfirm(NWK_DataReq_t *req) {
   // run the Bitlash callback ack command
   if(commandAck)
   {
-    Shell.eval(commandAck,req->status,lastMeshRssi);
-    free(commandAck);
+    char *cmd = commandAck;
     commandAck = NULL;
+    // this may set another commandAck
+    Shell.eval(cmd,req->status,lastMeshRssi);
+    free(cmd);
   }
 
 }
@@ -1134,6 +1136,26 @@ static numvar commandScoutAck(void) {
   return 1;
 }
 
+static numvar commandOthers(void) {
+  if (!checkArgs(1, 99, F("usage: command.others(\"command\" [,arg1,arg2])")) || !isstringarg(1)) {
+    return 0;
+  }
+  if (sendDataReqBusy)
+  {
+    speol(F("busy commanding already"));
+    return 0;
+  }
+  StringBuffer cmd;
+  commandArgs(&cmd, 1);
+  if(cmd.length() > 100)
+  {
+    speol(F("command too long, 100 max"));
+    return 0;
+  }
+  sendCommand(0,&cmd);
+  return 1;
+}
+
 static numvar commandAll(void) {
   if (!checkArgs(1, 99, F("usage: command.all(\"command\" [,arg1,arg2])")) || !isstringarg(1)) {
     return 0;
@@ -1151,6 +1173,7 @@ static numvar commandAll(void) {
     return 0;
   }
   sendCommand(0,&cmd);
+  Shell.delay(100,(char*)cmd.c_str());
   return 1;
 }
 
@@ -2213,6 +2236,7 @@ void PinoccioShell::setup() {
   addFunction("command.scout", commandScout);
   addFunction("command.scout.ack", commandScoutAck);
   addFunction("command.all", commandAll);
+  addFunction("command.others", commandOthers);
 
   addFunction("message.scout", messageScout);
   addFunction("message.group", messageGroup);
