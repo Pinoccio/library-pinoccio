@@ -922,6 +922,10 @@ static numvar meshReport(void) {
   return 1;
 }
 
+static numvar meshId(void) {
+  return Scout.getAddress();
+}
+
 static numvar meshRouting(void) {
   sp(F("|    Fixed    |  Multicast  |    Score    |    DstAdd   | NextHopAddr |    Rank     |     LQI     |"));
   speol();
@@ -1835,6 +1839,7 @@ static numvar hqSetAddress(void) {
 \****************************/
 
 static numvar startStateChangeEvents(void) {
+  Scout.eventsStopped = false;
   Scout.startDigitalStateChangeEvents();
   Scout.startAnalogStateChangeEvents();
   Scout.startPeripheralStateChangeEvents();
@@ -1842,6 +1847,7 @@ static numvar startStateChangeEvents(void) {
 }
 
 static numvar stopStateChangeEvents(void) {
+  Scout.eventsStopped = true;
   Scout.stopDigitalStateChangeEvents();
   Scout.stopAnalogStateChangeEvents();
   Scout.stopPeripheralStateChangeEvents();
@@ -1863,6 +1869,7 @@ static numvar setEventVerbose(void) {
 \****************************/
 
 static void digitalPinEventHandler(uint8_t pin, int16_t value, int8_t mode) {
+  if(Scout.eventsStopped) return;
   uint32_t time = millis();
   char buf[16];
   
@@ -1894,6 +1901,7 @@ static void digitalPinEventHandler(uint8_t pin, int16_t value, int8_t mode) {
 }
 
 static void analogPinEventHandler(uint8_t pin, int16_t value, int8_t mode) {
+  if(Scout.eventsStopped) return;
   uint32_t time = millis();
   char buf[16];
 
@@ -1913,6 +1921,7 @@ static void analogPinEventHandler(uint8_t pin, int16_t value, int8_t mode) {
 }
 
 static void batteryPercentageEventHandler(uint8_t value) {
+  if(Scout.eventsStopped) return;
   uint32_t time = millis();
   char buf[24];
   char *func = "on.battery.level";
@@ -1932,6 +1941,7 @@ static void batteryPercentageEventHandler(uint8_t value) {
 }
 
 static void batteryChargingEventHandler(uint8_t value) {
+  if(Scout.eventsStopped) return;
   uint32_t time = millis();
   char buf[28];
   char *func = "on.battery.charging";
@@ -1951,6 +1961,7 @@ static void batteryChargingEventHandler(uint8_t value) {
 }
 
 static void temperatureEventHandler(int8_t tempC, int8_t tempF) {
+  if(Scout.eventsStopped) return;
   uint32_t time = millis();
   char buf[28];
   char *func = "on.temperature";
@@ -1970,6 +1981,7 @@ static void temperatureEventHandler(int8_t tempC, int8_t tempF) {
 }
 
 static void ledEventHandler(uint8_t redValue, uint8_t greenValue, uint8_t blueValue) {
+  if(Scout.eventsStopped) return;
   ledReportHQ();
 }
 
@@ -2011,6 +2023,7 @@ void PinoccioShell::setup() {
   addFunction("mesh.routing", meshRouting);
   addFunction("mesh.signal", meshSignal);
   addFunction("mesh.loss", meshLoss);
+  addFunction("mesh.id", meshId);
 
   addFunction("message.scout", messageScout);
   addFunction("message.group", messageGroup);

@@ -119,6 +119,7 @@ class PinoccioScout : public PinoccioClass {
     CallbackList<void, bool> toggleBackpackVccCallbacks;
 
     bool eventVerboseOutput;
+    bool eventsStopped;
 
     PBBP bp;
     ScoutHandler handler;
