@@ -593,7 +593,7 @@ static void scoutPeripheralStateChangeTimerHandler(SYS_Timer_t *timer) {
   }
 }
 
-void PinoccioScout::scheduleSleep(uint32_t ms, char *func) {
+void PinoccioScout::scheduleSleep(uint32_t ms, const char *func) {
   if (ms) {
     SleepHandler::scheduleSleep(ms);
     sleepPending = true;
@@ -603,7 +603,7 @@ void PinoccioScout::scheduleSleep(uint32_t ms, char *func) {
 
   if (postSleepFunction)
     free(postSleepFunction);
-  postSleepFunction = func;
+  postSleepFunction = func ? strdup(func) : NULL;
   sleepMs = ms;
 }
 
