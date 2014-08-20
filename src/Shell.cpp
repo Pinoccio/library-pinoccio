@@ -760,6 +760,88 @@ static void sendMessage(int address, const String &data) {
   }
 }
 
+static char *commandAck;
+static void commandConfirm(NWK_DataReq_t *req) {
+   sendDataReqBusy = false;
+   free(req->data);
+
+   if (Shell.isVerbose) {
+    if (req->status == NWK_SUCCESS_STATUS) {
+      Serial.print(F("-  Command successfully sent to Scout "));
+      Serial.print(req->dstAddr);
+      if (req->control) {
+        Serial.print(F(" (Confirmed with control byte: "));
+        Serial.print(req->control);
+        Serial.print(F(")"));
+      }
+      Serial.println();
+    } else {
+      Serial.print(F("Error: "));
+      switch (req->status) {
+        case NWK_OUT_OF_MEMORY_STATUS:
+          Serial.print(F("Out of memory: "));
+          break;
+        case NWK_NO_ACK_STATUS:
+        case NWK_PHY_NO_ACK_STATUS:
+          Serial.print(F("No acknowledgement received: "));
+          break;
+        case NWK_NO_ROUTE_STATUS:
+          Serial.print(F("No route to destination: "));
+          break;
+        case NWK_PHY_CHANNEL_ACCESS_FAILURE_STATUS:
+          Serial.print(F("Physical channel access failure: "));
+          break;
+        default:
+          Serial.print(F("unknown failure: "));
+      }
+      Serial.print(F("("));
+      Serial.print(req->status, HEX);
+      Serial.println(F(")"));
+    }
+  }
+  lastMeshRssi = req->control;
+
+  // run the Bitlash callback ack command
+  if(commandAck)
+  {
+    Shell.eval(commandAck,req->status,lastMeshRssi);
+    free(commandAck);
+    commandAck = NULL;
+  }
+
+}
+
+static void sendCommand(int address, const String &data) {
+  if (sendDataReqBusy) {
+    return;
+  }
+
+  // multicas the command to everyone
+  if(address == 0)
+  {
+    sendDataReq.dstAddr = 1; // a group everyone joins by default in ScoutHandler
+    sendDataReq.options = NWK_OPT_MULTICAST|NWK_OPT_ENABLE_SECURITY;
+    sendDataReq.confirm = NULL;
+  }else{
+    sendDataReq.dstAddr = address;
+    sendDataReq.options = NWK_OPT_ACK_REQUEST|NWK_OPT_ENABLE_SECURITY;
+    sendDataReq.confirm = commandConfirm;
+  }
+  sendDataReq.dstEndpoint = 2;
+  sendDataReq.srcEndpoint = 2;
+  sendDataReq.data = (uint8_t*)strdup(data.c_str());
+  sendDataReq.size = data.length() + 1;
+  NWK_DataReq(&sendDataReq);
+
+  sendDataReqBusy = true;
+
+  if (Shell.isVerbose) {
+    Serial.print(F("Sent command to Scout "));
+    Serial.print(address);
+    Serial.print(F(": "));
+    Serial.println(data);
+  }
+}
 
 /****************************\
 *    MESH RADIO HANDLERS    *
@@ -970,6 +1052,11 @@ static numvar commandScout(void) {
   if (!checkArgs(2, 99, F("usage: command.scout(scoutId, \"command\" [,arg1,arg2])")) || !isstringarg(2)) {
     return 0;
   }
+  if (sendDataReqBusy)
+  {
+    speol(F("busy commanding already"));
+    return 0;
+  }
   int to = getarg(1);
   char *cmd = (char*)getarg(2);
 //  sendMessage(getarg(1), arg2array(1));
@@ -980,8 +1067,12 @@ static numvar commandScoutAck(void) {
   if (!checkArgs(3, 99, F("usage: command.scout.ack(\"callback\", scoutId, \"command\" [,arg1,arg2])")) || !isstringarg(1) || !isstringarg(3)) {
     return 0;
   }
-  
-  char *cb = (char*)getarg(1);
+  if (sendDataReqBusy)
+  {
+    speol(F("busy commanding already"));
+    return 0;
+  }
+  commandAck = strdup((char*)getarg(1));
   int to = getarg(2);
   char *cmd = (char*)getarg(3);
 //  sendMessage(getarg(1), arg2array(1));
@@ -990,6 +1081,11 @@ static numvar commandScoutAck(void) {
 
 static numvar commandAll(void) {
   if (!checkArgs(1, 99, F("usage: command.all(\"command\" [,arg1,arg2])")) || !isstringarg(1)) {
+    return 0;
+  }
+  if (sendDataReqBusy)
+  {
+    speol(F("busy commanding already"));
     return 0;
   }
   char *cmd = (char*)getarg(1);
