@@ -2371,20 +2371,19 @@ void PinoccioShell::addFunction(const char *name, numvar (*func)(void)) {
 StringBuffer customScripts;
 void PinoccioShell::refresh(void)
 {
+  StringBuffer lsout;
   customScripts = "";
-  setOutputHandler(&printToString<&customScripts>);
-  doCommand("ls");
-  resetOutputHandler();
+  Shell.eval(PrintToString(lsout),"ls");
 
   // parse and condense the "ls" bitlash format of "function name {...}\n" into just "name "
   int nl, sp;
-  while((nl = customScripts.indexOf('\n')) >= 0)
+  while((nl = lsout.indexOf('\n')) >= 0)
   {
-    if(customScripts.startsWith("function ") && (sp = customScripts.indexOf(' ',9)) < nl)
+    if(lsout.startsWith("function ") && (sp = lsout.indexOf(' ',9)) < nl)
     {
-      customScripts += customScripts.substring(9,sp+1);
+      customScripts += lsout.substring(9,sp+1);
     }
-    customScripts = customScripts.substring(nl+1);
+    lsout = lsout.substring(nl+1);
   }
 
   if (Shell.isVerbose) {
