@@ -52,8 +52,13 @@ void WifiBackpack::onAssociate(void *data) {
       wifi.associate();
     }
   }
+
+  // fire any script events
+  if (Shell.defined("on.wifi.associate")) Shell.eval("on.wifi.associate");
+
   // connect to HQ now
   wifi.connectToHq();
+  
 }
 
 
