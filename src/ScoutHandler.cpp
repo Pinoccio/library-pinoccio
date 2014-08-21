@@ -546,6 +546,8 @@ void leadIncoming(const char *packet, size_t len, unsigned short *index) {
 
   if (strcmp(type, "online") == 0) {
     Shell.allReportHQ();
+    // run any custom scripts as soon as online
+    if (Shell.defined("on.hq.online")) Shell.eval("on.hq.online");
   }
 
   if (strcmp(type, "command") == 0) {
