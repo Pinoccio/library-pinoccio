@@ -206,6 +206,29 @@ static numvar wifiStats(void) {
   speol(WifiModule::instance.bp()->hqConnCount);
 }
 
+// calls got(status,body) where status is the numeric status code and body is the string result
+static numvar wifiHTTPGet(void) {
+  if (!checkArgs(2, 99, F("usage: wifi.http.get(\"got\", \"http://domain/path\" [,name,val])"))) {
+    return 0;
+  }
+  if (!checkbp()) return 0;
+  if (!WifiModule::instance.bp()->dnsLookup(Serial, (const char *)getstringarg(1))) {
+     speol(F("Error: Wi-Fi DNS lookup command failed"));
+  }
+  return 1;
+}
+
+static numvar wifiHTTPPost(void) {
+  if (!checkArgs(2, 99, F("usage: wifi.http.post(\"got\", \"http://domain/path\" [,name,val])"))) {
+    return 0;
+  }
+  if (!checkbp()) return 0;
+  if (!WifiModule::instance.bp()->dnsLookup(Serial, (const char *)getstringarg(1))) {
+     speol(F("Error: Wi-Fi DNS lookup command failed"));
+  }
+  return 1;
+}
+
 /****************************\
  *   MODULE CLASS STUFF     *
 \****************************/
@@ -234,6 +257,8 @@ bool WifiModule::enable() {
   Shell.addFunction("wifi.wakeup", wifiWakeup);
   Shell.addFunction("wifi.verbose", wifiVerbose);
   Shell.addFunction("wifi.stats", wifiStats);
+  Shell.addFunction("wifi.http.get", wifiHTTPGet);
+  Shell.addFunction("wifi.http.post", wifiHTTPPost);
 
   static auto toggleBackpackVccCallback = build_callback(onToggleBackpackVcc);
   Scout.toggleBackpackVccCallbacks.append(toggleBackpackVccCallback);
