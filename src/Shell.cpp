@@ -139,7 +139,7 @@ static numvar setTemperatureOffset(void) {
 }
 
 static numvar temperatureCalibrate(void) {
-  if (!checkArgs(1, F("usage: temperature.setoffset(value)"))) {
+  if (!checkArgs(1, F("usage: temperature.calibrate(value)"))) {
     return 0;
   }
   Scout.setTemperatureOffset(getarg(1) - Scout.getTemperatureC());
