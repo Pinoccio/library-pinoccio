@@ -1389,44 +1389,33 @@ static numvar pinWrite(void) {
 }
 
 static numvar pinStatus(void) {
-  if (!checkArgs(0, F("usage: pin.status"))) {
-    return 0;
-  }
 
-  // TODO: This should use sp/speol, but that doesn't return the number
-  // of characters printed to use for alignment...
-  Serial.println(F("Note: pin.status currently only works on Serial"));
-  Serial.println(F("#   name    mode            value"));
-  Serial.println(F("---------------------------------"));
+  speol(F("{"));
   for (uint8_t pin = 0; pin < NUM_DIGITAL_PINS; ++pin) {
-    printSpaces(4 - Serial.print(pin));
-    printSpaces(8 - Serial.print(Scout.getNameForPin(pin)));
+    sp(F("  \""));sp(Scout.getNameForPin(pin));sp(F("\":{\"id\":\""));
+    sp(pin);
+    sp(F("\", \"mode\":\""));
     int8_t mode = Scout.getPinMode(pin);
-    printSpaces(16 - Serial.print(Scout.getNameForPinMode(mode) ?: F("unknown")));
+    sp(Scout.getNameForPinMode(mode) ?: F("unknown"));
+    sp(F("\", \"val\":\""));
     if (mode < 0)
-      printSpaces(8 - Serial.print('-'));
+      sp('-');
     else
-      printSpaces(8 - Serial.print(Scout.pinRead(pin)));
+      sp(Scout.pinRead(pin));
+    sp("\"");
 
-    const char *prefix = "";
     if (Scout.isPWMPin(pin)) {
-      Serial.print(prefix);
-      Serial.print("supports PWM");
-      prefix = ", ";
+      sp(F(", \"pwm\":true"));
     }
     if (SleepHandler::pinWakeupSupported(pin)) {
-      Serial.print(prefix);
-      Serial.print("supports wakeup");
-      prefix = ", ";
+      sp(F(", \"wakeup\":"));
+      sp(SleepHandler::pinWakeupEnabled(pin) ? F("1") : F("0"));
     }
-    if (SleepHandler::pinWakeupEnabled(pin)) {
-      Serial.print(prefix);
-      Serial.print("wakeup enabled");
-      prefix = ", ";
-    }
-
-    Serial.println();
+    sp(F("}"));
+    if(pin < NUM_DIGITAL_PINS-1) sp(F(","));
+    speol();
   }
+  speol(F("}"));
 
   return 1;
 }
@@ -1517,14 +1506,12 @@ static numvar backpackReport(void) {
   return 1;
 }
 
-static void printHexBuffer(Print &p, const uint8_t *buf, size_t len, const char *sep = NULL) {
+static void printHexBuffer(const uint8_t *buf, size_t len, const char *sep = NULL) {
   for (uint8_t i=0; i<len; ++i) {
-    if (buf[i] < 0x10) {
-      p.print('0');
-    }
-    p.print(buf[i], HEX);
+    // from bitlash
+    printIntegerInBase(buf[i], 16, 2, '0');
     if (sep) {
-      p.print(sep);
+      sp(sep);
     }
   }
 }
@@ -1535,7 +1522,7 @@ static numvar backpackList(void) {
   } else {
     for (uint8_t i=0; i<Backpacks::num_backpacks; ++i) {
       BackpackInfo &info = Backpacks::info[i];
-      printHexBuffer(Serial, &i, 1);
+      printHexBuffer(&i, 1);
       sp(F(": "));
 
       Pbbe::Header *h = info.getHeader();
@@ -1546,7 +1533,7 @@ static numvar backpackList(void) {
       }
 
       sp(F(" ("));
-      printHexBuffer(Serial, info.id.raw_bytes, sizeof(info.id));
+      printHexBuffer(info.id.raw_bytes, sizeof(info.id));
       speol(F(")"));
     }
   }
@@ -1571,8 +1558,8 @@ static numvar backpackEeprom(void) {
   size_t offset = 0;
   const uint8_t bytes_per_line = 8;
   while (offset < eep->size) {
-    printHexBuffer(Serial, eep->raw + offset, min(bytes_per_line, eep->size - offset), " ");
-    Serial.println();
+    printHexBuffer(eep->raw + offset, min(bytes_per_line, eep->size - offset), " ");
+    speol();
     offset += bytes_per_line;
   }
   return 1;
@@ -1628,108 +1615,115 @@ static numvar backpackUpdateEeprom(void) {
 static numvar backpackDetail(void) {
   numvar addr = getarg(1);
   if (addr < 0 || addr >= Backpacks::num_backpacks) {
-    Serial.println(F("Invalid backpack number"));
+    speol(F("Invalid backpack number"));
     return 0;
   }
   Pbbe::Header *h = Backpacks::info[addr].getHeader();
   Pbbe::UniqueId &id = Backpacks::info[addr].id;
 
-  // TODO: Convert these to sp()'s so we can see them in HQ, once sp/speol support the base argument
-  Serial.print(F("Backpack name: "));
-  Serial.println(h->backpack_name);
+  sp(F("Backpack name: "));
+  speol(h->backpack_name);
 
-  Serial.print(F("Model number: 0x"));
-  Serial.println(id.model, HEX); // TODO: zero pad
+  sp(F("Model number: 0x"));
+  printIntegerInBase(id.model, 16, 2, '0');
+  speol();
 
-  Serial.print(F("Board revision: "));
+  sp(F("Board revision: "));
   Pbbe::MajorMinor rev = Pbbe::extractMajorMinor(id.revision);
-  Serial.print(rev.major);
-  Serial.print(F("."));
-  Serial.println(rev.minor);
+  sp(rev.major);
+  sp(F("."));
+  speol(rev.minor);
 
-  Serial.print(F("Serial number: 0x"));
-  Serial.println(id.serial, HEX); // TODO: zero pad
+  sp(F("Serial number: 0x"));
+  printIntegerInBase(id.serial, 16, 2, '0');
+  speol();
 
-  Serial.print(F("Backpack Bus Protocol version: "));
-  Serial.print(id.protocol_version);
-  Serial.println(F(".x")); // Only the major version is advertised
+  sp(F("Backpack Bus Protocol version: "));
+  sp(id.protocol_version);
+  speol(F(".x")); // Only the major version is advertised
 
-  Serial.print(F("Backpack Bus firmware version: "));
-  Serial.println(h->firmware_version);
+  sp(F("Backpack Bus firmware version: "));
+  speol(h->firmware_version);
 
-  Serial.print(F("EEPROM layout version: "));
-  Serial.print(h->layout_version);
-  Serial.println(F(".x")); // Only the major version is advertised
+  sp(F("EEPROM layout version: "));
+  sp(h->layout_version);
+  speol(F(".x")); // Only the major version is advertised
 
-  Serial.print(F("EEPROM size: "));
-  Serial.print(h->total_eeprom_size);
-  Serial.println(F(" bytes"));
+  sp(F("EEPROM size: "));
+  sp(h->total_eeprom_size);
+  speol(F(" bytes"));
 
-  Serial.print(F("EEPROM used: "));
-  Serial.print(h->used_eeprom_size);
-  Serial.println(F(" bytes"));
+  sp(F("EEPROM used: "));
+  sp(h->used_eeprom_size);
+  speol(F(" bytes"));
   return 1;
+}
+
+// handle float
+void sp(float f, int pre)
+{
+  sp(int(f));sp(F("."));sp(abs(int(f*pre)%(((int(f)==0)?1:int(f))*pre)));
 }
 
 static numvar backpackResources(void) {
   numvar addr = getarg(1);
   if (addr < 0 || addr >= Backpacks::num_backpacks) {
-    Serial.println(F("Invalid backpack number"));
+    speol(F("Invalid backpack number"));
     return 0;
   }
 
   Pbbe::DescriptorList *list = Backpacks::info[addr].getAllDescriptors();
   if (!list) {
-    Serial.println(F("Failed to fetch or parse resource descriptors"));
+    speol(F("Failed to fetch or parse resource descriptors"));
     return 0;
   }
   for (uint8_t i = 0; i < list->num_descriptors; ++i) {
     Pbbe::DescriptorInfo &info = list->info[i];
     if (info.group) {
       Pbbe::GroupDescriptor& d = static_cast<Pbbe::GroupDescriptor&>(*info.group->parsed);
-      Serial.print(d.name);
-      Serial.print(".");
+      sp(d.name);
+      sp(".");
     }
 
     switch (info.type) {
       case Pbbe::DT_SPI_SLAVE: {
         Pbbe::SpiSlaveDescriptor& d = static_cast<Pbbe::SpiSlaveDescriptor&>(*info.parsed);
-        Serial.print(d.name);
-        Serial.print(F(": spi, ss = "));
-        Serial.print(d.ss_pin.name());
-        Serial.print(F(", max speed = "));
+        sp(d.name);
+        sp(F(": spi, ss = "));
+        sp(d.ss_pin.name());
+        sp(F(", max speed = "));
         if (d.speed.raw()) {
-          Serial.print((float)d.speed, 2);
-          Serial.print(F("Mhz"));
+          sp(d.speed,100);
+          sp(F("Mhz"));
         } else {
-          Serial.print(F("unknown"));
+          sp(F("unknown"));
         }
-        Serial.println();
+        speol();
         break;
       }
       case Pbbe::DT_UART: {
         Pbbe::UartDescriptor& d = static_cast<Pbbe::UartDescriptor&>(*info.parsed);
-        Serial.print(d.name);
-        Serial.print(F(": uart, tx = "));
-        Serial.print(d.tx_pin.name());
-        Serial.print(F(", rx = "));
-        Serial.print(d.rx_pin.name());
-        Serial.print(F(", speed = "));
+        sp(d.name);
+        sp(F(": uart, tx = "));
+        sp(d.tx_pin.name());
+        sp(F(", rx = "));
+        sp(d.rx_pin.name());
+        sp(F(", speed = "));
         if (d.speed) {
-          Serial.print(d.speed);
-          Serial.print(F("bps"));
+          sp(d.speed);
+          sp(F("bps"));
         } else {
-          Serial.print(F("unknown"));
+          sp(F("unknown"));
         }
-        Serial.println();
+        speol();
         break;
       }
       case Pbbe::DT_IOPIN: {
         Pbbe::IoPinDescriptor& d = static_cast<Pbbe::IoPinDescriptor&>(*info.parsed);
-        Serial.print(d.name);
-        Serial.print(F(": gpio, pin = "));
-        Serial.print(d.pin.name());
-        Serial.println();
+        sp(d.name);
+        sp(F(": gpio, pin = "));
+        sp(d.pin.name());
+        speol();
         break;
       }
       case Pbbe::DT_GROUP: {
@@ -1738,51 +1732,51 @@ static numvar backpackResources(void) {
       }
       case Pbbe::DT_POWER_USAGE: {
         Pbbe::PowerUsageDescriptor& d = static_cast<Pbbe::PowerUsageDescriptor&>(*info.parsed);
-        Serial.print(F("power: pin = "));
-        Serial.print(d.power_pin.name());
-        Serial.print(F(", minimum = "));
+        sp(F("power: pin = "));
+        sp(d.power_pin.name());
+        sp(F(", minimum = "));
         if (d.minimum.raw()) {
-          Serial.print((float)d.minimum, 2);
-          Serial.print(F("uA"));
+          sp(d.minimum,100);
+          sp(F("uA"));
         } else {
-          Serial.print(F("unknown"));
+          sp(F("unknown"));
         }
-        Serial.print(F(", typical = "));
+        sp(F(", typical = "));
         if (d.typical.raw()) {
-          Serial.print((float)d.typical, 2);
-          Serial.print(F("uA"));
+          sp(d.typical,100);
+          sp(F("uA"));
         } else {
-          Serial.print(F("unknown"));
+          sp(F("unknown"));
         }
-        Serial.print(F(", maximum = "));
+        sp(F(", maximum = "));
         if (d.maximum.raw()) {
-          Serial.print((float)d.maximum, 2);
-          Serial.print(F("uA"));
+          sp(d.maximum,100);
+          sp(F("uA"));
         } else {
-          Serial.print(F("unknown"));
+          sp(F("unknown"));
         }
-        Serial.println();
+        speol();
         break;
       }
       case Pbbe::DT_I2C_SLAVE: {
         Pbbe::I2cSlaveDescriptor& d = static_cast<Pbbe::I2cSlaveDescriptor&>(*info.parsed);
-        Serial.print(d.name);
-        Serial.print(F(": i2c, address = "));
-        Serial.print(d.addr);
-        Serial.print(F(", max speed = "));
-        Serial.print(d.speed);
-        Serial.print(F("kbps"));
-        Serial.println();
+        sp(d.name);
+        sp(F(": i2c, address = "));
+        sp(d.addr);
+        sp(F(", max speed = "));
+        sp(d.speed);
+        sp(F("kbps"));
+        speol();
         break;
       }
       case Pbbe::DT_DATA: {
         Pbbe::DataDescriptor& d = static_cast<Pbbe::DataDescriptor&>(*info.parsed);
-        Serial.print(d.name);
-        Serial.print(F(": data, length = "));
-        Serial.print(d.length);
-        Serial.print(F(", content = "));
-        printHexBuffer(Serial, d.data, d.length);
-        Serial.println();
+        sp(d.name);
+        sp(F(": data, length = "));
+        sp(d.length);
+        sp(F(", content = "));
+        printHexBuffer(d.data, d.length);
+        speol();
         break;
       }
       default: {
@@ -1946,8 +1940,8 @@ static numvar otaBoot(void) {
 \****************************/
 
 static numvar moduleStatus(void) {
-  Serial.println(F("enabled   name"));
-  Serial.println(F("--------------"));
+  speol(F("enabled   name"));
+  speol(F("--------------"));
 
   const Module *module = ModuleHandler::modules();
   while (module) {
