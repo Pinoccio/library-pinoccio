@@ -965,11 +965,12 @@ static numvar meshCalibrate(void) {
   if (!checkArgs(1, F("usage: mesh.calibrate(seconds)"))) {
     return 0;
   }
-  // poor mans
+  // poor mans!
   Shell.eval(F("function mesh.calibrate.ack {if(arg(1)) led.red; if(arg(2) > 0 && arg(2) < 100) led.green; if(arg(2) > 100) led.yellow;}"));
   Shell.eval(F("function mesh.calibrate.ping { command.scout.ack(\"mesh.calibrate.ack\",arg(1),\"led.blue\",100); }"));
   Shell.eval(F("function mesh.calibrate.each { mesh.each(\"mesh.calibrate.ping\");}"));
   Shell.eval(F("run mesh.calibrate.each,1000"));
+  // this causes an unexpected char that stops running mesh.calibrate.each, hack!
   Shell.delay(getarg(1)*1000,F("rm mesh.calibrate.each;rm mesh.calibrate.ping;rm mesh.calibrate.ack"));
   
   return 1;
@@ -2621,8 +2622,9 @@ void PinoccioShell::disableShell() {
   isShellEnabled = false;
 }
 
+// ugh-ly
 void PinoccioShell::delay(uint32_t at, const __FlashStringHelper *command) {
-  char *cpy = (char*)malloc(strlen_P((const prog_char*)command));
+  char *cpy = (char*)malloc(strlen_P((const prog_char*)command)+1);
   strcpy_P(cpy,(const prog_char*)command);
   delay(at,cpy);
   free(cpy);
