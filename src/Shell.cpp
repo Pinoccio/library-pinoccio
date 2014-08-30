@@ -27,9 +27,6 @@ using namespace pinoccio;
 PinoccioShell Shell;
 
 static bool isMeshVerbose = 0;
-static int lastMeshRssi = 0;
-static int lastMeshLqi = 0;
-
 
 /****************************\
  *     HELPER FUNCTIONS     *
@@ -650,8 +647,9 @@ static bool receiveMessage(NWK_DataInd_t *ind) {
     Serial.print(F(" rssi "));
     Serial.println(abs(ind->rssi), DEC);
   }
-  lastMeshRssi = abs(ind->rssi);
-  lastMeshLqi = ind->lqi;
+  Shell.lastMeshRssi = abs(ind->rssi);
+  Shell.lastMeshLqi = ind->lqi;
+  Shell.lastMeshFrom = ind->srcAddr;
   NWK_SetAckControl(abs(ind->rssi));
 
   if (strlen(data) <3 || data[0] != '[') {
@@ -718,7 +716,7 @@ static void sendConfirm(NWK_DataReq_t *req) {
       Serial.println(F(")"));
     }
   }
-  lastMeshRssi = req->control;
+  Shell.lastMeshRssi = req->control;
 
   // run the Bitlash callback ack function
   char buf[32];
@@ -800,7 +798,7 @@ static void commandConfirm(NWK_DataReq_t *req) {
       Serial.println(F(")"));
     }
   }
-  lastMeshRssi = req->control;
+  Shell.lastMeshRssi = req->control;
 
   // run the Bitlash callback ack command
   if(commandAck)
@@ -808,7 +806,7 @@ static void commandConfirm(NWK_DataReq_t *req) {
     char *cmd = commandAck;
     commandAck = NULL;
     // this may set another commandAck
-    Shell.eval(cmd,req->status,lastMeshRssi);
+    Shell.eval(cmd,req->status,Shell.lastMeshRssi);
     free(cmd);
   }
 
@@ -951,11 +949,30 @@ StringBuffer arg2array(int ver) {
 }
 
 static numvar meshSignal(void) {
-  return lastMeshRssi * -1;
+  return Shell.lastMeshRssi * -1;
 }
 
 static numvar meshLoss(void) {
-  return lastMeshLqi;
+  return Shell.lastMeshLqi;
+}
+
+static numvar meshFrom(void) {
+  return Shell.lastMeshFrom;
+}
+
+
+static numvar meshCalibrate(void) {
+  if (!checkArgs(1, F("usage: mesh.calibrate(seconds)"))) {
+    return 0;
+  }
+  // poor mans
+  Shell.eval(F("function mesh.calibrate.ack {if(arg(1)) led.red; if(arg(2) > 0 && arg(2) < 100) led.green; if(arg(2) > 100) led.yellow;}"));
+  Shell.eval(F("function mesh.calibrate.ping { command.scout.ack(\"mesh.calibrate.ack\",arg(1),\"led.blue\",100); }"));
+  Shell.eval(F("function mesh.calibrate.each { mesh.each(\"mesh.calibrate.ping\");}"));
+  Shell.eval(F("run mesh.calibrate.each,1000"));
+  Shell.delay(getarg(1)*1000,"rm mesh.calibrate.each;rm mesh.calibrate.ping;rm mesh.calibrate.ack");
+  
+  return 1;
 }
 
 static numvar meshVerbose(void) {
@@ -1036,6 +1053,20 @@ static numvar meshRouting(void) {
     sp(table[i].lqi);
     sp(F("     |"));
     speol();
+  }
+  return 1;
+}
+
+static numvar meshEach(void) {
+  if (!checkArgs(1, F("usage: mesh.each(\"command\")"))) {
+    return 0;
+  }
+  NWK_RouteTableEntry_t *table = NWK_RouteTable();
+  for (int i=0; i < NWK_ROUTE_TABLE_SIZE; i++) {
+    if (table[i].dstAddr == NWK_ROUTE_UNKNOWN) {
+      continue;
+    }
+    Shell.eval((char*)getstringarg(1),table[i].dstAddr,table[i].lqi,table[i].nextHopAddr);
   }
   return 1;
 }
@@ -2230,7 +2261,10 @@ void PinoccioShell::setup() {
   addFunction("mesh.routing", meshRouting);
   addFunction("mesh.signal", meshSignal);
   addFunction("mesh.loss", meshLoss);
+  addFunction("mesh.from", meshFrom);
   addFunction("mesh.id", meshId);
+  addFunction("mesh.calibrate", meshCalibrate);
+  addFunction("mesh.each", meshEach);
 
   // these supplant/replace message.*
   addFunction("command.scout", commandScout);

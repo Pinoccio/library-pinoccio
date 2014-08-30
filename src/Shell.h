@@ -107,6 +107,9 @@ class PinoccioShell {
     void print(const char *str);
     bool outWait;
     bool isVerbose;
+    int lastMeshRssi;
+    int lastMeshLqi;
+    int lastMeshFrom;
 
     /**
      * Parse a single hexadecimal character. Supports both uppercase and
