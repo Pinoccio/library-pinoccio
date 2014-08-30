@@ -970,7 +970,7 @@ static numvar meshCalibrate(void) {
   Shell.eval(F("function mesh.calibrate.ping { command.scout.ack(\"mesh.calibrate.ack\",arg(1),\"led.blue\",100); }"));
   Shell.eval(F("function mesh.calibrate.each { mesh.each(\"mesh.calibrate.ping\");}"));
   Shell.eval(F("run mesh.calibrate.each,1000"));
-  Shell.delay(getarg(1)*1000,"rm mesh.calibrate.each;rm mesh.calibrate.ping;rm mesh.calibrate.ack");
+  Shell.delay(getarg(1)*1000,F("rm mesh.calibrate.each;rm mesh.calibrate.ping;rm mesh.calibrate.ack"));
   
   return 1;
 }
@@ -2619,6 +2619,13 @@ void PinoccioShell::startShell() {
 
 void PinoccioShell::disableShell() {
   isShellEnabled = false;
+}
+
+void PinoccioShell::delay(uint32_t at, const __FlashStringHelper *command) {
+  char *cpy = (char*)malloc(strlen_P((const prog_char*)command));
+  strcpy_P(cpy,(const prog_char*)command);
+  delay(at,cpy);
+  free(cpy);
 }
 
 void PinoccioShell::delay(uint32_t at, char *command) {

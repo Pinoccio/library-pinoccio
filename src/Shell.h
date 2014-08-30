@@ -97,6 +97,7 @@ class PinoccioShell {
     numvar eval(Print *out, const String& cmd);
 
     void allReportHQ();
+    void delay(uint32_t at, const __FlashStringHelper *command);
     void delay(uint32_t at, char *command);
     bool defined(const char *fn);
 
