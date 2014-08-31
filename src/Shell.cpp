@@ -759,10 +759,7 @@ static void sendMessage(int address, const String &data) {
   }
 }
 
-static char *commandAck;
 static void commandConfirm(NWK_DataReq_t *req) {
-   sendDataReqBusy = false;
-   free(req->data);
 
    if (Shell.isVerbose) {
     if (req->status == NWK_SUCCESS_STATUS) {
@@ -800,50 +797,56 @@ static void commandConfirm(NWK_DataReq_t *req) {
   }
   Shell.lastMeshRssi = req->control;
 
-  // run the Bitlash callback ack command
-  if(commandAck)
+  // run the Bitlash callback ack command appended after if any
+  char *commandAck = (char*)req->data+req->size+1;
+  if(*commandAck)
   {
-    char *cmd = commandAck;
-    commandAck = NULL;
-    // this may set another commandAck
-    Shell.eval(cmd,req->status,Shell.lastMeshRssi);
-    free(cmd);
+    Shell.eval(commandAck,req->status,Shell.lastMeshRssi);
   }
+  
+  free(req->data);
+  free(req);
 
 }
 
-static void sendCommand(int address, const String *data) {
-  if (sendDataReqBusy) {
-    return;
-  }
+static void sendCommand(int address, const char *cmd, const char *ack) {
+  NWK_DataReq_t *req = (NWK_DataReq_t*)malloc(sizeof(struct NWK_DataReq_t));
+  memset(req,0,sizeof(struct SYS_Timer_t));
 
-  // multicas the command to everyone
+  // multicast the command to everyone
   if(address == 0)
   {
-    sendDataReq.dstAddr = 1; // a group everyone joins by default in ScoutHandler
-    sendDataReq.options = NWK_OPT_MULTICAST|NWK_OPT_ENABLE_SECURITY;
+    req->dstAddr = 1; // a group everyone joins by default in ScoutHandler
+    req->options = NWK_OPT_MULTICAST|NWK_OPT_ENABLE_SECURITY;
   }else{
-    sendDataReq.dstAddr = address;
-    sendDataReq.options = NWK_OPT_ACK_REQUEST|NWK_OPT_ENABLE_SECURITY;
+    req->dstAddr = address;
+    req->options = NWK_OPT_ACK_REQUEST|NWK_OPT_ENABLE_SECURITY;
   }
-  sendDataReq.confirm = commandConfirm;
-  sendDataReq.dstEndpoint = 2;
-  sendDataReq.srcEndpoint = 2;
-  sendDataReq.data = (uint8_t*)strdup(data->c_str());
-  sendDataReq.size = data->length() + 1;
-  NWK_DataReq(&sendDataReq);
-
-  sendDataReqBusy = true;
+  req->confirm = commandConfirm;
+  req->dstEndpoint = 2;
+  req->srcEndpoint = 2;
+  req->data = (uint8_t*)malloc(strlen(cmd) + 1 + strlen(ack) + 1);
+  req->size = strlen(cmd) + 1;
+  strcpy((char*)req->data,cmd);
+  strcpy((char*)req->data+req->size+1,ack); // append any ack after
+  NWK_DataReq(req);
 
   if (Shell.isVerbose) {
     Serial.print(F("Sent command to Scout "));
     Serial.print(address);
     Serial.print(F(": "));
-    Serial.print(sendDataReq.size);
+    Serial.print(req->size);
     Serial.print(F(": "));
-    Serial.println((char*)sendDataReq.data);
+    Serial.println((char*)req->data);
+    Serial.print(F(" ack "));
+    Serial.println((char*)ack);
   }
 }
+
+static void sendCommand(int address, const char *data) {
+  sendCommand(address, data, "");
+}
+
 
 /****************************\
 *    MESH RADIO HANDLERS    *
@@ -966,6 +969,7 @@ static numvar meshCalibrate(void) {
     return 0;
   }
   // poor mans!
+  Shell.eval(F("command.others(\"command.scout(mesh.from,\\\"millis\\\")\")")); // this flushes routes table to us to bootstrap
   Shell.eval(F("function mesh.calibrate.ack {if(arg(1)) led.red; if(arg(2) > 0 && arg(2) < 100) led.green; if(arg(2) > 100) led.yellow;}"));
   Shell.eval(F("function mesh.calibrate.ping { command.scout.ack(\"mesh.calibrate.ack\",arg(1),\"led.blue\",100); }"));
   Shell.eval(F("function mesh.calibrate.each { mesh.each(\"mesh.calibrate.ping\");}"));
@@ -1142,7 +1146,7 @@ static numvar commandScout(void) {
     speol(F("command too long, 100 max"));
     return 0;
   }
-  sendCommand(getarg(1),&cmd);
+  sendCommand(getarg(1),cmd.c_str());
   return 1;
 }
 
@@ -1155,7 +1159,6 @@ static numvar commandScoutAck(void) {
     speol(F("busy commanding already"));
     return 0;
   }
-  commandAck = strdup((char*)getarg(1));
   StringBuffer cmd;
   commandArgs(&cmd, 3);
   if(cmd.length() > 100)
@@ -1163,7 +1166,7 @@ static numvar commandScoutAck(void) {
     speol(F("command too long, 100 max"));
     return 0;
   }
-  sendCommand(getarg(2),&cmd);
+  sendCommand(getarg(2), cmd.c_str(), (char*)getarg(1));
 
   return 1;
 }
@@ -1184,7 +1187,7 @@ static numvar commandOthers(void) {
     speol(F("command too long, 100 max"));
     return 0;
   }
-  sendCommand(0,&cmd);
+  sendCommand(0, cmd.c_str());
   return 1;
 }
 
@@ -1204,7 +1207,7 @@ static numvar commandAll(void) {
     speol(F("command too long, 100 max"));
     return 0;
   }
-  sendCommand(0,&cmd);
+  sendCommand(0, cmd.c_str());
   Shell.delay(100,(char*)cmd.c_str());
   return 1;
 }
