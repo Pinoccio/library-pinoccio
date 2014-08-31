@@ -975,7 +975,7 @@ static numvar meshCalibrate(void) {
   Shell.eval(F("function mesh.calibrate.each { mesh.each(\"mesh.calibrate.ping\");}"));
   Shell.eval(F("run mesh.calibrate.each,1000"));
   // this causes an unexpected char that stops running mesh.calibrate.each, hack!
-  Shell.delay(getarg(1)*1000,F("rm mesh.calibrate.each;rm mesh.calibrate.ping;rm mesh.calibrate.ack"));
+  Shell.delay(getarg(1)*1000,F("rm mesh.calibrate.each;rm mesh.calibrate.ping;rm mesh.calibrate.ack;led.off"));
   
   return 1;
 }
