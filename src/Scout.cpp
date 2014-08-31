@@ -129,6 +129,7 @@ void PinoccioScout::setup(const char *sketchName, const char *sketchRevision, in
   Shell.setup();
 }
 
+static uint32_t loopLast = 0;
 void PinoccioScout::loop() {
   bool canSleep = true;
   // TODO: Let other loop functions return some "cansleep" status as well
@@ -138,6 +139,21 @@ void PinoccioScout::loop() {
   handler.loop();
   ModuleHandler::loop();
   Backpacks::loop();
+
+  // keep subtracting until wake is gone
+  if (wake) {
+    uint32_t now = millis();
+    if (loopLast && now > loopLast) {
+      // when there's some wake time left, don't sleep yet
+      if (wake - (now - loopLast) > 0)
+      {
+        wake -= (now - loopLast);
+        return;
+      }
+      wake = 0;
+    }
+    loopLast = now;
+  }
 
   if (sleepPending) {
     canSleep = canSleep && !NWK_Busy();
@@ -639,7 +655,14 @@ void PinoccioScout::doSleep(bool pastEnd) {
       // If the callback returned false, or it scheduled a new sleep or
       // we finished our previous sleep, then we're done with this
       // callback.
-      free(func);
+      if (sleepy) {
+        // in sleepy mode we loop!
+        SleepHandler::scheduleSleep(sleepy);
+        sleepPending = true;
+        postSleepFunction = func;
+      } else {
+        free(func);
+      }
     } else {
       // If the callback returned true, and it did not schedule a new
       // sleep interval, and we're not done sleeping yet, this means we
