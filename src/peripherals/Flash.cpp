@@ -45,13 +45,6 @@ FlashClass::FlashClass(int chipSelectPin, SPIClass &SPIDriver) : SPI(SPIDriver),
 }
 
 void FlashClass::begin(int chipSelectPin, SPIClass &SPIDriver) {
-  digitalWrite(chipSelectPin, HIGH);
-  pinMode(chipSelectPin, OUTPUT);
-
-  pinMode(SCK, OUTPUT);
-  pinMode(MOSI, OUTPUT);
-  pinMode(MISO, INPUT);
-
   this->SPI = SPIDriver;
   this->CS = chipSelectPin;
 
@@ -59,11 +52,15 @@ void FlashClass::begin(int chipSelectPin, SPIClass &SPIDriver) {
   this->SPI.setBitOrder(MSBFIRST);
   this->SPI.setDataMode(SPI_MODE0);
   this->SPI.setClockDivider(SPI_CLOCK_DIV8);
+  
+  digitalWrite(this->CS, HIGH);
+  pinMode(this->CS, OUTPUT);
 }
 
 void FlashClass::end() {
-  this->SPI.end();
+  //this->SPI.end();
   digitalWrite(this->CS, HIGH);
+  digitalWrite(MOSI, HIGH);
 }
 
 // return true if the chip is supported

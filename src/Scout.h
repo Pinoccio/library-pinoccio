@@ -14,6 +14,7 @@
 #include <ScoutHandler.h>
 #include "modules/ModuleHandler.h"
 #include "backpack-bus/PBBP.h"
+#include "util/Callback.h"
 #include <Wire.h>
 
 #include "lwm/phy/phy.h"
@@ -39,6 +40,7 @@
 
 // TODO: remove these when this class is put in the pinoccio namespace
 using pinoccio::ScoutHandler;
+using pinoccio::CallbackList;
 
 class PinoccioScout : public PinoccioClass {
 
@@ -114,15 +116,19 @@ class PinoccioScout : public PinoccioClass {
     bool isBattAlarmTriggered;
     uint8_t temperature;
 
+    CallbackList<void, bool> toggleBackpackVccCallbacks;
+
     bool eventVerboseOutput;
+    bool eventsStopped;
 
     PBBP bp;
     ScoutHandler handler;
 
     // Schedule a sleep that lasts until now + ms. The optional bitlash
     // command is executed after the sleep and then free()'d. A previous
-    // sleep can be canceled by passing 0, NULL.
-    void scheduleSleep(uint32_t ms, char *cmd);
+    // sleep can be canceled by passing 0, NULL. The command passed in
+    // will be copied, so it does not have to remain valid.
+    void scheduleSleep(uint32_t ms, const char *cmd);
 
     enum {
       PINMODE_DISCONNECTED = -4,

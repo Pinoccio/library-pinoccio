@@ -70,9 +70,8 @@ namespace pinoccio {
       // associated
       bool connectToHq();
 
-      // To ensure that time is synced at least once before attempting
-      // SSL
-      bool timeSynced = false;
+      // flag to know when we're trying to associate
+      bool associating = false;
   };
 } // namespace pinoccio
 

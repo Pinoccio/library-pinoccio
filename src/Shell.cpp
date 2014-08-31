@@ -6,6 +6,7 @@
 *  This program is free software; you can redistribute it and/or modify it *
 *  under the terms of the BSD License as described in license.txt.         *
 \**************************************************************************/
+#include "stdarg.h"
 #include "Shell.h"
 #include "Scout.h"
 #include "SleepHandler.h"
@@ -14,7 +15,6 @@
 #include "backpacks/wifi/WifiModule.h"
 #include "bitlash.h"
 #include "src/bitlash.h"
-#include "util/StringBuffer.h"
 #include "util/String.h"
 #include "util/PrintToString.h"
 #include "modules/ModuleHandler.h"
@@ -26,7 +26,7 @@ using namespace pinoccio;
 
 PinoccioShell Shell;
 
-static bool isMeshVerbose;
+static bool isMeshVerbose = 0;
 static int lastMeshRssi = 0;
 static int lastMeshLqi = 0;
 
@@ -99,6 +99,7 @@ static numvar allReport(void) {
 static numvar allVerbose(void) {
   Scout.handler.setVerbose(getarg(1));
   isMeshVerbose = getarg(1);
+  Shell.isVerbose = getarg(1);
   Scout.eventVerboseOutput = getarg(1);
   return 1;
 }
@@ -138,10 +139,10 @@ static numvar setTemperatureOffset(void) {
 }
 
 static numvar temperatureCalibrate(void) {
-  if (!checkArgs(1, F("usage: temperature.setoffset(value)"))) {
+  if (!checkArgs(1, F("usage: temperature.calibrate(value)"))) {
     return 0;
   }
-  Scout.setTemperatureOffset(getarg(1) - Scout.getTemperatureC());
+  Scout.setTemperatureOffset(getarg(1) - Scout.getTemperatureC() + Scout.getTemperatureOffset());
   return 1;
 }
 
@@ -359,7 +360,7 @@ static numvar powerSleep(void) {
     return 0;
   }
 
-  Scout.scheduleSleep(getarg(1), func ? strdup(func) : NULL);
+  Scout.scheduleSleep(getarg(1), func);
 
   return 1;
 }
@@ -568,6 +569,7 @@ static numvar ledWhite(void) {
 static numvar ledGetHex(void) {
   char hex[8];
   snprintf(hex, sizeof(hex),"%02x%02x%02x", Led.getRedValue(), Led.getGreenValue(), Led.getBlueValue());
+  speol(hex);
   return keyMap(hex, millis());
 }
 
@@ -759,6 +761,91 @@ static void sendMessage(int address, const String &data) {
   }
 }
 
+static char *commandAck;
+static void commandConfirm(NWK_DataReq_t *req) {
+   sendDataReqBusy = false;
+   free(req->data);
+
+   if (Shell.isVerbose) {
+    if (req->status == NWK_SUCCESS_STATUS) {
+      Serial.print(F("-  Command successfully sent to Scout "));
+      Serial.print(req->dstAddr);
+      if (req->control) {
+        Serial.print(F(" (Confirmed with control byte: "));
+        Serial.print(req->control);
+        Serial.print(F(")"));
+      }
+      Serial.println();
+    } else {
+      Serial.print(F("Error: "));
+      switch (req->status) {
+        case NWK_OUT_OF_MEMORY_STATUS:
+          Serial.print(F("Out of memory: "));
+          break;
+        case NWK_NO_ACK_STATUS:
+        case NWK_PHY_NO_ACK_STATUS:
+          Serial.print(F("No acknowledgement received: "));
+          break;
+        case NWK_NO_ROUTE_STATUS:
+          Serial.print(F("No route to destination: "));
+          break;
+        case NWK_PHY_CHANNEL_ACCESS_FAILURE_STATUS:
+          Serial.print(F("Physical channel access failure: "));
+          break;
+        default:
+          Serial.print(F("unknown failure: "));
+      }
+      Serial.print(F("("));
+      Serial.print(req->status, HEX);
+      Serial.println(F(")"));
+    }
+  }
+  lastMeshRssi = req->control;
+
+  // run the Bitlash callback ack command
+  if(commandAck)
+  {
+    char *cmd = commandAck;
+    commandAck = NULL;
+    // this may set another commandAck
+    Shell.eval(cmd,req->status,lastMeshRssi);
+    free(cmd);
+  }
+
+}
+
+static void sendCommand(int address, const String *data) {
+  if (sendDataReqBusy) {
+    return;
+  }
+
+  // multicas the command to everyone
+  if(address == 0)
+  {
+    sendDataReq.dstAddr = 1; // a group everyone joins by default in ScoutHandler
+    sendDataReq.options = NWK_OPT_MULTICAST|NWK_OPT_ENABLE_SECURITY;
+  }else{
+    sendDataReq.dstAddr = address;
+    sendDataReq.options = NWK_OPT_ACK_REQUEST|NWK_OPT_ENABLE_SECURITY;
+  }
+  sendDataReq.confirm = commandConfirm;
+  sendDataReq.dstEndpoint = 2;
+  sendDataReq.srcEndpoint = 2;
+  sendDataReq.data = (uint8_t*)strdup(data->c_str());
+  sendDataReq.size = data->length() + 1;
+  NWK_DataReq(&sendDataReq);
+
+  sendDataReqBusy = true;
+
+  if (Shell.isVerbose) {
+    Serial.print(F("Sent command to Scout "));
+    Serial.print(address);
+    Serial.print(F(": "));
+    Serial.print(sendDataReq.size);
+    Serial.print(F(": "));
+    Serial.println((char*)sendDataReq.data);
+  }
+}
 
 /****************************\
 *    MESH RADIO HANDLERS    *
@@ -921,6 +1008,10 @@ static numvar meshReport(void) {
   return 1;
 }
 
+static numvar meshId(void) {
+  return Scout.getAddress();
+}
+
 static numvar meshRouting(void) {
   sp(F("|    Fixed    |  Multicast  |    Score    |    DstAdd   | NextHopAddr |    Rank     |     LQI     |"));
   speol();
@@ -949,18 +1040,6 @@ static numvar meshRouting(void) {
   return 1;
 }
 
-static numvar meshSleep(void) {
-  if (!checkArgs(0, 3, F("usage: mesh.sleep([seconds, nap ms, \"function\"])"))) {
-    return 0;
-  }
-  // will broadcast a sleep command until seconds, only we run the function on wake
-  // nap (if not 0) is the number of ms to wake up and check for alerts (less sleepy)
-  // anyone who wakes up early for any reason will broadcast alerts to try to wake others until they're happy
-  // alerts keep anyone from falling back alseep but don't change the cycle
-  // no arg just returns how many seconds are left to sleep, if any
-  return 1;
-}
-
 static numvar meshAlert(void) {
   if (!checkArgs(0, 1, F("usage: mesh.alert([0 or 1])"))) {
     return 0;
@@ -986,6 +1065,127 @@ static numvar messageGroup(void) {
     return 0;
   }
   Scout.handler.announce(getarg(1), arg2array(1));
+  return 1;
+}
+
+// works inside bitlash handlers to serialize a command
+void commandArgs(StringBuffer *out, int start) {
+  StringBuffer backtick;
+  int i;
+  int args = getarg(0);
+  *out = (char*)getstringarg(start);
+  out->concat('(');
+  for (i=start+1; i<=args; i++) {
+    if(isstringarg(i))
+    {
+      char *arg = (char*)getstringarg(i);
+      int len = strlen(arg);
+      // detect backticks to eval and embed any string output
+      if(len > 2 && arg[0] == '`' && arg[len-1] == '`')
+      {
+        backtick = "";
+        arg[len-1] = 0;
+        arg++;
+        Shell.eval(PrintToString(backtick), arg);
+        backtick.trim();
+        out->appendJsonString(backtick, true);
+      }else{
+        out->appendJsonString(arg, true);
+      }
+    }else{
+      // just a number
+      out->concat(getarg(i));
+    }
+    if(i+1 <= args) out->concat(',');
+  }
+  out->concat(')');
+  if(Shell.isVerbose)
+  {
+    Serial.print("built command from args: ");
+    Serial.println(*out);
+  }
+}
+
+static numvar commandScout(void) {
+  if (!checkArgs(2, 99, F("usage: command.scout(scoutId, \"command\" [,arg1,arg2])")) || !isstringarg(2)) {
+    return 0;
+  }
+  if (sendDataReqBusy)
+  {
+    speol(F("busy commanding already"));
+    return 0;
+  }
+  StringBuffer cmd;
+  commandArgs(&cmd, 2);
+  if(cmd.length() > 100)
+  {
+    speol(F("command too long, 100 max"));
+    return 0;
+  }
+  sendCommand(getarg(1),&cmd);
+  return 1;
+}
+
+static numvar commandScoutAck(void) {
+  if (!checkArgs(3, 99, F("usage: command.scout.ack(\"callback\", scoutId, \"command\" [,arg1,arg2])")) || !isstringarg(1) || !isstringarg(3)) {
+    return 0;
+  }
+  if (sendDataReqBusy)
+  {
+    speol(F("busy commanding already"));
+    return 0;
+  }
+  commandAck = strdup((char*)getarg(1));
+  StringBuffer cmd;
+  commandArgs(&cmd, 3);
+  if(cmd.length() > 100)
+  {
+    speol(F("command too long, 100 max"));
+    return 0;
+  }
+  sendCommand(getarg(2),&cmd);
+
+  return 1;
+}
+
+static numvar commandOthers(void) {
+  if (!checkArgs(1, 99, F("usage: command.others(\"command\" [,arg1,arg2])")) || !isstringarg(1)) {
+    return 0;
+  }
+  if (sendDataReqBusy)
+  {
+    speol(F("busy commanding already"));
+    return 0;
+  }
+  StringBuffer cmd;
+  commandArgs(&cmd, 1);
+  if(cmd.length() > 100)
+  {
+    speol(F("command too long, 100 max"));
+    return 0;
+  }
+  sendCommand(0,&cmd);
+  return 1;
+}
+
+static numvar commandAll(void) {
+  if (!checkArgs(1, 99, F("usage: command.all(\"command\" [,arg1,arg2])")) || !isstringarg(1)) {
+    return 0;
+  }
+  if (sendDataReqBusy)
+  {
+    speol(F("busy commanding already"));
+    return 0;
+  }
+  StringBuffer cmd;
+  commandArgs(&cmd, 1);
+  if(cmd.length() > 100)
+  {
+    speol(F("command too long, 100 max"));
+    return 0;
+  }
+  sendCommand(0,&cmd);
+  Shell.delay(100,(char*)cmd.c_str());
   return 1;
 }
 
@@ -1190,7 +1390,7 @@ static numvar pinWrite(void) {
   if (Scout.getPinMode(pin) == PinoccioScout::PINMODE_PWM && (value < 0 || value > 255)) {
     speol(F("Invalid PWM value"));
     return 0;
-  } 
+  }
   if (Scout.getPinMode(pin) != PinoccioScout::PINMODE_PWM && (value < 0 || value > 1)) {
     speol(F("Invalid pin value"));
     return 0;
@@ -1660,6 +1860,11 @@ static numvar getHQToken(void) {
 }
 
 static void delayTimerHandler(SYS_Timer_t *timer) {
+  if (Shell.isVerbose) {
+    Serial.print(F("running delay'd command: "));
+    Serial.println(((char*)timer) + (sizeof(struct SYS_Timer_t)));
+  }
+
   doCommand(((char*)timer) + (sizeof(struct SYS_Timer_t)));
   free(timer);
 }
@@ -1714,12 +1919,12 @@ static numvar daisyWipe(void) {
   report.appendSprintf("[%d,[%d],[\"bye\"]]",keyMap("daisy",0),keyMap("dave",0));
   Scout.handler.report(report);
 
-  if (WifiModule::instance.enabled()) {
-    if (!WifiModule::instance.bp().runDirectCommand(Serial, "AT&F")) {
+  if (WifiModule::instance.bp()) {
+    if (!WifiModule::instance.bp()->runDirectCommand(Serial, "AT&F")) {
        sp(F("Error: Wi-Fi direct command failed"));
        ret = false;
     }
-    if (!WifiModule::instance.bp().runDirectCommand(Serial, "AT&W0")) {
+    if (!WifiModule::instance.bp()->runDirectCommand(Serial, "AT&W0")) {
        sp(F("Error: Wi-Fi direct command failed"));
        ret = false;
     }
@@ -1853,6 +2058,7 @@ static numvar hqSetAddress(void) {
 \****************************/
 
 static numvar startStateChangeEvents(void) {
+  Scout.eventsStopped = false;
   Scout.startDigitalStateChangeEvents();
   Scout.startAnalogStateChangeEvents();
   Scout.startPeripheralStateChangeEvents();
@@ -1860,6 +2066,7 @@ static numvar startStateChangeEvents(void) {
 }
 
 static numvar stopStateChangeEvents(void) {
+  Scout.eventsStopped = true;
   Scout.stopDigitalStateChangeEvents();
   Scout.stopAnalogStateChangeEvents();
   Scout.stopPeripheralStateChangeEvents();
@@ -1881,9 +2088,10 @@ static numvar setEventVerbose(void) {
 \****************************/
 
 static void digitalPinEventHandler(uint8_t pin, int16_t value, int8_t mode) {
+  if(Scout.eventsStopped) return;
   uint32_t time = millis();
   char buf[16];
-  
+
   digitalPinReportHQ();
 
   snprintf(buf, sizeof(buf), "on.d%d", pin);
@@ -1912,6 +2120,7 @@ static void digitalPinEventHandler(uint8_t pin, int16_t value, int8_t mode) {
 }
 
 static void analogPinEventHandler(uint8_t pin, int16_t value, int8_t mode) {
+  if(Scout.eventsStopped) return;
   uint32_t time = millis();
   char buf[16];
 
@@ -1931,6 +2140,7 @@ static void analogPinEventHandler(uint8_t pin, int16_t value, int8_t mode) {
 }
 
 static void batteryPercentageEventHandler(uint8_t value) {
+  if(Scout.eventsStopped) return;
   uint32_t time = millis();
   char buf[24];
   char *func = "on.battery.level";
@@ -1950,6 +2160,7 @@ static void batteryPercentageEventHandler(uint8_t value) {
 }
 
 static void batteryChargingEventHandler(uint8_t value) {
+  if(Scout.eventsStopped) return;
   uint32_t time = millis();
   char buf[28];
   char *func = "on.battery.charging";
@@ -1969,6 +2180,7 @@ static void batteryChargingEventHandler(uint8_t value) {
 }
 
 static void temperatureEventHandler(int8_t tempC, int8_t tempF) {
+  if(Scout.eventsStopped) return;
   uint32_t time = millis();
   char buf[28];
   char *func = "on.temperature";
@@ -1988,6 +2200,7 @@ static void temperatureEventHandler(int8_t tempC, int8_t tempF) {
 }
 
 static void ledEventHandler(uint8_t redValue, uint8_t greenValue, uint8_t blueValue) {
+  if(Scout.eventsStopped) return;
   ledReportHQ();
 }
 
@@ -2029,7 +2242,13 @@ void PinoccioShell::setup() {
   addFunction("mesh.routing", meshRouting);
   addFunction("mesh.signal", meshSignal);
   addFunction("mesh.loss", meshLoss);
-  addFunction("mesh.sleep", meshSleep);
+  addFunction("mesh.id", meshId);
+
+  // these supplant/replace message.*
+  addFunction("command.scout", commandScout);
+  addFunction("command.scout.ack", commandScoutAck);
+  addFunction("command.all", commandAll);
+  addFunction("command.others", commandOthers);
 
   addFunction("message.scout", messageScout);
   addFunction("message.group", messageGroup);
@@ -2054,6 +2273,7 @@ void PinoccioShell::setup() {
   addFunction("uptime.report", uptimeReport);
   addFunction("uptime.getlastreset", getLastResetCause);
   addFunction("uptime.status", uptimeStatus);
+  addFunction("uptime", uptimeStatus);
 
   addFunction("led.on", ledTorch); // alias
   addFunction("led.off", ledOff);
@@ -2163,27 +2383,37 @@ void PinoccioShell::addFunction(const char *name, numvar (*func)(void)) {
 StringBuffer customScripts;
 void PinoccioShell::refresh(void)
 {
+  StringBuffer lsout;
   customScripts = "";
-  setOutputHandler(&printToString<&customScripts>);
-  doCommand("ls");
-  resetOutputHandler();
+  Shell.eval(PrintToString(lsout),"ls");
 
   // parse and condense the "ls" bitlash format of "function name {...}\n" into just "name "
   int nl, sp;
-  while((nl = customScripts.indexOf('\n')) >= 0)
+  while((nl = lsout.indexOf('\n')) >= 0)
   {
-    if(customScripts.startsWith("function ") && (sp = customScripts.indexOf(' ',9)) < nl)
+    if(lsout.startsWith("function ") && (sp = lsout.indexOf(' ',9)) < nl)
     {
-      customScripts += customScripts.substring(9,sp+1);
+      customScripts += lsout.substring(9,sp+1);
     }
-    customScripts = customScripts.substring(nl+1);
+    lsout = lsout.substring(nl+1);
   }
+
+  if (Shell.isVerbose) {
+    Serial.print(F("refreshed custom commands index to: "));
+    Serial.println(customScripts);
+  }
+
 }
 
 // just a safe wrapper around bitlash checks
 bool PinoccioShell::defined(const char *cmd)
 {
   if(!cmd) return false;
+  if (Shell.isVerbose) {
+    Serial.print(F("looking for command "));
+    Serial.println(cmd);
+  }
+
   if(find_user_function((char*)cmd)) return true;
 //  if(findKey(cmd) >= 0) return true; // don't use findscript(), it's not re-entrant safe
   int at = customScripts.indexOf(cmd);
@@ -2336,7 +2566,7 @@ void PinoccioShell::startShell() {
   // init bitlash internals, don't use initBitlash so we do our own serial
   initTaskList();
   vinit();
-  
+
   // init our defined cache and start up
   Shell.refresh();
   pinoccioBanner();
@@ -2381,4 +2611,3 @@ void PinoccioShell::delay(uint32_t at, char *command) {
   delayTimer->interval = at;
   SYS_TimerStart(delayTimer);
 }
-

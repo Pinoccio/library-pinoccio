@@ -120,6 +120,14 @@ protected:
   static void addBackpack(uint8_t *unique_id);
 
   /**
+   * Free the entire list of backpacks (if list is true), or all cached
+   * data about backpacks (if list is false);
+   */
+  static void freeBackpacks(bool list);
+
+  static void onToggleBackpackVcc(bool on);
+
+  /**
    * Print a Pbbp error. Prints the given prefix, followed by the
    * last pbbp error.
    *

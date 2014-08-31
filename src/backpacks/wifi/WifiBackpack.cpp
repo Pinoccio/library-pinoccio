@@ -9,8 +9,10 @@
 #include <Arduino.h>
 #include <SPI.h>
 #include "WifiBackpack.h"
+#include "../../Scout.h"
 #include "../../ScoutHandler.h"
 #include "../../hq/HqHandler.h"
+#include "../../SleepHandler.h"
 #include "src/bitlash.h"
 
 using namespace pinoccio;
@@ -30,7 +32,9 @@ static void print_line(const uint8_t *buf, uint16_t len, void *data) {
 
 WifiBackpack::WifiBackpack() : client(gs) { }
 
-WifiBackpack::~WifiBackpack() { }
+WifiBackpack::~WifiBackpack() {
+  gs.end();
+}
 
 void WifiBackpack::onAssociate(void *data) {
   WifiBackpack& wifi = *(WifiBackpack*)data;
@@ -41,13 +45,22 @@ void WifiBackpack::onAssociate(void *data) {
     IPAddress ip = wifi.gs.dnsLookup(NTP_SERVER);
     if (ip == INADDR_NONE ||
         !wifi.gs.timeSync(ip, NTP_INTERVAL)) {
-      Serial.println(F("Time sync failed, reassociating to retry"));
+      if (Scout.handler.isVerbose)
+      {
+        Serial.println(F("Time sync failed, reassociating to retry"));
+      }
       wifi.associate();
     }
-    wifi.timeSynced = true;
   }
-  // Connection to HQ will happen automatically from loop()
+
+  // fire any script events
+  if (Shell.defined("on.wifi.associate")) Shell.eval("on.wifi.associate");
+
+  // connect to HQ now
+  wifi.connectToHq();
+  
 }
+
 
 bool WifiBackpack::connectToHq() {
   IPAddress ip;
@@ -55,15 +68,21 @@ bool WifiBackpack::connectToHq() {
     ip = gs.dnsLookup(HqHandler::host().c_str());
 
     if (ip == INADDR_NONE) {
-      Serial.print(F("Failed to resolve "));
-      Serial.print(HqHandler::host());
-      Serial.println(F(", reassociating to retry"));
+      if (Scout.handler.isVerbose)
+      {
+        Serial.print(F("Failed to resolve "));
+        Serial.print(HqHandler::host());
+        Serial.println(F(", reassociating to retry"));
+      }
       return false;
     }
   }
 
   if (!client.connect(ip, HqHandler::port())) {
-    Serial.println(F("HQ connection failed, reassociating to retry"));
+    if (Scout.handler.isVerbose)
+    {
+      Serial.println(F("HQ connection failed, reassociating to retry"));
+    }
     associate();
     return false;
   }
@@ -71,7 +90,10 @@ bool WifiBackpack::connectToHq() {
   if (HqHandler::use_tls()) {
     if (!client.enableTls(CA_CERTNAME_HQ)) {
       // Failed SSL negotiation kills the connection
-      Serial.println(F("SSL negotiation to HQ failed, reassociating to retry"));
+      if (Scout.handler.isVerbose)
+      {
+        Serial.println(F("SSL negotiation to HQ failed, reassociating to retry"));
+      }
       associate();
       return false;
     }
@@ -112,11 +134,6 @@ bool WifiBackpack::setup(BackpackInfo *info) {
 
 void WifiBackpack::loop() {
   gs.loop();
-
-  if (HqHandler::host().length() &&
-      isAPConnected() && !isHQConnected() &&
-      (!HqHandler::use_tls() || timeSynced))
-    connectToHq();
 }
 
 static bool isWepKey(const char *key) {
@@ -146,6 +163,7 @@ bool WifiBackpack::wifiConfig(const char *ssid, const char *passphrase) {
   // Ignore setDefaultProfile failure, since it fails also when only a
   // single profile is available
   ok && gs.setDefaultProfile(0);
+  associate();
   return ok;
 }
 
@@ -157,6 +175,7 @@ bool WifiBackpack::wifiDhcp(const char *hostname) {
   // Ignore setDefaultProfile failure, since it fails also when only a
   // single profile is available
   ok && gs.setDefaultProfile(0);
+  associate();
   return ok;
 }
 
@@ -171,12 +190,14 @@ bool WifiBackpack::wifiStatic(IPAddress ip, IPAddress netmask, IPAddress gw, IPA
   // Ignore setDefaultProfile failure, since it fails also when only a
   // single profile is available
   ok && gs.setDefaultProfile(0);
+  associate();
   return ok;
 }
 
 bool WifiBackpack::associate() {
   // Try to disable the NCM in case it's already running
   disassociate();
+  associating = true;
 
   // When association fails, keep retrying indefinately (at least it
   // seems that a retry count of 0 means that, even though the
@@ -187,6 +208,9 @@ bool WifiBackpack::associate() {
 }
 
 void WifiBackpack::disassociate() {
+  // nothing to disassociate if not associating
+  if(!associating) return;
+
   // this delay is important--The Gainspan module with 2.5.1 firmware
   // will hang if the NCM disassociate is called too soon after boot.
   if (millis() < 5000) {
@@ -223,7 +247,7 @@ bool WifiBackpack::isAPConnected() {
 }
 
 bool WifiBackpack::isHQConnected() {
-  return client.connected() && (!HqHandler::use_tls || client.sslConnected());
+  return client.connected() && (!HqHandler::use_tls() || client.sslConnected());
 }
 
 bool WifiBackpack::dnsLookup(Print& p, const char *host) {

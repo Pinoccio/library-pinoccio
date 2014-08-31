@@ -20,10 +20,17 @@ namespace pinoccio {
       const __FlashStringHelper *name() const;
       void loop();
 
-      WifiBackpack &bp() { return *_bp; }
+      WifiBackpack *bp() { return _bp; }
 
     protected:
       WifiBackpack *_bp;
+
+      static void onToggleBackpackVcc(bool on);
+
+      // Internal helpers. Don't fully enable/disable the module, but
+      // enable/disable the WifiBackpack part
+      bool _enable();
+      void _disable();
 
     // Ensure there is always exactly one instance by declaring it here
     // and making our constructor private
