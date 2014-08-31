@@ -969,7 +969,7 @@ static numvar meshCalibrate(void) {
     return 0;
   }
   // poor mans!
-  Shell.eval(F("command.others(\"command.scout(mesh.from,\\\"millis\\\")\")")); // this flushes routes table to us to bootstrap
+  Shell.eval(F("command.others(\"command.scout\",mesh.id,\"millis\")")); // this force flushes routes table to us to bootstrap
   Shell.eval(F("function mesh.calibrate.ack {if(arg(1)) led.red; if(arg(2) > 0 && arg(2) < 100) led.green; if(arg(2) > 100) led.yellow;}"));
   Shell.eval(F("function mesh.calibrate.ping { command.scout.ack(\"mesh.calibrate.ack\",arg(1),\"led.blue\",100); }"));
   Shell.eval(F("function mesh.calibrate.each { mesh.each(\"mesh.calibrate.ping\");}"));
