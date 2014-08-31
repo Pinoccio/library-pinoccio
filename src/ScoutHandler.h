@@ -26,6 +26,7 @@ namespace pinoccio {
       bool isVerbose;
       void setVerbose(bool flag);
       StringBuffer report(StringBuffer& report);
+      uint32_t seen;
       
       bool isBridged;
       StringBuffer bridge;
