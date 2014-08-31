@@ -365,18 +365,54 @@ static numvar powerSleep(void) {
   return 1;
 }
 
+static numvar powerSleepy(void) {
+  if (!checkArgs(1, 2, F("usage: power.sleepy(ms, [\"function\"])"))) {
+    return 0;
+  }
+
+  const char *func = NULL;
+  if (getarg(0) > 1) {
+    if (isstringarg(2))
+      func = (char*)getstringarg(2);
+    else
+      func = keyGet(getarg(2));
+  }
+
+  if (func && !Shell.defined(func)) {
+    sp("Must be the name of function: ");
+    sp(func);
+    return 0;
+  }
+
+  Scout.sleepy = getarg(1);
+  Scout.scheduleSleep(Scout.sleepy, func);
+
+  return 1;
+}
+
+static numvar powerWake(void) {
+  if (!checkArgs(1, F("usage: power.wake(ms)"))) {
+    return 0;
+  }
+
+  Scout.wake = getarg(1);
+  return 1;
+}
+
 static StringBuffer powerReportHQ(void) {
   StringBuffer report(100);
-  report.appendSprintf("[%d,[%d,%d,%d,%d],[%d,%d,%s,%s]]",
+  report.appendSprintf("[%d,[%d,%d,%d,%d,%d],[%d,%d,%s,%s,%d]]",
           keyMap("power", 0),
           keyMap("battery", 0),
           keyMap("voltage", 0),
           keyMap("charging", 0),
           keyMap("vcc", 0),
+          keyMap("sleepy", 0),
           (int)Scout.getBatteryPercentage(),
           (int)Scout.getBatteryVoltage(),
           Scout.isBatteryCharging()?"true":"false",
-          Scout.isBackpackVccEnabled()?"true":"false");
+          Scout.isBackpackVccEnabled()?"true":"false"),
+          Scout.sleepy;
   return Scout.handler.report(report);
 }
 
@@ -1039,18 +1075,6 @@ static numvar meshRouting(void) {
   }
   return 1;
 }
-
-static numvar meshAlert(void) {
-  if (!checkArgs(0, 1, F("usage: mesh.alert([0 or 1])"))) {
-    return 0;
-  }
-  // used to wake the mesh up until some condition is met
-  // does nothing if not sleeping
-  // 0 clears any alert status
-  // no args returns current alert status
-  return 1;
-}
-
 
 static numvar messageScout(void) {
   if (!checkArgs(1, 99, F("usage: message.scout(scoutId, \"message\")"))) {
@@ -2225,6 +2249,8 @@ void PinoccioShell::setup() {
   addFunction("power.disablevcc", disableBackpackVcc);
   addFunction("power.isvccenabled", isBackpackVccEnabled);
   addFunction("power.sleep", powerSleep);
+  addFunction("power.sleepy", powerSleepy);
+  addFunction("power.wake", powerWake);
   addFunction("power.report", powerReport);
   addFunction("power.wakeup.pin", powerWakeupPin);
 
