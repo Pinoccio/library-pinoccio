@@ -21,111 +21,6 @@ const __FlashStringHelper *MotionModule::name() const {
   return F("motion");
 }
 
-static void baroMovingAvgTimerHandler(SYS_Timer_t *timer);
-static void gpsTimerHandler(SYS_Timer_t *timer);
-
-static numvar verbose(void);
-
-static numvar gpsTime(void);
-static numvar gpsSatFix(void);
-static numvar gpsSatFixQuality(void);
-static numvar gpsSatCount(void);
-static numvar gpsLatitude(void);
-static numvar gpsLongitude(void);
-static numvar gpsSpeed(void);
-static numvar gpsAngle(void);
-
-static numvar baroPressure(void);
-static numvar baroAltitude(void);
-static numvar baroTemperature(void);
-
-bool MotionModule::enable() {
-  gps = new Adafruit_GPS();
-  //mpu = new MPU9150();
-  ms = new MS561101BA();
-
-  msMovingAvgCtr = 0;
-  isVerbose = false;
-
-  pinMode(6, INPUT);
-  pinMode(7, INPUT);
-  pinMode(8, INPUT);
-  
-  Shell.addFunction("motion.verbose", verbose);
-  
-  Shell.addFunction("motion.gps.time", gpsTime);
-  Shell.addFunction("motion.gps.sat.fix", gpsSatFix);
-  Shell.addFunction("motion.gps.sat.fixquality", gpsSatFixQuality);
-  Shell.addFunction("motion.gps.sat.count", gpsSatCount);
-  Shell.addFunction("motion.gps.latitude", gpsLatitude);
-  Shell.addFunction("motion.gps.longitude", gpsLongitude);
-  Shell.addFunction("motion.gps.speed", gpsSpeed);
-  Shell.addFunction("motion.gps.angle", gpsAngle);
-  /*
-  Shell.addFunction("motion.mpu.gyro.yaw", mpuGyroYaw);
-  Shell.addFunction("motion.mpu.gyro.pitch", mpuGyroPitch);
-  Shell.addFunction("motion.mpu.gyro.roll", mpuGyroRoll);
-  Shell.addFunction("motion.mpu.accel.x", mpuAccelX);
-  Shell.addFunction("motion.mpu.accel.y", mpuAccelY);
-  Shell.addFunction("motion.mpu.accel.z", mpuAccelZ);
-  Shell.addFunction("motion.mpu.mag.heading", mpuMagHeading);
-  */
-  Shell.addFunction("motion.baro.pressure", baroPressure);
-  Shell.addFunction("motion.baro.altitude", baroAltitude);
-  Shell.addFunction("motion.baro.temperature", baroTemperature);
-
-  gps->begin(9600);
-  //gps->sendCommand(PMTK_SET_BAUD_115200);
-  //gps->begin(115200);
-  // uncomment this line to turn on RMC (recommended minimum) and GGA (fix data) including altitude
-  gps->sendCommand(PMTK_SET_NMEA_OUTPUT_RMCGGA);
-  // uncomment this line to turn on only the "minimum recommended" data
-  //gps->sendCommand(PMTK_SET_NMEA_OUTPUT_RMCONLY);
-  gps->sendCommand(PMTK_SET_NMEA_UPDATE_1HZ); // 1 Hz update rate
-  //Serial1.println(PMTK_Q_RELEASE);
-  
-  gpsTimer.interval = 50;
-  gpsTimer.mode = SYS_TIMER_PERIODIC_MODE;
-  gpsTimer.handler = gpsTimerHandler;
-  SYS_TimerStart(&gpsTimer);
-
-  //mpu->initialize();
-  //speol(mpu.testConnection() ? F("MPU9150 connection successful") : F("MPU9150 not found"));
-
-  ms->init(MS561101BA_ADDR_CSB_LOW);
-  delay(100);
-  ms->getTemperature(MS561101BA_OSR_4096); // need an initial getTemperature() to get started for some reason
-  for(int i=0; i<MOVAVG_SIZE; i++) {
-    msMovingAvgBuffer[i] = ms->getPressure(MS561101BA_OSR_4096);
-  }
-    
-  baroMovingAvgTimer.interval = 50;
-  baroMovingAvgTimer.mode = SYS_TIMER_PERIODIC_MODE;
-  baroMovingAvgTimer.handler = baroMovingAvgTimerHandler;
-  SYS_TimerStart(&baroMovingAvgTimer);
-}
-
-void MotionModule::loop() {
-  if (isVerbose) {
-    while (Serial1.available()) {
-      Serial.write(Serial1.read());
-    }
-  }
-}
-
-float MotionModule::msGetPressure(void) {
-  float sum = 0.0;
-  for(int i=0; i<MOVAVG_SIZE; i++) {
-    sum += msMovingAvgBuffer[i];
-  }
-  return sum / MOVAVG_SIZE;
-}
-
-void MotionModule::msPushMovingAvg(float val) {
-  msMovingAvgBuffer[msMovingAvgCtr] = val;
-  msMovingAvgCtr = (msMovingAvgCtr + 1) % MOVAVG_SIZE;
-}
-
 static void gpsTimerHandler(SYS_Timer_t *timer) {
   MotionModule* m = &(MotionModule::instance);
   m->gps->read();
@@ -222,4 +117,91 @@ static numvar baroAltitude(void) {
 static numvar baroTemperature(void) {
   MotionModule* m = &(MotionModule::instance);
   return m->ms->getTemperature(MS561101BA_OSR_4096);
+}
+
+bool MotionModule::enable() {
+  gps = new Adafruit_GPS();
+  //mpu = new MPU9150();
+  ms = new MS561101BA();
+
+  msMovingAvgCtr = 0;
+  isVerbose = false;
+
+  pinMode(6, INPUT);
+  pinMode(7, INPUT);
+  pinMode(8, INPUT);
+  
+  Shell.addFunction("motion.verbose", verbose);
+  
+  Shell.addFunction("motion.gps.time", gpsTime);
+  Shell.addFunction("motion.gps.sat.fix", gpsSatFix);
+  Shell.addFunction("motion.gps.sat.fixquality", gpsSatFixQuality);
+  Shell.addFunction("motion.gps.sat.count", gpsSatCount);
+  Shell.addFunction("motion.gps.latitude", gpsLatitude);
+  Shell.addFunction("motion.gps.longitude", gpsLongitude);
+  Shell.addFunction("motion.gps.speed", gpsSpeed);
+  Shell.addFunction("motion.gps.angle", gpsAngle);
+  /*
+  Shell.addFunction("motion.mpu.gyro.yaw", mpuGyroYaw);
+  Shell.addFunction("motion.mpu.gyro.pitch", mpuGyroPitch);
+  Shell.addFunction("motion.mpu.gyro.roll", mpuGyroRoll);
+  Shell.addFunction("motion.mpu.accel.x", mpuAccelX);
+  Shell.addFunction("motion.mpu.accel.y", mpuAccelY);
+  Shell.addFunction("motion.mpu.accel.z", mpuAccelZ);
+  Shell.addFunction("motion.mpu.mag.heading", mpuMagHeading);
+  */
+  Shell.addFunction("motion.baro.pressure", baroPressure);
+  Shell.addFunction("motion.baro.altitude", baroAltitude);
+  Shell.addFunction("motion.baro.temperature", baroTemperature);
+
+  gps->begin(9600);
+  //gps->sendCommand(PMTK_SET_BAUD_115200);
+  //gps->begin(115200);
+  // uncomment this line to turn on RMC (recommended minimum) and GGA (fix data) including altitude
+  gps->sendCommand(PMTK_SET_NMEA_OUTPUT_RMCGGA);
+  // uncomment this line to turn on only the "minimum recommended" data
+  //gps->sendCommand(PMTK_SET_NMEA_OUTPUT_RMCONLY);
+  gps->sendCommand(PMTK_SET_NMEA_UPDATE_1HZ); // 1 Hz update rate
+  //Serial1.println(PMTK_Q_RELEASE);
+  
+  gpsTimer.interval = 50;
+  gpsTimer.mode = SYS_TIMER_PERIODIC_MODE;
+  gpsTimer.handler = gpsTimerHandler;
+  SYS_TimerStart(&gpsTimer);
+
+  //mpu->initialize();
+  //speol(mpu.testConnection() ? F("MPU9150 connection successful") : F("MPU9150 not found"));
+
+  ms->init(MS561101BA_ADDR_CSB_LOW);
+  delay(100);
+  ms->getTemperature(MS561101BA_OSR_4096); // need an initial getTemperature() to get started for some reason
+  for(int i=0; i<MOVAVG_SIZE; i++) {
+    msMovingAvgBuffer[i] = ms->getPressure(MS561101BA_OSR_4096);
+  }
+    
+  baroMovingAvgTimer.interval = 50;
+  baroMovingAvgTimer.mode = SYS_TIMER_PERIODIC_MODE;
+  baroMovingAvgTimer.handler = baroMovingAvgTimerHandler;
+  SYS_TimerStart(&baroMovingAvgTimer);
+}
+
+void MotionModule::loop() {
+  if (isVerbose) {
+    while (Serial1.available()) {
+      Serial.write(Serial1.read());
+    }
+  }
+}
+
+float MotionModule::msGetPressure(void) {
+  float sum = 0.0;
+  for(int i=0; i<MOVAVG_SIZE; i++) {
+    sum += msMovingAvgBuffer[i];
+  }
+  return sum / MOVAVG_SIZE;
+}
+
+void MotionModule::msPushMovingAvg(float val) {
+  msMovingAvgBuffer[msMovingAvgCtr] = val;
+  msMovingAvgCtr = (msMovingAvgCtr + 1) % MOVAVG_SIZE;
 }
