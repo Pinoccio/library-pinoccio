@@ -50,9 +50,10 @@ struct ValueToString {
 template <typename Value>
 struct ValueToQuotedString {
   static void append(String &buf, Value value) {
+    String escaped = value;
+    escaped.replace("\"","\\\"");
     buf.concat('"');
-    // TODO: Proper escaping of quotes?
-    buf.concat(value);
+    buf.concat(escaped);
     buf.concat('"');
   }
 };

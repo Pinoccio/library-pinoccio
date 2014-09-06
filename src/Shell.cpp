@@ -139,10 +139,10 @@ static numvar setTemperatureOffset(void) {
 }
 
 static numvar temperatureCalibrate(void) {
-  if (!checkArgs(1, F("usage: temperature.setoffset(value)"))) {
+  if (!checkArgs(1, F("usage: temperature.calibrate(value)"))) {
     return 0;
   }
-  Scout.setTemperatureOffset(getarg(1) - Scout.getTemperatureC());
+  Scout.setTemperatureOffset(getarg(1) - Scout.getTemperatureC() + Scout.getTemperatureOffset());
   return 1;
 }
 
@@ -1378,7 +1378,7 @@ static numvar pinWrite(void) {
   if (Scout.getPinMode(pin) == PinoccioScout::PINMODE_PWM && (value < 0 || value > 255)) {
     speol(F("Invalid PWM value"));
     return 0;
-  } 
+  }
   if (Scout.getPinMode(pin) != PinoccioScout::PINMODE_PWM && (value < 0 || value > 1)) {
     speol(F("Invalid pin value"));
     return 0;
@@ -2079,7 +2079,7 @@ static void digitalPinEventHandler(uint8_t pin, int16_t value, int8_t mode) {
   if(Scout.eventsStopped) return;
   uint32_t time = millis();
   char buf[16];
-  
+
   digitalPinReportHQ();
 
   snprintf(buf, sizeof(buf), "on.d%d", pin);
@@ -2554,7 +2554,7 @@ void PinoccioShell::startShell() {
   // init bitlash internals, don't use initBitlash so we do our own serial
   initTaskList();
   vinit();
-  
+
   // init our defined cache and start up
   Shell.refresh();
   pinoccioBanner();
