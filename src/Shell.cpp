@@ -66,6 +66,50 @@ bool checkArgs(uint8_t min, uint8_t max, const __FlashStringHelper *errorMsg) {
   return true;
 }
 
+// from http://playground.arduino.cc/Code/PrintFloats
+void sp(float value, int places)
+{
+  int digit;
+  float tens = 0.1;
+  int tenscount = 0;
+  int i;
+  float tempfloat = value;
+
+  float d = 0.5;
+  if (value < 0) d *= -1.0;
+  for (i = 0; i < places; i++) d/= 10.0;    
+  tempfloat +=  d;
+
+  if (value < 0) tempfloat *= -1.0;
+  while ((tens * 10.0) <= tempfloat) {
+    tens *= 10.0;
+    tenscount += 1;
+  }
+
+  if (value < 0) sp('-');
+
+  if (tenscount == 0) sp('0');
+
+  for (i=0; i< tenscount; i++) {
+    digit = (int) (tempfloat/tens);
+    sp(digit);
+    tempfloat = tempfloat - ((float)digit * tens);
+    tens /= 10.0;
+  }
+
+  if (places <= 0) return;
+
+  sp('.');  
+
+  for (i = 0; i < places; i++) {
+    tempfloat *= 10.0; 
+    digit = (int) tempfloat;
+    sp(digit);
+    tempfloat = tempfloat - (float) digit; 
+  }
+}
+
+
 /****************************\
 *      BUILT-IN HANDLERS    *
 \****************************/
@@ -324,6 +368,13 @@ static numvar getBatteryPercentage(void) {
 
 static numvar getBatteryVoltage(void) {
   return Scout.getBatteryVoltage();
+}
+
+static numvar getBatteryVolts(void) {
+  float v = ((float)Scout.getBatteryVoltage())/100;
+  sp(v,2);
+  speol();
+  return int(v);
 }
 
 static numvar enableBackpackVcc(void) {
@@ -1659,12 +1710,6 @@ static numvar backpackDetail(void) {
   return 1;
 }
 
-// handle float
-void sp(float f, int pre)
-{
-  sp(int(f));sp(F("."));sp(abs(int(f*pre)%(((int(f)==0)?1:int(f))*pre)));
-}
-
 static numvar backpackResources(void) {
   numvar addr = getarg(1);
   if (addr < 0 || addr >= Backpacks::num_backpacks) {
@@ -2203,6 +2248,7 @@ void PinoccioShell::setup() {
   addFunction("power.hasbattery", isBatteryConnected);
   addFunction("power.percent", getBatteryPercentage);
   addFunction("power.voltage", getBatteryVoltage);
+  addFunction("power.volts", getBatteryVolts);
   addFunction("power.enablevcc", enableBackpackVcc);
   addFunction("power.disablevcc", disableBackpackVcc);
   addFunction("power.isvccenabled", isBackpackVccEnabled);
