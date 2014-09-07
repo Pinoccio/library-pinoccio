@@ -131,6 +131,7 @@ class PinoccioScout : public PinoccioClass {
     void scheduleSleep(uint32_t ms, const char *cmd);
     uint32_t sleepy;
     uint32_t wake;
+    uint32_t wakeful;
 
     enum {
       PINMODE_DISCONNECTED = -4,

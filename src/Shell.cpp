@@ -417,7 +417,7 @@ static numvar powerSleep(void) {
 }
 
 static numvar powerSleepy(void) {
-  if (!checkArgs(1, 2, F("usage: power.sleepy(ms, [\"function\"])"))) {
+  if (!checkArgs(1, 3, F("usage: power.sleepy(ms, [\"function\", wakeful])"))) {
     return 0;
   }
 
@@ -433,6 +433,13 @@ static numvar powerSleepy(void) {
     sp("Must be the name of function: ");
     sp(func);
     return 0;
+  }
+
+  if(getarg(0) > 2)
+  {
+    Scout.wakeful = getarg(3);
+  }else{
+    Scout.wakeful = 100;
   }
 
   Scout.sleepy = getarg(1);
