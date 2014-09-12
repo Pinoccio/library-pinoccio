@@ -106,6 +106,12 @@ void sp(float value, int places)
   }
 }
 
+void speol(float value, int places)
+{
+  sp(value, places);
+  speol();
+}
+
 
 /****************************\
 *      BUILT-IN HANDLERS    *

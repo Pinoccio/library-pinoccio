@@ -142,6 +142,7 @@ extern PinoccioShell Shell;
 
 // handle printing a float automagically
 void sp(float f, int pre);
+void speol(float f, int pre);
 
 void bitlashFilter(byte b); // watches bitlash output for channel announcements
 bool checkArgs(uint8_t min, uint8_t max, const __FlashStringHelper *errorMsg);
