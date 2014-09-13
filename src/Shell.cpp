@@ -27,9 +27,6 @@ using namespace pinoccio;
 PinoccioShell Shell;
 
 static bool isMeshVerbose = 0;
-static int lastMeshRssi = 0;
-static int lastMeshLqi = 0;
-
 
 /****************************\
  *     HELPER FUNCTIONS     *
@@ -701,8 +698,9 @@ static bool receiveMessage(NWK_DataInd_t *ind) {
     Serial.print(F(" rssi "));
     Serial.println(abs(ind->rssi), DEC);
   }
-  lastMeshRssi = abs(ind->rssi);
-  lastMeshLqi = ind->lqi;
+  Shell.lastMeshRssi = abs(ind->rssi);
+  Shell.lastMeshLqi = ind->lqi;
+  Shell.lastMeshFrom = ind->srcAddr;
   NWK_SetAckControl(abs(ind->rssi));
 
   if (strlen(data) <3 || data[0] != '[') {
@@ -769,7 +767,7 @@ static void sendConfirm(NWK_DataReq_t *req) {
       Serial.println(F(")"));
     }
   }
-  lastMeshRssi = req->control;
+  Shell.lastMeshRssi = req->control;
 
   // run the Bitlash callback ack function
   char buf[32];
@@ -812,10 +810,7 @@ static void sendMessage(int address, const String &data) {
   }
 }
 
-static char *commandAck;
 static void commandConfirm(NWK_DataReq_t *req) {
-   sendDataReqBusy = false;
-   free(req->data);
 
    if (Shell.isVerbose) {
     if (req->status == NWK_SUCCESS_STATUS) {
@@ -851,52 +846,58 @@ static void commandConfirm(NWK_DataReq_t *req) {
       Serial.println(F(")"));
     }
   }
-  lastMeshRssi = req->control;
+  Shell.lastMeshRssi = req->control;
 
-  // run the Bitlash callback ack command
-  if(commandAck)
+  // run the Bitlash callback ack command appended after if any
+  char *commandAck = (char*)req->data+req->size+1;
+  if(*commandAck)
   {
-    char *cmd = commandAck;
-    commandAck = NULL;
-    // this may set another commandAck
-    Shell.eval(cmd,req->status,lastMeshRssi);
-    free(cmd);
+    Shell.eval(commandAck,req->status,Shell.lastMeshRssi);
   }
+  
+  free(req->data);
+  free(req);
 
 }
 
-static void sendCommand(int address, const String *data) {
-  if (sendDataReqBusy) {
-    return;
-  }
+static void sendCommand(int address, const char *cmd, const char *ack) {
+  NWK_DataReq_t *req = (NWK_DataReq_t*)malloc(sizeof(struct NWK_DataReq_t));
+  memset(req,0,sizeof(struct SYS_Timer_t));
 
-  // multicas the command to everyone
+  // multicast the command to everyone
   if(address == 0)
   {
-    sendDataReq.dstAddr = 1; // a group everyone joins by default in ScoutHandler
-    sendDataReq.options = NWK_OPT_MULTICAST|NWK_OPT_ENABLE_SECURITY;
+    req->dstAddr = 1; // a group everyone joins by default in ScoutHandler
+    req->options = NWK_OPT_MULTICAST|NWK_OPT_ENABLE_SECURITY;
   }else{
-    sendDataReq.dstAddr = address;
-    sendDataReq.options = NWK_OPT_ACK_REQUEST|NWK_OPT_ENABLE_SECURITY;
+    req->dstAddr = address;
+    req->options = NWK_OPT_ACK_REQUEST|NWK_OPT_ENABLE_SECURITY;
   }
-  sendDataReq.confirm = commandConfirm;
-  sendDataReq.dstEndpoint = 2;
-  sendDataReq.srcEndpoint = 2;
-  sendDataReq.data = (uint8_t*)strdup(data->c_str());
-  sendDataReq.size = data->length() + 1;
-  NWK_DataReq(&sendDataReq);
-
-  sendDataReqBusy = true;
+  req->confirm = commandConfirm;
+  req->dstEndpoint = 2;
+  req->srcEndpoint = 2;
+  req->data = (uint8_t*)malloc(strlen(cmd) + 1 + strlen(ack) + 1);
+  req->size = strlen(cmd) + 1;
+  strcpy((char*)req->data,cmd);
+  strcpy((char*)req->data+req->size+1,ack); // append any ack after
+  NWK_DataReq(req);
 
   if (Shell.isVerbose) {
     Serial.print(F("Sent command to Scout "));
     Serial.print(address);
     Serial.print(F(": "));
-    Serial.print(sendDataReq.size);
+    Serial.print(req->size);
     Serial.print(F(": "));
-    Serial.println((char*)sendDataReq.data);
+    Serial.println((char*)req->data);
+    Serial.print(F(" ack "));
+    Serial.println((char*)ack);
   }
 }
+
+static void sendCommand(int address, const char *data) {
+  sendCommand(address, data, "");
+}
+
 
 /****************************\
 *    MESH RADIO HANDLERS    *
@@ -1002,11 +1003,32 @@ StringBuffer arg2array(int ver) {
 }
 
 static numvar meshSignal(void) {
-  return lastMeshRssi * -1;
+  return Shell.lastMeshRssi * -1;
 }
 
 static numvar meshLoss(void) {
-  return lastMeshLqi;
+  return Shell.lastMeshLqi;
+}
+
+static numvar meshFrom(void) {
+  return Shell.lastMeshFrom;
+}
+
+
+static numvar meshCalibrate(void) {
+  if (!checkArgs(1, F("usage: mesh.calibrate(seconds)"))) {
+    return 0;
+  }
+  // poor mans!
+  Shell.eval(F("command.others(\"command.scout\",mesh.id,\"millis\")")); // this force flushes routes table to us to bootstrap
+  Shell.eval(F("function mesh.calibrate.ack {if(arg(1)) led.red; if(arg(2) > 0 && arg(2) <= 80) led.green(100); if(arg(2) > 80) led.yellow;}"));
+  Shell.eval(F("function mesh.calibrate.ping { command.scout.ack(\"mesh.calibrate.ack\",arg(1),\"led.blue\",100); }"));
+  Shell.eval(F("function mesh.calibrate.each { mesh.each(\"mesh.calibrate.ping\");}"));
+  Shell.eval(F("run mesh.calibrate.each,500"));
+  // this causes an unexpected char that stops running mesh.calibrate.each, hack!
+  Shell.delay(getarg(1)*1000,F("rm mesh.calibrate.each;rm mesh.calibrate.ping;rm mesh.calibrate.ack;led.off"));
+  
+  return 1;
 }
 
 static numvar meshVerbose(void) {
@@ -1091,6 +1113,20 @@ static numvar meshRouting(void) {
   return 1;
 }
 
+static numvar meshEach(void) {
+  if (!checkArgs(1, F("usage: mesh.each(\"command\")"))) {
+    return 0;
+  }
+  NWK_RouteTableEntry_t *table = NWK_RouteTable();
+  for (int i=0; i < NWK_ROUTE_TABLE_SIZE; i++) {
+    if (table[i].dstAddr == NWK_ROUTE_UNKNOWN) {
+      continue;
+    }
+    Shell.eval((char*)getstringarg(1),table[i].dstAddr,table[i].lqi,table[i].nextHopAddr);
+  }
+  return 1;
+}
+
 static numvar messageScout(void) {
   if (!checkArgs(1, 99, F("usage: message.scout(scoutId, \"message\")"))) {
     return 0;
@@ -1161,7 +1197,7 @@ static numvar commandScout(void) {
     speol(F("command too long, 100 max"));
     return 0;
   }
-  sendCommand(getarg(1),&cmd);
+  sendCommand(getarg(1),cmd.c_str());
   return 1;
 }
 
@@ -1174,7 +1210,6 @@ static numvar commandScoutAck(void) {
     speol(F("busy commanding already"));
     return 0;
   }
-  commandAck = strdup((char*)getarg(1));
   StringBuffer cmd;
   commandArgs(&cmd, 3);
   if(cmd.length() > 100)
@@ -1182,7 +1217,7 @@ static numvar commandScoutAck(void) {
     speol(F("command too long, 100 max"));
     return 0;
   }
-  sendCommand(getarg(2),&cmd);
+  sendCommand(getarg(2), cmd.c_str(), (char*)getarg(1));
 
   return 1;
 }
@@ -1203,7 +1238,7 @@ static numvar commandOthers(void) {
     speol(F("command too long, 100 max"));
     return 0;
   }
-  sendCommand(0,&cmd);
+  sendCommand(0, cmd.c_str());
   return 1;
 }
 
@@ -1223,7 +1258,7 @@ static numvar commandAll(void) {
     speol(F("command too long, 100 max"));
     return 0;
   }
-  sendCommand(0,&cmd);
+  sendCommand(0, cmd.c_str());
   Shell.delay(100,(char*)cmd.c_str());
   return 1;
 }
@@ -2270,7 +2305,10 @@ void PinoccioShell::setup() {
   addFunction("mesh.routing", meshRouting);
   addFunction("mesh.signal", meshSignal);
   addFunction("mesh.loss", meshLoss);
+  addFunction("mesh.from", meshFrom);
   addFunction("mesh.id", meshId);
+  addFunction("mesh.calibrate", meshCalibrate);
+  addFunction("mesh.each", meshEach);
 
   // these supplant/replace message.*
   addFunction("command.scout", commandScout);
@@ -2625,6 +2663,14 @@ void PinoccioShell::startShell() {
 
 void PinoccioShell::disableShell() {
   isShellEnabled = false;
+}
+
+// ugh-ly
+void PinoccioShell::delay(uint32_t at, const __FlashStringHelper *command) {
+  char *cpy = (char*)malloc(strlen_P((const prog_char*)command)+1);
+  strcpy_P(cpy,(const prog_char*)command);
+  delay(at,cpy);
+  free(cpy);
 }
 
 void PinoccioShell::delay(uint32_t at, char *command) {
