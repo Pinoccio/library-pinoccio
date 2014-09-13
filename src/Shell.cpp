@@ -1015,18 +1015,18 @@ static numvar meshFrom(void) {
 }
 
 
-static numvar meshCalibrate(void) {
-  if (!checkArgs(1, F("usage: mesh.calibrate(seconds)"))) {
+static numvar meshFieldtest(void) {
+  if (!checkArgs(1, F("usage: mesh.fieldtest(seconds)"))) {
     return 0;
   }
   // poor mans!
   Shell.eval(F("command.others(\"command.scout\",mesh.id,\"millis\")")); // this force flushes routes table to us to bootstrap
-  Shell.eval(F("function mesh.calibrate.ack {if(arg(1)) led.red; if(arg(2) > 0 && arg(2) <= 80) led.green(100); if(arg(2) > 80) led.yellow;}"));
-  Shell.eval(F("function mesh.calibrate.ping { command.scout.ack(\"mesh.calibrate.ack\",arg(1),\"led.blue\",100); }"));
-  Shell.eval(F("function mesh.calibrate.each { mesh.each(\"mesh.calibrate.ping\");}"));
-  Shell.eval(F("run mesh.calibrate.each,500"));
-  // this causes an unexpected char that stops running mesh.calibrate.each, hack!
-  Shell.delay(getarg(1)*1000,F("rm mesh.calibrate.each;rm mesh.calibrate.ping;rm mesh.calibrate.ack;led.off"));
+  Shell.eval(F("function mesh.ft.ack {if(arg(1)) led.red; if(arg(2) > 0 && arg(2) <= 80) led.green(100); if(arg(2) > 80) led.yellow;}"));
+  Shell.eval(F("function mesh.ft.ping { command.scout.ack(\"mesh.ft.ack\",arg(1),\"led.blue\",100); }"));
+  Shell.eval(F("function mesh.ft.each { mesh.each(\"mesh.ft.ping\");}"));
+  Shell.eval(F("run mesh.ft.each,500"));
+  // this causes an unexpected char that stops running mesh.ft.each, hack!
+  Shell.delay(getarg(1)*1000,F("rm mesh.ft.each;rm mesh.ft.ping;rm mesh.ft.ack;led.off"));
   
   return 1;
 }
@@ -2307,7 +2307,7 @@ void PinoccioShell::setup() {
   addFunction("mesh.loss", meshLoss);
   addFunction("mesh.from", meshFrom);
   addFunction("mesh.id", meshId);
-  addFunction("mesh.calibrate", meshCalibrate);
+  addFunction("mesh.fieldtest", meshFieldtest);
   addFunction("mesh.each", meshEach);
 
   // these supplant/replace message.*
