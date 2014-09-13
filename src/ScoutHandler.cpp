@@ -67,7 +67,6 @@ static int leadCommandRetries;
 static NWK_DataReq_t leadCommandReq;
 static void leadCommandChunk(void);
 static int leadAnswerID = 0;
-static uint32_t leadActive = 0;
 
 // this is called on the main loop to try to (re)connect to the HQ
 static void leadHQHandle(void);
@@ -82,7 +81,7 @@ static void leadCommandChunkConfirm(NWK_DataReq_t *req);
 static void leadCommandChunk();
 
 // wrapper to send a chunk of JSON to the HQ
-static void leadSignal(const String& json);
+static bool leadSignal(const String& json);
 
 // called whenever another scout sends an answer back to us
 static bool leadAnswers(NWK_DataInd_t *ind);
@@ -115,14 +114,15 @@ void ScoutHandler::setup() {
 void ScoutHandler::loop() {
   if (Scout.isLeadScout()) {
     leadHQHandle();
-    // when the leadActive (most recent wifi read/write activity) is idle for 5+ minutes, paranoid reassociate
-    if(SleepHandler::uptime().seconds - leadActive > 5*60)
+    // when the seen (most recent wifi read/write activity) is idle for 5+ minutes, paranoid reassociate
+    if(SleepHandler::uptime().seconds - seen > 5*60)
     {
       if (isVerbose) {
-        Serial.print(SleepHandler::uptime().seconds - leadActive);
+        Serial.print(SleepHandler::uptime().seconds - seen);
         Serial.println(F(" seconds since last HQ activity, reconnecting"));
       }
-      leadActive = SleepHandler::uptime().seconds;
+      // TODO use a different flag to track this instead of overloading seen
+      seen = SleepHandler::uptime().seconds - 60;
       WifiModule::instance.bp() && WifiModule::instance.bp()->associate();
     }
   }
@@ -443,7 +443,10 @@ static void leadAnnouncementSend(uint16_t group, uint16_t from, const ConstBuf& 
   } else {
     return;
   }
-  leadSignal(report);
+  if(leadSignal(report))
+  {
+    Shell.eval("command.others","hq.online",1);
+  }
 }
 
 // [3,[0,1,2],[v,v,v],4]
@@ -488,7 +491,7 @@ void leadHQHandle(void) {
   } else if (WifiModule::instance.bp()) {
     if (WifiModule::instance.bp()->client.available()) {
       rsize = hqIncoming.readClient(WifiModule::instance.bp()->client, 128);
-      if(rsize > 0) leadActive = SleepHandler::uptime().seconds;
+      if(rsize > 0) Scout.handler.seen = SleepHandler::uptime().seconds;
     }
   }
 
@@ -549,9 +552,8 @@ void leadIncoming(const char *packet, size_t len, unsigned short *index) {
   }
 
   if (strcmp(type, "online") == 0) {
-    Shell.allReportHQ();
-    // run any custom scripts as soon as online
-    if (Shell.defined("on.hq.online")) Shell.eval("on.hq.online");
+    // fire the online event for everyone
+    Shell.eval(F("command.all(\"hq.online\",2)"));
   }
 
   if (strcmp(type, "command") == 0) {
@@ -667,12 +669,12 @@ static void leadCommandChunk() {
 }
 
 // wrapper to send a chunk of JSON to the HQ
-void leadSignal(const String &json) {
+bool leadSignal(const String &json) {
   if (Scout.handler.isBridged) {
     int i = 0;
     Shell.print("[hq-bridge] ");
     Shell.print(json.c_str());
-    return;
+    return true;
   }
 
   if (!WifiModule::instance.bp() || !WifiModule::instance.bp()->client.connected()) {
@@ -680,7 +682,7 @@ void leadSignal(const String &json) {
       Serial.println(F("HQ offline, can't signal"));
       Serial.println(json);
     }
-    return;
+    return false;
   }
   if (Scout.handler.isVerbose) {
     Serial.println(F("Signalling HQ: "));
@@ -689,6 +691,7 @@ void leadSignal(const String &json) {
 
   WifiModule::instance.bp()->client.print(json);
   WifiModule::instance.bp()->client.flush();
+  return true;
 }
 
 // called whenever another scout sends an answer back to us

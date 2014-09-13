@@ -2075,6 +2075,29 @@ static numvar hqPrint(void) {
   return true;
 }
 
+static StringBuffer lastReport;
+static uint32_t lastReportAt;
+static numvar hqOnline(void) {
+  if(getarg(0) == 1 && getarg(1))
+  {
+    uint32_t last = Scout.handler.seen;
+    Scout.handler.seen = SleepHandler::uptime().seconds;
+    // if we just went online explicitly or implicitly, do stuff
+    if(getarg(1) == 2 || !last || Scout.handler.seen - last > 60)
+    {
+      Shell.allReportHQ();
+      // run any custom scripts as soon as online
+      if (Shell.defined("on.hq.online")) Shell.eval(F("on.hq.online"));
+      // resend any report now
+      if(lastReport.length()) Scout.handler.announce(0xBEEF, lastReport);
+    }
+    // any troop ack, resend and clear last report
+    lastReport = "";
+  }
+  // if seen in the last minute
+  return (Scout.handler.seen && SleepHandler::uptime().seconds - Scout.handler.seen < 60) ? 1 : 0;
+}
+
 static numvar hqReport(void) {
   if (!checkArgs(2, 255, F("usage: hq.report(\"reportname\", \"value\")[,\"value\"...]"))) {
     return 0;
@@ -2090,15 +2113,15 @@ static numvar hqReport(void) {
     speol("report too large");
     return false;
   }
-  StringBuffer report(100);
-  report.appendSprintf("[%d,[%d,%d],[\"%s\",%s]]",
+  lastReport = "";
+  lastReport.appendSprintf("[%d,[%d,%d],[\"%s\",%s]]",
           keyMap("custom", 0),
           keyMap("name", 0),
           keyMap("custom", 0),
           name,
           args);
   free(args);
-  speol(Scout.handler.report(report));
+  speol(Scout.handler.report(lastReport));
   return true;
 }
 
@@ -2410,6 +2433,7 @@ void PinoccioShell::setup() {
   addFunction("hq.report", hqReport);
   addFunction("hq.bridge", hqBridge);
   addFunction("hq.setaddress", hqSetAddress);
+  addFunction("hq.online", hqOnline);
 
   addFunction("events.start", startStateChangeEvents);
   addFunction("events.stop", stopStateChangeEvents);
@@ -2436,9 +2460,7 @@ void PinoccioShell::setup() {
 
   Scout.meshListen(1, receiveMessage);
 
-  if (!Scout.isLeadScout()) {
-    Shell.allReportHQ(); // lead scout reports on hq connect
-  }
+  Shell.allReportHQ();
 }
 
 void PinoccioShell::addFunction(const char *name, numvar (*func)(void)) {
@@ -2619,6 +2641,18 @@ void PinoccioShell::loop() {
     }
     // bitlash loop
     runBackgroundTasks();
+    // resend last report every second until hq is online
+    if(lastReport.length() && lastReportAt != SleepHandler::uptime().seconds)
+    {
+      if(Shell.isVerbose)
+      {
+        Serial.print("resending report ");
+        Serial.println(lastReport);
+      }
+      // just re-announce last report
+      Scout.handler.announce(0xBEEF, lastReport);
+      lastReportAt = SleepHandler::uptime().seconds;
+    }
   }
   keyLoop(millis());
 }
