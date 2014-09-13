@@ -2080,8 +2080,10 @@ static uint32_t lastReportAt;
 static numvar hqOnline(void) {
   if(getarg(0) == 1 && getarg(1))
   {
+    uint32_t last = Scout.handler.seen;
     Scout.handler.seen = SleepHandler::uptime().seconds;
-    if(getarg(1) == 2)
+    // if we just went online explicitly or implicitly, do stuff
+    if(getarg(1) == 2 || !last || Scout.handler.seen - last > 60)
     {
       Shell.allReportHQ();
       // run any custom scripts as soon as online
@@ -2458,9 +2460,7 @@ void PinoccioShell::setup() {
 
   Scout.meshListen(1, receiveMessage);
 
-  if (!Scout.isLeadScout()) {
-    Shell.allReportHQ(); // lead scout reports on hq connect
-  }
+  Shell.allReportHQ();
 }
 
 void PinoccioShell::addFunction(const char *name, numvar (*func)(void)) {
@@ -2692,8 +2692,6 @@ void PinoccioShell::startShell() {
     }
   }
 
-  // request if anyone in the troop is online to tell us
-  Shell.eval(F("command.others(\"if(scout.isleadscout && hq.online) command.scout\",mesh.id,\"hq.online\",2)"));
   prompt();
 }
 
