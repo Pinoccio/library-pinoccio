@@ -182,6 +182,10 @@ static bool fieldCommands(NWK_DataInd_t *ind) {
     Serial.println(fieldCommand.c_str());
   }
 
+  Shell.lastMeshRssi = abs(ind->rssi);
+  Shell.lastMeshLqi = ind->lqi;
+  Shell.lastMeshFrom = ind->srcAddr;
+
   fieldCommandOutput = "";
   ret = Shell.eval(PrintToString(fieldCommandOutput), fieldCommand);
   fieldCommand = (char*)NULL;

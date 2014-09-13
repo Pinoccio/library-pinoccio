@@ -27,9 +27,6 @@ using namespace pinoccio;
 PinoccioShell Shell;
 
 static bool isMeshVerbose = 0;
-static int lastMeshRssi = 0;
-static int lastMeshLqi = 0;
-
 
 /****************************\
  *     HELPER FUNCTIONS     *
@@ -65,6 +62,50 @@ bool checkArgs(uint8_t min, uint8_t max, const __FlashStringHelper *errorMsg) {
   }
   return true;
 }
+
+// from http://playground.arduino.cc/Code/PrintFloats
+void sp(float value, int places)
+{
+  int digit;
+  float tens = 0.1;
+  int tenscount = 0;
+  int i;
+  float tempfloat = value;
+
+  float d = 0.5;
+  if (value < 0) d *= -1.0;
+  for (i = 0; i < places; i++) d/= 10.0;    
+  tempfloat +=  d;
+
+  if (value < 0) tempfloat *= -1.0;
+  while ((tens * 10.0) <= tempfloat) {
+    tens *= 10.0;
+    tenscount += 1;
+  }
+
+  if (value < 0) sp('-');
+
+  if (tenscount == 0) sp('0');
+
+  for (i=0; i< tenscount; i++) {
+    digit = (int) (tempfloat/tens);
+    sp(digit);
+    tempfloat = tempfloat - ((float)digit * tens);
+    tens /= 10.0;
+  }
+
+  if (places <= 0) return;
+
+  sp('.');  
+
+  for (i = 0; i < places; i++) {
+    tempfloat *= 10.0; 
+    digit = (int) tempfloat;
+    sp(digit);
+    tempfloat = tempfloat - (float) digit; 
+  }
+}
+
 
 /****************************\
 *      BUILT-IN HANDLERS    *
@@ -324,6 +365,13 @@ static numvar getBatteryPercentage(void) {
 
 static numvar getBatteryVoltage(void) {
   return Scout.getBatteryVoltage();
+}
+
+static numvar getBatteryVolts(void) {
+  float v = ((float)Scout.getBatteryVoltage())/100;
+  sp(v,2);
+  speol();
+  return int(v);
 }
 
 static numvar enableBackpackVcc(void) {
@@ -650,8 +698,9 @@ static bool receiveMessage(NWK_DataInd_t *ind) {
     Serial.print(F(" rssi "));
     Serial.println(abs(ind->rssi), DEC);
   }
-  lastMeshRssi = abs(ind->rssi);
-  lastMeshLqi = ind->lqi;
+  Shell.lastMeshRssi = abs(ind->rssi);
+  Shell.lastMeshLqi = ind->lqi;
+  Shell.lastMeshFrom = ind->srcAddr;
   NWK_SetAckControl(abs(ind->rssi));
 
   if (strlen(data) <3 || data[0] != '[') {
@@ -718,7 +767,7 @@ static void sendConfirm(NWK_DataReq_t *req) {
       Serial.println(F(")"));
     }
   }
-  lastMeshRssi = req->control;
+  Shell.lastMeshRssi = req->control;
 
   // run the Bitlash callback ack function
   char buf[32];
@@ -761,10 +810,7 @@ static void sendMessage(int address, const String &data) {
   }
 }
 
-static char *commandAck;
 static void commandConfirm(NWK_DataReq_t *req) {
-   sendDataReqBusy = false;
-   free(req->data);
 
    if (Shell.isVerbose) {
     if (req->status == NWK_SUCCESS_STATUS) {
@@ -800,52 +846,58 @@ static void commandConfirm(NWK_DataReq_t *req) {
       Serial.println(F(")"));
     }
   }
-  lastMeshRssi = req->control;
+  Shell.lastMeshRssi = req->control;
 
-  // run the Bitlash callback ack command
-  if(commandAck)
+  // run the Bitlash callback ack command appended after if any
+  char *commandAck = (char*)req->data+req->size+1;
+  if(*commandAck)
   {
-    char *cmd = commandAck;
-    commandAck = NULL;
-    // this may set another commandAck
-    Shell.eval(cmd,req->status,lastMeshRssi);
-    free(cmd);
+    Shell.eval(commandAck,req->status,Shell.lastMeshRssi);
   }
+  
+  free(req->data);
+  free(req);
 
 }
 
-static void sendCommand(int address, const String *data) {
-  if (sendDataReqBusy) {
-    return;
-  }
+static void sendCommand(int address, const char *cmd, const char *ack) {
+  NWK_DataReq_t *req = (NWK_DataReq_t*)malloc(sizeof(struct NWK_DataReq_t));
+  memset(req,0,sizeof(struct SYS_Timer_t));
 
-  // multicas the command to everyone
+  // multicast the command to everyone
   if(address == 0)
   {
-    sendDataReq.dstAddr = 1; // a group everyone joins by default in ScoutHandler
-    sendDataReq.options = NWK_OPT_MULTICAST|NWK_OPT_ENABLE_SECURITY;
+    req->dstAddr = 1; // a group everyone joins by default in ScoutHandler
+    req->options = NWK_OPT_MULTICAST|NWK_OPT_ENABLE_SECURITY;
   }else{
-    sendDataReq.dstAddr = address;
-    sendDataReq.options = NWK_OPT_ACK_REQUEST|NWK_OPT_ENABLE_SECURITY;
+    req->dstAddr = address;
+    req->options = NWK_OPT_ACK_REQUEST|NWK_OPT_ENABLE_SECURITY;
   }
-  sendDataReq.confirm = commandConfirm;
-  sendDataReq.dstEndpoint = 2;
-  sendDataReq.srcEndpoint = 2;
-  sendDataReq.data = (uint8_t*)strdup(data->c_str());
-  sendDataReq.size = data->length() + 1;
-  NWK_DataReq(&sendDataReq);
-
-  sendDataReqBusy = true;
+  req->confirm = commandConfirm;
+  req->dstEndpoint = 2;
+  req->srcEndpoint = 2;
+  req->data = (uint8_t*)malloc(strlen(cmd) + 1 + strlen(ack) + 1);
+  req->size = strlen(cmd) + 1;
+  strcpy((char*)req->data,cmd);
+  strcpy((char*)req->data+req->size+1,ack); // append any ack after
+  NWK_DataReq(req);
 
   if (Shell.isVerbose) {
     Serial.print(F("Sent command to Scout "));
     Serial.print(address);
     Serial.print(F(": "));
-    Serial.print(sendDataReq.size);
+    Serial.print(req->size);
     Serial.print(F(": "));
-    Serial.println((char*)sendDataReq.data);
+    Serial.println((char*)req->data);
+    Serial.print(F(" ack "));
+    Serial.println((char*)ack);
   }
 }
+
+static void sendCommand(int address, const char *data) {
+  sendCommand(address, data, "");
+}
+
 
 /****************************\
 *    MESH RADIO HANDLERS    *
@@ -951,11 +1003,32 @@ StringBuffer arg2array(int ver) {
 }
 
 static numvar meshSignal(void) {
-  return lastMeshRssi * -1;
+  return Shell.lastMeshRssi * -1;
 }
 
 static numvar meshLoss(void) {
-  return lastMeshLqi;
+  return Shell.lastMeshLqi;
+}
+
+static numvar meshFrom(void) {
+  return Shell.lastMeshFrom;
+}
+
+
+static numvar meshCalibrate(void) {
+  if (!checkArgs(1, F("usage: mesh.calibrate(seconds)"))) {
+    return 0;
+  }
+  // poor mans!
+  Shell.eval(F("command.others(\"command.scout\",mesh.id,\"millis\")")); // this force flushes routes table to us to bootstrap
+  Shell.eval(F("function mesh.calibrate.ack {if(arg(1)) led.red; if(arg(2) > 0 && arg(2) <= 80) led.green(100); if(arg(2) > 80) led.yellow;}"));
+  Shell.eval(F("function mesh.calibrate.ping { command.scout.ack(\"mesh.calibrate.ack\",arg(1),\"led.blue\",100); }"));
+  Shell.eval(F("function mesh.calibrate.each { mesh.each(\"mesh.calibrate.ping\");}"));
+  Shell.eval(F("run mesh.calibrate.each,500"));
+  // this causes an unexpected char that stops running mesh.calibrate.each, hack!
+  Shell.delay(getarg(1)*1000,F("rm mesh.calibrate.each;rm mesh.calibrate.ping;rm mesh.calibrate.ack;led.off"));
+  
+  return 1;
 }
 
 static numvar meshVerbose(void) {
@@ -1040,6 +1113,20 @@ static numvar meshRouting(void) {
   return 1;
 }
 
+static numvar meshEach(void) {
+  if (!checkArgs(1, F("usage: mesh.each(\"command\")"))) {
+    return 0;
+  }
+  NWK_RouteTableEntry_t *table = NWK_RouteTable();
+  for (int i=0; i < NWK_ROUTE_TABLE_SIZE; i++) {
+    if (table[i].dstAddr == NWK_ROUTE_UNKNOWN) {
+      continue;
+    }
+    Shell.eval((char*)getstringarg(1),table[i].dstAddr,table[i].lqi,table[i].nextHopAddr);
+  }
+  return 1;
+}
+
 static numvar messageScout(void) {
   if (!checkArgs(1, 99, F("usage: message.scout(scoutId, \"message\")"))) {
     return 0;
@@ -1110,7 +1197,7 @@ static numvar commandScout(void) {
     speol(F("command too long, 100 max"));
     return 0;
   }
-  sendCommand(getarg(1),&cmd);
+  sendCommand(getarg(1),cmd.c_str());
   return 1;
 }
 
@@ -1123,7 +1210,6 @@ static numvar commandScoutAck(void) {
     speol(F("busy commanding already"));
     return 0;
   }
-  commandAck = strdup((char*)getarg(1));
   StringBuffer cmd;
   commandArgs(&cmd, 3);
   if(cmd.length() > 100)
@@ -1131,7 +1217,7 @@ static numvar commandScoutAck(void) {
     speol(F("command too long, 100 max"));
     return 0;
   }
-  sendCommand(getarg(2),&cmd);
+  sendCommand(getarg(2), cmd.c_str(), (char*)getarg(1));
 
   return 1;
 }
@@ -1152,7 +1238,7 @@ static numvar commandOthers(void) {
     speol(F("command too long, 100 max"));
     return 0;
   }
-  sendCommand(0,&cmd);
+  sendCommand(0, cmd.c_str());
   return 1;
 }
 
@@ -1172,7 +1258,7 @@ static numvar commandAll(void) {
     speol(F("command too long, 100 max"));
     return 0;
   }
-  sendCommand(0,&cmd);
+  sendCommand(0, cmd.c_str());
   Shell.delay(100,(char*)cmd.c_str());
   return 1;
 }
@@ -1389,44 +1475,33 @@ static numvar pinWrite(void) {
 }
 
 static numvar pinStatus(void) {
-  if (!checkArgs(0, F("usage: pin.status"))) {
-    return 0;
-  }
 
-  // TODO: This should use sp/speol, but that doesn't return the number
-  // of characters printed to use for alignment...
-  Serial.println(F("Note: pin.status currently only works on Serial"));
-  Serial.println(F("#   name    mode            value"));
-  Serial.println(F("---------------------------------"));
+  speol(F("{"));
   for (uint8_t pin = 0; pin < NUM_DIGITAL_PINS; ++pin) {
-    printSpaces(4 - Serial.print(pin));
-    printSpaces(8 - Serial.print(Scout.getNameForPin(pin)));
+    sp(F("  \""));sp(Scout.getNameForPin(pin));sp(F("\":{\"id\":\""));
+    sp(pin);
+    sp(F("\", \"mode\":\""));
     int8_t mode = Scout.getPinMode(pin);
-    printSpaces(16 - Serial.print(Scout.getNameForPinMode(mode) ?: F("unknown")));
+    sp(Scout.getNameForPinMode(mode) ?: F("unknown"));
+    sp(F("\", \"val\":\""));
     if (mode < 0)
-      printSpaces(8 - Serial.print('-'));
+      sp('-');
     else
-      printSpaces(8 - Serial.print(Scout.pinRead(pin)));
+      sp(Scout.pinRead(pin));
+    sp("\"");
 
-    const char *prefix = "";
     if (Scout.isPWMPin(pin)) {
-      Serial.print(prefix);
-      Serial.print("supports PWM");
-      prefix = ", ";
+      sp(F(", \"pwm\":true"));
     }
     if (SleepHandler::pinWakeupSupported(pin)) {
-      Serial.print(prefix);
-      Serial.print("supports wakeup");
-      prefix = ", ";
+      sp(F(", \"wakeup\":"));
+      sp(SleepHandler::pinWakeupEnabled(pin) ? F("1") : F("0"));
     }
-    if (SleepHandler::pinWakeupEnabled(pin)) {
-      Serial.print(prefix);
-      Serial.print("wakeup enabled");
-      prefix = ", ";
-    }
-
-    Serial.println();
+    sp(F("}"));
+    if(pin < NUM_DIGITAL_PINS-1) sp(F(","));
+    speol();
   }
+  speol(F("}"));
 
   return 1;
 }
@@ -1517,14 +1592,12 @@ static numvar backpackReport(void) {
   return 1;
 }
 
-static void printHexBuffer(Print &p, const uint8_t *buf, size_t len, const char *sep = NULL) {
+static void printHexBuffer(const uint8_t *buf, size_t len, const char *sep = NULL) {
   for (uint8_t i=0; i<len; ++i) {
-    if (buf[i] < 0x10) {
-      p.print('0');
-    }
-    p.print(buf[i], HEX);
+    // from bitlash
+    printIntegerInBase(buf[i], 16, 2, '0');
     if (sep) {
-      p.print(sep);
+      sp(sep);
     }
   }
 }
@@ -1535,7 +1608,7 @@ static numvar backpackList(void) {
   } else {
     for (uint8_t i=0; i<Backpacks::num_backpacks; ++i) {
       BackpackInfo &info = Backpacks::info[i];
-      printHexBuffer(Serial, &i, 1);
+      printHexBuffer(&i, 1);
       sp(F(": "));
 
       Pbbe::Header *h = info.getHeader();
@@ -1546,7 +1619,7 @@ static numvar backpackList(void) {
       }
 
       sp(F(" ("));
-      printHexBuffer(Serial, info.id.raw_bytes, sizeof(info.id));
+      printHexBuffer(info.id.raw_bytes, sizeof(info.id));
       speol(F(")"));
     }
   }
@@ -1571,8 +1644,8 @@ static numvar backpackEeprom(void) {
   size_t offset = 0;
   const uint8_t bytes_per_line = 8;
   while (offset < eep->size) {
-    printHexBuffer(Serial, eep->raw + offset, min(bytes_per_line, eep->size - offset), " ");
-    Serial.println();
+    printHexBuffer(eep->raw + offset, min(bytes_per_line, eep->size - offset), " ");
+    speol();
     offset += bytes_per_line;
   }
   return 1;
@@ -1628,108 +1701,109 @@ static numvar backpackUpdateEeprom(void) {
 static numvar backpackDetail(void) {
   numvar addr = getarg(1);
   if (addr < 0 || addr >= Backpacks::num_backpacks) {
-    Serial.println(F("Invalid backpack number"));
+    speol(F("Invalid backpack number"));
     return 0;
   }
   Pbbe::Header *h = Backpacks::info[addr].getHeader();
   Pbbe::UniqueId &id = Backpacks::info[addr].id;
 
-  // TODO: Convert these to sp()'s so we can see them in HQ, once sp/speol support the base argument
-  Serial.print(F("Backpack name: "));
-  Serial.println(h->backpack_name);
+  sp(F("Backpack name: "));
+  speol(h->backpack_name);
 
-  Serial.print(F("Model number: 0x"));
-  Serial.println(id.model, HEX); // TODO: zero pad
+  sp(F("Model number: 0x"));
+  printIntegerInBase(id.model, 16, 2, '0');
+  speol();
 
-  Serial.print(F("Board revision: "));
+  sp(F("Board revision: "));
   Pbbe::MajorMinor rev = Pbbe::extractMajorMinor(id.revision);
-  Serial.print(rev.major);
-  Serial.print(F("."));
-  Serial.println(rev.minor);
+  sp(rev.major);
+  sp(F("."));
+  speol(rev.minor);
 
-  Serial.print(F("Serial number: 0x"));
-  Serial.println(id.serial, HEX); // TODO: zero pad
+  sp(F("Serial number: 0x"));
+  printIntegerInBase(id.serial, 16, 2, '0');
+  speol();
 
-  Serial.print(F("Backpack Bus Protocol version: "));
-  Serial.print(id.protocol_version);
-  Serial.println(F(".x")); // Only the major version is advertised
+  sp(F("Backpack Bus Protocol version: "));
+  sp(id.protocol_version);
+  speol(F(".x")); // Only the major version is advertised
 
-  Serial.print(F("Backpack Bus firmware version: "));
-  Serial.println(h->firmware_version);
+  sp(F("Backpack Bus firmware version: "));
+  speol(h->firmware_version);
 
-  Serial.print(F("EEPROM layout version: "));
-  Serial.print(h->layout_version);
-  Serial.println(F(".x")); // Only the major version is advertised
+  sp(F("EEPROM layout version: "));
+  sp(h->layout_version);
+  speol(F(".x")); // Only the major version is advertised
 
-  Serial.print(F("EEPROM size: "));
-  Serial.print(h->total_eeprom_size);
-  Serial.println(F(" bytes"));
+  sp(F("EEPROM size: "));
+  sp(h->total_eeprom_size);
+  speol(F(" bytes"));
 
-  Serial.print(F("EEPROM used: "));
-  Serial.print(h->used_eeprom_size);
-  Serial.println(F(" bytes"));
+  sp(F("EEPROM used: "));
+  sp(h->used_eeprom_size);
+  speol(F(" bytes"));
   return 1;
 }
 
 static numvar backpackResources(void) {
   numvar addr = getarg(1);
   if (addr < 0 || addr >= Backpacks::num_backpacks) {
-    Serial.println(F("Invalid backpack number"));
+    speol(F("Invalid backpack number"));
     return 0;
   }
 
   Pbbe::DescriptorList *list = Backpacks::info[addr].getAllDescriptors();
   if (!list) {
-    Serial.println(F("Failed to fetch or parse resource descriptors"));
+    speol(F("Failed to fetch or parse resource descriptors"));
     return 0;
   }
   for (uint8_t i = 0; i < list->num_descriptors; ++i) {
     Pbbe::DescriptorInfo &info = list->info[i];
     if (info.group) {
       Pbbe::GroupDescriptor& d = static_cast<Pbbe::GroupDescriptor&>(*info.group->parsed);
-      Serial.print(d.name);
-      Serial.print(".");
+      sp(d.name);
+      sp(".");
     }
 
     switch (info.type) {
       case Pbbe::DT_SPI_SLAVE: {
         Pbbe::SpiSlaveDescriptor& d = static_cast<Pbbe::SpiSlaveDescriptor&>(*info.parsed);
-        Serial.print(d.name);
-        Serial.print(F(": spi, ss = "));
-        Serial.print(d.ss_pin.name());
-        Serial.print(F(", max speed = "));
+        sp(d.name);
+        sp(F(": spi, ss = "));
+        sp(d.ss_pin.name());
+        sp(F(", max speed = "));
         if (d.speed.raw()) {
-          Serial.print((float)d.speed, 2);
-          Serial.print(F("Mhz"));
+          sp(d.speed,100);
+          sp(F("Mhz"));
         } else {
-          Serial.print(F("unknown"));
+          sp(F("unknown"));
         }
-        Serial.println();
+        speol();
         break;
       }
       case Pbbe::DT_UART: {
         Pbbe::UartDescriptor& d = static_cast<Pbbe::UartDescriptor&>(*info.parsed);
-        Serial.print(d.name);
-        Serial.print(F(": uart, tx = "));
-        Serial.print(d.tx_pin.name());
-        Serial.print(F(", rx = "));
-        Serial.print(d.rx_pin.name());
-        Serial.print(F(", speed = "));
+        sp(d.name);
+        sp(F(": uart, tx = "));
+        sp(d.tx_pin.name());
+        sp(F(", rx = "));
+        sp(d.rx_pin.name());
+        sp(F(", speed = "));
         if (d.speed) {
-          Serial.print(d.speed);
-          Serial.print(F("bps"));
+          sp(d.speed);
+          sp(F("bps"));
         } else {
-          Serial.print(F("unknown"));
+          sp(F("unknown"));
         }
-        Serial.println();
+        speol();
         break;
       }
       case Pbbe::DT_IOPIN: {
         Pbbe::IoPinDescriptor& d = static_cast<Pbbe::IoPinDescriptor&>(*info.parsed);
-        Serial.print(d.name);
-        Serial.print(F(": gpio, pin = "));
-        Serial.print(d.pin.name());
-        Serial.println();
+        sp(d.name);
+        sp(F(": gpio, pin = "));
+        sp(d.pin.name());
+        speol();
         break;
       }
       case Pbbe::DT_GROUP: {
@@ -1738,51 +1812,51 @@ static numvar backpackResources(void) {
       }
       case Pbbe::DT_POWER_USAGE: {
         Pbbe::PowerUsageDescriptor& d = static_cast<Pbbe::PowerUsageDescriptor&>(*info.parsed);
-        Serial.print(F("power: pin = "));
-        Serial.print(d.power_pin.name());
-        Serial.print(F(", minimum = "));
+        sp(F("power: pin = "));
+        sp(d.power_pin.name());
+        sp(F(", minimum = "));
         if (d.minimum.raw()) {
-          Serial.print((float)d.minimum, 2);
-          Serial.print(F("uA"));
+          sp(d.minimum,100);
+          sp(F("uA"));
         } else {
-          Serial.print(F("unknown"));
+          sp(F("unknown"));
         }
-        Serial.print(F(", typical = "));
+        sp(F(", typical = "));
         if (d.typical.raw()) {
-          Serial.print((float)d.typical, 2);
-          Serial.print(F("uA"));
+          sp(d.typical,100);
+          sp(F("uA"));
         } else {
-          Serial.print(F("unknown"));
+          sp(F("unknown"));
         }
-        Serial.print(F(", maximum = "));
+        sp(F(", maximum = "));
         if (d.maximum.raw()) {
-          Serial.print((float)d.maximum, 2);
-          Serial.print(F("uA"));
+          sp(d.maximum,100);
+          sp(F("uA"));
         } else {
-          Serial.print(F("unknown"));
+          sp(F("unknown"));
         }
-        Serial.println();
+        speol();
         break;
       }
       case Pbbe::DT_I2C_SLAVE: {
         Pbbe::I2cSlaveDescriptor& d = static_cast<Pbbe::I2cSlaveDescriptor&>(*info.parsed);
-        Serial.print(d.name);
-        Serial.print(F(": i2c, address = "));
-        Serial.print(d.addr);
-        Serial.print(F(", max speed = "));
-        Serial.print(d.speed);
-        Serial.print(F("kbps"));
-        Serial.println();
+        sp(d.name);
+        sp(F(": i2c, address = "));
+        sp(d.addr);
+        sp(F(", max speed = "));
+        sp(d.speed);
+        sp(F("kbps"));
+        speol();
         break;
       }
       case Pbbe::DT_DATA: {
         Pbbe::DataDescriptor& d = static_cast<Pbbe::DataDescriptor&>(*info.parsed);
-        Serial.print(d.name);
-        Serial.print(F(": data, length = "));
-        Serial.print(d.length);
-        Serial.print(F(", content = "));
-        printHexBuffer(Serial, d.data, d.length);
-        Serial.println();
+        sp(d.name);
+        sp(F(": data, length = "));
+        sp(d.length);
+        sp(F(", content = "));
+        printHexBuffer(d.data, d.length);
+        speol();
         break;
       }
       default: {
@@ -1946,8 +2020,8 @@ static numvar otaBoot(void) {
 \****************************/
 
 static numvar moduleStatus(void) {
-  Serial.println(F("enabled   name"));
-  Serial.println(F("--------------"));
+  speol(F("enabled   name"));
+  speol(F("--------------"));
 
   const Module *module = ModuleHandler::modules();
   while (module) {
@@ -2230,6 +2304,7 @@ void PinoccioShell::setup() {
   addFunction("power.hasbattery", isBatteryConnected);
   addFunction("power.percent", getBatteryPercentage);
   addFunction("power.voltage", getBatteryVoltage);
+  addFunction("power.volts", getBatteryVolts);
   addFunction("power.enablevcc", enableBackpackVcc);
   addFunction("power.disablevcc", disableBackpackVcc);
   addFunction("power.isvccenabled", isBackpackVccEnabled);
@@ -2251,7 +2326,10 @@ void PinoccioShell::setup() {
   addFunction("mesh.routing", meshRouting);
   addFunction("mesh.signal", meshSignal);
   addFunction("mesh.loss", meshLoss);
+  addFunction("mesh.from", meshFrom);
   addFunction("mesh.id", meshId);
+  addFunction("mesh.calibrate", meshCalibrate);
+  addFunction("mesh.each", meshEach);
 
   // these supplant/replace message.*
   addFunction("command.scout", commandScout);
@@ -2621,6 +2699,14 @@ void PinoccioShell::startShell() {
 
 void PinoccioShell::disableShell() {
   isShellEnabled = false;
+}
+
+// ugh-ly
+void PinoccioShell::delay(uint32_t at, const __FlashStringHelper *command) {
+  char *cpy = (char*)malloc(strlen_P((const prog_char*)command)+1);
+  strcpy_P(cpy,(const prog_char*)command);
+  delay(at,cpy);
+  free(cpy);
 }
 
 void PinoccioShell::delay(uint32_t at, char *command) {
