@@ -131,10 +131,64 @@ static numvar pinoccioBanner(void) {
   return 1;
 }
 
+void jsonArgs(StringBuffer *out, int start) {
+  StringBuffer backtick;
+  int i;
+  int args = getarg(0);
+  *out = (char*)getstringarg(start);
+  out->concat('(');
+  for (i=start+1; i<=args; i++) {
+    if(isstringarg(i))
+    {
+      char *arg = (char*)getstringarg(i);
+      int len = strlen(arg);
+      // detect backticks to eval and embed any string output
+      if(len > 2 && arg[0] == '`' && arg[len-1] == '`')
+      {
+        backtick = "";
+        arg[len-1] = 0;
+        arg++;
+        Shell.eval(PrintToString(backtick), arg);
+        backtick.trim();
+        out->appendJsonString(backtick, true);
+      }else{
+        out->appendJsonString(arg, true);
+      }
+    }else{
+      // just a number
+      out->concat(getarg(i));
+    }
+    if(i+1 <= args) out->concat(',');
+  }
+  out->concat(')');
+  if(Shell.isVerbose)
+  {
+    Serial.print("built command from args: ");
+    Serial.println(*out);
+  }
+}
+
 static numvar allReport(void) {
-  speol(F("running all reports"));
-  Shell.allReportHQ();
-  return 1;
+  if (getarg(0) == 0) {
+    speol(F("running all reports"));
+    Shell.allReportHQ();
+    return 1;
+  }
+  // make sure args are pair'd
+  if (getarg(0) % 2 == 0) {
+    speol(F("usage: report(\"type\" [,\"key\",value,...])"));
+    return 0;
+  }
+  StringBuffer json;
+  *json = "{\"type\":";
+  json->appendJsonString(getstringarg(1));
+  jsonArgs(&json, 2);
+  if(json.length() > 100)
+  {
+    speol(F("report too long, 100 max"));
+    return 0;
+  }
+  // TODO
 }
 
 static numvar allVerbose(void) {
