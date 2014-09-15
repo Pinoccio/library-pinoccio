@@ -135,9 +135,11 @@ void jsonArgs(StringBuffer *out, int start) {
   StringBuffer backtick;
   int i;
   int args = getarg(0);
-  *out = (char*)getstringarg(start);
-  out->concat('(');
+  *out = "{";
   for (i=start+1; i<=args; i++) {
+    out->appendJsonString((char*)getstringarg(i));
+    out->concat(":");
+    i++;
     if(isstringarg(i))
     {
       char *arg = (char*)getstringarg(i);
@@ -160,10 +162,10 @@ void jsonArgs(StringBuffer *out, int start) {
     }
     if(i+1 <= args) out->concat(',');
   }
-  out->concat(')');
+  out->concat('}');
   if(Shell.isVerbose)
   {
-    Serial.print("built command from args: ");
+    Serial.print("built json from args: ");
     Serial.println(*out);
   }
 }
@@ -180,15 +182,21 @@ static numvar allReport(void) {
     return 0;
   }
   StringBuffer json;
-  *json = "{\"type\":";
-  json->appendJsonString(getstringarg(1));
   jsonArgs(&json, 2);
   if(json.length() > 100)
   {
     speol(F("report too long, 100 max"));
     return 0;
   }
-  // TODO
+  lastReport = "";
+  lastReport.appendSprintf("[%d,[%d,%d],[\"%s\",%s]]",
+          keyMap("custom", 0),
+          keyMap("name", 0),
+          keyMap("custom", 0),
+          getstringarg(1),
+          json);
+  speol(Scout.handler.report(lastReport));
+  return true;
 }
 
 static numvar allVerbose(void) {
