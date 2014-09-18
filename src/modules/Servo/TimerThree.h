@@ -26,9 +26,9 @@
 #define TIMER1_A_PIN   11
 #define TIMER1_B_PIN   12
 #define TIMER1_C_PIN   13
-#define TIMER3_A_PIN   5
-#define TIMER3_B_PIN   2
-#define TIMER3_C_PIN   3
+#define TIMER3_A_PIN   3
+#define TIMER3_B_PIN   4
+#define TIMER3_C_PIN   5
 #define TIMER4_A_PIN   6
 #define TIMER4_B_PIN   7
 #define TIMER4_C_PIN   8
