@@ -11,6 +11,8 @@
 
 #include "../Module.h"
 #include "HTU21D.h"
+#include "Adafruit_MPL115A2.h"
+#include "tsl2561.h"
 
 #define MOVAVG_SIZE 8
 
@@ -23,22 +25,42 @@ namespace pinoccio {
       void loop();
       static EnvModule instance;
 
-      void humidityPushMovingAvg(float val);
-      float humidityGetMovingAvg();
-      
       void tempPushMovingAvg(float val);
       float tempGetMovingAvgC();
       float tempGetMovingAvgF();
 
+      void humidityPushMovingAvg(float val);
+      float humidityGetMovingAvg();
+      
+      void baroPushMovingAvg(float val);   
+      float baroGetMovingAvgKpa();
+      float baroGetMovingAvgMbar();
+      float baroGetMovingAvgMmhg();
+      float baroGetMovingAvgInhg();
+
+      uint16_t lightGetIr();
+      uint16_t lightGetVisible();
+      uint16_t lightGetFull();
+      uint16_t lightGetLux();
+      
+      bool lightConfigure(uint8_t sensitivity);
+      
       HTU21D *htu;
+      Adafruit_MPL115A2 *mpl;
+      TSL2561 *tsl;
+      
     private:
       float *tempMovingAvgBuffer;
       int tempMovingAvgCtr;
       
       float *humidityMovingAvgBuffer;
       int humidityMovingAvgCtr;
+      
+      float *baroMovingAvgBuffer;
+      int baroMovingAvgCtr;
     
       SYS_Timer_t htuMovingAvgTimer;
+      SYS_Timer_t baroMovingAvgTimer;
       
       using Module::Module;
   };
