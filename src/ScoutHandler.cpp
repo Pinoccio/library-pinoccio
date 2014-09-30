@@ -445,7 +445,8 @@ static void leadAnnouncementSend(uint16_t group, uint16_t from, const ConstBuf& 
   }
   if(leadSignal(report))
   {
-    Shell.eval("command.others","hq.online",1);
+// TODO reentrancy issues, temporarily disabled!
+//    Shell.eval("command.others","hq.online",1);
   }
 }
 
