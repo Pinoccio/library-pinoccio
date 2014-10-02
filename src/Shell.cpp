@@ -2648,7 +2648,8 @@ void PinoccioShell::loop() {
     // bitlash loop
     runBackgroundTasks();
     // resend last report every second until hq is online
-    if(lastReport.length() && lastReportAt != SleepHandler::uptime().seconds)
+    // TODO temporarily disabled, reentrancy issues in ScoutHandler.cpp!
+    if(false && lastReport.length() && lastReportAt != SleepHandler::uptime().seconds)
     {
       if(Shell.isVerbose)
       {
