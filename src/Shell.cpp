@@ -74,7 +74,7 @@ void sp(float value, int places)
 
   float d = 0.5;
   if (value < 0) d *= -1.0;
-  for (i = 0; i < places; i++) d/= 10.0;    
+  for (i = 0; i < places; i++) d/= 10.0;
   tempfloat +=  d;
 
   if (value < 0) tempfloat *= -1.0;
@@ -96,13 +96,13 @@ void sp(float value, int places)
 
   if (places <= 0) return;
 
-  sp('.');  
+  sp('.');
 
   for (i = 0; i < places; i++) {
-    tempfloat *= 10.0; 
+    tempfloat *= 10.0;
     digit = (int) tempfloat;
     sp(digit);
-    tempfloat = tempfloat - (float) digit; 
+    tempfloat = tempfloat - (float) digit;
   }
 }
 
@@ -854,7 +854,7 @@ static void commandConfirm(NWK_DataReq_t *req) {
   {
     Shell.eval(commandAck,req->status,Shell.lastMeshRssi);
   }
-  
+
   free(req->data);
   free(req);
 
@@ -913,6 +913,14 @@ static numvar meshConfig(void) {
     channel = getarg(3);
   }
   Scout.meshSetRadio(getarg(1), getarg(2), channel);
+  return 1;
+}
+
+static numvar meshSetChannel(void) {
+  if (!checkArgs(1, F("usage: mesh.setchannel(channel)"))) {
+    return 0;
+  }
+  Scout.meshSetChannel(getarg(1));
   return 1;
 }
 
@@ -1027,7 +1035,7 @@ static numvar meshFieldtest(void) {
   Shell.eval(F("run mesh.ft.each,500"));
   // this causes an unexpected char that stops running mesh.ft.each, hack!
   Shell.delay(getarg(1)*1000,F("rm mesh.ft.each;rm mesh.ft.ping;rm mesh.ft.ack;led.off"));
-  
+
   return 1;
 }
 
@@ -2315,6 +2323,7 @@ void PinoccioShell::setup() {
   addFunction("power.wakeup.pin", powerWakeupPin);
 
   addFunction("mesh.config", meshConfig);
+  addFunction("mesh.setchannel", meshSetChannel);
   addFunction("mesh.setpower", meshSetPower);
   addFunction("mesh.setdatarate", meshSetDataRate);
   addFunction("mesh.setkey", meshSetKey);

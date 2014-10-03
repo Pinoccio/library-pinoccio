@@ -211,7 +211,12 @@ void PinoccioClass::meshSetRadio(const uint16_t theAddress, const uint16_t thePa
   }else{
     meshSetDataRate(0);
   }
+}
 
+void PinoccioClass::meshSetChannel(const uint8_t theChannel) {
+  PHY_SetChannel(theChannel);
+  channel = theChannel;
+  eeprom_update_byte((uint8_t *)8179, channel);
 }
 
 void PinoccioClass::meshSetPower(const uint8_t theTxPower) {
