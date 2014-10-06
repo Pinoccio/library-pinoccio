@@ -193,13 +193,11 @@ void PinoccioClass::meshSetRadio(const uint16_t theAddress, const uint16_t thePa
   address = theAddress;
   NWK_SetPanId(thePanId);
   panId = thePanId;
-  PHY_SetChannel(theChannel);
-  channel = theChannel;
   PHY_SetRxState(true);
+  meshSetChannel(theChannel);
 
   eeprom_update_word((uint16_t *)8182, address);
   eeprom_update_word((uint16_t *)8180, panId);
-  eeprom_update_byte((uint8_t *)8179, channel);
 
   if (eeprom_read_byte((uint8_t *)8178) != 0xFF) {
     meshSetPower(eeprom_read_byte((uint8_t *)8178));
@@ -214,8 +212,8 @@ void PinoccioClass::meshSetRadio(const uint16_t theAddress, const uint16_t thePa
 }
 
 void PinoccioClass::meshSetChannel(const uint8_t theChannel) {
-  PHY_SetChannel(theChannel);
   channel = theChannel;
+  PHY_SetChannel(channel);
   eeprom_update_byte((uint8_t *)8179, channel);
 }
 
