@@ -1221,6 +1221,26 @@ static numvar commandScoutAck(void) {
   return 1;
 }
 
+static numvar commandGroup(void) {
+  if (!checkArgs(2, 99, F("usage: command.group(groupId, \"command\" [,arg1,arg2])")) || !isstringarg(2)) {
+    return 0;
+  }
+  if (sendDataReqBusy)
+  {
+    speol(F("busy commanding already"));
+    return 0;
+  }
+  StringBuffer cmd;
+  commandArgs(&cmd, 2);
+  if(cmd.length() > 100)
+  {
+    speol(F("command too long, 100 max"));
+    return 0;
+  }
+  sendCommand(false, getarg(1), cmd.c_str());
+  return 1;
+}
+
 static numvar commandOthers(void) {
   if (!checkArgs(1, 99, F("usage: command.others(\"command\" [,arg1,arg2])")) || !isstringarg(1)) {
     return 0;
@@ -2337,6 +2357,7 @@ void PinoccioShell::setup() {
   addFunction("command.scout.ack", commandScoutAck);
   addFunction("command.all", commandAll);
   addFunction("command.others", commandOthers);
+  addFunction("command.group", commandGroup);
 
   addFunction("message.scout", messageScout);
   addFunction("message.group", messageGroup);
