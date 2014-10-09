@@ -1,52 +1,43 @@
-/* 
- HTU21D Humidity Sensor Library
- By: Nathan Seidle
- SparkFun Electronics
- Date: September 22nd, 2013
- License: This code is public domain but you buy me a beer if you use this and we meet someday (Beerware license).
- 
- Get humidity and temperature from the HTU21D sensor.
- 
- */
- 
+/*************************************************** 
+  This is a library for the HTU21D-F Humidity & Temp Sensor
 
-#if defined(ARDUINO) && ARDUINO >= 100
+  Designed specifically to work with the HTU21D-F sensor from Adafruit
+  ----> https://www.adafruit.com/products/1899
+
+  These displays use I2C to communicate, 2 pins are required to  
+  interface
+  Adafruit invests time and resources providing this open source code, 
+  please support Adafruit and open-source hardware by purchasing 
+  products from Adafruit!
+
+  Written by Limor Fried/Ladyada for Adafruit Industries.  
+  BSD license, all text above must be included in any redistribution
+ ****************************************************/
+
+#if (ARDUINO >= 100)
  #include "Arduino.h"
 #else
  #include "WProgram.h"
 #endif
+#include "Wire.h"
 
-#include <Wire.h>
+#define HTU21DF_I2CADDR       0x40
+#define HTU21DF_READTEMP      0xE3
+#define HTU21DF_READHUM       0xE5
+#define HTU21DF_WRITEREG       0xE6
+#define HTU21DF_READREG       0xE7
+#define HTU21DF_RESET       0xFE
 
-#define HTDU21D_ADDRESS 0x40  //Unshifted 7-bit I2C address for the sensor
 
-#define TRIGGER_TEMP_MEASURE_HOLD  0xE3
-#define TRIGGER_HUMD_MEASURE_HOLD  0xE5
-#define TRIGGER_TEMP_MEASURE_NOHOLD  0xF3
-#define TRIGGER_HUMD_MEASURE_NOHOLD  0xF5
-#define WRITE_USER_REG  0xE6
-#define READ_USER_REG  0xE7
-#define SOFT_RESET  0xFE
 
-class HTU21D {
-
-public:
-  HTU21D();
-
-  //Public Functions
-  bool begin();
-  float readHumidity(void);
+class Adafruit_HTU21DF {
+ public:
+  Adafruit_HTU21DF();
+  boolean begin(void);
   float readTemperature(void);
-  void setResolution(byte resBits);
-
-  //Public Variables
-
-private:
-  //Private Functions
-
-  byte read_user_register(void);
-  byte check_crc(uint16_t message_from_sensor, uint8_t check_value_from_sensor);
-
-  //Private Variables
-
+  float readHumidity(void);
+  void reset(void);
+ private:
+  boolean readData(void);
+  float humidity, temp;
 };
