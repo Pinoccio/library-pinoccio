@@ -47,37 +47,44 @@ static numvar status() {
 
 static numvar getTemperatureC() {
   EnvModule* m = &(EnvModule::instance);
-  return (int)round(m->tempGetMovingAvgC());
+  //return (int)round(m->tempGetMovingAvgC());
+  return (int)round(m->htu->readTemperature());
 }
 
 static numvar getTemperatureF() {
   EnvModule* m = &(EnvModule::instance);
-  return (int)round(m->tempGetMovingAvgF());
+  //return (int)round(m->tempGetMovingAvgF());
+  return  (int)round((1.8 * m->htu->readTemperature()) + 32);
 }
 
 static numvar getHumidity() {
   EnvModule* m = &(EnvModule::instance);
-  return (int)round(m->humidityGetMovingAvg());
+  //return (int)round(m->humidityGetMovingAvg());
+  return (int)round(m->htu->readHumidity());
 }
 
 static numvar getPressureKpa() {
   EnvModule* m = &(EnvModule::instance);
-  return (int)round(m->baroGetMovingAvgKpa());
+  //return (int)round(m->baroGetMovingAvgKpa());
+  return (int)round(m->mpl->getPressure());
 }
 
 static numvar getPressureMbar() {
   EnvModule* m = &(EnvModule::instance);
-  return (int)round(m->baroGetMovingAvgMbar());
+  //return (int)round(m->baroGetMovingAvgMbar());
+  return (int)round(m->mpl->getPressure() * 10);
 }
 
 static numvar getPressureMmhg() {
   EnvModule* m = &(EnvModule::instance);
-  return (int)round(m->baroGetMovingAvgMmhg());
+  //return (int)round(m->baroGetMovingAvgMmhg());
+  return (int)round(m->mpl->getPressure() * 7.50062);
 }
 
 static numvar getPressureInhg() {
   EnvModule* m = &(EnvModule::instance);
-  return (int)round(m->baroGetMovingAvgInhg());
+  //return (int)round(m->baroGetMovingAvgInhg());
+  return (int)round(m->mpl->getPressure() * 0.2953);
 }
 
 static numvar getLightIr() {
@@ -107,8 +114,10 @@ static numvar lightConfig() {
 
 static void htuMovingAvgTimerHandler(SYS_Timer_t *timer) {
   EnvModule* m = &(EnvModule::instance);
-  m->humidityPushMovingAvg(m->htu->readHumidity());
-  m->tempPushMovingAvg(m->htu->readTemperature());
+  m->cc2->triggerMeasurement();
+  delay(50);
+  m->humidityPushMovingAvg(m->cc2->readHumidity());
+  m->tempPushMovingAvg(m->cc2->readTemperature());
 }
 
 static void baroMovingAvgTimerHandler(SYS_Timer_t *timer) {
@@ -117,8 +126,15 @@ static void baroMovingAvgTimerHandler(SYS_Timer_t *timer) {
 }
 
 bool EnvModule::enable() {
-  htu = new HTU21D();
+  htu = new Adafruit_HTU21DF();
   htu->begin();
+  
+  /*
+  cc2 = new ChipCap2();
+  if (cc2->present()) {
+    cc2->triggerMeasurement();
+  }
+  */
   
   mpl = new Adafruit_MPL115A2();
   mpl->begin();
@@ -145,9 +161,10 @@ bool EnvModule::enable() {
   Shell.addFunction("env.status", status);
   Serial.println("env enabled");
 
+  /*
   for(int i=0; i<MOVAVG_SIZE; i++) {
-    humidityPushMovingAvg(htu->readHumidity());
-    tempPushMovingAvg(htu->readTemperature());
+    humidityPushMovingAvg(cc2->readHumidity());
+    tempPushMovingAvg(cc2->readTemperature());
   }
   
   for(int i=0; i<MOVAVG_SIZE; i++) {
@@ -158,11 +175,12 @@ bool EnvModule::enable() {
   htuMovingAvgTimer.mode = SYS_TIMER_PERIODIC_MODE;
   htuMovingAvgTimer.handler = htuMovingAvgTimerHandler;
   SYS_TimerStart(&htuMovingAvgTimer);
-  
+    
   baroMovingAvgTimer.interval = 250;
   baroMovingAvgTimer.mode = SYS_TIMER_PERIODIC_MODE;
   baroMovingAvgTimer.handler = baroMovingAvgTimerHandler;
   SYS_TimerStart(&baroMovingAvgTimer);
+  */
 }
 
 void EnvModule::loop() { }
