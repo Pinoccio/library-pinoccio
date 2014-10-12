@@ -860,19 +860,18 @@ static void commandConfirm(NWK_DataReq_t *req) {
 
 }
 
-static void sendCommand(int address, const char *cmd, const char *ack) {
+static void sendCommand(bool toScout, int address, const char *cmd, const char *ack) {
   NWK_DataReq_t *req = (NWK_DataReq_t*)malloc(sizeof(struct NWK_DataReq_t));
   memset(req,0,sizeof(struct SYS_Timer_t));
 
-  // multicast the command to everyone
-  if(address == 0)
-  {
-    req->dstAddr = 1; // a group everyone joins by default in ScoutHandler
-    req->options = NWK_OPT_MULTICAST|NWK_OPT_ENABLE_SECURITY;
-  }else{
-    req->dstAddr = address;
+  // If commanding a Scout, change operation type
+  if (toScout) {
     req->options = NWK_OPT_ACK_REQUEST|NWK_OPT_ENABLE_SECURITY;
+  } else {
+    req->options = NWK_OPT_MULTICAST|NWK_OPT_ENABLE_SECURITY;
   }
+
+  req->dstAddr = address;
   req->confirm = commandConfirm;
   req->dstEndpoint = 2;
   req->srcEndpoint = 2;
@@ -894,8 +893,8 @@ static void sendCommand(int address, const char *cmd, const char *ack) {
   }
 }
 
-static void sendCommand(int address, const char *data) {
-  sendCommand(address, data, "");
+static void sendCommand(bool toScout, int address, const char *data) {
+  sendCommand(toScout, address, data, "");
 }
 
 
@@ -1210,7 +1209,7 @@ static numvar commandScout(void) {
     speol(F("command too long, 100 max"));
     return 0;
   }
-  sendCommand(getarg(1),cmd.c_str());
+  sendCommand(true, getarg(1), cmd.c_str());
   return 1;
 }
 
@@ -1230,8 +1229,28 @@ static numvar commandScoutAck(void) {
     speol(F("command too long, 100 max"));
     return 0;
   }
-  sendCommand(getarg(2), cmd.c_str(), (char*)getarg(1));
+  sendCommand(true, getarg(2), cmd.c_str(), (char*)getarg(1));
 
+  return 1;
+}
+
+static numvar commandGroup(void) {
+  if (!checkArgs(2, 99, F("usage: command.group(groupId, \"command\" [,arg1,arg2])")) || !isstringarg(2)) {
+    return 0;
+  }
+  if (sendDataReqBusy)
+  {
+    speol(F("busy commanding already"));
+    return 0;
+  }
+  StringBuffer cmd;
+  commandArgs(&cmd, 2);
+  if(cmd.length() > 100)
+  {
+    speol(F("command too long, 100 max"));
+    return 0;
+  }
+  sendCommand(false, getarg(1), cmd.c_str());
   return 1;
 }
 
@@ -1251,7 +1270,7 @@ static numvar commandOthers(void) {
     speol(F("command too long, 100 max"));
     return 0;
   }
-  sendCommand(0, cmd.c_str());
+  sendCommand(false, 1, cmd.c_str());
   return 1;
 }
 
@@ -1271,7 +1290,7 @@ static numvar commandAll(void) {
     speol(F("command too long, 100 max"));
     return 0;
   }
-  sendCommand(0, cmd.c_str());
+  sendCommand(false, 1, cmd.c_str());
   Shell.delay(100,(char*)cmd.c_str());
   return 1;
 }
@@ -2352,6 +2371,7 @@ void PinoccioShell::setup() {
   addFunction("command.scout.ack", commandScoutAck);
   addFunction("command.all", commandAll);
   addFunction("command.others", commandOthers);
+  addFunction("command.group", commandGroup);
 
   addFunction("message.scout", messageScout);
   addFunction("message.group", messageGroup);
