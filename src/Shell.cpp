@@ -2486,7 +2486,7 @@ void PinoccioShell::refresh(void)
     lsout = lsout.substring(nl+1);
   }
 
-  if (true || Shell.isVerbose) {
+  if (Shell.isVerbose) {
     Serial.print(F("refreshed custom commands index to: "));
     Serial.println(customScripts);
   }
