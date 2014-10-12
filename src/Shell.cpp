@@ -74,7 +74,7 @@ void sp(float value, int places)
 
   float d = 0.5;
   if (value < 0) d *= -1.0;
-  for (i = 0; i < places; i++) d/= 10.0;    
+  for (i = 0; i < places; i++) d/= 10.0;
   tempfloat +=  d;
 
   if (value < 0) tempfloat *= -1.0;
@@ -96,13 +96,13 @@ void sp(float value, int places)
 
   if (places <= 0) return;
 
-  sp('.');  
+  sp('.');
 
   for (i = 0; i < places; i++) {
-    tempfloat *= 10.0; 
+    tempfloat *= 10.0;
     digit = (int) tempfloat;
     sp(digit);
-    tempfloat = tempfloat - (float) digit; 
+    tempfloat = tempfloat - (float) digit;
   }
 }
 
@@ -860,25 +860,24 @@ static void commandConfirm(NWK_DataReq_t *req) {
   {
     Shell.eval(commandAck,req->status,Shell.lastMeshRssi);
   }
-  
+
   free(req->data);
   free(req);
 
 }
 
-static void sendCommand(int address, const char *cmd, const char *ack) {
+static void sendCommand(bool toScout, int address, const char *cmd, const char *ack) {
   NWK_DataReq_t *req = (NWK_DataReq_t*)malloc(sizeof(struct NWK_DataReq_t));
   memset(req,0,sizeof(struct SYS_Timer_t));
 
-  // multicast the command to everyone
-  if(address == 0)
-  {
-    req->dstAddr = 1; // a group everyone joins by default in ScoutHandler
-    req->options = NWK_OPT_MULTICAST|NWK_OPT_ENABLE_SECURITY;
-  }else{
-    req->dstAddr = address;
+  // If commanding a Scout, change operation type
+  if (toScout) {
     req->options = NWK_OPT_ACK_REQUEST|NWK_OPT_ENABLE_SECURITY;
+  } else {
+    req->options = NWK_OPT_MULTICAST|NWK_OPT_ENABLE_SECURITY;
   }
+
+  req->dstAddr = address;
   req->confirm = commandConfirm;
   req->dstEndpoint = 2;
   req->srcEndpoint = 2;
@@ -900,8 +899,8 @@ static void sendCommand(int address, const char *cmd, const char *ack) {
   }
 }
 
-static void sendCommand(int address, const char *data) {
-  sendCommand(address, data, "");
+static void sendCommand(bool toScout, int address, const char *data) {
+  sendCommand(toScout, address, data, "");
 }
 
 
@@ -910,7 +909,7 @@ static void sendCommand(int address, const char *data) {
 \****************************/
 
 static numvar meshConfig(void) {
-  if (!checkArgs(2, 3, F("usage: mesh.config(scoutId, troopId, channel=20)"))) {
+  if (!checkArgs(2, 4, F("usage: mesh.config(scoutId, troopId [, channel=20, key])"))) {
     return 0;
   }
   uint8_t channel = 20;
@@ -919,6 +918,19 @@ static numvar meshConfig(void) {
     channel = getarg(3);
   }
   Scout.meshSetRadio(getarg(1), getarg(2), channel);
+  
+  if (getarg(0) >= 4) {
+    Shell.eval("mesh.setkey",(const char*)getstringarg(4));
+  }
+
+  return 1;
+}
+
+static numvar meshSetChannel(void) {
+  if (!checkArgs(1, F("usage: mesh.setchannel(channel)"))) {
+    return 0;
+  }
+  Scout.meshSetChannel(getarg(1));
   return 1;
 }
 
@@ -1033,7 +1045,7 @@ static numvar meshFieldtest(void) {
   Shell.eval(F("run mesh.ft.each,500"));
   // this causes an unexpected char that stops running mesh.ft.each, hack!
   Shell.delay(getarg(1)*1000,F("rm mesh.ft.each;rm mesh.ft.ping;rm mesh.ft.ack;led.off"));
-  
+
   return 1;
 }
 
@@ -1203,7 +1215,7 @@ static numvar commandScout(void) {
     speol(F("command too long, 100 max"));
     return 0;
   }
-  sendCommand(getarg(1),cmd.c_str());
+  sendCommand(true, getarg(1), cmd.c_str());
   return 1;
 }
 
@@ -1223,8 +1235,28 @@ static numvar commandScoutAck(void) {
     speol(F("command too long, 100 max"));
     return 0;
   }
-  sendCommand(getarg(2), cmd.c_str(), (char*)getarg(1));
+  sendCommand(true, getarg(2), cmd.c_str(), (char*)getarg(1));
 
+  return 1;
+}
+
+static numvar commandGroup(void) {
+  if (!checkArgs(2, 99, F("usage: command.group(groupId, \"command\" [,arg1,arg2])")) || !isstringarg(2)) {
+    return 0;
+  }
+  if (sendDataReqBusy)
+  {
+    speol(F("busy commanding already"));
+    return 0;
+  }
+  StringBuffer cmd;
+  commandArgs(&cmd, 2);
+  if(cmd.length() > 100)
+  {
+    speol(F("command too long, 100 max"));
+    return 0;
+  }
+  sendCommand(false, getarg(1), cmd.c_str());
   return 1;
 }
 
@@ -1244,7 +1276,7 @@ static numvar commandOthers(void) {
     speol(F("command too long, 100 max"));
     return 0;
   }
-  sendCommand(0, cmd.c_str());
+  sendCommand(false, 1, cmd.c_str());
   return 1;
 }
 
@@ -1264,7 +1296,7 @@ static numvar commandAll(void) {
     speol(F("command too long, 100 max"));
     return 0;
   }
-  sendCommand(0, cmd.c_str());
+  sendCommand(false, 1, cmd.c_str());
   Shell.delay(100,(char*)cmd.c_str());
   return 1;
 }
@@ -2321,6 +2353,7 @@ void PinoccioShell::setup() {
   addFunction("power.wakeup.pin", powerWakeupPin);
 
   addFunction("mesh.config", meshConfig);
+  addFunction("mesh.setchannel", meshSetChannel);
   addFunction("mesh.setpower", meshSetPower);
   addFunction("mesh.setdatarate", meshSetDataRate);
   addFunction("mesh.setkey", meshSetKey);
@@ -2344,6 +2377,7 @@ void PinoccioShell::setup() {
   addFunction("command.scout.ack", commandScoutAck);
   addFunction("command.all", commandAll);
   addFunction("command.others", commandOthers);
+  addFunction("command.group", commandGroup);
 
   addFunction("message.scout", messageScout);
   addFunction("message.group", messageGroup);
