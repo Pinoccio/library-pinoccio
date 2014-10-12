@@ -904,7 +904,7 @@ static void sendCommand(int address, const char *data) {
 \****************************/
 
 static numvar meshConfig(void) {
-  if (!checkArgs(2, 3, F("usage: mesh.config(scoutId, troopId, channel=20)"))) {
+  if (!checkArgs(2, 4, F("usage: mesh.config(scoutId, troopId [, channel=20, key])"))) {
     return 0;
   }
   uint8_t channel = 20;
@@ -913,6 +913,11 @@ static numvar meshConfig(void) {
     channel = getarg(3);
   }
   Scout.meshSetRadio(getarg(1), getarg(2), channel);
+  
+  if (getarg(0) >= 4) {
+    Shell.eval("mesh.setkey",(const char*)getstringarg(4));
+  }
+
   return 1;
 }
 
