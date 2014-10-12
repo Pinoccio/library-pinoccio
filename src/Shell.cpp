@@ -1047,7 +1047,7 @@ static StringBuffer meshReportHQ(void) {
     if (table[i].dstAddr == NWK_ROUTE_UNKNOWN) continue;
     count++;
   }
-  report.appendSprintf("[%d,[%d,%d,%d,%d,%d,%d],[%d,%d,%d,%d,\"",
+  report.appendSprintf("[%d,[%d,%d,%d,%d,%d,%d],[%u,%u,%d,%u,\"",
           keyMap("mesh", 0),
           keyMap("scoutid", 0),
           keyMap("troopid", 0),
