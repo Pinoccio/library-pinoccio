@@ -97,6 +97,7 @@ class PinoccioShell {
     numvar eval(Print *out, const String& cmd);
 
     void allReportHQ();
+    void delay(uint32_t at, const __FlashStringHelper *command);
     void delay(uint32_t at, char *command);
     bool defined(const char *fn);
 
@@ -107,6 +108,9 @@ class PinoccioShell {
     void print(const char *str);
     bool outWait;
     bool isVerbose;
+    int lastMeshRssi;
+    int lastMeshLqi;
+    int lastMeshFrom;
 
     /**
      * Parse a single hexadecimal character. Supports both uppercase and

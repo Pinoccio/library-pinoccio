@@ -72,9 +72,17 @@ static numvar wifiConfig(void) {
     return 0;
   }
 
+  char password[64];
+
   if (!checkbp()) return 0;
 
-  if (!WifiModule::instance.bp()->wifiConfig((const char *)getstringarg(1), (const char *)getstringarg(2))) {
+  if (getarg(0) == 2) {
+    strncpy(password, (const char *)getstringarg(2), 64);
+  } else {
+    strncpy(password, "", 64);
+  }
+
+  if (!WifiModule::instance.bp()->wifiConfig((const char *)getstringarg(1), (const char *)password)) {
     speol(F("Error: saving WifiModule::instance.bp()->configuration data failed"));
   }
   return 1;
