@@ -2486,7 +2486,7 @@ void PinoccioShell::refresh(void)
     lsout = lsout.substring(nl+1);
   }
 
-  if (Shell.isVerbose) {
+  if (true || Shell.isVerbose) {
     Serial.print(F("refreshed custom commands index to: "));
     Serial.println(customScripts);
   }
@@ -2504,8 +2504,12 @@ bool PinoccioShell::defined(const char *cmd)
 
   if(find_user_function((char*)cmd)) return true;
 //  if(findKey(cmd) >= 0) return true; // don't use findscript(), it's not re-entrant safe
-  int at = customScripts.indexOf(cmd);
-  if(at >= 0 && customScripts.charAt(at+strlen(cmd)) == ' ') return true;
+  int at, last = 0;
+  while((at = customScripts.indexOf(cmd,last)) >= 0)
+  {
+    if(customScripts.charAt(at+strlen(cmd)) == ' ') return true;
+    last = at+1;
+  }
   return false;
 }
 
