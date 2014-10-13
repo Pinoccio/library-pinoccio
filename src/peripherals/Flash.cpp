@@ -57,6 +57,10 @@ void FlashClass::begin(int chipSelectPin, SPIClass &SPIDriver) {
   pinMode(this->CS, OUTPUT);
 }
 
+void FlashClass::begin() {
+  begin(this->CS, this->SPI);
+}
+
 void FlashClass::end() {
   //this->SPI.end();
   digitalWrite(this->CS, HIGH);
