@@ -39,6 +39,7 @@ WifiBackpack::~WifiBackpack() {
 void WifiBackpack::onAssociate(void *data) {
   WifiBackpack& wifi = *(WifiBackpack*)data;
   wifi.apConnCount++;
+  wifi.hqConnCount = 0;
 
   if (HqHandler::use_tls()) {
     // Do a timesync
@@ -78,6 +79,14 @@ bool WifiBackpack::connectToHq() {
     }
   }
 
+  if (Scout.handler.isVerbose)
+  {
+    Serial.print(F("Connecting to HQ at "));
+    Serial.print(HqHandler::host());
+    Serial.print(":");
+    Serial.println(HqHandler::port());
+  }
+
   if (!client.connect(ip, HqHandler::port())) {
     if (Scout.handler.isVerbose)
     {
@@ -102,6 +111,7 @@ bool WifiBackpack::connectToHq() {
   // TODO: Don't call leadHQConnect directly?
   leadHQConnect();
   hqConnCount++;
+  connectedAt = SleepHandler::uptime().seconds;
   return true;
 }
 
@@ -110,6 +120,10 @@ bool WifiBackpack::setup(BackpackInfo *info) {
   // UART firmware running on them
   // Serial1.begin(115200);
   // return gs.begin(Serial1);
+
+  hqConnCount = 0;
+  apConnCount = 0;
+  connectedAt = 0;
 
   SPI.begin();
   SPI.setClockDivider(SPI_CLOCK_DIV16);
@@ -134,6 +148,17 @@ bool WifiBackpack::setup(BackpackInfo *info) {
 
 void WifiBackpack::loop() {
   gs.loop();
+  // detect the connected->disconnected transition state and retry
+  if(connectedAt && !client.connected())
+  {
+    if (Scout.handler.isVerbose)
+    {
+      Serial.print(F("HQ connection down, seconds connected: "));
+      Serial.println(SleepHandler::uptime().seconds - connectedAt);
+    }
+    connectedAt = 0;
+    connectToHq();
+  }
 }
 
 static bool isWepKey(const char *key) {

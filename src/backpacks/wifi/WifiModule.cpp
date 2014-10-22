@@ -12,6 +12,7 @@
 #include "../../key/key.h"
 #include "../../Scout.h"
 #include "../../Shell.h"
+#include "../../SleepHandler.h"
 #include "../Backpacks.h"
 #include "WifiModule.h"
 
@@ -32,12 +33,23 @@ static bool checkbp() {
 
 static StringBuffer wifiReportHQ(void) {
   StringBuffer report(100);
-  report.appendSprintf("[%d,[%d,%d],[%s,%s]]",
+  if (!checkbp()) return 0;
+  WifiBackpack *bp = WifiModule::instance.bp();
+  uint32_t uptime = 0;
+  if(bp->connectedAt) uptime = (SleepHandler::uptime().seconds - bp->connectedAt);
+  report.appendSprintf("[%d,[%d,%d,%d,%d,%d],[%s,%s,%lu,%hu,%hu]]",
           keyMap("wifi", 0),
           keyMap("connected", 0),
           keyMap("hq", 0),
-          WifiModule::instance.bp() && WifiModule::instance.bp()->isAPConnected() ? "true" : "false",
-          WifiModule::instance.bp() && WifiModule::instance.bp()->isHQConnected() ? "true" : "false");
+          keyMap("uptime", 0),
+          keyMap("reset", 0),
+          keyMap("total", 0),
+          bp->isAPConnected() ? "true" : "false",
+          bp->isHQConnected() ? "true" : "false",
+          uptime,
+          bp->hqConnCount,
+          bp->apConnCount);
+
   return Scout.handler.report(report);
 }
 
@@ -212,6 +224,9 @@ static numvar wifiStats(void) {
   speol(WifiModule::instance.bp()->apConnCount);
   sp(F("Number of connections to HQ since boot: "));
   speol(WifiModule::instance.bp()->hqConnCount);
+  sp(F("Seconds currently connected to HQ: "));
+  if(WifiModule::instance.bp()->connectedAt) speol(SleepHandler::uptime().seconds - WifiModule::instance.bp()->connectedAt);
+  else speol(0);
 }
 
 /****************************\

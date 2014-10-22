@@ -58,6 +58,7 @@ namespace pinoccio {
 
       uint16_t apConnCount;
       uint16_t hqConnCount;
+      uint32_t connectedAt;
 
       GSModule gs;
 
