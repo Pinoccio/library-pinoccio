@@ -220,9 +220,9 @@ static numvar wifiVerbose(void) {
 }
 
 static numvar wifiStats(void) {
-  sp(F("Number of connections to AP since boot: "));
+  sp(F("Number of associations to AP since boot: "));
   speol(WifiModule::instance.bp()->apConnCount);
-  sp(F("Number of connections to HQ since boot: "));
+  sp(F("Number of connections to HQ since last association: "));
   speol(WifiModule::instance.bp()->hqConnCount);
   sp(F("Seconds currently connected to HQ: "));
   if(WifiModule::instance.bp()->connectedAt) speol(SleepHandler::uptime().seconds - WifiModule::instance.bp()->connectedAt);
