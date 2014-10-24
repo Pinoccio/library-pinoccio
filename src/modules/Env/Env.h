@@ -12,7 +12,7 @@
 #include "../Module.h"
 #include "HTU21D.h"
 #include "Adafruit_MPL115A2.h"
-#include "tsl2561.h"
+#include "TSL2561.h"
 
 #define MOVAVG_SIZE 8
 
