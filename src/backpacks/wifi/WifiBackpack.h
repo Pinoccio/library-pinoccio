@@ -54,6 +54,8 @@ namespace pinoccio {
       bool goToSleep();
       bool wakeUp();
 
+      void setVerbose(bool flag);
+
       GSTcpClient client;
 
       uint16_t apConnCount;

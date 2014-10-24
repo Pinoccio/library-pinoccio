@@ -215,7 +215,10 @@ static numvar wifiWakeup(void) {
 }
 
 static numvar wifiVerbose(void) {
-  // TODO
+  if (!checkArgs(1, F("usage: wifi.verbose(flag)"))) {
+    return 0;
+  }
+  WifiModule::instance.bp()->setVerbose(getarg(1));
   return 1;
 }
 
