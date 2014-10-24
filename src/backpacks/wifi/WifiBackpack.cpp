@@ -131,6 +131,7 @@ bool WifiBackpack::setup(BackpackInfo *info) {
   gs.onAssociate = onAssociate;
   gs.eventData = this;
 
+  setVerbose(false);
   if (info->id.revision == 0x11) {
     if (!gs.begin(7, 5)) {
       return false;
@@ -304,6 +305,13 @@ bool WifiBackpack::wakeUp() {
 
 bool WifiBackpack::printTime(Print &p) {
   return runDirectCommand(p, "AT+GETTIME=?");
+}
+
+void WifiBackpack::setVerbose(bool flag) {
+  if (flag)
+    gs.setLogOutput(&Serial, &Serial);
+  else
+    gs.setLogOutput(&Serial, NULL);
 }
 
 /* commands for auto-config
