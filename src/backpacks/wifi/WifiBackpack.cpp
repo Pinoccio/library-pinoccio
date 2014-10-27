@@ -189,7 +189,6 @@ bool WifiBackpack::wifiConfig(const char *ssid, const char *passphrase) {
   // Ignore setDefaultProfile failure, since it fails also when only a
   // single profile is available
   ok && gs.setDefaultProfile(0);
-  associate();
   return ok;
 }
 
@@ -201,7 +200,6 @@ bool WifiBackpack::wifiDhcp(const char *hostname) {
   // Ignore setDefaultProfile failure, since it fails also when only a
   // single profile is available
   ok && gs.setDefaultProfile(0);
-  associate();
   return ok;
 }
 
@@ -216,7 +214,6 @@ bool WifiBackpack::wifiStatic(IPAddress ip, IPAddress netmask, IPAddress gw, IPA
   // Ignore setDefaultProfile failure, since it fails also when only a
   // single profile is available
   ok && gs.setDefaultProfile(0);
-  associate();
   return ok;
 }
 
