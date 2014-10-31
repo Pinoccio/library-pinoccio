@@ -855,7 +855,7 @@ static void commandConfirm(NWK_DataReq_t *req) {
   Shell.lastMeshRssi = req->control;
 
   // run the Bitlash callback ack command appended after if any
-  char *commandAck = (char*)req->data+req->size+1;
+  char *commandAck = (char*)req->data+req->size;
   if(*commandAck)
   {
     Shell.eval(commandAck,req->status,Shell.lastMeshRssi);
@@ -884,7 +884,7 @@ static void sendCommand(bool toScout, int address, const char *cmd, const char *
   req->data = (uint8_t*)malloc(strlen(cmd) + 1 + strlen(ack) + 1);
   req->size = strlen(cmd) + 1;
   strcpy((char*)req->data,cmd);
-  strcpy((char*)req->data+req->size+1,ack); // append any ack after
+  strcpy((char*)req->data+req->size,ack); // append any ack after
   NWK_DataReq(req);
 
   if (Shell.isVerbose) {
