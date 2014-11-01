@@ -353,7 +353,7 @@ static numvar keySave(void) {
   char cmd[42], *var;
   var = (char*)getstringarg(1);
   snprintf(cmd, sizeof(cmd), "function boot.%s {%s=key(\"%s\");}", var, var, keyGet(getarg(2)));
-  doCommand(cmd);
+  Shell.eval(cmd);
   return 1;
 }
 
@@ -729,7 +729,7 @@ static bool receiveMessage(NWK_DataInd_t *ind) {
       snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf), ",%d", keys[i]);
     }
     snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf), ")");
-    doCommand(buf);
+    Shell.eval(buf);
   }
 
   if (Scout.eventVerboseOutput) {
@@ -787,7 +787,7 @@ static void sendConfirm(NWK_DataReq_t *req) {
   snprintf(buf, sizeof(buf),"on.message.signal");
   if (Shell.defined(buf)) {
     snprintf(buf, sizeof(buf), "on.message.signal(%d, %d)", req->dstAddr, (req->status == NWK_SUCCESS_STATUS) ? req->control : 0);
-    doCommand(buf);
+    Shell.eval(buf);
   }
 
   if (Scout.eventVerboseOutput) {
@@ -1589,7 +1589,7 @@ static numvar pinSave(void) {
   }
   buf += " }";
 
-  doCommand((char*)buf.c_str());
+  Shell.eval((char*)buf.c_str());
   return 1;
 }
 
@@ -1970,7 +1970,7 @@ static void delayTimerHandler(SYS_Timer_t *timer) {
     Serial.println(((char*)timer) + (sizeof(struct SYS_Timer_t)));
   }
 
-  doCommand(((char*)timer) + (sizeof(struct SYS_Timer_t)));
+  Shell.eval(((char*)timer) + (sizeof(struct SYS_Timer_t)));
   free(timer);
 }
 
@@ -2042,8 +2042,8 @@ static numvar daisyWipe(void) {
     Led.saveTorch(0, 255, 0);
 
     // so long, and thanks for all the fish!
-    doCommand("rm *");
-    doCommand("scout.boot");
+    Shell.eval("rm *");
+    Shell.eval("scout.boot");
   }
   return 1;
 }
@@ -2225,7 +2225,7 @@ static void digitalPinEventHandler(uint8_t pin, int16_t value, int8_t mode) {
   snprintf(buf, sizeof(buf), "on.d%d", pin);
   if (Shell.defined(buf)) {
     snprintf(buf, sizeof(buf), "on.d%d(%d,%d)", pin, value, mode);
-    doCommand(buf);
+    Shell.eval(buf);
   }
 
   // simplified button trigger
@@ -2236,7 +2236,7 @@ static void digitalPinEventHandler(uint8_t pin, int16_t value, int8_t mode) {
       snprintf(buf, sizeof(buf), "on.d%d.high", pin);
     }
     if (Shell.defined(buf)) {
-      doCommand(buf);
+      Shell.eval(buf);
     }
   }
 
@@ -2257,7 +2257,7 @@ static void analogPinEventHandler(uint8_t pin, int16_t value, int8_t mode) {
   snprintf(buf, sizeof(buf),"on.a%d", pin);
   if (Shell.defined(buf)) {
     snprintf(buf, sizeof(buf), "on.a%d(%d, %d)", pin, value, mode);
-    doCommand(buf);
+    Shell.eval(buf);
   }
 
   if (Scout.eventVerboseOutput) {
@@ -2277,7 +2277,7 @@ static void batteryPercentageEventHandler(uint8_t value) {
 
   if (Shell.defined(func)) {
     snprintf(buf, sizeof(buf), "%s(%d)", func, value);
-    doCommand(buf);
+    Shell.eval(buf);
   }
 
   if (Scout.eventVerboseOutput) {
@@ -2297,7 +2297,7 @@ static void batteryChargingEventHandler(uint8_t value) {
 
   if (Shell.defined(func)) {
     snprintf(buf, sizeof(buf), "%s(%d)", func, value);
-    doCommand(buf);
+    Shell.eval(buf);
   }
 
   if (Scout.eventVerboseOutput) {
@@ -2317,7 +2317,7 @@ static void temperatureEventHandler(int8_t tempC, int8_t tempF) {
 
   if (Shell.defined(func)) {
     snprintf(buf, sizeof(buf), "%s(%d, %d)", func, tempC, tempF);
-    doCommand(buf);
+    Shell.eval(buf);
   }
 
   if (Scout.eventVerboseOutput) {
@@ -2722,13 +2722,13 @@ void PinoccioShell::startShell() {
 
   snprintf(buf, sizeof(buf), "startup", i);
   if (Shell.defined(buf)) {
-    doCommand(buf);
+    Shell.eval(buf);
   }
 
   for (i='a'; i<'z'; i++) {
     snprintf(buf, sizeof(buf), "startup.%c", i);
     if (Shell.defined(buf)) {
-      doCommand(buf);
+      Shell.eval(buf);
     }
   }
 
@@ -2737,7 +2737,7 @@ void PinoccioShell::startShell() {
     strlcat_P(buf, (const char*)Scout.getNameForPin(i), sizeof(buf));
 
     if (Shell.defined(buf)) {
-      doCommand(buf);
+      Shell.eval(buf);
     }
   }
 
