@@ -11,7 +11,6 @@
 
 #include "../Module.h"
 #include "HTU21D.h"
-#include "ChipCap2.h"
 #include "Adafruit_MPL115A2.h"
 #include "tsl2561.h"
 
@@ -26,18 +25,15 @@ namespace pinoccio {
       void loop();
       static EnvModule instance;
 
-      void tempPushMovingAvg(float val);
-      float tempGetMovingAvgC();
-      float tempGetMovingAvgF();
+      float tempGetC();
+      float tempGetF();
 
-      void humidityPushMovingAvg(float val);
-      float humidityGetMovingAvg();
+      float humidityGetPercent();
       
-      void baroPushMovingAvg(float val);   
-      float baroGetMovingAvgKpa();
-      float baroGetMovingAvgMbar();
-      float baroGetMovingAvgMmhg();
-      float baroGetMovingAvgInhg();
+      float baroGetKpa();
+      float baroGetMbar();
+      float baroGetMmHg();
+      float baroGetInHg();
 
       uint16_t lightGetIr();
       uint16_t lightGetVisible();
@@ -47,23 +43,10 @@ namespace pinoccio {
       bool lightConfigure(uint8_t sensitivity);
       
       Adafruit_HTU21DF *htu;
-      ChipCap2 *cc2;
       Adafruit_MPL115A2 *mpl;
       TSL2561 *tsl;
       
     private:
-      float *tempMovingAvgBuffer;
-      int tempMovingAvgCtr;
-      
-      float *humidityMovingAvgBuffer;
-      int humidityMovingAvgCtr;
-      
-      float *baroMovingAvgBuffer;
-      int baroMovingAvgCtr;
-    
-      SYS_Timer_t htuMovingAvgTimer;
-      SYS_Timer_t baroMovingAvgTimer;
-      
       using Module::Module;
   };
 } // namespace pinoccio

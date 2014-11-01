@@ -22,19 +22,19 @@ const __FlashStringHelper *EnvModule::name() const {
 static numvar status() {
   EnvModule* m = &(EnvModule::instance);
   sp("Temp C  : ");
-  speol(m->tempGetMovingAvgC(), 1);
+  speol(m->tempGetC(), 1);
   sp("Temp F  : ");
-  speol(m->tempGetMovingAvgF(), 1);
+  speol(m->tempGetF(), 1);
   sp("Humidity: ");
-  speol(m->humidityGetMovingAvg(), 1);
+  speol(m->humidityGetPercent(), 1);
   sp("Pressure kPa: ");
-  speol(m->baroGetMovingAvgKpa(), 1);
+  speol(m->baroGetKpa(), 1);
   sp("Pressure mbar: ");
-  speol(m->baroGetMovingAvgMbar(), 1);
+  speol(m->baroGetMbar(), 1);
   sp("Pressure mmHg: ");
-  speol(m->baroGetMovingAvgMmhg(), 1);
+  speol(m->baroGetMmHg(), 1);
   sp("Pressure mmIn: ");
-  speol(m->baroGetMovingAvgInhg(), 1);
+  speol(m->baroGetInHg(), 1);
   sp("Light IR: ");
   speol(m->lightGetIr());
   sp("Light Visible: ");
@@ -47,44 +47,37 @@ static numvar status() {
 
 static numvar getTemperatureC() {
   EnvModule* m = &(EnvModule::instance);
-  //return (int)round(m->tempGetMovingAvgC());
-  return (int)round(m->htu->readTemperature());
+  return (int)round(m->tempGetC());
 }
 
 static numvar getTemperatureF() {
   EnvModule* m = &(EnvModule::instance);
-  //return (int)round(m->tempGetMovingAvgF());
-  return  (int)round((1.8 * m->htu->readTemperature()) + 32);
+  return  (int)round(m->tempGetF());
 }
 
 static numvar getHumidity() {
   EnvModule* m = &(EnvModule::instance);
-  //return (int)round(m->humidityGetMovingAvg());
-  return (int)round(m->htu->readHumidity());
+  return (int)round(m->humidityGetPercent());
 }
 
 static numvar getPressureKpa() {
   EnvModule* m = &(EnvModule::instance);
-  //return (int)round(m->baroGetMovingAvgKpa());
-  return (int)round(m->mpl->getPressure());
+  return (int)round(m->baroGetKpa());
 }
 
 static numvar getPressureMbar() {
   EnvModule* m = &(EnvModule::instance);
-  //return (int)round(m->baroGetMovingAvgMbar());
-  return (int)round(m->mpl->getPressure() * 10);
+  return (int)round(m->baroGetMbar() * 10);
 }
 
 static numvar getPressureMmhg() {
   EnvModule* m = &(EnvModule::instance);
-  //return (int)round(m->baroGetMovingAvgMmhg());
-  return (int)round(m->mpl->getPressure() * 7.50062);
+  return (int)round(m->baroGetMmHg() * 7.50062);
 }
 
 static numvar getPressureInhg() {
   EnvModule* m = &(EnvModule::instance);
-  //return (int)round(m->baroGetMovingAvgInhg());
-  return (int)round(m->mpl->getPressure() * 0.2953);
+  return (int)round(m->baroGetInHg() * 0.2953);
 }
 
 static numvar getLightIr() {
@@ -112,42 +105,18 @@ static numvar lightConfig() {
   return m->lightConfigure(getarg(1));
 }
 
-static void htuMovingAvgTimerHandler(SYS_Timer_t *timer) {
-  EnvModule* m = &(EnvModule::instance);
-  m->cc2->triggerMeasurement();
-  delay(50);
-  m->humidityPushMovingAvg(m->cc2->readHumidity());
-  m->tempPushMovingAvg(m->cc2->readTemperature());
-}
-
-static void baroMovingAvgTimerHandler(SYS_Timer_t *timer) {
-  EnvModule* m = &(EnvModule::instance);
-  m->baroPushMovingAvg(m->mpl->getPressure());
-}
-
 bool EnvModule::enable() {
   htu = new Adafruit_HTU21DF();
   htu->begin();
-  
-  /*
-  cc2 = new ChipCap2();
-  if (cc2->present()) {
-    cc2->triggerMeasurement();
-  }
-  */
   
   mpl = new Adafruit_MPL115A2();
   mpl->begin();
   
   tsl = new TSL2561(TSL2561_ADDR_FLOAT);
   tsl->begin();
-  
-  tempMovingAvgBuffer = new float[MOVAVG_SIZE];
-  humidityMovingAvgBuffer = new float[MOVAVG_SIZE];
-  baroMovingAvgBuffer = new float[MOVAVG_SIZE];
 
-  Shell.addFunction("env.temp.f", getTemperatureF);
   Shell.addFunction("env.temp.c", getTemperatureC);
+  Shell.addFunction("env.temp.f", getTemperatureF);
   Shell.addFunction("env.humidity", getHumidity);
   Shell.addFunction("env.baro.kpa", getPressureKpa);
   Shell.addFunction("env.baro.mbar", getPressureMbar);
@@ -160,84 +129,36 @@ bool EnvModule::enable() {
   Shell.addFunction("env.light.config", lightConfig);
   Shell.addFunction("env.status", status);
   Serial.println("env enabled");
-
-  /*
-  for(int i=0; i<MOVAVG_SIZE; i++) {
-    humidityPushMovingAvg(cc2->readHumidity());
-    tempPushMovingAvg(cc2->readTemperature());
-  }
-  
-  for(int i=0; i<MOVAVG_SIZE; i++) {
-    baroPushMovingAvg(mpl->getPressure());
-  }
-
-  htuMovingAvgTimer.interval = 250;
-  htuMovingAvgTimer.mode = SYS_TIMER_PERIODIC_MODE;
-  htuMovingAvgTimer.handler = htuMovingAvgTimerHandler;
-  SYS_TimerStart(&htuMovingAvgTimer);
-    
-  baroMovingAvgTimer.interval = 250;
-  baroMovingAvgTimer.mode = SYS_TIMER_PERIODIC_MODE;
-  baroMovingAvgTimer.handler = baroMovingAvgTimerHandler;
-  SYS_TimerStart(&baroMovingAvgTimer);
-  */
 }
 
 void EnvModule::loop() { }
 
-float EnvModule::humidityGetMovingAvg(void) {
-  float sum = 0.0;
-  for(int i=0; i<MOVAVG_SIZE; i++) {
-    sum += humidityMovingAvgBuffer[i];
-  }
-  return sum / MOVAVG_SIZE;
+float EnvModule::tempGetC(void) {
+  return htu->readTemperature();
 }
 
-void EnvModule::humidityPushMovingAvg(float val) {
-  humidityMovingAvgBuffer[humidityMovingAvgCtr] = val;
-  humidityMovingAvgCtr = (humidityMovingAvgCtr + 1) % MOVAVG_SIZE;
+float EnvModule::tempGetF(void) {
+  return (1.8 * htu->readTemperature()) + 32.0;
 }
 
-float EnvModule::tempGetMovingAvgC(void) {
-  float sum = 0.0;
-  for(int i=0; i<MOVAVG_SIZE; i++) {
-    sum += tempMovingAvgBuffer[i];
-  }
-  return sum / MOVAVG_SIZE;
+float EnvModule::humidityGetPercent(void) {
+  return htu->readHumidity();
 }
 
-float EnvModule::tempGetMovingAvgF(void) {
-  return (1.8 * tempGetMovingAvgC()) + 32;
+float EnvModule::baroGetKpa(void) {
+  return mpl->getPressure();
 }
 
-void EnvModule::tempPushMovingAvg(float val) {
-  tempMovingAvgBuffer[tempMovingAvgCtr] = val;
-  tempMovingAvgCtr = (tempMovingAvgCtr + 1) % MOVAVG_SIZE;
+float EnvModule::baroGetMbar(void) {
+  return baroGetKpa() * 10;
 }
 
-float EnvModule::baroGetMovingAvgKpa(void) {
-  float sum = 0.0;
-  for(int i=0; i<MOVAVG_SIZE; i++) {
-    sum += baroMovingAvgBuffer[i];
-  }
-  return sum / MOVAVG_SIZE;
+float EnvModule::baroGetMmHg(void) {
+  return baroGetKpa() * 7.50062;
 }
 
-float EnvModule::baroGetMovingAvgMbar(void) {
-  return baroGetMovingAvgKpa() * 10;
-}
-
-float EnvModule::baroGetMovingAvgMmhg(void) {
-  return baroGetMovingAvgKpa() * 7.50062;
-}
-
-float EnvModule::baroGetMovingAvgInhg(void) {
-  return baroGetMovingAvgKpa() * 0.2953;
-}
-
-void EnvModule::baroPushMovingAvg(float val) {
-  baroMovingAvgBuffer[baroMovingAvgCtr] = val;
-  baroMovingAvgCtr = (baroMovingAvgCtr + 1) % MOVAVG_SIZE;
+float EnvModule::baroGetInHg(void) {
+  return baroGetKpa() * 0.2953;
 }
 
 uint16_t EnvModule::lightGetIr() {
