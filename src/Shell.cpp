@@ -151,6 +151,11 @@ static numvar allVerbose(void) {
   return 1;
 }
 
+static numvar silentMode(void) {
+  Shell.isSilent = (getarg(0) == 0 || getarg(1) == 0) ? true : false;
+  return 1;
+}
+
 static StringBuffer tempReportHQ(void) {
   StringBuffer report(100);
   report.appendSprintf("[%d,[%d,%d,%d],[%d,%d,%d]]",
@@ -2392,6 +2397,7 @@ void PinoccioShell::setup() {
 
   addFunction("report", allReport);
   addFunction("verbose", allVerbose);
+  addFunction("silent", silentMode);
 
   addFunction("uptime.awake.micros", uptimeAwakeMicros);
   addFunction("uptime.awake.seconds", uptimeAwakeSeconds);
@@ -2638,9 +2644,7 @@ void PinoccioShell::loop() {
       } if (c == '\r' || c == '\n') {
         Serial.println();
         if (serialIncoming.length()) {
-          setOutputHandler(&printToString<&serialOutgoing>);
-          doCommand((char*)serialIncoming.c_str());
-          resetOutputHandler();
+          Shell.eval(PrintToString(serialOutgoing), (char*)serialIncoming.c_str());
           Serial.print(serialOutgoing.c_str());
           prevCommand = serialIncoming;
           serialIncoming = serialOutgoing = (char*)NULL;
