@@ -152,7 +152,7 @@ static numvar allVerbose(void) {
 }
 
 static numvar silentMode(void) {
-  Shell.isSilent = (getarg(0) == 0 || getarg(1) == 0) ? true : false;
+  Shell.isSilent = (getarg(0) == 0 || getarg(1) == 1) ? true : false;
   return 1;
 }
 
