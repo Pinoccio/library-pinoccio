@@ -633,7 +633,7 @@ void PinoccioScout::doSleep(bool pastEnd) {
     cmd.appendSprintf(",%lu", left);
     cmd += ")";
 
-    uint32_t ret = doCommand((char*)cmd.c_str());
+    uint32_t ret = Shell.eval((char*)cmd.c_str());
 
     if (!left || !ret || sleepPending) {
       // If the callback returned false, or it scheduled a new sleep or
