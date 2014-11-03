@@ -108,7 +108,7 @@ class PinoccioShell {
     void print(const char *str);
     bool outWait;
     bool isVerbose;
-    bool isSilent;
+    bool isMuted;
     int lastMeshRssi;
     int lastMeshLqi;
     int lastMeshFrom;
@@ -176,7 +176,7 @@ inline numvar PinoccioShell::eval(Print *out, const String &cmd) {
   if (out) {
     evalOutput = out;
     setOutputHandler(evalPrint);
-  }else if(isSilent){
+  }else if(isMuted){
     // print nowhere
     evalOutput = NULL;
     setOutputHandler(evalPrint);
@@ -184,7 +184,7 @@ inline numvar PinoccioShell::eval(Print *out, const String &cmd) {
 
   numvar ret = doCommand((char*)cmd.c_str());
 
-  if (out || isSilent)
+  if (out || isMuted)
     resetOutputHandler();
 
   // important, if we eval'd a new function update our cache

@@ -151,8 +151,8 @@ static numvar allVerbose(void) {
   return 1;
 }
 
-static numvar silentMode(void) {
-  Shell.isSilent = (getarg(0) == 0 || getarg(1) == 1) ? true : false;
+static numvar serialMute(void) {
+  Shell.isMuted = (getarg(0) == 0 || getarg(1) == 1) ? true : false;
   return 1;
 }
 
@@ -2397,7 +2397,7 @@ void PinoccioShell::setup() {
 
   addFunction("report", allReport);
   addFunction("verbose", allVerbose);
-  addFunction("silent", silentMode);
+  addFunction("serial.mute", serialMute);
 
   addFunction("uptime.awake.micros", uptimeAwakeMicros);
   addFunction("uptime.awake.seconds", uptimeAwakeSeconds);
