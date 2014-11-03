@@ -923,7 +923,7 @@ static numvar meshConfig(void) {
     channel = getarg(3);
   }
   Scout.meshSetRadio(getarg(1), getarg(2), channel);
-  
+
   if (getarg(0) >= 4) {
     Shell.eval("mesh.setkey",(const char*)getstringarg(4));
   }
