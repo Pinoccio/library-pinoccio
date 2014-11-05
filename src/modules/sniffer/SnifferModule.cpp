@@ -17,6 +17,18 @@ using namespace pinoccio;
 SnifferModule SnifferModule::instance;
 static bool binary;
 
+// A queue of packets captured, awaiting 
+struct Queue {
+  struct Packet {
+    uint8_t size; // Total packet size
+    uint8_t sent; // How many bytes were sent?
+    uint8_t data[NWK_FRAME_MAX_PAYLOAD_SIZE]; // Data
+  } *packets;
+  uint8_t head; // Index of next packet to enqueue
+  uint8_t tail; // Index of next packet to dequeue
+  uint8_t len; // Number of packets the queue has space for
+};
+
 /****************************\
  *   MODULE CLASS STUFF     *
 \****************************/
@@ -25,14 +37,47 @@ const __FlashStringHelper *SnifferModule::name() const {
   return F("sniffer");
 }
 
-static void process_packet() {
-  uint8_t size = TST_RX_LENGTH_REG;
+// Calculate the next value for a queue pointer
+static uint8_t next(Queue *q, uint8_t n) {
+  if (n + 1 == q->len)
+    return 0;
+  else
+    return n + 1;
+}
 
-  if (binary)
-    Serial.write(size);
+// Read a packet from the hardware buffer into the queue
+static void read_packet(Queue *q) {
+  uint8_t n = next(q, q->head);
 
-  for (uint8_t i = 0; i < size; i++) {
-    uint8_t b = TRX_FRAME_BUFFER(i);
+  // Queue full, just drop the packet
+  if (n == q->tail)
+    return;
+
+  Queue::Packet *p = &q->packets[q->head];
+
+  p->size = TST_RX_LENGTH_REG;
+  if (p->size > sizeof(q->packets->data))
+    return;
+
+  memcpy(p->data, (const void*)&TRX_FRAME_BUFFER(0), p->size);
+  p->sent = 0;
+  q->head = n;
+}
+
+// Send some data from the queue over serial
+static void process_packets(Queue *q) {
+  if (q->head == q->tail)
+    return;
+
+  Queue::Packet *p = &q->packets[q->tail];
+
+  if (binary && p->sent == 0)
+    Serial.write(p->size);
+
+  // Only send a single data packet each time, to prevent blocking on
+  // the serial port for too long and missing a packet.
+  if (p->size) {
+    uint8_t b = p->data[p->sent];
     if (binary) {
       Serial.write(b);
     } else {
@@ -40,9 +85,15 @@ static void process_packet() {
         Serial.write('0');
       Serial.print(b, HEX);
     }
+    p->sent++;
   }
-  if (!binary)
-    Serial.println();
+
+  if (p->sent == p->size) {
+    q->tail = next(q, q->tail);
+
+    if (!binary)
+      Serial.println();
+  }
 }
 
 /* Helper functions, taken from the LWM library */
@@ -68,7 +119,6 @@ static void setup_promisc() {
   phyTrxSetState(TRX_CMD_RX_ON);
 }
 
-
 static numvar start() {
   if (!checkArgs(0, 1, F("usage: sniffer.start([binary])"))) {
     return 0;
@@ -91,16 +141,36 @@ static numvar start() {
 
   setup_promisc();
 
+  // Allocate a queue of packet payloads as big as possible - we won't
+  // need any more memory after this (malloc reserves a bit of memory
+  // for the stack which is more than enough for the few function calls
+  // and ISRs we've left to do).
+  Queue q = {
+    .packets = NULL,
+    .head = 0,
+    .tail = 0,
+    .len = 0,
+  };
+  while(q.len < 256 /* head and tail are uin8_t */) {
+    void* newp = realloc(q.packets, (q.len + 1) * sizeof(*q.packets));
+    // No more memory, done
+    if (!newp)
+      break;
+    q.packets = (Queue::Packet*)newp;
+    q.len++;
+  }
+
   while(true) {
     if (IRQ_STATUS_REG_s.rxEnd)
     {
-      process_packet();
+      read_packet(&q);
       while (TRX_STATUS_RX_ON != TRX_STATUS_REG_s.trxStatus);
 
       IRQ_STATUS_REG_s.rxEnd = 1;
       TRX_CTRL_2_REG_s.rxSafeMode = 0;
       TRX_CTRL_2_REG_s.rxSafeMode = 1;
     }
+    process_packets(&q);
   }
   // Not reached
   return 1;
