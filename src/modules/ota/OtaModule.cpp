@@ -539,6 +539,12 @@ void OtaModule::loop() {
             res = send_data(target, block_data + block_sent, 0, size);
           else // ota.clone from flash
             res = send_data(target, NULL, block_addr + block_sent, size);
+          // TODO: This is needed because flashing a page takes a bit of time
+          // in the target, causing data to be lost. It seems that the target
+          // does send acks for the lost data so we can't use those.
+          // This delay fixes the problem, but is too coarse and
+          // hardcoded - we should have something smarter.
+          delay(8);
           block_sent += size;
           target_memory_addr += size;
           break;
