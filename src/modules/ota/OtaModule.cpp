@@ -51,6 +51,12 @@ const uint16_t TIMEOUT = 250; // ms
 // Room for data is 127 - header size - 2 bytes FCS
 const uint8_t DATA_PACKET_SIZE = NWK_FRAME_MAX_PAYLOAD_SIZE - sizeof(p2p_wibo_data_t) - 2;
 
+// When cloning, use this block size (e.g. do a CRC check every this
+// many bytes).
+const uint16_t CLONE_BLOCK_SIZE = 4096;
+const uint32_t BOOTLOADER_SIZE = 8192; // 4096 words
+const uint32_t CLONE_TOTAL_SIZE = FLASHEND + 1 - BOOTLOADER_SIZE;
+
 // How often to try stuff
 const uint8_t MAX_TRIES = 3;
 
@@ -71,6 +77,7 @@ enum class State : uint8_t {
   PINGREQ, // ota.ping -> send ping
   START_PING, // ota.start -> send ping
   START_MEMORY, // ota.start -> select flash memory
+  // ota.clone uses BLOCK_* as well, but with block_data = NULL
   BLOCK_ADDRESS, // ota.block -> send address
   BLOCK_DATA, // ota.block -> send data
   BLOCK_PING, // ota.block -> final ping
@@ -262,7 +269,7 @@ static numvar send_set_address(uint16_t dst, uint32_t address) {
   return 1;
 }
 
-static numvar send_data(uint16_t dst, uint8_t *buf, uint8_t size) {
+static numvar send_data(uint16_t dst, uint8_t *buf, uint32_t flash_addr, uint8_t size) {
   NwkFrame_t *frame;
   frame = nwkFrameAlloc();
   if (!frame) {
@@ -274,8 +281,14 @@ static numvar send_data(uint16_t dst, uint8_t *buf, uint8_t size) {
   p->hdr.cmd = P2P_WIBO_DATA;
   p->dsize = size;
   for (uint8_t i = 0; i < size; ++i) {
-    expected_crc = _crc_ccitt_update(expected_crc, buf[i]);
-    p->data[i] = buf[i];
+    uint8_t b;
+    if (buf)
+      b = buf[i];
+    else
+      b = pgm_read_byte_far(flash_addr + i);
+
+    expected_crc = _crc_ccitt_update(expected_crc, b);
+    p->data[i] = b;
   }
 
   tx_frame(dst, frame, sizeof(*p) + size);
@@ -445,6 +458,26 @@ static numvar block() {
   tx_tries = 0;
 }
 
+static numvar clone() {
+  if (!checkArgs(0, F("usage: ota.clone"))) {
+    return 0;
+  }
+
+  if (state != State::IDLE) {
+    speol(F("Ota operation in progress?"));
+    speol(F("FAIL"));
+    return 0;
+  }
+
+  state = State::BLOCK_ADDRESS;
+  block_data = NULL;
+  block_size = CLONE_BLOCK_SIZE;
+  block_sent = 0;
+  block_tries = 0;
+  block_addr = 0;
+  tx_tries = 0;
+}
+
 static numvar end() {
   if (!checkArgs(0, F("usage: ota.end"))) {
     return 0;
@@ -472,6 +505,7 @@ bool OtaModule::enable() {
   Shell.addFunction("ota.ping", ping);
   Shell.addFunction("ota.start", start);
   Shell.addFunction("ota.block", block);
+  Shell.addFunction("ota.clone", clone);
   Shell.addFunction("ota.end", end);
 
   return true;
@@ -501,7 +535,10 @@ void OtaModule::loop() {
         case State::BLOCK_DATA:
         {
           uint8_t size = min(block_size - block_sent, DATA_PACKET_SIZE);
-          res = send_data(target, block_data + block_sent, size);
+          if (block_data) // ota.block from memory
+            res = send_data(target, block_data + block_sent, 0, size);
+          else // ota.clone from flash
+            res = send_data(target, NULL, block_addr + block_sent, size);
           block_sent += size;
           target_memory_addr += size;
           break;
@@ -621,10 +658,28 @@ static void handle_ping_reply(p2p_ping_cnf_t *p) {
       break;
     case State::BLOCK_PING:
       if (expected_crc == p->crc) {
-        // Succesfully sent block
-        state = State::BLOCK_DONE;
-        speol();
-        speol(F("OK"));
+        if (block_data) {
+          // ota.block command, we're done
+          state = State::BLOCK_DONE;
+          speol();
+          speol(F("OK"));
+        } else {
+          // ota.clone command, advance to the next block
+          block_addr += block_size;
+          block_sent = 0;
+          block_size = min(CLONE_BLOCK_SIZE, CLONE_TOTAL_SIZE - block_addr);
+          tx_tries = 0;
+          block_tries = 0;
+          if (block_size) {
+            // Start next block
+            state = State::BLOCK_DATA;
+          } else {
+            // Done!
+            state = State::IDLE;
+            speol();
+            speol(F("OK"));
+          }
+        }
       } else {
         // Failed to send block, retry
         speol(F("Crc mismatch"));
