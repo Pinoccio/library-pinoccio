@@ -124,23 +124,6 @@ static numvar start() {
     return 0;
   }
 
-  binary = getarg(0) ? getarg(1) : 0;
-
-  if (!binary) {
-    Serial.println(F("Sniffing mesh traffic and output packets to serial. While"));
-    Serial.println(F("sniffing, the scout does not respond to anything else (mesh,"));
-    Serial.println(F("serial, wifi, etc.) and does not run any ScoutScript. The"));
-    Serial.println(F("only way to stop sniffing is to reset."));
-  } else {
-    // Magic string for syncing the stream. Insired by
-    // http://cetic.github.io/foren6/guide.html and
-    // https://github.com/cetic/contiki/tree/sniffer/examples/sniffer
-    // though we do not use the same enable sequence (yet?)
-    Serial.write("SNIF");
-  }
-
-  setup_promisc();
-
   // Allocate a queue of packet payloads as big as possible - we won't
   // need any more memory after this (malloc reserves a bit of memory
   // for the stack which is more than enough for the few function calls
@@ -159,6 +142,23 @@ static numvar start() {
     q.packets = (Queue::Packet*)newp;
     q.len++;
   }
+
+  binary = getarg(0) ? getarg(1) : 0;
+
+  if (!binary) {
+    Serial.println(F("Sniffing mesh traffic and output packets to serial. While"));
+    Serial.println(F("sniffing, the scout does not respond to anything else (mesh,"));
+    Serial.println(F("serial, wifi, etc.) and does not run any ScoutScript. The"));
+    Serial.println(F("only way to stop sniffing is to reset."));
+  } else {
+    // Magic string for syncing the stream. Insired by
+    // http://cetic.github.io/foren6/guide.html and
+    // https://github.com/cetic/contiki/tree/sniffer/examples/sniffer
+    // though we do not use the same enable sequence (yet?)
+    Serial.write("SNIF");
+  }
+
+  setup_promisc();
 
   while(true) {
     if (IRQ_STATUS_REG_s.rxEnd)
