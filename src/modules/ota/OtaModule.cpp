@@ -255,6 +255,7 @@ static numvar send_set_address(uint16_t dst, uint32_t address) {
 
   p2p_wibo_addr_t *p = (p2p_wibo_addr_t*)&frame->data;
   p->hdr.cmd = P2P_WIBO_ADDR;
+  p->address = address;
 
   tx_frame(dst, frame, sizeof(*p));
 
