@@ -150,6 +150,9 @@ static numvar start() {
     Serial.println(F("sniffing, the scout does not respond to anything else (mesh,"));
     Serial.println(F("serial, wifi, etc.) and does not run any ScoutScript. The"));
     Serial.println(F("only way to stop sniffing is to reset."));
+    Serial.print(F("Buffer size is "));
+    Serial.print(q.len);
+    Serial.println(F(" packets."));
   } else {
     // Magic string for syncing the stream. Insired by
     // http://cetic.github.io/foren6/guide.html and
