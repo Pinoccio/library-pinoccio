@@ -686,6 +686,8 @@ static void handle_ping_reply(p2p_ping_cnf_t *p) {
       // Record current CRC for the first block
       expected_crc = p->crc;
       state = State::START_MEMORY;
+      // Update our target in case we did a broadcast ping
+      target = p->hdr.src;
       break;
     case State::BLOCK_PING:
       if (expected_crc == p->crc) {
