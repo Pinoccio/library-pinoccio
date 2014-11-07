@@ -60,6 +60,10 @@ const uint32_t CLONE_TOTAL_SIZE = FLASHEND + 1 - BOOTLOADER_SIZE;
 // How often to try stuff
 const uint8_t MAX_TRIES = 5;
 
+// Wait this many ms before retrying, to be more resilient against
+// bursts of radio interference
+const uint8_t RETRY_DELAY = 50;
+
 // This is the flash page size, the bootloader writes out data whenever
 // it receives this many bytes.
 const uint16_t BLOCK_ALIGN = 256;
@@ -105,6 +109,7 @@ enum class TxState : uint8_t {
   SENDING,
   SENT,
   REPLIED,
+  RETRY,
 };
 
 // Current state
@@ -528,6 +533,10 @@ bool OtaModule::enable() {
 
 void OtaModule::loop() {
   switch (txstate) {
+    case TxState::RETRY:
+      if (millis() - txtime < RETRY_DELAY)
+        break;
+      /* falllthrough */
     case TxState::IDLE:
     {
       bool res = true;
@@ -712,6 +721,8 @@ static void handle_ping_reply(p2p_ping_cnf_t *p) {
         } else {
           speol(F("Retrying block"));
           state = State::BLOCK_ADDRESS;
+          txstate = TxState::RETRY;
+          txtime = millis();
           block_sent = 0;
           expected_crc = p->crc;
         }
@@ -743,7 +754,7 @@ static void handle_tx_fail() {
     case State::END:
       // Retry
       if (tx_tries++ < MAX_TRIES) {
-        txstate = TxState::IDLE;
+        txstate = TxState::RETRY;
         speol(F("Retrying TX"));
       } else {
         speol();
