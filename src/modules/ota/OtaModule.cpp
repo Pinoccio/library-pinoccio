@@ -64,6 +64,21 @@ const uint8_t MAX_TRIES = 3;
 // it receives this many bytes.
 const uint16_t BLOCK_ALIGN = 256;
 
+// When the target is writing to flash, it stops processing packets. It
+// still receives (and acks :-S) packets, but just doesn't process them.
+// To prevent packets being left unprocessed, we delay after a packet
+// that causes a page write. This delay is the maximum amount of time
+// spent erasing (8.9ms) and programming (4.5ms), minus the typical
+// transmission time of a full packet (127+6 bytes * 8 bits / 250kbps = 4ms).
+// This means that the delay will be over before the target finishes
+// programming the flash. However, the target should be finished by the
+// time the second packet is completely received, which is good enough.
+// It's a pity we have to harcode this, but the only alternative would
+// be to send ping requests until the target replies, which probably
+// results in an even bigger overhead. Perhaps a future bootloader
+// version can handle this more gracefully.
+const uint32_t DATA_FLASH_DELAY = 10;
+
 enum class MemType {
   NOP = 'X',
   FLASH = 'F',
@@ -539,12 +554,6 @@ void OtaModule::loop() {
             res = send_data(target, block_data + block_sent, 0, size);
           else // ota.clone from flash
             res = send_data(target, NULL, block_addr + block_sent, size);
-          // TODO: This is needed because flashing a page takes a bit of time
-          // in the target, causing data to be lost. It seems that the target
-          // does send acks for the lost data so we can't use those.
-          // This delay fixes the problem, but is too coarse and
-          // hardcoded - we should have something smarter.
-          delay(8);
           block_sent += size;
           target_memory_addr += size;
           break;
@@ -615,6 +624,13 @@ void OtaModule::loop() {
           txstate = TxState::IDLE;
           break;
         case State::BLOCK_DATA:
+          // If the previous data packet completed a flash page, the
+          // target will be busy writing it to flash. It does not
+          // process packets during this time (but _does_ ACK them :-S),
+          // so we hardcode a delay here...
+          if ((block_sent - DATA_PACKET_SIZE) / BLOCK_ALIGN != block_sent / BLOCK_ALIGN)
+            delay(DATA_FLASH_DELAY);
+
           // Check if there's more data to send
           if (block_sent < block_size) {
             // Send next packet
