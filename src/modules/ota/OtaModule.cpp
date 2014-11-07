@@ -58,7 +58,7 @@ const uint32_t BOOTLOADER_SIZE = 8192; // 4096 words
 const uint32_t CLONE_TOTAL_SIZE = FLASHEND + 1 - BOOTLOADER_SIZE;
 
 // How often to try stuff
-const uint8_t MAX_TRIES = 3;
+const uint8_t MAX_TRIES = 5;
 
 // This is the flash page size, the bootloader writes out data whenever
 // it receives this many bytes.
