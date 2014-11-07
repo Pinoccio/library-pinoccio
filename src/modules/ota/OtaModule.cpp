@@ -384,7 +384,7 @@ static numvar block() {
     return 0;
   }
 
-  block_addr = getarg(2);
+  block_addr = getarg(1);
   if (isstringarg(2)) {
     size_t len = strlen((const char*)getstringarg(2));
     if (len % 2) {
