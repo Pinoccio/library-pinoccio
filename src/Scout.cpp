@@ -126,17 +126,13 @@ void PinoccioScout::setup(const char *sketchName, const char *sketchRevision, in
   startAnalogStateChangeEvents();
   startPeripheralStateChangeEvents();
 
-  Led.blinkTorch(100);
+  Led.setTorch();
   Shell.setup();
   Led.blinkTorch(100);
   
   if(isBattAlarmTriggered && !isBattCharging)
   {
-    Led.blinkRed(20);
-    Led.blinkRed(20);
-    Led.blinkRed(20);
-    Led.blinkRed(20);
-    Led.blinkRed(20);
+    Shell.eval("scout.delay",500,"led.red(50)",100,"led.red(50)",100,"led.red(50)");
   }
 }
 
