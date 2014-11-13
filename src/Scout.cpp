@@ -148,8 +148,22 @@ void PinoccioScout::loop() {
   bool showStatus = (lastIndicate < now && (now % 5 == 0));
   if(showStatus)
   {
-    lastIndicate = now;
-    analogWrite(LED_RED, 0);
+    analogWrite(LED_RED, 255-Led.getRedTorchValue());
+    analogWrite(LED_GREEN, 255-Led.getGreenTorchValue());
+    analogWrite(LED_BLUE, 255-Led.getBlueTorchValue());
+
+    NWK_RouteTableEntry_t *table = NWK_RouteTable();
+    bool meshed = 0;
+    for (int i=0; i < NWK_ROUTE_TABLE_SIZE; i++)
+    {
+      if (table[i].dstAddr != NWK_ROUTE_UNKNOWN) meshed = 1;
+    }
+
+    if(meshed)
+    {
+      lastIndicate = now;
+    }
+
   }
 
   Shell.loop();
@@ -160,6 +174,8 @@ void PinoccioScout::loop() {
   if(showStatus)
   {
     Led.setRedValue(Led.getRedValue());
+    Led.setGreenValue(Led.getGreenValue());
+    Led.setBlueValue(Led.getBlueValue());
   }
 
   if (sleepPending) {
