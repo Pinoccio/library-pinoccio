@@ -126,7 +126,18 @@ void PinoccioScout::setup(const char *sketchName, const char *sketchRevision, in
   startAnalogStateChangeEvents();
   startPeripheralStateChangeEvents();
 
+  Led.blinkTorch(100);
   Shell.setup();
+  Led.blinkTorch(100);
+  
+  if(isBattAlarmTriggered && !isBattCharging)
+  {
+    Led.blinkRed(20);
+    Led.blinkRed(20);
+    Led.blinkRed(20);
+    Led.blinkRed(20);
+    Led.blinkRed(20);
+  }
 }
 
 void PinoccioScout::loop() {
