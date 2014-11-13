@@ -631,6 +631,7 @@ void OtaModule::loop() {
           // Address sent, send first block of data
           state = State::BLOCK_DATA;
           txstate = TxState::IDLE;
+          target_memory_addr = block_addr;
           break;
         case State::BLOCK_DATA:
           // If the previous data packet completed a flash page, the
