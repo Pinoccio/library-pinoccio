@@ -62,10 +62,11 @@ class HalRgbLed {
     void triggerEvent();
     void (*ledEventHandler)(uint8_t redValue, uint8_t greenValue, uint8_t blueValue);
 
-  protected:
     void setRedValue(int value);
     void setGreenValue(int value);
     void setBlueValue(int value);
+
+  protected:
 
     bool enabled;
 
