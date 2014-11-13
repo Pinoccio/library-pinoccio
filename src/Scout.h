@@ -123,6 +123,8 @@ class PinoccioScout : public PinoccioClass {
 
     PBBP bp;
     ScoutHandler handler;
+    
+    uint32_t now; // set every loop
 
     // Schedule a sleep that lasts until now + ms. The optional bitlash
     // command is executed after the sleep. A previous sleep can be
@@ -141,6 +143,7 @@ class PinoccioScout : public PinoccioClass {
       PINMODE_PWM = 3,
     };
   protected:
+    uint32_t lastIndicate = 0;
     void checkStateChange();
 
     void doSleep(bool pastEnd);

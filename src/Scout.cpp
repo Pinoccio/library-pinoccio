@@ -137,14 +137,30 @@ void PinoccioScout::setup(const char *sketchName, const char *sketchRevision, in
 }
 
 void PinoccioScout::loop() {
+  now = SleepHandler::uptime().seconds;
+
   bool canSleep = true;
   // TODO: Let other loop functions return some "cansleep" status as well
 
   PinoccioClass::loop();
+
+  // every 5th second blink network status
+  bool showStatus = (lastIndicate < now && (now % 5 == 0));
+  if(showStatus)
+  {
+    lastIndicate = now;
+    analogWrite(LED_RED, 0);
+  }
+
   Shell.loop();
   handler.loop();
   ModuleHandler::loop();
   Backpacks::loop();
+
+  if(showStatus)
+  {
+    Led.setRedValue(Led.getRedValue());
+  }
 
   if (sleepPending) {
     canSleep = canSleep && !NWK_Busy();
