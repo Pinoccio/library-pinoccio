@@ -41,6 +41,8 @@ void WifiBackpack::onAssociate(void *data) {
   wifi.apConnCount++;
   wifi.hqConnCount = 0;
 
+  Led.blinkBlue(100, true);
+
   if (HqHandler::use_tls()) {
     // Do a timesync
     IPAddress ip = wifi.gs.dnsLookup(NTP_SERVER);
@@ -109,6 +111,7 @@ bool WifiBackpack::connectToHq() {
   }
 
   // TODO: Don't call leadHQConnect directly?
+  Led.blinkBlue(2000);
   leadHQConnect();
   hqConnCount++;
   connectedAt = SleepHandler::uptime().seconds;
@@ -221,6 +224,7 @@ bool WifiBackpack::associate() {
   // Try to disable the NCM in case it's already running
   disassociate();
   associating = true;
+  Led.blinkBlue(500, true);
 
   // When association fails, keep retrying indefinately (at least it
   // seems that a retry count of 0 means that, even though the
