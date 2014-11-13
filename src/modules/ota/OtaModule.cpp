@@ -563,8 +563,6 @@ void OtaModule::loop() {
             res = send_data(target, block_data + block_sent, 0, size);
           else // ota.clone from flash
             res = send_data(target, NULL, block_addr + block_sent, size);
-          block_sent += size;
-          target_memory_addr += size;
           break;
         }
         case State::BLOCK_PING:
@@ -634,11 +632,19 @@ void OtaModule::loop() {
           target_memory_addr = block_addr;
           break;
         case State::BLOCK_DATA:
+        {
+          uint8_t prev_pagenum = block_sent / BLOCK_ALIGN;
+
+          // Packet was sent, update counters
+          uint8_t size = min(block_size - block_sent, DATA_PACKET_SIZE);
+          block_sent += size;
+          target_memory_addr += size;
+
           // If the previous data packet completed a flash page, the
           // target will be busy writing it to flash. It does not
           // process packets during this time (but _does_ ACK them :-S),
           // so we hardcode a delay here...
-          if ((block_sent - DATA_PACKET_SIZE) / BLOCK_ALIGN != block_sent / BLOCK_ALIGN)
+          if (prev_pagenum != block_sent / BLOCK_ALIGN)
             delay(DATA_FLASH_DELAY);
 
           // Check if there's more data to send
@@ -651,6 +657,7 @@ void OtaModule::loop() {
             txstate = TxState::IDLE;
           }
           break;
+        }
         case State::END:
           state = State::IDLE;
           txstate = TxState::IDLE;
