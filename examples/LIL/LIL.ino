@@ -31,6 +31,7 @@ lil_value_t mem(lil_t lil, size_t argc, lil_value_t* argv) {
 
 void setup() {
   Scout.setup("LIL", "custom", 42);
+  Shell.disableShell();
   lil = lil_new();
 
   lil_callback(lil, LIL_CALLBACK_WRITE, (lil_callback_proc_t)write);
