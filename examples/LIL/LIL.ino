@@ -5,12 +5,12 @@
 #include <bitlash.h>
 #include <lwm.h>
 #include <js0n.h>
+#include <util/memdebug.h>
 
 extern "C" {
   #include "lil.h"
 }
 
-#include "memdebug.h"
 
 lil_t lil;
 
