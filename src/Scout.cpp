@@ -201,19 +201,19 @@ void PinoccioScout::loop() {
 }
 
 bool PinoccioScout::isBatteryCharging() {
-  return isBattCharging;
+  return (digitalRead(CHG_STATUS) == LOW);
 }
 
 int PinoccioScout::getBatteryPercentage() {
-  return batteryPercentage;
+  return constrain(HAL_FuelGaugePercent(), 0, 100);;
 }
 
 int PinoccioScout::getBatteryVoltage() {
-  return batteryVoltage;
+  return HAL_FuelGaugeVoltage();
 }
 
 bool PinoccioScout::isBatteryAlarmTriggered() {
-  return isBattAlarmTriggered;
+  return (digitalRead(BATT_ALERT) == LOW);
 }
 
 bool PinoccioScout::isBatteryConnected() {
@@ -326,10 +326,10 @@ void PinoccioScout::saveState() {
     pinStates[i] = -1;
   }
 
-  batteryPercentage = constrain(HAL_FuelGaugePercent(), 0, 100);
-  batteryVoltage = HAL_FuelGaugeVoltage();
-  isBattCharging = (digitalRead(CHG_STATUS) == LOW);
-  isBattAlarmTriggered = (digitalRead(BATT_ALERT) == LOW);
+  batteryPercentage = this->getBatteryPercentage();
+  batteryVoltage = this->getBatteryVoltage();
+  isBattCharging = this->isBatteryCharging();
+  isBattAlarmTriggered = this->isBatteryAlarmTriggered();
   temperature = this->getTemperature();
 }
 
@@ -587,7 +587,7 @@ static void scoutPeripheralStateChangeTimerHandler(SYS_Timer_t *timer) {
   uint16_t val;
 
   if (Scout.batteryPercentageEventHandler != 0) {
-    val = constrain(HAL_FuelGaugePercent(), 0, 100);
+    val = Scout.getBatteryPercentage();
     if (Scout.batteryPercentage != val) {
       if (Scout.eventVerboseOutput) {
         Serial.print(F("Running: batteryPercentageEventHandler("));
@@ -600,7 +600,7 @@ static void scoutPeripheralStateChangeTimerHandler(SYS_Timer_t *timer) {
   }
 
   if (Scout.batteryChargingEventHandler != 0) {
-    val = (digitalRead(CHG_STATUS) == LOW);
+    val = Scout.isBatteryCharging();
     if (Scout.isBattCharging != val) {
       if (Scout.eventVerboseOutput) {
         Serial.print(F("Running: batteryChargingEventHandler("));
