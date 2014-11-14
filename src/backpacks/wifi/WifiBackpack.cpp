@@ -41,7 +41,7 @@ void WifiBackpack::onAssociate(void *data) {
   wifi.apConnCount++;
   wifi.hqConnCount = 0;
 
-  if(wifi.indicate) Led.blinkGreen(1000, true);
+  if(wifi.indicate) Led.green();
 
   if (HqHandler::use_tls()) {
     // Do a timesync
@@ -111,7 +111,7 @@ bool WifiBackpack::connectToHq() {
   }
 
   // TODO: Don't call leadHQConnect directly?
-  if(indicate) Led.blinkGreen(5000);
+  if(indicate) Led.turnOff();
   leadHQConnect();
   hqConnCount++;
   connectedAt = SleepHandler::uptime().seconds;
