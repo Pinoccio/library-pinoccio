@@ -129,6 +129,7 @@ void PinoccioScout::setup(const char *sketchName, const char *sketchRevision, in
   Shell.setup();
 }
 
+static uint32_t loopLast = 0;
 void PinoccioScout::loop() {
   bool canSleep = true;
   // TODO: Let other loop functions return some "cansleep" status as well
@@ -139,7 +140,22 @@ void PinoccioScout::loop() {
   ModuleHandler::loop();
   Backpacks::loop();
 
-  if (sleepPending) {
+  // keep subtracting until wake is gone
+  if (wake) {
+    uint32_t now = millis();
+    if (loopLast && now > loopLast) {
+      // when there's some wake time left, don't sleep yet
+      if (wake - (now - loopLast) > 0)
+      {
+        wake -= (now - loopLast);
+        return;
+      }
+      wake = 0;
+    }
+    loopLast = now;
+  }
+
+  if (!wake && sleepPending) {
     canSleep = canSleep && !NWK_Busy();
 
     // if remaining <= 0, we won't actually sleep anymore, but still
@@ -608,10 +624,6 @@ void PinoccioScout::scheduleSleep(uint32_t ms, const char *func) {
 }
 
 void PinoccioScout::doSleep(bool pastEnd) {
-  // Copy the pointer, so the post command can set a new sleep
-  // timeout again.
-  char *func = postSleepFunction;
-  postSleepFunction = NULL;
   sleepPending = false;
 
   if (!pastEnd) {
@@ -624,10 +636,10 @@ void PinoccioScout::doSleep(bool pastEnd) {
   }
 
   // TODO: Allow ^C to stop running callbacks like this one
-  if (func) {
+  if (postSleepFunction) {
     StringBuffer cmd(64, 16);
     uint32_t left = SleepHandler::ticksToMs(SleepHandler::scheduledTicksLeft());
-    cmd += func;
+    cmd += postSleepFunction;
     cmd += "(";
     cmd.appendSprintf("%lu", sleepMs);
     cmd.appendSprintf(",%lu", left);
@@ -637,16 +649,21 @@ void PinoccioScout::doSleep(bool pastEnd) {
 
     if (!left || !ret || sleepPending) {
       // If the callback returned false, or it scheduled a new sleep or
-      // we finished our previous sleep, then we're done with this
-      // callback.
-      free(func);
+      // we finished our previous sleep, then we're done
     } else {
       // If the callback returned true, and it did not schedule a new
       // sleep interval, and we're not done sleeping yet, this means we
       // should continue sleeping (though note that at least one loop
       // cycle is ran before actually sleeping again).
       sleepPending = true;
-      postSleepFunction = func;
     }
   }
+
+  if (!sleepPending && sleepy) {
+    // in sleepy mode we loop!
+    if(wake < wakeful) wake = wakeful; // how long to stay awake before sleeping again
+    SleepHandler::scheduleSleep(sleepy);
+    sleepPending = true;
+  }
+
 }

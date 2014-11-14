@@ -424,18 +424,61 @@ static numvar powerSleep(void) {
   return 1;
 }
 
+static numvar powerSleepy(void) {
+  if (!checkArgs(1, 3, F("usage: power.sleepy(ms, [\"function\", wakeful])"))) {
+    return 0;
+  }
+
+  const char *func = NULL;
+  if (getarg(0) > 1) {
+    if (isstringarg(2))
+      func = (char*)getstringarg(2);
+    else
+      func = keyGet(getarg(2));
+  }
+
+  if (func && !Shell.defined(func)) {
+    sp("Must be the name of function: ");
+    sp(func);
+    return 0;
+  }
+
+  if(getarg(0) > 2)
+  {
+    Scout.wakeful = getarg(3);
+  }else{
+    Scout.wakeful = 100;
+  }
+
+  Scout.sleepy = getarg(1);
+  Scout.scheduleSleep(Scout.sleepy, func);
+
+  return 1;
+}
+
+static numvar powerWake(void) {
+  if (!checkArgs(1, F("usage: power.wake(ms)"))) {
+    return 0;
+  }
+
+  Scout.wake = getarg(1);
+  return 1;
+}
+
 static StringBuffer powerReportHQ(void) {
   StringBuffer report(100);
-  report.appendSprintf("[%d,[%d,%d,%d,%d],[%d,%d,%s,%s]]",
+  report.appendSprintf("[%d,[%d,%d,%d,%d,%d],[%d,%d,%s,%s,%d]]",
           keyMap("power", 0),
           keyMap("battery", 0),
           keyMap("voltage", 0),
           keyMap("charging", 0),
           keyMap("vcc", 0),
+          keyMap("sleepy", 0),
           (int)Scout.getBatteryPercentage(),
           (int)Scout.getBatteryVoltage(),
           Scout.isBatteryCharging()?"true":"false",
-          Scout.isBackpackVccEnabled()?"true":"false");
+          Scout.isBackpackVccEnabled()?"true":"false"),
+          Scout.sleepy;
   return Scout.handler.report(report);
 }
 
@@ -2354,6 +2397,8 @@ void PinoccioShell::setup() {
   addFunction("power.disablevcc", disableBackpackVcc);
   addFunction("power.isvccenabled", isBackpackVccEnabled);
   addFunction("power.sleep", powerSleep);
+  addFunction("power.sleepy", powerSleepy);
+  addFunction("power.wake", powerWake);
   addFunction("power.report", powerReport);
   addFunction("power.wakeup.pin", powerWakeupPin);
 

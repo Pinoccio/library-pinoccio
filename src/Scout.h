@@ -129,6 +129,9 @@ class PinoccioScout : public PinoccioClass {
     // canceled by passing 0, NULL. The command passed in will be
     // copied, so it does not have to remain valid.
     void scheduleSleep(uint32_t ms, const char *cmd);
+    uint32_t sleepy;
+    uint32_t wake;
+    uint32_t wakeful;
 
     enum {
       PINMODE_DISCONNECTED = -4,
