@@ -41,7 +41,7 @@ void WifiBackpack::onAssociate(void *data) {
   wifi.apConnCount++;
   wifi.hqConnCount = 0;
 
-  if(wifi.indicate) Led.blinkGreen(500, true);
+  if(wifi.indicate) Led.blinkGreen(1000, true);
 
   if (HqHandler::use_tls()) {
     // Do a timesync

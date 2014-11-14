@@ -216,8 +216,11 @@ static numvar wifiWakeup(void) {
 
 static numvar wifiIndicate(void) {
   if (!checkbp()) return 0;
-  WifiModule::instance.bp()->indicate = getarg(0) ? getarg(1) : 1;
-  return WifiModule::instance.bp()->indicate;
+  WifiBackpack *bp = WifiModule::instance.bp();
+  bp->indicate = getarg(0) ? getarg(1) : 1;
+  // start indicating too
+  if(bp->indicate && !bp->isAPConnected()) Led.blinkGreen(100, true);
+  return bp->indicate;
 }
 
 static numvar wifiVerbose(void) {
