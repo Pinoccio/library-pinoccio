@@ -124,7 +124,8 @@ class PinoccioScout : public PinoccioClass {
     PBBP bp;
     ScoutHandler handler;
     
-    uint32_t now; // set every loop
+    uint32_t now = 0; // set every loop
+    uint8_t indicate = 0; // how often to signal status
 
     // Schedule a sleep that lasts until now + ms. The optional bitlash
     // command is executed after the sleep. A previous sleep can be

@@ -155,7 +155,7 @@ void PinoccioScout::loop() {
   PinoccioClass::loop();
 
   // every 5th second blink network status
-  bool showStatus = (lastIndicate < now && (now % 5 == 0));
+  bool showStatus = (indicate && lastIndicate < now && (now % indicate == 0));
   if(showStatus)
   {
     analogWrite(LED_RED, 255-Led.getRedTorchValue());

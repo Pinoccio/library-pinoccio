@@ -1944,6 +1944,11 @@ static numvar scoutReport(void) {
   return 1;
 }
 
+static numvar scoutIndicate(void) {
+  Scout.indicate = getarg(0) ? getarg(1) : 5;
+  return Scout.indicate;
+}
+
 static numvar isScoutLeadScout(void) {
   return Scout.isLeadScout();
 }
@@ -2468,6 +2473,7 @@ void PinoccioShell::setup() {
   addFunction("scout.daisy", daisyWipe);
   addFunction("scout.boot", boot);
   addFunction("scout.otaboot", otaBoot);
+  addFunction("scout.indicate", scoutIndicate);
 
   addFunction("module.status", moduleStatus);
   addFunction("module.enable", moduleEnable);
