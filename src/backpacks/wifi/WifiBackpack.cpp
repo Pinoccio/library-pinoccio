@@ -128,9 +128,6 @@ bool WifiBackpack::setup(BackpackInfo *info) {
   apConnCount = 0;
   connectedAt = 0;
 
-  SPI.begin();
-  SPI.setClockDivider(SPI_CLOCK_DIV16);
-
   gs.onAssociate = onAssociate;
   gs.eventData = this;
 
