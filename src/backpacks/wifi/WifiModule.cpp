@@ -214,6 +214,15 @@ static numvar wifiWakeup(void) {
   return 1;
 }
 
+static numvar wifiIndicate(void) {
+  if (!checkbp()) return 0;
+  WifiBackpack *bp = WifiModule::instance.bp();
+  bp->indicate = getarg(0) ? getarg(1) : 1;
+  // start indicating too
+  if(bp->indicate && !bp->isAPConnected()) Led.blinkGreen(100, true);
+  return bp->indicate;
+}
+
 static numvar wifiVerbose(void) {
   if (!checkArgs(1, F("usage: wifi.verbose(flag)"))) {
     return 0;
@@ -259,6 +268,7 @@ bool WifiModule::enable() {
   Shell.addFunction("wifi.sleep", wifiSleep);
   Shell.addFunction("wifi.wakeup", wifiWakeup);
   Shell.addFunction("wifi.verbose", wifiVerbose);
+  Shell.addFunction("wifi.indicate", wifiIndicate);
   Shell.addFunction("wifi.stats", wifiStats);
 
   static auto toggleBackpackVccCallback = build_callback(onToggleBackpackVcc);

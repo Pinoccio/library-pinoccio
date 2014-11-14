@@ -126,18 +126,67 @@ void PinoccioScout::setup(const char *sketchName, const char *sketchRevision, in
   startAnalogStateChangeEvents();
   startPeripheralStateChangeEvents();
 
+  // indicate before running custom scripts
+  Led.setTorch();
+
   Shell.setup();
+
+  // if Led is still torch'd (startup didn't change it) indicate post-startup
+  if(Led.getRedValue() == Led.getRedTorchValue() && Led.getGreenValue() == Led.getGreenTorchValue() && Led.getBlueValue() == Led.getBlueTorchValue())
+  {
+    // disable it in a bit
+    Led.blinkTorch(100);
+
+    // if low power, red blink warning
+    if(isBattAlarmTriggered && !isBattCharging)
+    {
+      Shell.eval("scout.delay",500,"led.red(50)",100,"led.red(50)",100,"led.red(50)");
+    }
+  }
+  
 }
 
 void PinoccioScout::loop() {
+  now = SleepHandler::uptime().seconds;
+
   bool canSleep = true;
   // TODO: Let other loop functions return some "cansleep" status as well
 
   PinoccioClass::loop();
+
+  // every 5th second blink network status
+  bool showStatus = (indicate && lastIndicate < now && (now % indicate == 0));
+  if(showStatus)
+  {
+    Led.setRedValue(Led.getRedTorchValue(), false);
+    Led.setGreenValue(Led.getGreenTorchValue(), false);
+    Led.setBlueValue(Led.getBlueTorchValue(), false);
+
+    NWK_RouteTableEntry_t *table = NWK_RouteTable();
+    bool meshed = 0;
+    for (int i=0; i < NWK_ROUTE_TABLE_SIZE; i++)
+    {
+      if (table[i].dstAddr != NWK_ROUTE_UNKNOWN) meshed = 1;
+    }
+
+    if(meshed)
+    {
+      lastIndicate = now;
+    }
+
+  }
+
   Shell.loop();
   handler.loop();
   ModuleHandler::loop();
   Backpacks::loop();
+
+  if(showStatus)
+  {
+    Led.setRedValue(Led.getRedValue());
+    Led.setGreenValue(Led.getGreenValue());
+    Led.setBlueValue(Led.getBlueValue());
+  }
 
   if (sleepPending) {
     canSleep = canSleep && !NWK_Busy();
