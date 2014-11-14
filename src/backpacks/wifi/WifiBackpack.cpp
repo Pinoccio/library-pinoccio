@@ -41,7 +41,7 @@ void WifiBackpack::onAssociate(void *data) {
   wifi.apConnCount++;
   wifi.hqConnCount = 0;
 
-  Led.blinkBlue(100, true);
+  if(wifi.indicate) Led.blinkGreen(500, true);
 
   if (HqHandler::use_tls()) {
     // Do a timesync
@@ -111,7 +111,7 @@ bool WifiBackpack::connectToHq() {
   }
 
   // TODO: Don't call leadHQConnect directly?
-  Led.blinkBlue(2000);
+  if(indicate) Led.blinkGreen(5000);
   leadHQConnect();
   hqConnCount++;
   connectedAt = SleepHandler::uptime().seconds;
@@ -127,6 +127,9 @@ bool WifiBackpack::setup(BackpackInfo *info) {
   hqConnCount = 0;
   apConnCount = 0;
   connectedAt = 0;
+
+  SPI.begin();
+  SPI.setClockDivider(SPI_CLOCK_DIV16);
 
   gs.onAssociate = onAssociate;
   gs.eventData = this;
@@ -221,7 +224,7 @@ bool WifiBackpack::associate() {
   // Try to disable the NCM in case it's already running
   disassociate();
   associating = true;
-  Led.blinkBlue(500, true);
+  if(indicate) Led.blinkGreen(100, true);
 
   // When association fails, keep retrying indefinately (at least it
   // seems that a retry count of 0 means that, even though the
