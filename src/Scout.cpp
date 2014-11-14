@@ -158,9 +158,9 @@ void PinoccioScout::loop() {
   bool showStatus = (indicate && lastIndicate < now && (now % indicate == 0));
   if(showStatus)
   {
-    analogWrite(LED_RED, 255-Led.getRedTorchValue());
-    analogWrite(LED_GREEN, 255-Led.getGreenTorchValue());
-    analogWrite(LED_BLUE, 255-Led.getBlueTorchValue());
+    Led.setRedValue(Led.getRedTorchValue());
+    Led.setGreenValue(Led.getGreenTorchValue());
+    Led.setBlueValue(Led.getBlueTorchValue());
 
     NWK_RouteTableEntry_t *table = NWK_RouteTable();
     bool meshed = 0;
