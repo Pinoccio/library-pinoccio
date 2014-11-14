@@ -126,14 +126,24 @@ void PinoccioScout::setup(const char *sketchName, const char *sketchRevision, in
   startAnalogStateChangeEvents();
   startPeripheralStateChangeEvents();
 
+  // indicate before running custom scripts
   Led.setTorch();
+
   Shell.setup();
-  Led.blinkTorch(100);
-  
-  if(isBattAlarmTriggered && !isBattCharging)
+
+  // if Led is still torch'd (startup didn't change it) indicate post-startup
+  if(Led.getRedValue() == Led.getRedTorchValue() && Led.getGreenValue() == Led.getGreenTorchValue() && Led.getBlueValue() == Led.getBlueTorchValue())
   {
-    Shell.eval("scout.delay",500,"led.red(50)",100,"led.red(50)",100,"led.red(50)");
+    // disable it in a bit
+    Led.blinkTorch(100);
+
+    // if low power, red blink warning
+    if(isBattAlarmTriggered && !isBattCharging)
+    {
+      Shell.eval("scout.delay",500,"led.red(50)",100,"led.red(50)",100,"led.red(50)");
+    }
   }
+  
 }
 
 void PinoccioScout::loop() {
