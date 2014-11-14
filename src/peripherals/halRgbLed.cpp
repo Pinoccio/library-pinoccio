@@ -154,24 +154,24 @@ void HalRgbLed::blinkColor(short red, short green, short blue, unsigned int ms, 
   SYS_TimerStart(&blinkTimer);
 }
 
-void HalRgbLed::setRedValue(int value) {
+void HalRgbLed::setRedValue(int value, bool save) {
   if (isEnabled()) {
     analogWrite(LED_RED, 255-value);
-    redValue = value;
+    if(save) redValue = value;
   }
 }
 
-void HalRgbLed::setGreenValue(int value) {
+void HalRgbLed::setGreenValue(int value, bool save) {
   if (isEnabled()) {
     analogWrite(LED_GREEN, 255-value);
-    greenValue = value;
+    if(save) greenValue = value;
   }
 }
 
-void HalRgbLed::setBlueValue(int value) {
+void HalRgbLed::setBlueValue(int value, bool save) {
   if (isEnabled()) {
     analogWrite(LED_BLUE, 255-value);
-    blueValue = value;
+    if(save) blueValue = value;
   }
 }
 
