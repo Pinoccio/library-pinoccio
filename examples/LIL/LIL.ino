@@ -1,3 +1,11 @@
+#include <SPI.h>
+#include <Wire.h>
+#include <Scout.h>
+#include <GS.h>
+#include <bitlash.h>
+#include <lwm.h>
+#include <js0n.h>
+
 extern "C" {
 	#include "lil.h"
 }
@@ -22,7 +30,7 @@ lil_value_t mem(lil_t lil, size_t argc, lil_value_t* argv) {
 
 
 void setup() {
-	Serial.begin(115200);
+  Scout.setup("LIL", "custom", 42);
 	lil = lil_new();
 
 	lil_callback(lil, LIL_CALLBACK_WRITE, (lil_callback_proc_t)write);
@@ -67,4 +75,5 @@ void loop() {
 		}
 		prev = c;
 	}
+  Scout.loop();
 }
