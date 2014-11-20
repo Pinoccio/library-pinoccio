@@ -137,72 +137,10 @@ static numvar pinoccioBanner(void) {
   return 1;
 }
 
-void jsonArgs(StringBuffer *out, int start) {
-  StringBuffer backtick;
-  int i;
-  int args = getarg(0);
-  *out = "{";
-  for (i=start+1; i<=args; i++) {
-    out->appendJsonString((char*)getstringarg(i));
-    out->concat(":");
-    i++;
-    if(isstringarg(i))
-    {
-      char *arg = (char*)getstringarg(i);
-      int len = strlen(arg);
-      // detect backticks to eval and embed any string output
-      if(len > 2 && arg[0] == '`' && arg[len-1] == '`')
-      {
-        backtick = "";
-        arg[len-1] = 0;
-        arg++;
-        Shell.eval(PrintToString(backtick), arg);
-        backtick.trim();
-        out->appendJsonString(backtick, true);
-      }else{
-        out->appendJsonString(arg, true);
-      }
-    }else{
-      // just a number
-      out->concat(getarg(i));
-    }
-    if(i+1 <= args) out->concat(',');
-  }
-  out->concat('}');
-  if(Shell.isVerbose)
-  {
-    Serial.print("built json from args: ");
-    Serial.println(*out);
-  }
-}
-
 static numvar allReport(void) {
-  if (getarg(0) == 0) {
-    speol(F("running all reports"));
-    Shell.allReportHQ();
-    return 1;
-  }
-  // make sure args are pair'd
-  if (getarg(0) % 2 == 0) {
-    speol(F("usage: report(\"type\" [,\"key\",value,...])"));
-    return 0;
-  }
-  StringBuffer json;
-  jsonArgs(&json, 2);
-  if(json.length() > 100)
-  {
-    speol(F("report too long, 100 max"));
-    return 0;
-  }
-  lastReport = "";
-  lastReport.appendSprintf("[%d,[%d,%d],[\"%s\",%s]]",
-          keyMap("custom", 0),
-          keyMap("name", 0),
-          keyMap("custom", 0),
-          getstringarg(1),
-          json);
-  speol(Scout.handler.report(lastReport));
-  return true;
+  speol(F("running all reports"));
+  Shell.allReportHQ();
+  return 1;
 }
 
 static numvar allVerbose(void) {
@@ -1266,6 +1204,31 @@ void commandArgs(StringBuffer *out, int start) {
   }
 }
 
+static StringBuffer lastReport;
+static uint32_t lastReportAt;
+
+static numvar commandReport(void) {
+  if (!checkArgs(1, 99, F("usage: command.report(\"type\" [,arg1,arg2,...])")) || !isstringarg(1)) {
+    return 0;
+  }
+  StringBuffer json;
+  commandArgs(&json, 1); // returns w/ '(' and ')' wrapping it
+  if(json.length() > 100)
+  {
+    speol(F("report too long, 100 max"));
+    return 0;
+  }
+  lastReport = "";
+  lastReport.appendSprintf("[%d,[%d,%d],[\"%s\",%s]]",
+          keyMap("custom", 0),
+          keyMap("name", 0),
+          keyMap("custom", 0),
+          getstringarg(1),
+          json.substring(1,-1).c_str());
+  speol(Scout.handler.report(lastReport));
+  return true;
+}
+
 static numvar commandScout(void) {
   if (!checkArgs(2, 99, F("usage: command.scout(scoutId, \"command\" [,arg1,arg2])")) || !isstringarg(2)) {
     return 0;
@@ -2185,8 +2148,6 @@ static numvar hqPrint(void) {
   return true;
 }
 
-static StringBuffer lastReport;
-static uint32_t lastReportAt;
 static numvar hqOnline(void) {
   if(getarg(0) == 1 && getarg(1))
   {
