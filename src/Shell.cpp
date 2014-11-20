@@ -1204,6 +1204,41 @@ void commandArgs(StringBuffer *out, int start) {
   }
 }
 
+// works inside bitlash handlers to serialize a command
+void jsonArgs(StringBuffer *out, int start) {
+  StringBuffer backtick;
+  int i;
+  int args = getarg(0);
+  for (i=start+1; i<=args; i++) {
+    if(isstringarg(i))
+    {
+      char *arg = (char*)getstringarg(i);
+      int len = strlen(arg);
+      // detect backticks to eval and embed any string output
+      if(len > 2 && arg[0] == '`' && arg[len-1] == '`')
+      {
+        backtick = "";
+        arg[len-1] = 0;
+        arg++;
+        Shell.eval(PrintToString(backtick), arg);
+        backtick.trim();
+        out->appendJsonString(backtick, true);
+      }else{
+        out->appendJsonString(arg, true);
+      }
+    }else{
+      // just a number
+      out->concat(getarg(i));
+    }
+    if(i+1 <= args) out->concat(',');
+  }
+  if(Shell.isVerbose)
+  {
+    Serial.print("built json from args: ");
+    Serial.println(*out);
+  }
+}
+
 static StringBuffer lastReport;
 static uint32_t lastReportAt;
 
@@ -1212,19 +1247,20 @@ static numvar commandReport(void) {
     return 0;
   }
   StringBuffer json;
-  commandArgs(&json, 1); // returns w/ '(' and ')' wrapping it
+  jsonArgs(&json, 2);
   if(json.length() > 100)
   {
     speol(F("report too long, 100 max"));
     return 0;
   }
+  speol(json);
   lastReport = "";
   lastReport.appendSprintf("[%d,[%d,%d],[\"%s\",%s]]",
           keyMap("custom", 0),
           keyMap("name", 0),
           keyMap("custom", 0),
           getstringarg(1),
-          json.substring(1,-1).c_str());
+          json.c_str());
   speol(Scout.handler.report(lastReport));
   return true;
 }
@@ -2411,6 +2447,7 @@ void PinoccioShell::setup() {
   addFunction("command.all", commandAll);
   addFunction("command.others", commandOthers);
   addFunction("command.group", commandGroup);
+  addFunction("command.report", commandReport);
 
   addFunction("message.scout", messageScout);
   addFunction("message.group", messageGroup);
