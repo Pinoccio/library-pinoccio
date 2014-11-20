@@ -154,7 +154,7 @@ numvar PinoccioShell::eval(Print *out, const String &cmd, const Args&... args...
   StringBuffer buf(128);
   buf.concat(cmd);
   buf.concat('(');
-  Concatenator<QuoteStringsOnly>::concat(buf, ',', args...);
+  Concatenator<QuoteStringsAndFloats>::concat(buf, ',', args...);
   buf.concat(')');
   // This calls the no-argument version below, which just runs the
   // command
