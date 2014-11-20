@@ -123,11 +123,14 @@ class PinoccioScout : public PinoccioClass {
 
     PBBP bp;
     ScoutHandler handler;
+    
+    uint32_t now = 0; // set every loop
+    uint8_t indicate = 0; // how often to signal status
 
     // Schedule a sleep that lasts until now + ms. The optional bitlash
-    // command is executed after the sleep and then free()'d. A previous
-    // sleep can be canceled by passing 0, NULL. The command passed in
-    // will be copied, so it does not have to remain valid.
+    // command is executed after the sleep. A previous sleep can be
+    // canceled by passing 0, NULL. The command passed in will be
+    // copied, so it does not have to remain valid.
     void scheduleSleep(uint32_t ms, const char *cmd);
 
     enum {
@@ -141,6 +144,7 @@ class PinoccioScout : public PinoccioClass {
       PINMODE_PWM = 3,
     };
   protected:
+    uint32_t lastIndicate = 0;
     void checkStateChange();
 
     void doSleep(bool pastEnd);

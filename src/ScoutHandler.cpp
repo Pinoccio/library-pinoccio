@@ -365,7 +365,7 @@ static bool fieldAnnouncements(NWK_DataInd_t *ind) {
       buf.appendSprintf(",%d", keys[i]);
     }
     buf += ")";
-    doCommand(const_cast<char*>(buf.c_str()));
+    Shell.eval(const_cast<char*>(buf.c_str()));
   }
 
   return true;
@@ -445,7 +445,8 @@ static void leadAnnouncementSend(uint16_t group, uint16_t from, const ConstBuf& 
   }
   if(leadSignal(report))
   {
-    Shell.eval("command.others","hq.online",1);
+// TODO reentrancy issues, temporarily disabled!
+//    Shell.eval("command.others","hq.online",1);
   }
 }
 

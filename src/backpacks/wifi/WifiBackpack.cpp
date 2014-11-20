@@ -39,6 +39,9 @@ WifiBackpack::~WifiBackpack() {
 void WifiBackpack::onAssociate(void *data) {
   WifiBackpack& wifi = *(WifiBackpack*)data;
   wifi.apConnCount++;
+  wifi.hqConnCount = 0;
+
+  if(wifi.indicate) Led.green();
 
   if (HqHandler::use_tls()) {
     // Do a timesync
@@ -78,6 +81,14 @@ bool WifiBackpack::connectToHq() {
     }
   }
 
+  if (Scout.handler.isVerbose)
+  {
+    Serial.print(F("Connecting to HQ at "));
+    Serial.print(HqHandler::host());
+    Serial.print(":");
+    Serial.println(HqHandler::port());
+  }
+
   if (!client.connect(ip, HqHandler::port())) {
     if (Scout.handler.isVerbose)
     {
@@ -100,8 +111,10 @@ bool WifiBackpack::connectToHq() {
   }
 
   // TODO: Don't call leadHQConnect directly?
+  if(indicate) Led.turnOff();
   leadHQConnect();
   hqConnCount++;
+  connectedAt = SleepHandler::uptime().seconds;
   return true;
 }
 
@@ -111,12 +124,17 @@ bool WifiBackpack::setup(BackpackInfo *info) {
   // Serial1.begin(115200);
   // return gs.begin(Serial1);
 
+  hqConnCount = 0;
+  apConnCount = 0;
+  connectedAt = 0;
+
   SPI.begin();
   SPI.setClockDivider(SPI_CLOCK_DIV16);
 
   gs.onAssociate = onAssociate;
   gs.eventData = this;
 
+  setVerbose(false);
   if (info->id.revision == 0x11) {
     if (!gs.begin(7, 5)) {
       return false;
@@ -134,6 +152,17 @@ bool WifiBackpack::setup(BackpackInfo *info) {
 
 void WifiBackpack::loop() {
   gs.loop();
+  // detect the connected->disconnected transition state and retry
+  if(connectedAt && !client.connected())
+  {
+    if (Scout.handler.isVerbose)
+    {
+      Serial.print(F("HQ connection down, seconds connected: "));
+      Serial.println(SleepHandler::uptime().seconds - connectedAt);
+    }
+    connectedAt = 0;
+    connectToHq();
+  }
 }
 
 static bool isWepKey(const char *key) {
@@ -163,7 +192,6 @@ bool WifiBackpack::wifiConfig(const char *ssid, const char *passphrase) {
   // Ignore setDefaultProfile failure, since it fails also when only a
   // single profile is available
   ok && gs.setDefaultProfile(0);
-  associate();
   return ok;
 }
 
@@ -175,7 +203,6 @@ bool WifiBackpack::wifiDhcp(const char *hostname) {
   // Ignore setDefaultProfile failure, since it fails also when only a
   // single profile is available
   ok && gs.setDefaultProfile(0);
-  associate();
   return ok;
 }
 
@@ -190,7 +217,6 @@ bool WifiBackpack::wifiStatic(IPAddress ip, IPAddress netmask, IPAddress gw, IPA
   // Ignore setDefaultProfile failure, since it fails also when only a
   // single profile is available
   ok && gs.setDefaultProfile(0);
-  associate();
   return ok;
 }
 
@@ -198,6 +224,7 @@ bool WifiBackpack::associate() {
   // Try to disable the NCM in case it's already running
   disassociate();
   associating = true;
+  if(indicate) Led.blinkGreen(100, true);
 
   // When association fails, keep retrying indefinately (at least it
   // seems that a retry count of 0 means that, even though the
@@ -279,6 +306,13 @@ bool WifiBackpack::wakeUp() {
 
 bool WifiBackpack::printTime(Print &p) {
   return runDirectCommand(p, "AT+GETTIME=?");
+}
+
+void WifiBackpack::setVerbose(bool flag) {
+  if (flag)
+    gs.setLogOutput(&Serial, &Serial);
+  else
+    gs.setLogOutput(&Serial, NULL);
 }
 
 /* commands for auto-config

@@ -108,6 +108,7 @@ class PinoccioShell {
     void print(const char *str);
     bool outWait;
     bool isVerbose;
+    bool isMuted;
     int lastMeshRssi;
     int lastMeshLqi;
     int lastMeshFrom;
@@ -142,6 +143,7 @@ extern PinoccioShell Shell;
 
 // handle printing a float automagically
 void sp(float f, int pre);
+void speol(float f, int pre);
 
 void bitlashFilter(byte b); // watches bitlash output for channel announcements
 bool checkArgs(uint8_t min, uint8_t max, const __FlashStringHelper *errorMsg);
@@ -161,6 +163,7 @@ numvar PinoccioShell::eval(Print *out, const String &cmd, const Args&... args...
 
 static Print* evalOutput;
 static void evalPrint(uint8_t c) {
+  if(!evalOutput) return; // silent mode
   evalOutput->write(c);
 }
 
@@ -173,11 +176,15 @@ inline numvar PinoccioShell::eval(Print *out, const String &cmd) {
   if (out) {
     evalOutput = out;
     setOutputHandler(evalPrint);
+  }else if(isMuted){
+    // print nowhere
+    evalOutput = NULL;
+    setOutputHandler(evalPrint);
   }
 
   numvar ret = doCommand((char*)cmd.c_str());
 
-  if (out)
+  if (out || isMuted)
     resetOutputHandler();
 
   // important, if we eval'd a new function update our cache

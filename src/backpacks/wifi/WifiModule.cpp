@@ -12,6 +12,7 @@
 #include "../../key/key.h"
 #include "../../Scout.h"
 #include "../../Shell.h"
+#include "../../SleepHandler.h"
 #include "../Backpacks.h"
 #include "WifiModule.h"
 
@@ -32,12 +33,23 @@ static bool checkbp() {
 
 static StringBuffer wifiReportHQ(void) {
   StringBuffer report(100);
-  report.appendSprintf("[%d,[%d,%d],[%s,%s]]",
+  if (!checkbp()) return 0;
+  WifiBackpack *bp = WifiModule::instance.bp();
+  uint32_t uptime = 0;
+  if(bp->connectedAt) uptime = (SleepHandler::uptime().seconds - bp->connectedAt);
+  report.appendSprintf("[%d,[%d,%d,%d,%d,%d],[%s,%s,%lu,%hu,%hu]]",
           keyMap("wifi", 0),
           keyMap("connected", 0),
           keyMap("hq", 0),
-          WifiModule::instance.bp() && WifiModule::instance.bp()->isAPConnected() ? "true" : "false",
-          WifiModule::instance.bp() && WifiModule::instance.bp()->isHQConnected() ? "true" : "false");
+          keyMap("uptime", 0),
+          keyMap("reset", 0),
+          keyMap("total", 0),
+          bp->isAPConnected() ? "true" : "false",
+          bp->isHQConnected() ? "true" : "false",
+          uptime,
+          bp->hqConnCount,
+          bp->apConnCount);
+
   return Scout.handler.report(report);
 }
 
@@ -72,9 +84,17 @@ static numvar wifiConfig(void) {
     return 0;
   }
 
+  char password[64];
+
   if (!checkbp()) return 0;
 
-  if (!WifiModule::instance.bp()->wifiConfig((const char *)getstringarg(1), (const char *)getstringarg(2))) {
+  if (getarg(0) == 2) {
+    strncpy(password, (const char *)getstringarg(2), 64);
+  } else {
+    strncpy(password, "", 64);
+  }
+
+  if (!WifiModule::instance.bp()->wifiConfig((const char *)getstringarg(1), (const char *)password)) {
     speol(F("Error: saving WifiModule::instance.bp()->configuration data failed"));
   }
   return 1;
@@ -194,16 +214,31 @@ static numvar wifiWakeup(void) {
   return 1;
 }
 
+static numvar wifiIndicate(void) {
+  if (!checkbp()) return 0;
+  WifiBackpack *bp = WifiModule::instance.bp();
+  bp->indicate = getarg(0) ? getarg(1) : 1;
+  // start indicating too
+  if(bp->indicate && !bp->isAPConnected()) Led.blinkGreen(100, true);
+  return bp->indicate;
+}
+
 static numvar wifiVerbose(void) {
-  // TODO
+  if (!checkArgs(1, F("usage: wifi.verbose(flag)"))) {
+    return 0;
+  }
+  WifiModule::instance.bp()->setVerbose(getarg(1));
   return 1;
 }
 
 static numvar wifiStats(void) {
-  sp(F("Number of connections to AP since boot: "));
+  sp(F("Number of associations to AP since boot: "));
   speol(WifiModule::instance.bp()->apConnCount);
-  sp(F("Number of connections to HQ since boot: "));
+  sp(F("Number of connections to HQ since last association: "));
   speol(WifiModule::instance.bp()->hqConnCount);
+  sp(F("Seconds currently connected to HQ: "));
+  if(WifiModule::instance.bp()->connectedAt) speol(SleepHandler::uptime().seconds - WifiModule::instance.bp()->connectedAt);
+  else speol(0);
 }
 
 /****************************\
@@ -233,6 +268,7 @@ bool WifiModule::enable() {
   Shell.addFunction("wifi.sleep", wifiSleep);
   Shell.addFunction("wifi.wakeup", wifiWakeup);
   Shell.addFunction("wifi.verbose", wifiVerbose);
+  Shell.addFunction("wifi.indicate", wifiIndicate);
   Shell.addFunction("wifi.stats", wifiStats);
 
   static auto toggleBackpackVccCallback = build_callback(onToggleBackpackVcc);

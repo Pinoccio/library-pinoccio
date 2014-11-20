@@ -54,10 +54,14 @@ namespace pinoccio {
       bool goToSleep();
       bool wakeUp();
 
+      void setVerbose(bool flag);
+
       GSTcpClient client;
 
       uint16_t apConnCount;
       uint16_t hqConnCount;
+      uint32_t connectedAt;
+      bool indicate = 0;
 
       GSModule gs;
 

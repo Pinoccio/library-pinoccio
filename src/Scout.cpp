@@ -126,18 +126,67 @@ void PinoccioScout::setup(const char *sketchName, const char *sketchRevision, in
   startAnalogStateChangeEvents();
   startPeripheralStateChangeEvents();
 
+  // indicate before running custom scripts
+  Led.setTorch();
+
   Shell.setup();
+
+  // if Led is still torch'd (startup didn't change it) indicate post-startup
+  if(Led.getRedValue() == Led.getRedTorchValue() && Led.getGreenValue() == Led.getGreenTorchValue() && Led.getBlueValue() == Led.getBlueTorchValue())
+  {
+    // disable it in a bit
+    Led.blinkTorch(100);
+
+    // if low power, red blink warning
+    if(isBattAlarmTriggered && !isBattCharging)
+    {
+      Shell.eval("scout.delay",500,"led.red(50)",100,"led.red(50)",100,"led.red(50)");
+    }
+  }
+  
 }
 
 void PinoccioScout::loop() {
+  now = SleepHandler::uptime().seconds;
+
   bool canSleep = true;
   // TODO: Let other loop functions return some "cansleep" status as well
 
   PinoccioClass::loop();
+
+  // every 5th second blink network status
+  bool showStatus = (indicate && lastIndicate < now && (now % indicate == 0));
+  if(showStatus)
+  {
+    Led.setRedValue(Led.getRedTorchValue(), false);
+    Led.setGreenValue(Led.getGreenTorchValue(), false);
+    Led.setBlueValue(Led.getBlueTorchValue(), false);
+
+    NWK_RouteTableEntry_t *table = NWK_RouteTable();
+    bool meshed = 0;
+    for (int i=0; i < NWK_ROUTE_TABLE_SIZE; i++)
+    {
+      if (table[i].dstAddr != NWK_ROUTE_UNKNOWN) meshed = 1;
+    }
+
+    if(meshed)
+    {
+      lastIndicate = now;
+    }
+
+  }
+
   Shell.loop();
   handler.loop();
   ModuleHandler::loop();
   Backpacks::loop();
+
+  if(showStatus)
+  {
+    Led.setRedValue(Led.getRedValue());
+    Led.setGreenValue(Led.getGreenValue());
+    Led.setBlueValue(Led.getBlueValue());
+  }
 
   if (sleepPending) {
     canSleep = canSleep && !NWK_Busy();
@@ -152,19 +201,19 @@ void PinoccioScout::loop() {
 }
 
 bool PinoccioScout::isBatteryCharging() {
-  return isBattCharging;
+  return (digitalRead(CHG_STATUS) == LOW);
 }
 
 int PinoccioScout::getBatteryPercentage() {
-  return batteryPercentage;
+  return constrain(HAL_FuelGaugePercent(), 0, 100);;
 }
 
 int PinoccioScout::getBatteryVoltage() {
-  return batteryVoltage;
+  return HAL_FuelGaugeVoltage();
 }
 
 bool PinoccioScout::isBatteryAlarmTriggered() {
-  return isBattAlarmTriggered;
+  return (digitalRead(BATT_ALERT) == LOW);
 }
 
 bool PinoccioScout::isBatteryConnected() {
@@ -277,10 +326,10 @@ void PinoccioScout::saveState() {
     pinStates[i] = -1;
   }
 
-  batteryPercentage = constrain(HAL_FuelGaugePercent(), 0, 100);
-  batteryVoltage = HAL_FuelGaugeVoltage();
-  isBattCharging = (digitalRead(CHG_STATUS) == LOW);
-  isBattAlarmTriggered = (digitalRead(BATT_ALERT) == LOW);
+  batteryPercentage = this->getBatteryPercentage();
+  batteryVoltage = this->getBatteryVoltage();
+  isBattCharging = this->isBatteryCharging();
+  isBattAlarmTriggered = this->isBatteryAlarmTriggered();
   temperature = this->getTemperature();
 }
 
@@ -538,7 +587,7 @@ static void scoutPeripheralStateChangeTimerHandler(SYS_Timer_t *timer) {
   uint16_t val;
 
   if (Scout.batteryPercentageEventHandler != 0) {
-    val = constrain(HAL_FuelGaugePercent(), 0, 100);
+    val = Scout.getBatteryPercentage();
     if (Scout.batteryPercentage != val) {
       if (Scout.eventVerboseOutput) {
         Serial.print(F("Running: batteryPercentageEventHandler("));
@@ -551,7 +600,7 @@ static void scoutPeripheralStateChangeTimerHandler(SYS_Timer_t *timer) {
   }
 
   if (Scout.batteryChargingEventHandler != 0) {
-    val = (digitalRead(CHG_STATUS) == LOW);
+    val = Scout.isBatteryCharging();
     if (Scout.isBattCharging != val) {
       if (Scout.eventVerboseOutput) {
         Serial.print(F("Running: batteryChargingEventHandler("));
@@ -633,7 +682,7 @@ void PinoccioScout::doSleep(bool pastEnd) {
     cmd.appendSprintf(",%lu", left);
     cmd += ")";
 
-    uint32_t ret = doCommand((char*)cmd.c_str());
+    uint32_t ret = Shell.eval((char*)cmd.c_str());
 
     if (!left || !ret || sleepPending) {
       // If the callback returned false, or it scheduled a new sleep or

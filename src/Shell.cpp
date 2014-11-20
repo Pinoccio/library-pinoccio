@@ -74,7 +74,7 @@ void sp(float value, int places)
 
   float d = 0.5;
   if (value < 0) d *= -1.0;
-  for (i = 0; i < places; i++) d/= 10.0;    
+  for (i = 0; i < places; i++) d/= 10.0;
   tempfloat +=  d;
 
   if (value < 0) tempfloat *= -1.0;
@@ -96,14 +96,20 @@ void sp(float value, int places)
 
   if (places <= 0) return;
 
-  sp('.');  
+  sp('.');
 
   for (i = 0; i < places; i++) {
-    tempfloat *= 10.0; 
+    tempfloat *= 10.0;
     digit = (int) tempfloat;
     sp(digit);
-    tempfloat = tempfloat - (float) digit; 
+    tempfloat = tempfloat - (float) digit;
   }
+}
+
+void speol(float value, int places)
+{
+  sp(value, places);
+  speol();
 }
 
 
@@ -204,6 +210,11 @@ static numvar allVerbose(void) {
   isMeshVerbose = getarg(1);
   Shell.isVerbose = getarg(1);
   Scout.eventVerboseOutput = getarg(1);
+  return 1;
+}
+
+static numvar serialMute(void) {
+  Shell.isMuted = (getarg(0) == 0 || getarg(1) == 1) ? true : false;
   return 1;
 }
 
@@ -404,7 +415,7 @@ static numvar keySave(void) {
   char cmd[42], *var;
   var = (char*)getstringarg(1);
   snprintf(cmd, sizeof(cmd), "function boot.%s {%s=key(\"%s\");}", var, var, keyGet(getarg(2)));
-  doCommand(cmd);
+  Shell.eval(cmd);
   return 1;
 }
 
@@ -780,7 +791,7 @@ static bool receiveMessage(NWK_DataInd_t *ind) {
       snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf), ",%d", keys[i]);
     }
     snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf), ")");
-    doCommand(buf);
+    Shell.eval(buf);
   }
 
   if (Scout.eventVerboseOutput) {
@@ -838,7 +849,7 @@ static void sendConfirm(NWK_DataReq_t *req) {
   snprintf(buf, sizeof(buf),"on.message.signal");
   if (Shell.defined(buf)) {
     snprintf(buf, sizeof(buf), "on.message.signal(%d, %d)", req->dstAddr, (req->status == NWK_SUCCESS_STATUS) ? req->control : 0);
-    doCommand(buf);
+    Shell.eval(buf);
   }
 
   if (Scout.eventVerboseOutput) {
@@ -911,37 +922,36 @@ static void commandConfirm(NWK_DataReq_t *req) {
   Shell.lastMeshRssi = req->control;
 
   // run the Bitlash callback ack command appended after if any
-  char *commandAck = (char*)req->data+req->size+1;
+  char *commandAck = (char*)req->data+req->size;
   if(*commandAck)
   {
     Shell.eval(commandAck,req->status,Shell.lastMeshRssi);
   }
-  
+
   free(req->data);
   free(req);
 
 }
 
-static void sendCommand(int address, const char *cmd, const char *ack) {
+static void sendCommand(bool toScout, int address, const char *cmd, const char *ack) {
   NWK_DataReq_t *req = (NWK_DataReq_t*)malloc(sizeof(struct NWK_DataReq_t));
   memset(req,0,sizeof(struct SYS_Timer_t));
 
-  // multicast the command to everyone
-  if(address == 0)
-  {
-    req->dstAddr = 1; // a group everyone joins by default in ScoutHandler
-    req->options = NWK_OPT_MULTICAST|NWK_OPT_ENABLE_SECURITY;
-  }else{
-    req->dstAddr = address;
+  // If commanding a Scout, change operation type
+  if (toScout) {
     req->options = NWK_OPT_ACK_REQUEST|NWK_OPT_ENABLE_SECURITY;
+  } else {
+    req->options = NWK_OPT_MULTICAST|NWK_OPT_ENABLE_SECURITY;
   }
+
+  req->dstAddr = address;
   req->confirm = commandConfirm;
   req->dstEndpoint = 2;
   req->srcEndpoint = 2;
   req->data = (uint8_t*)malloc(strlen(cmd) + 1 + strlen(ack) + 1);
   req->size = strlen(cmd) + 1;
   strcpy((char*)req->data,cmd);
-  strcpy((char*)req->data+req->size+1,ack); // append any ack after
+  strcpy((char*)req->data+req->size,ack); // append any ack after
   NWK_DataReq(req);
 
   if (Shell.isVerbose) {
@@ -956,8 +966,8 @@ static void sendCommand(int address, const char *cmd, const char *ack) {
   }
 }
 
-static void sendCommand(int address, const char *data) {
-  sendCommand(address, data, "");
+static void sendCommand(bool toScout, int address, const char *data) {
+  sendCommand(toScout, address, data, "");
 }
 
 
@@ -966,7 +976,7 @@ static void sendCommand(int address, const char *data) {
 \****************************/
 
 static numvar meshConfig(void) {
-  if (!checkArgs(2, 3, F("usage: mesh.config(scoutId, troopId, channel=20)"))) {
+  if (!checkArgs(2, 4, F("usage: mesh.config(scoutId, troopId [, channel=20, key])"))) {
     return 0;
   }
   uint8_t channel = 20;
@@ -975,6 +985,19 @@ static numvar meshConfig(void) {
     channel = getarg(3);
   }
   Scout.meshSetRadio(getarg(1), getarg(2), channel);
+
+  if (getarg(0) >= 4) {
+    Shell.eval("mesh.setkey",(const char*)getstringarg(4));
+  }
+
+  return 1;
+}
+
+static numvar meshSetChannel(void) {
+  if (!checkArgs(1, F("usage: mesh.setchannel(channel)"))) {
+    return 0;
+  }
+  Scout.meshSetChannel(getarg(1));
   return 1;
 }
 
@@ -1089,7 +1112,7 @@ static numvar meshFieldtest(void) {
   Shell.eval(F("run mesh.ft.each,500"));
   // this causes an unexpected char that stops running mesh.ft.each, hack!
   Shell.delay(getarg(1)*1000,F("rm mesh.ft.each;rm mesh.ft.ping;rm mesh.ft.ack;led.off"));
-  
+
   return 1;
 }
 
@@ -1109,7 +1132,7 @@ static StringBuffer meshReportHQ(void) {
     if (table[i].dstAddr == NWK_ROUTE_UNKNOWN) continue;
     count++;
   }
-  report.appendSprintf("[%d,[%d,%d,%d,%d,%d,%d],[%d,%d,%d,%d,\"",
+  report.appendSprintf("[%d,[%d,%d,%d,%d,%d,%d],[%u,%u,%d,%u,\"",
           keyMap("mesh", 0),
           keyMap("scoutid", 0),
           keyMap("troopid", 0),
@@ -1259,7 +1282,7 @@ static numvar commandScout(void) {
     speol(F("command too long, 100 max"));
     return 0;
   }
-  sendCommand(getarg(1),cmd.c_str());
+  sendCommand(true, getarg(1), cmd.c_str());
   return 1;
 }
 
@@ -1279,8 +1302,28 @@ static numvar commandScoutAck(void) {
     speol(F("command too long, 100 max"));
     return 0;
   }
-  sendCommand(getarg(2), cmd.c_str(), (char*)getarg(1));
+  sendCommand(true, getarg(2), cmd.c_str(), (char*)getarg(1));
 
+  return 1;
+}
+
+static numvar commandGroup(void) {
+  if (!checkArgs(2, 99, F("usage: command.group(groupId, \"command\" [,arg1,arg2])")) || !isstringarg(2)) {
+    return 0;
+  }
+  if (sendDataReqBusy)
+  {
+    speol(F("busy commanding already"));
+    return 0;
+  }
+  StringBuffer cmd;
+  commandArgs(&cmd, 2);
+  if(cmd.length() > 100)
+  {
+    speol(F("command too long, 100 max"));
+    return 0;
+  }
+  sendCommand(false, getarg(1), cmd.c_str());
   return 1;
 }
 
@@ -1300,7 +1343,7 @@ static numvar commandOthers(void) {
     speol(F("command too long, 100 max"));
     return 0;
   }
-  sendCommand(0, cmd.c_str());
+  sendCommand(false, 1, cmd.c_str());
   return 1;
 }
 
@@ -1320,7 +1363,7 @@ static numvar commandAll(void) {
     speol(F("command too long, 100 max"));
     return 0;
   }
-  sendCommand(0, cmd.c_str());
+  sendCommand(false, 1, cmd.c_str());
   Shell.delay(100,(char*)cmd.c_str());
   return 1;
 }
@@ -1608,7 +1651,7 @@ static numvar pinSave(void) {
   }
   buf += " }";
 
-  doCommand((char*)buf.c_str());
+  Shell.eval((char*)buf.c_str());
   return 1;
 }
 
@@ -1963,6 +2006,11 @@ static numvar scoutReport(void) {
   return 1;
 }
 
+static numvar scoutIndicate(void) {
+  Scout.indicate = getarg(0) ? getarg(1) : 5;
+  return Scout.indicate;
+}
+
 static numvar isScoutLeadScout(void) {
   return Scout.isLeadScout();
 }
@@ -1989,7 +2037,7 @@ static void delayTimerHandler(SYS_Timer_t *timer) {
     Serial.println(((char*)timer) + (sizeof(struct SYS_Timer_t)));
   }
 
-  doCommand(((char*)timer) + (sizeof(struct SYS_Timer_t)));
+  Shell.eval(((char*)timer) + (sizeof(struct SYS_Timer_t)));
   free(timer);
 }
 
@@ -2061,8 +2109,8 @@ static numvar daisyWipe(void) {
     Led.saveTorch(0, 255, 0);
 
     // so long, and thanks for all the fish!
-    doCommand("rm *");
-    doCommand("scout.boot");
+    Shell.eval("rm *");
+    Shell.eval("scout.boot");
   }
   return 1;
 }
@@ -2244,7 +2292,7 @@ static void digitalPinEventHandler(uint8_t pin, int16_t value, int8_t mode) {
   snprintf(buf, sizeof(buf), "on.d%d", pin);
   if (Shell.defined(buf)) {
     snprintf(buf, sizeof(buf), "on.d%d(%d,%d)", pin, value, mode);
-    doCommand(buf);
+    Shell.eval(buf);
   }
 
   // simplified button trigger
@@ -2255,7 +2303,7 @@ static void digitalPinEventHandler(uint8_t pin, int16_t value, int8_t mode) {
       snprintf(buf, sizeof(buf), "on.d%d.high", pin);
     }
     if (Shell.defined(buf)) {
-      doCommand(buf);
+      Shell.eval(buf);
     }
   }
 
@@ -2276,7 +2324,7 @@ static void analogPinEventHandler(uint8_t pin, int16_t value, int8_t mode) {
   snprintf(buf, sizeof(buf),"on.a%d", pin);
   if (Shell.defined(buf)) {
     snprintf(buf, sizeof(buf), "on.a%d(%d, %d)", pin, value, mode);
-    doCommand(buf);
+    Shell.eval(buf);
   }
 
   if (Scout.eventVerboseOutput) {
@@ -2296,7 +2344,7 @@ static void batteryPercentageEventHandler(uint8_t value) {
 
   if (Shell.defined(func)) {
     snprintf(buf, sizeof(buf), "%s(%d)", func, value);
-    doCommand(buf);
+    Shell.eval(buf);
   }
 
   if (Scout.eventVerboseOutput) {
@@ -2316,7 +2364,7 @@ static void batteryChargingEventHandler(uint8_t value) {
 
   if (Shell.defined(func)) {
     snprintf(buf, sizeof(buf), "%s(%d)", func, value);
-    doCommand(buf);
+    Shell.eval(buf);
   }
 
   if (Scout.eventVerboseOutput) {
@@ -2336,7 +2384,7 @@ static void temperatureEventHandler(int8_t tempC, int8_t tempF) {
 
   if (Shell.defined(func)) {
     snprintf(buf, sizeof(buf), "%s(%d, %d)", func, tempC, tempF);
-    doCommand(buf);
+    Shell.eval(buf);
   }
 
   if (Scout.eventVerboseOutput) {
@@ -2377,6 +2425,7 @@ void PinoccioShell::setup() {
   addFunction("power.wakeup.pin", powerWakeupPin);
 
   addFunction("mesh.config", meshConfig);
+  addFunction("mesh.setchannel", meshSetChannel);
   addFunction("mesh.setpower", meshSetPower);
   addFunction("mesh.setdatarate", meshSetDataRate);
   addFunction("mesh.setkey", meshSetKey);
@@ -2400,6 +2449,7 @@ void PinoccioShell::setup() {
   addFunction("command.scout.ack", commandScoutAck);
   addFunction("command.all", commandAll);
   addFunction("command.others", commandOthers);
+  addFunction("command.group", commandGroup);
 
   addFunction("message.scout", messageScout);
   addFunction("message.group", messageGroup);
@@ -2414,6 +2464,7 @@ void PinoccioShell::setup() {
 
   addFunction("report", allReport);
   addFunction("verbose", allVerbose);
+  addFunction("serial.mute", serialMute);
 
   addFunction("uptime.awake.micros", uptimeAwakeMicros);
   addFunction("uptime.awake.seconds", uptimeAwakeSeconds);
@@ -2484,6 +2535,7 @@ void PinoccioShell::setup() {
   addFunction("scout.daisy", daisyWipe);
   addFunction("scout.boot", boot);
   addFunction("scout.otaboot", otaBoot);
+  addFunction("scout.indicate", scoutIndicate);
 
   addFunction("module.status", moduleStatus);
   addFunction("module.enable", moduleEnable);
@@ -2566,8 +2618,12 @@ bool PinoccioShell::defined(const char *cmd)
 
   if(find_user_function((char*)cmd)) return true;
 //  if(findKey(cmd) >= 0) return true; // don't use findscript(), it's not re-entrant safe
-  int at = customScripts.indexOf(cmd);
-  if(at >= 0 && customScripts.charAt(at+strlen(cmd)) == ' ') return true;
+  int at, last = 0;
+  while((at = customScripts.indexOf(cmd,last)) >= 0)
+  {
+    if(customScripts.charAt(at+strlen(cmd)) == ' ') return true;
+    last = at+1;
+  }
   return false;
 }
 
@@ -2656,9 +2712,7 @@ void PinoccioShell::loop() {
       } if (c == '\r' || c == '\n') {
         Serial.println();
         if (serialIncoming.length()) {
-          setOutputHandler(&printToString<&serialOutgoing>);
-          doCommand((char*)serialIncoming.c_str());
-          resetOutputHandler();
+          Shell.eval(PrintToString(serialOutgoing), (char*)serialIncoming.c_str());
           Serial.print(serialOutgoing.c_str());
           prevCommand = serialIncoming;
           serialIncoming = serialOutgoing = (char*)NULL;
@@ -2704,7 +2758,8 @@ void PinoccioShell::loop() {
     // bitlash loop
     runBackgroundTasks();
     // resend last report every second until hq is online
-    if(lastReport.length() && lastReportAt != SleepHandler::uptime().seconds)
+    // TODO temporarily disabled, reentrancy issues in ScoutHandler.cpp!
+    if(false && lastReport.length() && lastReportAt != SleepHandler::uptime().seconds)
     {
       if(Shell.isVerbose)
       {
@@ -2735,13 +2790,13 @@ void PinoccioShell::startShell() {
 
   snprintf(buf, sizeof(buf), "startup", i);
   if (Shell.defined(buf)) {
-    doCommand(buf);
+    Shell.eval(buf);
   }
 
   for (i='a'; i<'z'; i++) {
     snprintf(buf, sizeof(buf), "startup.%c", i);
     if (Shell.defined(buf)) {
-      doCommand(buf);
+      Shell.eval(buf);
     }
   }
 
@@ -2750,7 +2805,7 @@ void PinoccioShell::startShell() {
     strlcat_P(buf, (const char*)Scout.getNameForPin(i), sizeof(buf));
 
     if (Shell.defined(buf)) {
-      doCommand(buf);
+      Shell.eval(buf);
     }
   }
 
