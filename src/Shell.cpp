@@ -1247,19 +1247,18 @@ static numvar commandReport(void) {
     return 0;
   }
   StringBuffer json;
-  jsonArgs(&json, 2);
+  jsonArgs(&json, 1);
   if(json.length() > 100)
   {
     speol(F("report too long, 100 max"));
     return 0;
   }
-  speol(json);
   lastReport = "";
-  lastReport.appendSprintf("[%d,[%d,%d],[\"%s\",%s]]",
+  lastReport.appendSprintf("[%d,[%d,%d],[\"%s\",[%s]]]",
           keyMap("custom", 0),
           keyMap("name", 0),
           keyMap("custom", 0),
-          getstringarg(1),
+          (char*)getstringarg(1),
           json.c_str());
   speol(Scout.handler.report(lastReport));
   return true;
