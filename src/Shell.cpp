@@ -1166,45 +1166,7 @@ static numvar messageGroup(void) {
   return 1;
 }
 
-// works inside bitlash handlers to serialize a command
-void commandArgs(StringBuffer *out, int start) {
-  StringBuffer backtick;
-  int i;
-  int args = getarg(0);
-  *out = (char*)getstringarg(start);
-  out->concat('(');
-  for (i=start+1; i<=args; i++) {
-    if(isstringarg(i))
-    {
-      char *arg = (char*)getstringarg(i);
-      int len = strlen(arg);
-      // detect backticks to eval and embed any string output
-      if(len > 2 && arg[0] == '`' && arg[len-1] == '`')
-      {
-        backtick = "";
-        arg[len-1] = 0;
-        arg++;
-        Shell.eval(PrintToString(backtick), arg);
-        backtick.trim();
-        out->appendJsonString(backtick, true);
-      }else{
-        out->appendJsonString(arg, true);
-      }
-    }else{
-      // just a number
-      out->concat(getarg(i));
-    }
-    if(i+1 <= args) out->concat(',');
-  }
-  out->concat(')');
-  if(Shell.isVerbose)
-  {
-    Serial.print("built command from args: ");
-    Serial.println(*out);
-  }
-}
-
-// works inside bitlash handlers to serialize a command
+// turns list of bitlash args into comma-delim escaped string
 void jsonArgs(StringBuffer *out, int start) {
   StringBuffer backtick;
   int i;
@@ -1235,6 +1197,21 @@ void jsonArgs(StringBuffer *out, int start) {
   if(Shell.isVerbose)
   {
     Serial.print("built json from args: ");
+    Serial.println(*out);
+  }
+}
+
+// works inside bitlash handlers to serialize a command
+void commandArgs(StringBuffer *out, int start) {
+  StringBuffer backtick;
+  int i;
+  *out = (char*)getstringarg(start);
+  out->concat('(');
+  jsonArgs(out, start);
+  out->concat(')');
+  if(Shell.isVerbose)
+  {
+    Serial.print("built command from args: ");
     Serial.println(*out);
   }
 }
