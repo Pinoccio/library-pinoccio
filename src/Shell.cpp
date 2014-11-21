@@ -1166,13 +1166,11 @@ static numvar messageGroup(void) {
   return 1;
 }
 
-// works inside bitlash handlers to serialize a command
-void commandArgs(StringBuffer *out, int start) {
+// turns list of bitlash args into comma-delim escaped string
+void jsonArgs(StringBuffer *out, int start) {
   StringBuffer backtick;
   int i;
   int args = getarg(0);
-  *out = (char*)getstringarg(start);
-  out->concat('(');
   for (i=start+1; i<=args; i++) {
     if(isstringarg(i))
     {
@@ -1196,12 +1194,51 @@ void commandArgs(StringBuffer *out, int start) {
     }
     if(i+1 <= args) out->concat(',');
   }
+  if(Shell.isVerbose)
+  {
+    Serial.print("built json from args: ");
+    Serial.println(*out);
+  }
+}
+
+// works inside bitlash handlers to serialize a command
+void commandArgs(StringBuffer *out, int start) {
+  StringBuffer backtick;
+  int i;
+  *out = (char*)getstringarg(start);
+  out->concat('(');
+  jsonArgs(out, start);
   out->concat(')');
   if(Shell.isVerbose)
   {
     Serial.print("built command from args: ");
     Serial.println(*out);
   }
+}
+
+static StringBuffer lastReport;
+static uint32_t lastReportAt;
+
+static numvar commandReport(void) {
+  if (!checkArgs(1, 99, F("usage: command.report(\"type\" [,arg1,arg2,...])")) || !isstringarg(1)) {
+    return 0;
+  }
+  StringBuffer json;
+  jsonArgs(&json, 1);
+  if(json.length() > 100)
+  {
+    speol(F("report too long, 100 max"));
+    return 0;
+  }
+  lastReport = "";
+  lastReport.appendSprintf("[%d,[%d,%d],[\"%s\",[%s]]]",
+          keyMap("custom", 0),
+          keyMap("name", 0),
+          keyMap("custom", 0),
+          (char*)getstringarg(1),
+          json.c_str());
+  speol(Scout.handler.report(lastReport));
+  return true;
 }
 
 static numvar commandScout(void) {
@@ -2123,8 +2160,6 @@ static numvar hqPrint(void) {
   return true;
 }
 
-static StringBuffer lastReport;
-static uint32_t lastReportAt;
 static numvar hqOnline(void) {
   if(getarg(0) == 1 && getarg(1))
   {
@@ -2388,6 +2423,7 @@ void PinoccioShell::setup() {
   addFunction("command.all", commandAll);
   addFunction("command.others", commandOthers);
   addFunction("command.group", commandGroup);
+  addFunction("command.report", commandReport);
 
   addFunction("message.scout", messageScout);
   addFunction("message.group", messageGroup);
