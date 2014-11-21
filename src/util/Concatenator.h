@@ -50,7 +50,7 @@ struct ValueToString {
 template <typename Value>
 struct ValueToQuotedString {
   static void append(String &buf, Value value) {
-    String escaped = value;
+    String escaped(value);
     escaped.replace("\"","\\\"");
     buf.concat('"');
     buf.concat(escaped);
@@ -65,6 +65,9 @@ template <> struct QuoteStringsOnly<const char*> : ValueToQuotedString<const cha
 template <> struct QuoteStringsOnly<char*> : ValueToQuotedString<char*> {};
 template <> struct QuoteStringsOnly<String> : ValueToQuotedString<String> {};
 template <> struct QuoteStringsOnly<char> : ValueToQuotedString<char> {};
+
+template <typename Value> struct QuoteStringsAndFloats : QuoteStringsOnly<Value> {};
+template <> struct QuoteStringsAndFloats<float> : ValueToQuotedString<float> {};
 
 // Class to concatenate stuff. Use it by calling the static concat
 // method on it. For example,
