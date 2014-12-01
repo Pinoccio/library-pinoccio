@@ -26,7 +26,7 @@ static numvar ping() {
     return 0;
   }
 
-  int err = sx1272.sendPacketTimeoutACK(getarg(1), "test", 50);
+  int err = sx1272.sendPacketTimeoutACK(getarg(1), "test", 1000);
   if(err)
   {
     speol("ping failed");
@@ -64,6 +64,6 @@ bool LoRaModule::enable() {
 }
 
 void LoRaModule::loop() {
-  sx1272.receiveAll(10); // just testing
+  sx1272.receivePacketTimeoutACK(10); // just testing
 }
 
