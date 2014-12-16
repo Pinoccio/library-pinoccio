@@ -133,7 +133,7 @@ static numvar wifiStatic(void) {
     return 0;
   }
 
-  if (!GSCore::parseIpAddress(&dns, (const char *)getstringarg(3))) {
+  if (!GSCore::parseIpAddress(&dns, (const char *)getstringarg(4))) {
     speol(F("Error: Invalid dns server"));
     return 0;
   }
