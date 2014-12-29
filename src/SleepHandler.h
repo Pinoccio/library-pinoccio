@@ -40,7 +40,7 @@ class SleepHandler {
     // 2^32 * 16 / 1000 == 68,719,476 ms (±19 hours). ms should not be
     // bigger than that.
     static uint32_t msToTicks(uint32_t ms) {
-      return ms * 1000 / US_PER_TICK;
+      return ms / US_PER_TICK * 1000 + ms % US_PER_TICK * 1000 / US_PER_TICK;
     }
     static uint32_t usToTicks(uint32_t us) {
       return us / US_PER_TICK;
