@@ -9,8 +9,8 @@
 #ifndef LIB_PINOCCIO_SHELL_H_
 #define LIB_PINOCCIO_SHELL_H_
 
-#include "bitlash.h"
-#include "src/bitlash.h"
+#include <electron.h>
+#include "Scout.h"
 
 #include "lwm/sys/sysConfig.h"
 #include "lwm/phy/phy.h"
@@ -173,19 +173,8 @@ inline numvar PinoccioShell::eval(Print *out, const String &cmd) {
     Serial.println((char*)cmd.c_str());
   }
 
-  if (out) {
-    evalOutput = out;
-    setOutputHandler(evalPrint);
-  }else if(isMuted){
-    // print nowhere
-    evalOutput = NULL;
-    setOutputHandler(evalPrint);
-  }
 
-  numvar ret = doCommand((char*)cmd.c_str());
-
-  if (out || isMuted)
-    resetOutputHandler();
+  numvar ret = 0;//doCommand((char*)cmd.c_str());
 
   // important, if we eval'd a new function update our cache
   if(cmd.startsWith("function ")) refresh();

@@ -10,6 +10,7 @@
 #include <Wire.h>
 #include <Scout.h>
 #include <GS.h>
+#include <electron.h>
 #include <bitlash.h>
 #include <lwm.h>
 #include <js0n.h>

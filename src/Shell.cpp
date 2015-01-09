@@ -13,8 +13,7 @@
 #include "hq/HqHandler.h"
 #include "backpacks/Backpacks.h"
 #include "backpacks/wifi/WifiModule.h"
-#include "bitlash.h"
-#include "src/bitlash.h"
+#include <electron.h>
 #include "util/String.h"
 #include "util/PrintToString.h"
 #include "modules/ModuleHandler.h"

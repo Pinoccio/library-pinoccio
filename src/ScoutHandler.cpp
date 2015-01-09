@@ -7,8 +7,8 @@
 *  under the terms of the BSD License as described in license.txt.         *
 \**************************************************************************/
 #include <Arduino.h>
-#include <Shell.h>
 #include <Scout.h>
+#include <Shell.h>
 #include "SleepHandler.h"
 #include "backpack-bus/PBBP.h"
 #include "util/StringBuffer.h"
