@@ -554,7 +554,7 @@ void leadIncoming(const char *packet, size_t len, unsigned short *index) {
 
   if (strcmp(type, "online") == 0) {
     // fire the online event for everyone
-    Shell.eval(F("command.all(\"hq.online\",2)"));
+//    Shell.eval(F("command.all(\"hq.online\",2)"));
   }
 
   if (strcmp(type, "command") == 0) {

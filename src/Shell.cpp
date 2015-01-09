@@ -31,6 +31,13 @@ static bool isMeshVerbose = 0;
  *     HELPER FUNCTIONS     *
 \****************************/
 
+void *e_debug(const char *file, int line, const char *function, const char * format, ...)
+{
+  Serial.print(file);
+  Serial.print(" ");
+  Serial.println(line);
+}
+
 static void printSpaces(int8_t number) {
   while (number-- > 0)
     Serial.write(' ');
