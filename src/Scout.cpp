@@ -318,12 +318,12 @@ void PinoccioScout::setStateChangeEventCycle(uint32_t digitalInterval, uint32_t 
 
 void PinoccioScout::saveState() {
   for (int i=0; i<NUM_DIGITAL_PINS; i++) {
+    PinState *state = &pinStates[i];
     if (isPinReserved(i)) {
-      pinModes[i] = PINMODE_RESERVED;
+      state->mode = PINMODE_RESERVED;
     } else {
-      pinModes[i] = PINMODE_UNSET;
+      state->mode = PINMODE_UNSET;
     }
-    pinStates[i] = -1;
   }
 
   batteryPercentage = this->getBatteryPercentage();
@@ -349,7 +349,7 @@ int8_t PinoccioScout::getRegisterPinMode(uint8_t pin) {
 
 int8_t PinoccioScout::getPinMode(uint8_t pin) {
   if (pin < NUM_DIGITAL_PINS)
-    return pinModes[pin];
+    return pinStates[pin].mode;
   return PINMODE_UNSET;
 }
 
@@ -389,7 +389,7 @@ bool PinoccioScout::setMode(uint8_t pin, int8_t mode) {
 
   switch(mode) {
     case PINMODE_DISABLED:
-      value = -1;
+      value = 0;
       break;
     case PINMODE_PWM:
       value = 0;
@@ -444,7 +444,7 @@ bool PinoccioScout::pinWrite(uint8_t pin, uint8_t value) {
 uint16_t PinoccioScout::pinRead(uint8_t pin) {
   switch(getPinMode(pin)) {
     case PINMODE_PWM:
-      return pinStates[pin];
+      return pinStates[pin].value;
 
     case PINMODE_INPUT:
     case PINMODE_INPUT_PULLUP:
@@ -524,9 +524,10 @@ bool PinoccioScout::isPinReserved(uint8_t pin) {
 }
 
 bool PinoccioScout::updatePinState(uint8_t pin, int16_t val, int8_t mode) {
-  if (pinStates[pin] != val || pinModes[pin] != mode) {
-    pinStates[pin] = val;
-    pinModes[pin] = mode;
+  PinState *state = &pinStates[pin];
+  if (state->value != val || state->mode != mode) {
+    state->value = val;
+    state->mode = mode;
 
     if (isDigitalPin(pin) && digitalPinEventHandler != 0) {
       if (eventVerboseOutput) {
