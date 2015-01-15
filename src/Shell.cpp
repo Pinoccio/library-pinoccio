@@ -1496,8 +1496,8 @@ static numvar pinMakeDisconnected(void) {
   return pinSetModeInternal(1, PinoccioScout::PINMODE_DISCONNECTED);
 }
 
-static numvar pinDisable(void) {
-  if (!checkArgs(1, F("usage: pin.disable(\"pinName\")"))) {
+static numvar pinMakeDisabled(void) {
+  if (!checkArgs(1, F("usage: pin.makedisabled(\"pinName\")"))) {
     return 0;
   }
 
@@ -2485,7 +2485,7 @@ void PinoccioShell::setup() {
   addFunction("pin.makeoutput", pinMakeOutput);
   addFunction("pin.makepwm", pinMakePWM);
   addFunction("pin.makedisconnected", pinMakeDisconnected);
-  addFunction("pin.disable", pinDisable);
+  addFunction("pin.makedisabled", pinMakeDisabled);
   addFunction("pin.setmode", pinSetMode);
   addFunction("pin.read", pinRead);
   addFunction("pin.write", pinWrite);
