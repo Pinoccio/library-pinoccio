@@ -1493,7 +1493,7 @@ static numvar pinMakeDisconnected(void) {
     return 0;
   }
 
-  return pinSetModeInternal(1, PinoccioScout::PINMODE_PWM);
+  return pinSetModeInternal(1, PinoccioScout::PINMODE_DISCONNECTED);
 }
 
 static numvar pinDisable(void) {
