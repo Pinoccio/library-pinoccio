@@ -2693,7 +2693,11 @@ void PinoccioShell::loop() {
           Shell.refresh();
         }
         prompt();
-      } else if (c == '\b') {
+      } else if (c == 0x08 || c == 0x7f) {
+        // We handle both backspace (0x08) and delete (0x7f). Since we
+        // don't have full line editing, delete has no real meaning
+        // otherwise and some terminals send delete when you press
+        // backspace (notable screen seems to do this).
         if (serialIncoming.length()) {
           // Erase last character (backspace only moves the cursor back,
           // so print a space to actually erase)
