@@ -10,9 +10,6 @@
 #include "Shell.h"
 #include "Scout.h"
 #include "SleepHandler.h"
-#include "hq/HqHandler.h"
-#include "backpacks/Backpacks.h"
-#include "backpacks/wifi/WifiModule.h"
 #include "bitlash.h"
 #include "src/bitlash.h"
 #include "util/String.h"
@@ -385,18 +382,18 @@ static numvar getBatteryVolts(void) {
   return int(v);
 }
 
-static numvar enableBackpackVcc(void) {
-  Scout.enableBackpackVcc();
+static numvar enableVcc(void) {
+  Scout.enableVcc();
   return 1;
 }
 
-static numvar disableBackpackVcc(void) {
-  Scout.disableBackpackVcc();
+static numvar disableVcc(void) {
+  Scout.disableVcc();
   return 1;
 }
 
-static numvar isBackpackVccEnabled(void) {
-  return Scout.isBackpackVccEnabled();
+static numvar isVccEnabled(void) {
+  return Scout.isVccEnabled;
 }
 
 static numvar powerSleep(void) {
@@ -435,7 +432,7 @@ static StringBuffer powerReportHQ(void) {
           (int)Scout.getBatteryPercentage(),
           (int)Scout.getBatteryVoltage(),
           Scout.isBatteryCharging()?"true":"false",
-          Scout.isBackpackVccEnabled()?"true":"false");
+          Scout.isVccEnabled?"true":"false");
   return Scout.handler.report(report);
 }
 
@@ -1647,31 +1644,6 @@ static numvar analogPinReport(void) {
   return 1;
 }
 
-/****************************\
-*     BACKPACK HANDLERS     *
-\****************************/
-
-static StringBuffer backpackReportHQ(void) {
-  StringBuffer report(100);
-  report.appendSprintf("[%d,[%d],[[", keyMap("backpacks", 0), keyMap("list", 0));
-  /*
-  for (uint8_t i=0; i<Backpacks::num_backpacks; ++i) {
-    BackpackInfo &info = Backpacks::info[i];
-    for (uint8_t j=0; j<sizeof(info.id); ++j) {
-      // TODO this isn't correct, dunno what to do here
-      snprintf(report+strlen(report), sizeof(report) - strlen(report), "%s%d",comma++?",":"",info.id.raw_bytes[j]);
-    }
-  }
-  */
-  report += "]]]";
-  return Scout.handler.report(report);
-}
-
-static numvar backpackReport(void) {
-  speol(backpackReportHQ());
-  return 1;
-}
-
 static void printHexBuffer(const uint8_t *buf, size_t len, const char *sep = NULL) {
   for (uint8_t i=0; i<len; ++i) {
     // from bitlash
@@ -1682,272 +1654,6 @@ static void printHexBuffer(const uint8_t *buf, size_t len, const char *sep = NUL
   }
 }
 
-static numvar backpackList(void) {
-  if (Backpacks::num_backpacks == 0) {
-    speol(F("No backpacks found"));
-  } else {
-    for (uint8_t i=0; i<Backpacks::num_backpacks; ++i) {
-      BackpackInfo &info = Backpacks::info[i];
-      printHexBuffer(&i, 1);
-      sp(F(": "));
-
-      Pbbe::Header *h = info.getHeader();
-      if (!h) {
-        sp(F("Error parsing name"));
-      } else {
-        sp(h->backpack_name);
-      }
-
-      sp(F(" ("));
-      printHexBuffer(info.id.raw_bytes, sizeof(info.id));
-      speol(F(")"));
-    }
-  }
-  return 0;
-}
-
-static numvar backpackEeprom(void) {
-  numvar addr = getarg(1);
-  if (addr < 0 || addr >= Backpacks::num_backpacks) {
-    speol(F("Invalid backpack number"));
-    return 0;
-  }
-
-  // Get EEPROM contents
-  Pbbe::Eeprom *eep = Backpacks::info[addr].getEeprom();
-  if (!eep) {
-    speol(F("Failed to fetch EEPROM"));
-    return 0;
-  }
-
-  // Print EEPROM over multiple lines
-  size_t offset = 0;
-  const uint8_t bytes_per_line = 8;
-  while (offset < eep->size) {
-    printHexBuffer(eep->raw + offset, min(bytes_per_line, eep->size - offset), " ");
-    speol();
-    offset += bytes_per_line;
-  }
-  return 1;
-}
-
-static numvar backpackUpdateEeprom(void) {
-  numvar addr = getarg(1);
-  if (addr < 0 || addr >= Backpacks::num_backpacks) {
-    speol(F("Invalid backpack number"));
-    return 0;
-  }
-
-  numvar offset;
-  const char *str;
-
-  if (getarg(0) == 2) {
-    offset = 0;
-    str = (const char*)getstringarg(2);
-  } else {
-    offset = getarg(2);
-    str = (const char*)getstringarg(3);
-  }
-
-  size_t length = strlen(str);
-  uint8_t bytes[length / 2];
-  PinoccioShell::parseHex(str, length, bytes);
-
-  // Get the current EEPROM contents, but ignore any failure so we can
-  // fix the EEPROM even when it has an invalid checksum (updateEeprom
-  // handles a NULL as expected).
-  BackpackInfo &info = Backpacks::info[addr];
-  info.getEeprom();
-
-  info.freeHeader();
-  info.freeAllDescriptors();
-
-  Pbbe::Eeprom *eep = Pbbe::updateEeprom(info.eep, offset, bytes, length / 2);
-  if (!eep) {
-    speol(F("Failed to update EEPROM"));
-    return 0;
-  }
-  // Update the eep pointer, it might have been realloced
-  info.eep = eep;
-
-  if (!Pbbe::writeEeprom(Backpacks::pbbp, addr, info.eep)) {
-    speol(F("Failed to write EEPROM"));
-    return 0;
-  }
-  return 1;
-}
-
-
-static numvar backpackDetail(void) {
-  numvar addr = getarg(1);
-  if (addr < 0 || addr >= Backpacks::num_backpacks) {
-    speol(F("Invalid backpack number"));
-    return 0;
-  }
-  Pbbe::Header *h = Backpacks::info[addr].getHeader();
-  Pbbe::UniqueId &id = Backpacks::info[addr].id;
-
-  sp(F("Backpack name: "));
-  speol(h->backpack_name);
-
-  sp(F("Model number: 0x"));
-  printIntegerInBase(id.model, 16, 2, '0');
-  speol();
-
-  sp(F("Board revision: "));
-  Pbbe::MajorMinor rev = Pbbe::extractMajorMinor(id.revision);
-  sp(rev.major);
-  sp(F("."));
-  speol(rev.minor);
-
-  sp(F("Serial number: 0x"));
-  printIntegerInBase(id.serial, 16, 2, '0');
-  speol();
-
-  sp(F("Backpack Bus Protocol version: "));
-  sp(id.protocol_version);
-  speol(F(".x")); // Only the major version is advertised
-
-  sp(F("Backpack Bus firmware version: "));
-  speol(h->firmware_version);
-
-  sp(F("EEPROM layout version: "));
-  sp(h->layout_version);
-  speol(F(".x")); // Only the major version is advertised
-
-  sp(F("EEPROM size: "));
-  sp(h->total_eeprom_size);
-  speol(F(" bytes"));
-
-  sp(F("EEPROM used: "));
-  sp(h->used_eeprom_size);
-  speol(F(" bytes"));
-  return 1;
-}
-
-static numvar backpackResources(void) {
-  numvar addr = getarg(1);
-  if (addr < 0 || addr >= Backpacks::num_backpacks) {
-    speol(F("Invalid backpack number"));
-    return 0;
-  }
-
-  Pbbe::DescriptorList *list = Backpacks::info[addr].getAllDescriptors();
-  if (!list) {
-    speol(F("Failed to fetch or parse resource descriptors"));
-    return 0;
-  }
-  for (uint8_t i = 0; i < list->num_descriptors; ++i) {
-    Pbbe::DescriptorInfo &info = list->info[i];
-    if (info.group) {
-      Pbbe::GroupDescriptor& d = static_cast<Pbbe::GroupDescriptor&>(*info.group->parsed);
-      sp(d.name);
-      sp(".");
-    }
-
-    switch (info.type) {
-      case Pbbe::DT_SPI_SLAVE: {
-        Pbbe::SpiSlaveDescriptor& d = static_cast<Pbbe::SpiSlaveDescriptor&>(*info.parsed);
-        sp(d.name);
-        sp(F(": spi, ss = "));
-        sp(d.ss_pin.name());
-        sp(F(", max speed = "));
-        if (d.speed.raw()) {
-          sp(d.speed,100);
-          sp(F("Mhz"));
-        } else {
-          sp(F("unknown"));
-        }
-        speol();
-        break;
-      }
-      case Pbbe::DT_UART: {
-        Pbbe::UartDescriptor& d = static_cast<Pbbe::UartDescriptor&>(*info.parsed);
-        sp(d.name);
-        sp(F(": uart, tx = "));
-        sp(d.tx_pin.name());
-        sp(F(", rx = "));
-        sp(d.rx_pin.name());
-        sp(F(", speed = "));
-        if (d.speed) {
-          sp(d.speed);
-          sp(F("bps"));
-        } else {
-          sp(F("unknown"));
-        }
-        speol();
-        break;
-      }
-      case Pbbe::DT_IOPIN: {
-        Pbbe::IoPinDescriptor& d = static_cast<Pbbe::IoPinDescriptor&>(*info.parsed);
-        sp(d.name);
-        sp(F(": gpio, pin = "));
-        sp(d.pin.name());
-        speol();
-        break;
-      }
-      case Pbbe::DT_GROUP: {
-  // Ignore
-        break;
-      }
-      case Pbbe::DT_POWER_USAGE: {
-        Pbbe::PowerUsageDescriptor& d = static_cast<Pbbe::PowerUsageDescriptor&>(*info.parsed);
-        sp(F("power: pin = "));
-        sp(d.power_pin.name());
-        sp(F(", minimum = "));
-        if (d.minimum.raw()) {
-          sp(d.minimum,100);
-          sp(F("uA"));
-        } else {
-          sp(F("unknown"));
-        }
-        sp(F(", typical = "));
-        if (d.typical.raw()) {
-          sp(d.typical,100);
-          sp(F("uA"));
-        } else {
-          sp(F("unknown"));
-        }
-        sp(F(", maximum = "));
-        if (d.maximum.raw()) {
-          sp(d.maximum,100);
-          sp(F("uA"));
-        } else {
-          sp(F("unknown"));
-        }
-        speol();
-        break;
-      }
-      case Pbbe::DT_I2C_SLAVE: {
-        Pbbe::I2cSlaveDescriptor& d = static_cast<Pbbe::I2cSlaveDescriptor&>(*info.parsed);
-        sp(d.name);
-        sp(F(": i2c, address = "));
-        sp(d.addr);
-        sp(F(", max speed = "));
-        sp(d.speed);
-        sp(F("kbps"));
-        speol();
-        break;
-      }
-      case Pbbe::DT_DATA: {
-        Pbbe::DataDescriptor& d = static_cast<Pbbe::DataDescriptor&>(*info.parsed);
-        sp(d.name);
-        sp(F(": data, length = "));
-        sp(d.length);
-        sp(F(", content = "));
-        printHexBuffer(d.data, d.length);
-        speol();
-        break;
-      }
-      default: {
-  // Should not occur
-        break;
-      }
-    }
-  }
-
-  return 1;
-}
 
 /****************************\
  *   SCOUT REPORT HANDLERS  *
@@ -2065,17 +1771,6 @@ static numvar daisyWipe(void) {
   StringBuffer report(100);
   report.appendSprintf("[%d,[%d],[\"bye\"]]",keyMap("daisy",0),keyMap("dave",0));
   Scout.handler.report(report);
-
-  if (WifiModule::instance.bp()) {
-    if (!WifiModule::instance.bp()->runDirectCommand(Serial, "AT&F")) {
-       sp(F("Error: Wi-Fi direct command failed"));
-       ret = false;
-    }
-    if (!WifiModule::instance.bp()->runDirectCommand(Serial, "AT&W0")) {
-       sp(F("Error: Wi-Fi direct command failed"));
-       ret = false;
-    }
-  }
 
   if (ret == true) {
     Scout.meshResetSecurityKey();
@@ -2206,19 +1901,6 @@ static numvar hqReport(void) {
   free(args);
   speol(Scout.handler.report(lastReport));
   return true;
-}
-
-static numvar hqSetAddress(void) {
-  if (!checkArgs(1, 2, F("usage: hq.setaddress(\"host\"[, port]"))) {
-    return 0;
-  }
-  // Change the HQ address. Always disable TLS, since TLS checking needs
-  // the actual server certificate included in the sketch. There is no
-  // hostname checking and no CA certificates included...
-  if (getarg(0) == 2)
-    HqHandler::setHqAddress(ConstString((const char*)getstringarg(1)), false, getarg(2));
-  else
-    HqHandler::setHqAddress(ConstString((const char*)getstringarg(1)), false);
 }
 
 /****************************\
@@ -2390,9 +2072,9 @@ void PinoccioShell::setup() {
   addFunction("power.percent", getBatteryPercentage);
   addFunction("power.voltage", getBatteryVoltage);
   addFunction("power.volts", getBatteryVolts);
-  addFunction("power.enablevcc", enableBackpackVcc);
-  addFunction("power.disablevcc", disableBackpackVcc);
-  addFunction("power.isvccenabled", isBackpackVccEnabled);
+  addFunction("power.enablevcc", enableVcc);
+  addFunction("power.disablevcc", disableVcc);
+  addFunction("power.isvccenabled", isVccEnabled);
   addFunction("power.sleep", powerSleep);
   addFunction("power.report", powerReport);
   addFunction("power.wakeup.pin", powerWakeupPin);
@@ -2496,13 +2178,6 @@ void PinoccioShell::setup() {
   addFunction("pin.report.digital", digitalPinReport);
   addFunction("pin.report.analog", analogPinReport);
 
-  addFunction("backpack.report", backpackReport);
-  addFunction("backpack.list", backpackList);
-  addFunction("backpack.eeprom", backpackEeprom);
-  addFunction("backpack.eeprom.update", backpackUpdateEeprom);
-  addFunction("backpack.detail", backpackDetail);
-  addFunction("backpack.resources", backpackResources);
-
   addFunction("scout.report", scoutReport);
   addFunction("scout.isleadscout", isScoutLeadScout);
   addFunction("scout.delay", scoutDelay);
@@ -2520,7 +2195,6 @@ void PinoccioShell::setup() {
   addFunction("hq.print", hqPrint);
   addFunction("hq.report", hqReport);
   addFunction("hq.bridge", hqBridge);
-  addFunction("hq.setaddress", hqSetAddress);
   addFunction("hq.online", hqOnline);
 
   addFunction("events.start", startStateChangeEvents);
@@ -2606,7 +2280,6 @@ void PinoccioShell::allReportHQ() {
   scoutReportHQ();
   uptimeReportHQ();
   powerReportHQ();
-  backpackReportHQ();
   digitalPinReportHQ();
   analogPinReportHQ();
   meshReportHQ();

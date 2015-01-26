@@ -13,8 +13,6 @@
 #include <Shell.h>
 #include <ScoutHandler.h>
 #include "modules/ModuleHandler.h"
-#include "backpack-bus/PBBP.h"
-#include "util/Callback.h"
 #include <Wire.h>
 
 #include "lwm/phy/phy.h"
@@ -40,7 +38,6 @@
 
 // TODO: remove these when this class is put in the pinoccio namespace
 using pinoccio::ScoutHandler;
-using pinoccio::CallbackList;
 
 class PinoccioScout : public PinoccioClass {
 
@@ -60,9 +57,9 @@ class PinoccioScout : public PinoccioClass {
     int8_t getTemperatureC();
     int8_t getTemperatureF();
 
-    void enableBackpackVcc();
-    void disableBackpackVcc();
-    bool isBackpackVccEnabled();
+    void enableVcc();
+    void disableVcc();
+    bool isVccEnabled;
 
     bool isLeadScout();
     bool factoryReset();
@@ -116,12 +113,9 @@ class PinoccioScout : public PinoccioClass {
     bool isBattAlarmTriggered;
     uint8_t temperature;
 
-    CallbackList<void, bool> toggleBackpackVccCallbacks;
-
     bool eventVerboseOutput;
     bool eventsStopped;
 
-    PBBP bp;
     ScoutHandler handler;
     
     uint32_t now = 0; // set every loop
@@ -149,7 +143,6 @@ class PinoccioScout : public PinoccioClass {
 
     void doSleep(bool pastEnd);
 
-    bool isVccEnabled;
     bool isStateSaved;
     bool isFactoryResetReady;
 

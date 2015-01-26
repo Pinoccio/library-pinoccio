@@ -10,12 +10,10 @@
 #include <Shell.h>
 #include <Scout.h>
 #include "SleepHandler.h"
-#include "backpack-bus/PBBP.h"
 #include "util/StringBuffer.h"
 #include "util/String.h"
 #include "util/PrintToString.h"
 #include "key/key.h"
-#include "backpacks/wifi/WifiModule.h"
 extern "C" {
 #include <js0n.h>
 #include <j0g.h>
@@ -114,17 +112,6 @@ void ScoutHandler::setup() {
 void ScoutHandler::loop() {
   if (Scout.isLeadScout()) {
     leadHQHandle();
-    // when the seen (most recent wifi read/write activity) is idle for 5+ minutes, paranoid reassociate
-    if(SleepHandler::uptime().seconds - seen > 5*60)
-    {
-      if (isVerbose) {
-        Serial.print(SleepHandler::uptime().seconds - seen);
-        Serial.println(F(" seconds since last HQ activity, reconnecting"));
-      }
-      // TODO use a different flag to track this instead of overloading seen
-      seen = SleepHandler::uptime().seconds - 60;
-      WifiModule::instance.bp() && WifiModule::instance.bp()->associate();
-    }
   }
 }
 
@@ -463,7 +450,7 @@ StringBuffer ScoutHandler::report(StringBuffer &report) {
 
 void leadHQConnect() {
 
-  if (Scout.handler.isBridged || (WifiModule::instance.bp() && WifiModule::instance.bp()->client.connected())) {
+  if (Scout.handler.isBridged) {
     char token[33];
     StringBuffer auth(64);
     token[32] = 0;
@@ -489,11 +476,6 @@ void leadHQHandle(void) {
     rsize = (int)Scout.handler.bridge.length();
     hqIncoming += Scout.handler.bridge;
     Scout.handler.bridge = "";
-  } else if (WifiModule::instance.bp()) {
-    if (WifiModule::instance.bp()->client.available()) {
-      rsize = hqIncoming.readClient(WifiModule::instance.bp()->client, 128);
-      if(rsize > 0) Scout.handler.seen = SleepHandler::uptime().seconds;
-    }
   }
 
   // only continue if new data to process
@@ -678,21 +660,7 @@ bool leadSignal(const String &json) {
     return true;
   }
 
-  if (!WifiModule::instance.bp() || !WifiModule::instance.bp()->client.connected()) {
-    if (Scout.handler.isVerbose) {
-      Serial.println(F("HQ offline, can't signal"));
-      Serial.println(json);
-    }
-    return false;
-  }
-  if (Scout.handler.isVerbose) {
-    Serial.println(F("Signalling HQ: "));
-    Serial.println(json);
-  }
-
-  WifiModule::instance.bp()->client.print(json);
-  WifiModule::instance.bp()->client.flush();
-  return true;
+  return false;
 }
 
 // called whenever another scout sends an answer back to us
