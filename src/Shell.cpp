@@ -10,9 +10,6 @@
 #include "Shell.h"
 #include "Scout.h"
 #include "SleepHandler.h"
-#include "hq/HqHandler.h"
-#include "backpacks/Backpacks.h"
-#include "backpacks/wifi/WifiModule.h"
 #include "bitlash.h"
 #include "src/bitlash.h"
 #include "util/String.h"
@@ -294,69 +291,6 @@ static numvar uptimeStatus(void) {
   return true;
 }
 
-/****************************\
-*        KEY HANDLERS        *
-\****************************/
-
-static numvar keyMap(void) {
-  if (!checkArgs(1, 2, F("usage: key(\"string\" [, temp_flag])"))) {
-    return 0;
-  }
-  unsigned long at = 0;
-  static char num[8];
-  // if the temp flag was passed
-  if(getarg(0) > 1) {
-    at = getarg(2);
-  }
-  if (isstringarg(1)) {
-    return keyMap((char*)getstringarg(1), at);
-  }
-  snprintf(num, 8, "%ld", getarg(1));
-  return keyMap(num, at);
-}
-
-static numvar keyFree(void) {
-  if (!checkArgs(1, F("usage: key.free(key)"))) {
-    return 0;
-  }
-  keyFree(getarg(1));
-  return 1;
-}
-
-static numvar keyPrint(void) {
-  if (!checkArgs(1, F("usage: key.print(key)"))) {
-    return 0;
-  }
-  const char *key = keyGet(getarg(1));
-  if (!key) {
-    return 0;
-  }
-  speol(key);
-  return 1;
-}
-
-static numvar keyNumber(void) {
-  if (!checkArgs(1, F("usage: key.number(key)"))) {
-    return 0;
-  }
-  const char *key = keyGet(getarg(1));
-  if (!key) {
-    return 0;
-  }
-  return atoi(key);
-}
-
-static numvar keySave(void) {
-  if (!checkArgs(2, F("usage: key.save(\"string\", at)")) || !isstringarg(1)) {
-    return 0;
-  }
-  char cmd[42], *var;
-  var = (char*)getstringarg(1);
-  snprintf(cmd, sizeof(cmd), "function boot.%s {%s=key(\"%s\");}", var, var, keyGet(getarg(2)));
-  Shell.eval(cmd);
-  return 1;
-}
-
 
 /****************************\
 *      POWER HANDLERS       *
@@ -385,18 +319,18 @@ static numvar getBatteryVolts(void) {
   return int(v);
 }
 
-static numvar enableBackpackVcc(void) {
-  Scout.enableBackpackVcc();
+static numvar enableVcc(void) {
+  Scout.enableVcc();
   return 1;
 }
 
-static numvar disableBackpackVcc(void) {
-  Scout.disableBackpackVcc();
+static numvar disableVcc(void) {
+  Scout.disableVcc();
   return 1;
 }
 
-static numvar isBackpackVccEnabled(void) {
-  return Scout.isBackpackVccEnabled();
+static numvar isVccEnabled(void) {
+  return Scout.isVccEnabled;
 }
 
 static numvar powerSleep(void) {
@@ -435,7 +369,7 @@ static StringBuffer powerReportHQ(void) {
           (int)Scout.getBatteryPercentage(),
           (int)Scout.getBatteryVoltage(),
           Scout.isBatteryCharging()?"true":"false",
-          Scout.isBackpackVccEnabled()?"true":"false");
+          Scout.isVccEnabled?"true":"false");
   return Scout.handler.report(report);
 }
 
@@ -688,228 +622,6 @@ static numvar ledReport(void) {
 }
 
 /****************************\
- *     MESH HELPERS
-\****************************/
-
-static NWK_DataReq_t sendDataReq;
-static bool sendDataReqBusy;
-
-static bool receiveMessage(NWK_DataInd_t *ind) {
-  char buf[64];
-  char *data = (char*)ind->data;
-  int keys[10];
-
-  if (isMeshVerbose) {
-    Serial.print(F("Received message of "));
-    Serial.print(data);
-    Serial.print(F(" from "));
-    Serial.print(ind->srcAddr, DEC);
-    Serial.print(F(" lqi "));
-    Serial.print(ind->lqi, DEC);
-    Serial.print(F(" rssi "));
-    Serial.println(abs(ind->rssi), DEC);
-  }
-  Shell.lastMeshRssi = abs(ind->rssi);
-  Shell.lastMeshLqi = ind->lqi;
-  Shell.lastMeshFrom = ind->srcAddr;
-  NWK_SetAckControl(abs(ind->rssi));
-
-  if (strlen(data) <3 || data[0] != '[') {
-    return false;
-  }
-
-  // parse the array payload into keys, [1, "foo", "bar"]
-  keyLoad(data, keys, millis());
-  uint32_t time = millis();
-
-  snprintf(buf, sizeof(buf),"on.message.scout");
-  if (Shell.defined(buf)) {
-    snprintf(buf, sizeof(buf), "on.message.scout(%d", ind->srcAddr);
-    for (int i=2; i<=keys[0]; i++) {
-      snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf), ",%d", keys[i]);
-    }
-    snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf), ")");
-    Shell.eval(buf);
-  }
-
-  if (Scout.eventVerboseOutput) {
-    Serial.print(F("on.message.scout event handler took "));
-    Serial.print(millis() - time);
-    Serial.println(F("ms"));
-  }
-  return true;
-}
-
-static void sendConfirm(NWK_DataReq_t *req) {
-   sendDataReqBusy = false;
-   free(req->data);
-
-   if (isMeshVerbose) {
-    if (req->status == NWK_SUCCESS_STATUS) {
-      Serial.print(F("-  Message successfully sent to Scout "));
-      Serial.print(req->dstAddr);
-      if (req->control) {
-        Serial.print(F(" (Confirmed with control byte: "));
-        Serial.print(req->control);
-        Serial.print(F(")"));
-      }
-      Serial.println();
-    } else {
-      Serial.print(F("Error: "));
-      switch (req->status) {
-        case NWK_OUT_OF_MEMORY_STATUS:
-          Serial.print(F("Out of memory: "));
-          break;
-        case NWK_NO_ACK_STATUS:
-        case NWK_PHY_NO_ACK_STATUS:
-          Serial.print(F("No acknowledgement received: "));
-          break;
-        case NWK_NO_ROUTE_STATUS:
-          Serial.print(F("No route to destination: "));
-          break;
-        case NWK_PHY_CHANNEL_ACCESS_FAILURE_STATUS:
-          Serial.print(F("Physical channel access failure: "));
-          break;
-        default:
-          Serial.print(F("unknown failure: "));
-      }
-      Serial.print(F("("));
-      Serial.print(req->status, HEX);
-      Serial.println(F(")"));
-    }
-  }
-  Shell.lastMeshRssi = req->control;
-
-  // run the Bitlash callback ack function
-  char buf[32];
-  uint32_t time = millis();
-
-  snprintf(buf, sizeof(buf),"on.message.signal");
-  if (Shell.defined(buf)) {
-    snprintf(buf, sizeof(buf), "on.message.signal(%d, %d)", req->dstAddr, (req->status == NWK_SUCCESS_STATUS) ? req->control : 0);
-    Shell.eval(buf);
-  }
-
-  if (Scout.eventVerboseOutput) {
-    Serial.print(F("on.message.signal event handler took "));
-    Serial.print(millis() - time);
-    Serial.println(F("ms"));
-  }
-}
-
-static void sendMessage(int address, const String &data) {
-  if (sendDataReqBusy) {
-    return;
-  }
-
-  sendDataReq.dstAddr = address;
-  sendDataReq.dstEndpoint = 1;
-  sendDataReq.srcEndpoint = 1;
-  sendDataReq.options = NWK_OPT_ACK_REQUEST|NWK_OPT_ENABLE_SECURITY;
-  sendDataReq.data = (uint8_t*)strdup(data.c_str());
-  sendDataReq.size = data.length() + 1;
-  sendDataReq.confirm = sendConfirm;
-  NWK_DataReq(&sendDataReq);
-
-  sendDataReqBusy = true;
-
-  if (isMeshVerbose) {
-    Serial.print(F("Sent message to Scout "));
-    Serial.print(address);
-    Serial.print(F(": "));
-    Serial.println(data);
-  }
-}
-
-static void commandConfirm(NWK_DataReq_t *req) {
-
-   if (Shell.isVerbose) {
-    if (req->status == NWK_SUCCESS_STATUS) {
-      Serial.print(F("-  Command successfully sent to Scout "));
-      Serial.print(req->dstAddr);
-      if (req->control) {
-        Serial.print(F(" (Confirmed with control byte: "));
-        Serial.print(req->control);
-        Serial.print(F(")"));
-      }
-      Serial.println();
-    } else {
-      Serial.print(F("Error: "));
-      switch (req->status) {
-        case NWK_OUT_OF_MEMORY_STATUS:
-          Serial.print(F("Out of memory: "));
-          break;
-        case NWK_NO_ACK_STATUS:
-        case NWK_PHY_NO_ACK_STATUS:
-          Serial.print(F("No acknowledgement received: "));
-          break;
-        case NWK_NO_ROUTE_STATUS:
-          Serial.print(F("No route to destination: "));
-          break;
-        case NWK_PHY_CHANNEL_ACCESS_FAILURE_STATUS:
-          Serial.print(F("Physical channel access failure: "));
-          break;
-        default:
-          Serial.print(F("unknown failure: "));
-      }
-      Serial.print(F("("));
-      Serial.print(req->status, HEX);
-      Serial.println(F(")"));
-    }
-  }
-  Shell.lastMeshRssi = req->control;
-
-  // run the Bitlash callback ack command appended after if any
-  char *commandAck = (char*)req->data+req->size;
-  if(*commandAck)
-  {
-    Shell.eval(commandAck,req->status,Shell.lastMeshRssi);
-  }
-
-  free(req->data);
-  free(req);
-
-}
-
-static void sendCommand(bool toScout, int address, const char *cmd, const char *ack) {
-  NWK_DataReq_t *req = (NWK_DataReq_t*)malloc(sizeof(struct NWK_DataReq_t));
-  memset(req,0,sizeof(struct SYS_Timer_t));
-
-  // If commanding a Scout, change operation type
-  if (toScout) {
-    req->options = NWK_OPT_ACK_REQUEST|NWK_OPT_ENABLE_SECURITY;
-  } else {
-    req->options = NWK_OPT_MULTICAST|NWK_OPT_ENABLE_SECURITY;
-  }
-
-  req->dstAddr = address;
-  req->confirm = commandConfirm;
-  req->dstEndpoint = 2;
-  req->srcEndpoint = 2;
-  req->data = (uint8_t*)malloc(strlen(cmd) + 1 + strlen(ack) + 1);
-  req->size = strlen(cmd) + 1;
-  strcpy((char*)req->data,cmd);
-  strcpy((char*)req->data+req->size,ack); // append any ack after
-  NWK_DataReq(req);
-
-  if (Shell.isVerbose) {
-    Serial.print(F("Sent command to Scout "));
-    Serial.print(address);
-    Serial.print(F(": "));
-    Serial.print(req->size);
-    Serial.print(F(": "));
-    Serial.println((char*)req->data);
-    Serial.print(F(" ack "));
-    Serial.println((char*)ack);
-  }
-}
-
-static void sendCommand(bool toScout, int address, const char *data) {
-  sendCommand(toScout, address, data, "");
-}
-
-
-/****************************\
 *    MESH RADIO HANDLERS    *
 \****************************/
 
@@ -1037,23 +749,6 @@ static numvar meshFrom(void) {
   return Shell.lastMeshFrom;
 }
 
-
-static numvar meshFieldtest(void) {
-  if (!checkArgs(1, F("usage: mesh.fieldtest(seconds)"))) {
-    return 0;
-  }
-  // poor mans!
-  Shell.eval(F("command.others(\"command.scout\",mesh.id,\"millis\")")); // this force flushes routes table to us to bootstrap
-  Shell.eval(F("function mesh.ft.ack {if(arg(1)) led.red; if(arg(2) > 0 && arg(2) <= 80) led.green(100); if(arg(2) > 80) led.yellow;}"));
-  Shell.eval(F("function mesh.ft.ping { command.scout.ack(\"mesh.ft.ack\",arg(1),\"led.blue\",100); }"));
-  Shell.eval(F("function mesh.ft.each { mesh.each(\"mesh.ft.ping\");}"));
-  Shell.eval(F("run mesh.ft.each,500"));
-  // this causes an unexpected char that stops running mesh.ft.each, hack!
-  Shell.delay(getarg(1)*1000,F("rm mesh.ft.each;rm mesh.ft.ping;rm mesh.ft.ack;led.off"));
-
-  return 1;
-}
-
 static numvar meshVerbose(void) {
   if (!checkArgs(1, F("usage: mesh.verbose(flag)"))) {
     return 0;
@@ -1108,34 +803,6 @@ static numvar meshId(void) {
   return Scout.getAddress();
 }
 
-static numvar meshRouting(void) {
-  sp(F("|    Fixed    |  Multicast  |    Score    |    DstAdd   | NextHopAddr |    Rank     |     LQI     |"));
-  speol();
-  NWK_RouteTableEntry_t *table = NWK_RouteTable();
-  for (int i=0; i < NWK_ROUTE_TABLE_SIZE; i++) {
-    if (table[i].dstAddr == NWK_ROUTE_UNKNOWN) {
-      continue;
-    }
-    sp(F("|      "));
-    sp(table[i].fixed);
-    sp(F("      |      "));
-    sp(table[i].multicast);
-    sp(F("      |      "));
-    sp(table[i].score);
-    sp(F("      |      "));
-    sp(table[i].dstAddr);
-    sp(F("      |      "));
-    sp(table[i].nextHopAddr);
-    sp(F("      |     "));
-    sp(table[i].rank);
-    sp(F("     |     "));
-    sp(table[i].lqi);
-    sp(F("     |"));
-    speol();
-  }
-  return 1;
-}
-
 static numvar meshEach(void) {
   if (!checkArgs(1, F("usage: mesh.each(\"command\")"))) {
     return 0;
@@ -1147,22 +814,6 @@ static numvar meshEach(void) {
     }
     Shell.eval((char*)getstringarg(1),table[i].dstAddr,table[i].lqi,table[i].nextHopAddr);
   }
-  return 1;
-}
-
-static numvar messageScout(void) {
-  if (!checkArgs(1, 99, F("usage: message.scout(scoutId, \"message\")"))) {
-    return 0;
-  }
-  sendMessage(getarg(1), arg2array(1));
-  return 1;
-}
-
-static numvar messageGroup(void) {
-  if (!checkArgs(1, 99, F("usage: message.group(groupId, \"message\")"))) {
-    return 0;
-  }
-  Scout.handler.announce(getarg(1), arg2array(1));
   return 1;
 }
 
@@ -1199,6 +850,95 @@ void jsonArgs(StringBuffer *out, int start) {
     Serial.print("built json from args: ");
     Serial.println(*out);
   }
+}
+
+static bool sendDataReqBusy;
+
+static void commandConfirm(NWK_DataReq_t *req) {
+
+   if (Shell.isVerbose) {
+    if (req->status == NWK_SUCCESS_STATUS) {
+      Serial.print(F("-  Command successfully sent to Scout "));
+      Serial.print(req->dstAddr);
+      if (req->control) {
+        Serial.print(F(" (Confirmed with control byte: "));
+        Serial.print(req->control);
+        Serial.print(F(")"));
+      }
+      Serial.println();
+    } else {
+      Serial.print(F("Error: "));
+      switch (req->status) {
+        case NWK_OUT_OF_MEMORY_STATUS:
+          Serial.print(F("Out of memory: "));
+          break;
+        case NWK_NO_ACK_STATUS:
+        case NWK_PHY_NO_ACK_STATUS:
+          Serial.print(F("No acknowledgement received: "));
+          break;
+        case NWK_NO_ROUTE_STATUS:
+          Serial.print(F("No route to destination: "));
+          break;
+        case NWK_PHY_CHANNEL_ACCESS_FAILURE_STATUS:
+          Serial.print(F("Physical channel access failure: "));
+          break;
+        default:
+          Serial.print(F("unknown failure: "));
+      }
+      Serial.print(F("("));
+      Serial.print(req->status, HEX);
+      Serial.println(F(")"));
+    }
+  }
+  Shell.lastMeshRssi = req->control;
+
+  // run the Bitlash callback ack command appended after if any
+  char *commandAck = (char*)req->data+req->size;
+  if(*commandAck)
+  {
+    Shell.eval(commandAck,req->status,Shell.lastMeshRssi);
+  }
+
+  free(req->data);
+  free(req);
+
+}
+
+static void sendCommand(bool toScout, int address, const char *cmd, const char *ack) {
+  NWK_DataReq_t *req = (NWK_DataReq_t*)malloc(sizeof(struct NWK_DataReq_t));
+  memset(req,0,sizeof(struct SYS_Timer_t));
+
+  // If commanding a Scout, change operation type
+  if (toScout) {
+    req->options = NWK_OPT_ACK_REQUEST|NWK_OPT_ENABLE_SECURITY;
+  } else {
+    req->options = NWK_OPT_MULTICAST|NWK_OPT_ENABLE_SECURITY;
+  }
+
+  req->dstAddr = address;
+  req->confirm = commandConfirm;
+  req->dstEndpoint = 2;
+  req->srcEndpoint = 2;
+  req->data = (uint8_t*)malloc(strlen(cmd) + 1 + strlen(ack) + 1);
+  req->size = strlen(cmd) + 1;
+  strcpy((char*)req->data,cmd);
+  strcpy((char*)req->data+req->size,ack); // append any ack after
+  NWK_DataReq(req);
+
+  if (Shell.isVerbose) {
+    Serial.print(F("Sent command to Scout "));
+    Serial.print(address);
+    Serial.print(F(": "));
+    Serial.print(req->size);
+    Serial.print(F(": "));
+    Serial.println((char*)req->data);
+    Serial.print(F(" ack "));
+    Serial.println((char*)ack);
+  }
+}
+
+static void sendCommand(bool toScout, int address, const char *data) {
+  sendCommand(toScout, address, data, "");
 }
 
 // works inside bitlash handlers to serialize a command
@@ -1647,31 +1387,6 @@ static numvar analogPinReport(void) {
   return 1;
 }
 
-/****************************\
-*     BACKPACK HANDLERS     *
-\****************************/
-
-static StringBuffer backpackReportHQ(void) {
-  StringBuffer report(100);
-  report.appendSprintf("[%d,[%d],[[", keyMap("backpacks", 0), keyMap("list", 0));
-  /*
-  for (uint8_t i=0; i<Backpacks::num_backpacks; ++i) {
-    BackpackInfo &info = Backpacks::info[i];
-    for (uint8_t j=0; j<sizeof(info.id); ++j) {
-      // TODO this isn't correct, dunno what to do here
-      snprintf(report+strlen(report), sizeof(report) - strlen(report), "%s%d",comma++?",":"",info.id.raw_bytes[j]);
-    }
-  }
-  */
-  report += "]]]";
-  return Scout.handler.report(report);
-}
-
-static numvar backpackReport(void) {
-  speol(backpackReportHQ());
-  return 1;
-}
-
 static void printHexBuffer(const uint8_t *buf, size_t len, const char *sep = NULL) {
   for (uint8_t i=0; i<len; ++i) {
     // from bitlash
@@ -1682,272 +1397,6 @@ static void printHexBuffer(const uint8_t *buf, size_t len, const char *sep = NUL
   }
 }
 
-static numvar backpackList(void) {
-  if (Backpacks::num_backpacks == 0) {
-    speol(F("No backpacks found"));
-  } else {
-    for (uint8_t i=0; i<Backpacks::num_backpacks; ++i) {
-      BackpackInfo &info = Backpacks::info[i];
-      printHexBuffer(&i, 1);
-      sp(F(": "));
-
-      Pbbe::Header *h = info.getHeader();
-      if (!h) {
-        sp(F("Error parsing name"));
-      } else {
-        sp(h->backpack_name);
-      }
-
-      sp(F(" ("));
-      printHexBuffer(info.id.raw_bytes, sizeof(info.id));
-      speol(F(")"));
-    }
-  }
-  return 0;
-}
-
-static numvar backpackEeprom(void) {
-  numvar addr = getarg(1);
-  if (addr < 0 || addr >= Backpacks::num_backpacks) {
-    speol(F("Invalid backpack number"));
-    return 0;
-  }
-
-  // Get EEPROM contents
-  Pbbe::Eeprom *eep = Backpacks::info[addr].getEeprom();
-  if (!eep) {
-    speol(F("Failed to fetch EEPROM"));
-    return 0;
-  }
-
-  // Print EEPROM over multiple lines
-  size_t offset = 0;
-  const uint8_t bytes_per_line = 8;
-  while (offset < eep->size) {
-    printHexBuffer(eep->raw + offset, min(bytes_per_line, eep->size - offset), " ");
-    speol();
-    offset += bytes_per_line;
-  }
-  return 1;
-}
-
-static numvar backpackUpdateEeprom(void) {
-  numvar addr = getarg(1);
-  if (addr < 0 || addr >= Backpacks::num_backpacks) {
-    speol(F("Invalid backpack number"));
-    return 0;
-  }
-
-  numvar offset;
-  const char *str;
-
-  if (getarg(0) == 2) {
-    offset = 0;
-    str = (const char*)getstringarg(2);
-  } else {
-    offset = getarg(2);
-    str = (const char*)getstringarg(3);
-  }
-
-  size_t length = strlen(str);
-  uint8_t bytes[length / 2];
-  PinoccioShell::parseHex(str, length, bytes);
-
-  // Get the current EEPROM contents, but ignore any failure so we can
-  // fix the EEPROM even when it has an invalid checksum (updateEeprom
-  // handles a NULL as expected).
-  BackpackInfo &info = Backpacks::info[addr];
-  info.getEeprom();
-
-  info.freeHeader();
-  info.freeAllDescriptors();
-
-  Pbbe::Eeprom *eep = Pbbe::updateEeprom(info.eep, offset, bytes, length / 2);
-  if (!eep) {
-    speol(F("Failed to update EEPROM"));
-    return 0;
-  }
-  // Update the eep pointer, it might have been realloced
-  info.eep = eep;
-
-  if (!Pbbe::writeEeprom(Backpacks::pbbp, addr, info.eep)) {
-    speol(F("Failed to write EEPROM"));
-    return 0;
-  }
-  return 1;
-}
-
-
-static numvar backpackDetail(void) {
-  numvar addr = getarg(1);
-  if (addr < 0 || addr >= Backpacks::num_backpacks) {
-    speol(F("Invalid backpack number"));
-    return 0;
-  }
-  Pbbe::Header *h = Backpacks::info[addr].getHeader();
-  Pbbe::UniqueId &id = Backpacks::info[addr].id;
-
-  sp(F("Backpack name: "));
-  speol(h->backpack_name);
-
-  sp(F("Model number: 0x"));
-  printIntegerInBase(id.model, 16, 2, '0');
-  speol();
-
-  sp(F("Board revision: "));
-  Pbbe::MajorMinor rev = Pbbe::extractMajorMinor(id.revision);
-  sp(rev.major);
-  sp(F("."));
-  speol(rev.minor);
-
-  sp(F("Serial number: 0x"));
-  printIntegerInBase(id.serial, 16, 2, '0');
-  speol();
-
-  sp(F("Backpack Bus Protocol version: "));
-  sp(id.protocol_version);
-  speol(F(".x")); // Only the major version is advertised
-
-  sp(F("Backpack Bus firmware version: "));
-  speol(h->firmware_version);
-
-  sp(F("EEPROM layout version: "));
-  sp(h->layout_version);
-  speol(F(".x")); // Only the major version is advertised
-
-  sp(F("EEPROM size: "));
-  sp(h->total_eeprom_size);
-  speol(F(" bytes"));
-
-  sp(F("EEPROM used: "));
-  sp(h->used_eeprom_size);
-  speol(F(" bytes"));
-  return 1;
-}
-
-static numvar backpackResources(void) {
-  numvar addr = getarg(1);
-  if (addr < 0 || addr >= Backpacks::num_backpacks) {
-    speol(F("Invalid backpack number"));
-    return 0;
-  }
-
-  Pbbe::DescriptorList *list = Backpacks::info[addr].getAllDescriptors();
-  if (!list) {
-    speol(F("Failed to fetch or parse resource descriptors"));
-    return 0;
-  }
-  for (uint8_t i = 0; i < list->num_descriptors; ++i) {
-    Pbbe::DescriptorInfo &info = list->info[i];
-    if (info.group) {
-      Pbbe::GroupDescriptor& d = static_cast<Pbbe::GroupDescriptor&>(*info.group->parsed);
-      sp(d.name);
-      sp(".");
-    }
-
-    switch (info.type) {
-      case Pbbe::DT_SPI_SLAVE: {
-        Pbbe::SpiSlaveDescriptor& d = static_cast<Pbbe::SpiSlaveDescriptor&>(*info.parsed);
-        sp(d.name);
-        sp(F(": spi, ss = "));
-        sp(d.ss_pin.name());
-        sp(F(", max speed = "));
-        if (d.speed.raw()) {
-          sp(d.speed,100);
-          sp(F("Mhz"));
-        } else {
-          sp(F("unknown"));
-        }
-        speol();
-        break;
-      }
-      case Pbbe::DT_UART: {
-        Pbbe::UartDescriptor& d = static_cast<Pbbe::UartDescriptor&>(*info.parsed);
-        sp(d.name);
-        sp(F(": uart, tx = "));
-        sp(d.tx_pin.name());
-        sp(F(", rx = "));
-        sp(d.rx_pin.name());
-        sp(F(", speed = "));
-        if (d.speed) {
-          sp(d.speed);
-          sp(F("bps"));
-        } else {
-          sp(F("unknown"));
-        }
-        speol();
-        break;
-      }
-      case Pbbe::DT_IOPIN: {
-        Pbbe::IoPinDescriptor& d = static_cast<Pbbe::IoPinDescriptor&>(*info.parsed);
-        sp(d.name);
-        sp(F(": gpio, pin = "));
-        sp(d.pin.name());
-        speol();
-        break;
-      }
-      case Pbbe::DT_GROUP: {
-  // Ignore
-        break;
-      }
-      case Pbbe::DT_POWER_USAGE: {
-        Pbbe::PowerUsageDescriptor& d = static_cast<Pbbe::PowerUsageDescriptor&>(*info.parsed);
-        sp(F("power: pin = "));
-        sp(d.power_pin.name());
-        sp(F(", minimum = "));
-        if (d.minimum.raw()) {
-          sp(d.minimum,100);
-          sp(F("uA"));
-        } else {
-          sp(F("unknown"));
-        }
-        sp(F(", typical = "));
-        if (d.typical.raw()) {
-          sp(d.typical,100);
-          sp(F("uA"));
-        } else {
-          sp(F("unknown"));
-        }
-        sp(F(", maximum = "));
-        if (d.maximum.raw()) {
-          sp(d.maximum,100);
-          sp(F("uA"));
-        } else {
-          sp(F("unknown"));
-        }
-        speol();
-        break;
-      }
-      case Pbbe::DT_I2C_SLAVE: {
-        Pbbe::I2cSlaveDescriptor& d = static_cast<Pbbe::I2cSlaveDescriptor&>(*info.parsed);
-        sp(d.name);
-        sp(F(": i2c, address = "));
-        sp(d.addr);
-        sp(F(", max speed = "));
-        sp(d.speed);
-        sp(F("kbps"));
-        speol();
-        break;
-      }
-      case Pbbe::DT_DATA: {
-        Pbbe::DataDescriptor& d = static_cast<Pbbe::DataDescriptor&>(*info.parsed);
-        sp(d.name);
-        sp(F(": data, length = "));
-        sp(d.length);
-        sp(F(", content = "));
-        printHexBuffer(d.data, d.length);
-        speol();
-        break;
-      }
-      default: {
-  // Should not occur
-        break;
-      }
-    }
-  }
-
-  return 1;
-}
 
 /****************************\
  *   SCOUT REPORT HANDLERS  *
@@ -2065,17 +1514,6 @@ static numvar daisyWipe(void) {
   StringBuffer report(100);
   report.appendSprintf("[%d,[%d],[\"bye\"]]",keyMap("daisy",0),keyMap("dave",0));
   Scout.handler.report(report);
-
-  if (WifiModule::instance.bp()) {
-    if (!WifiModule::instance.bp()->runDirectCommand(Serial, "AT&F")) {
-       sp(F("Error: Wi-Fi direct command failed"));
-       ret = false;
-    }
-    if (!WifiModule::instance.bp()->runDirectCommand(Serial, "AT&W0")) {
-       sp(F("Error: Wi-Fi direct command failed"));
-       ret = false;
-    }
-  }
 
   if (ret == true) {
     Scout.meshResetSecurityKey();
@@ -2206,19 +1644,6 @@ static numvar hqReport(void) {
   free(args);
   speol(Scout.handler.report(lastReport));
   return true;
-}
-
-static numvar hqSetAddress(void) {
-  if (!checkArgs(1, 2, F("usage: hq.setaddress(\"host\"[, port]"))) {
-    return 0;
-  }
-  // Change the HQ address. Always disable TLS, since TLS checking needs
-  // the actual server certificate included in the sketch. There is no
-  // hostname checking and no CA certificates included...
-  if (getarg(0) == 2)
-    HqHandler::setHqAddress(ConstString((const char*)getstringarg(1)), false, getarg(2));
-  else
-    HqHandler::setHqAddress(ConstString((const char*)getstringarg(1)), false);
 }
 
 /****************************\
@@ -2390,9 +1815,9 @@ void PinoccioShell::setup() {
   addFunction("power.percent", getBatteryPercentage);
   addFunction("power.voltage", getBatteryVoltage);
   addFunction("power.volts", getBatteryVolts);
-  addFunction("power.enablevcc", enableBackpackVcc);
-  addFunction("power.disablevcc", disableBackpackVcc);
-  addFunction("power.isvccenabled", isBackpackVccEnabled);
+  addFunction("power.enablevcc", enableVcc);
+  addFunction("power.disablevcc", disableVcc);
+  addFunction("power.isvccenabled", isVccEnabled);
   addFunction("power.sleep", powerSleep);
   addFunction("power.report", powerReport);
   addFunction("power.wakeup.pin", powerWakeupPin);
@@ -2409,12 +1834,10 @@ void PinoccioShell::setup() {
   addFunction("mesh.ingroup", meshIsInGroup);
   addFunction("mesh.verbose", meshVerbose);
   addFunction("mesh.report", meshReport);
-  addFunction("mesh.routing", meshRouting);
   addFunction("mesh.signal", meshSignal);
   addFunction("mesh.loss", meshLoss);
   addFunction("mesh.from", meshFrom);
   addFunction("mesh.id", meshId);
-  addFunction("mesh.fieldtest", meshFieldtest);
   addFunction("mesh.each", meshEach);
 
   // these supplant/replace message.*
@@ -2424,9 +1847,6 @@ void PinoccioShell::setup() {
   addFunction("command.others", commandOthers);
   addFunction("command.group", commandGroup);
   addFunction("command.report", commandReport);
-
-  addFunction("message.scout", messageScout);
-  addFunction("message.group", messageGroup);
 
   addFunction("temperature.c", getTemperatureC);
   addFunction("temperature.f", getTemperatureF);
@@ -2496,13 +1916,6 @@ void PinoccioShell::setup() {
   addFunction("pin.report.digital", digitalPinReport);
   addFunction("pin.report.analog", analogPinReport);
 
-  addFunction("backpack.report", backpackReport);
-  addFunction("backpack.list", backpackList);
-  addFunction("backpack.eeprom", backpackEeprom);
-  addFunction("backpack.eeprom.update", backpackUpdateEeprom);
-  addFunction("backpack.detail", backpackDetail);
-  addFunction("backpack.resources", backpackResources);
-
   addFunction("scout.report", scoutReport);
   addFunction("scout.isleadscout", isScoutLeadScout);
   addFunction("scout.delay", scoutDelay);
@@ -2520,19 +1933,12 @@ void PinoccioShell::setup() {
   addFunction("hq.print", hqPrint);
   addFunction("hq.report", hqReport);
   addFunction("hq.bridge", hqBridge);
-  addFunction("hq.setaddress", hqSetAddress);
   addFunction("hq.online", hqOnline);
 
   addFunction("events.start", startStateChangeEvents);
   addFunction("events.stop", stopStateChangeEvents);
   addFunction("events.setcycle", setEventCycle);
   addFunction("events.verbose", setEventVerbose);
-
-  addFunction("key", keyMap);
-  addFunction("key.free", keyFree);
-  addFunction("key.print", keyPrint);
-  addFunction("key.number", keyNumber);
-  addFunction("key.save", keySave);
 
   // set up event handlers
   Scout.digitalPinEventHandler = digitalPinEventHandler;
@@ -2545,8 +1951,6 @@ void PinoccioShell::setup() {
   if (isShellEnabled) {
     startShell();
   }
-
-  Scout.meshListen(1, receiveMessage);
 
   Shell.allReportHQ();
 }
@@ -2606,7 +2010,6 @@ void PinoccioShell::allReportHQ() {
   scoutReportHQ();
   uptimeReportHQ();
   powerReportHQ();
-  backpackReportHQ();
   digitalPinReportHQ();
   analogPinReportHQ();
   meshReportHQ();

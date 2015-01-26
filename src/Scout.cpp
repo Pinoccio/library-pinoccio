@@ -9,7 +9,6 @@
 #include <Arduino.h>
 #include <Wire.h>
 #include <Scout.h>
-#include "backpacks/Backpacks.h"
 #include "SleepHandler.h"
 #include <math.h>
 #include <avr/eeprom.h>
@@ -106,9 +105,9 @@ void PinoccioScout::setup(const char *sketchName, const char *sketchRevision, in
   pinMode(BATT_ALERT, INPUT_PULLUP);
   pinMode(VCC_ENABLE, OUTPUT);
 
-  disableBackpackVcc();
+  disableVcc();
   delay(100);
-  enableBackpackVcc();
+  enableVcc();
 
   Led.turnOff();
   Wire.begin();
@@ -117,9 +116,7 @@ void PinoccioScout::setup(const char *sketchName, const char *sketchRevision, in
   saveState();
   ModuleHandler::setup();
 
-  Backpacks::setup();
-
-  // start after so any backpacks are ready
+  // start after so any modules are ready
   handler.setup();
 
   startDigitalStateChangeEvents();
@@ -179,7 +176,6 @@ void PinoccioScout::loop() {
   Shell.loop();
   handler.loop();
   ModuleHandler::loop();
-  Backpacks::loop();
 
   if(showStatus)
   {
@@ -242,25 +238,18 @@ int8_t PinoccioScout::getTemperatureF() {
   return (uint32_t)f;
 }
 
-void PinoccioScout::enableBackpackVcc() {
+void PinoccioScout::enableVcc() {
   isVccEnabled = true;
   digitalWrite(VCC_ENABLE, HIGH);
-  toggleBackpackVccCallbacks.callAll(true);
 }
 
-void PinoccioScout::disableBackpackVcc() {
+void PinoccioScout::disableVcc() {
   isVccEnabled = false;
-  toggleBackpackVccCallbacks.callAll(false);
   digitalWrite(VCC_ENABLE, LOW);
 }
 
-bool PinoccioScout::isBackpackVccEnabled() {
-  return isVccEnabled;
-}
-
 bool PinoccioScout::isLeadScout() {
-  // Check for attached wifi backpack (model id 0x0001)
-  return handler.isBridged || Backpacks::isModelPresent(0x0001);
+  return handler.isBridged;
 }
 
 bool PinoccioScout::factoryReset() {
@@ -501,9 +490,6 @@ const __FlashStringHelper* PinoccioScout::getNameForPinMode(int8_t mode) {
 }
 
 bool PinoccioScout::isPinReserved(uint8_t pin) {
-  if (Backpacks::used_pins & Pbbe::LogicalPin(pin).mask())
-    return true;
-
   // TODO: Make this less hardcoded
   switch (pin) {
     case SCL:

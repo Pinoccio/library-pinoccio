@@ -46,10 +46,10 @@ class PinoccioShell {
      *
      * Alternatively, you can pass a function name and arguments:
      *
-     *  Shell.eval("wifi.config", "foo", "bar");
+     *  Shell.eval("foo.config", "foo", "bar");
      *  Shell.eval("hq.verbose", 1);
      *
-     * This constructs and evalutes wifi.config("foo", "bar") and
+     * This constructs and evalutes foo.config("foo", "bar") and
      * hq.verbose(1) respectively.
      *
      * String arguments are automatically quoted and passed to bitlash
