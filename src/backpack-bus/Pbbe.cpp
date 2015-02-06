@@ -451,7 +451,7 @@ bool Pbbe::parseDescriptorA(const Eeprom *eep, DescriptorInfo *info)
     case DT_UART: {
       UartDescriptor& d = static_cast<UartDescriptor&>(*info->parsed);
       d.tx_pin = buf[1] & PIN_MASK;
-      d.tx_pin = buf[2] & PIN_MASK;
+      d.rx_pin = buf[2] & PIN_MASK;
       if ((buf[3] & 0xf) >= lengthof(uart_speeds)) {
         DEBUG_ERR2(F("Invalid UART speed. Descriptor start at: "), info->offset);
         goto fail;
