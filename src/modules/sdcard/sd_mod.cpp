@@ -26,11 +26,11 @@ const __FlashStringHelper *SDModule::name() const {
 
 static numvar append() {
   if (getarg(0) < 1 || !isstringarg(1)) {
-    speol("No filename passed?");
+    speol("usage: sd.append(\"filename.txt\",\"data to write\")");
     return 0;
   }
   if (getarg(0) < 2) {
-    speol("No data to write?");
+    speol("usage: sd.append(\"filename.txt\",\"data to write\")");
     return 0;
   }
   File f = SD.open((const char*)getstringarg(1), O_WRITE|O_CREAT|O_APPEND);
@@ -50,7 +50,7 @@ static numvar append() {
 
 static numvar read() {
   if (getarg(0) < 1 || !isstringarg(1)) {
-    speol("No filename passed?");
+    speol("usage: sd.read(\"filename.txt\")");
     return 0;
   }
   File f = SD.open((const char*)getstringarg(1), FILE_READ);
@@ -68,7 +68,7 @@ static numvar read() {
 
 static numvar ls() {
   if (getarg(0) < 1 || !isstringarg(1)) {
-    speol("No dirname passed?");
+    speol("usage: sd.ls(\"/home\")");
     return 0;
   }
 
