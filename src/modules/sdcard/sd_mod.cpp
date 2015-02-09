@@ -24,24 +24,6 @@ const __FlashStringHelper *SDModule::name() const {
   return F("sdcard");
 }
 
-static numvar read() {
-  if (getarg(0) < 1 || !isstringarg(1)) {
-    speol("No filename passed?");
-    return 0;
-  }
-  File f = SD.open((const char*)getstringarg(1), FILE_READ);
-  if (!f) {
-    speol("Failed to open file");
-    return 0;
-  }
-
-  while(f.available())
-    spb((char)f.read());
-  speol();
-  f.close();
-  return 1;
-}
-
 static numvar append() {
   if (getarg(0) < 1 || !isstringarg(1)) {
     speol("No filename passed?");
@@ -62,6 +44,24 @@ static numvar append() {
     f.write((const char*)getstringarg(2));
   else
     f.print(getarg(2));
+  f.close();
+  return 1;
+}
+
+static numvar read() {
+  if (getarg(0) < 1 || !isstringarg(1)) {
+    speol("No filename passed?");
+    return 0;
+  }
+  File f = SD.open((const char*)getstringarg(1), FILE_READ);
+  if (!f) {
+    speol("Failed to open file");
+    return 0;
+  }
+
+  while(f.available())
+    spb((char)f.read());
+  speol();
   f.close();
   return 1;
 }
@@ -95,12 +95,12 @@ static numvar ls() {
       break;
 
     if (entry.isDirectory())
-      Serial.print("DIR");
+      speol("DIR");
     else
-      Serial.print(entry.size(), DEC);
+      speol(entry.size(), DEC);
 
-    Serial.print("\t");
-    Serial.println(entry.name());
+    speol("\t");
+    speol(entry.name());
     entry.close();
   }
 
@@ -112,13 +112,9 @@ static numvar sdInitialize(void) {
   if (!checkArgs(1, F("usage: sd.init(csPin)"))) {
     return 0;
   }
-  if (!Scout.isLeadScout()) {
-        Serial.print("This sketch can only be run on a lead scout");
-        return 0;
-  }
   // Initialize SD card with slave-select pin on D8
   if (!SD.begin(getarg(1))) {
-    Serial.println("No SD card found or initialization failed.");
+    speol("No SD card found or initialization failed.");
     return 0;
   }
 }
