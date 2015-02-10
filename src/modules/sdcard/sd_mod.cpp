@@ -108,11 +108,51 @@ static numvar ls() {
   return 1;
 }
 
+static numvar removeFile() {
+  if (getarg(0) < 1 || !isstringarg(1)) {
+    speol("usage: sd.remove(\"filename.txt\")");
+    return 0;
+  }
+  SD.remove((char*)getstringarg(1)); // remove file
+  File f = SD.open((const char*)getstringarg(1), FILE_READ);
+  if (f) { // check if it still exsists
+    speol("Failed to remove file");
+    return 0;
+  }
+  f.close();
+  return 1;
+}
+
+static numvar removeDir() {
+  if (getarg(0) < 1 || !isstringarg(1)) {
+    speol("usage: sd.rmdir(\"/foldername\")");
+    return 0;
+  }
+  if (!SD.rmdir((char*)getstringarg(1)))
+  {
+    speol("Failed to remove folder");
+    return 0;
+  }
+  return 1;
+}
+
+static numvar makeDir() {
+  if (getarg(0) < 1 || !isstringarg(1)) {
+    speol("usage: sd.mkdir(\"/foldername\")");
+    return 0;
+  }
+  if (!SD.mkdir((char*)getstringarg(1)))
+  {
+    speol("Failed to create directory");
+    return 0;
+  } // make dir
+  return 1;
+}
+
 static numvar sdInitialize(void) {
   if (!checkArgs(1, F("usage: sd.init(csPin)"))) {
     return 0;
   }
-  // Initialize SD card with slave-select pin on D8
   if (!SD.begin(getarg(1))) {
     speol("No SD card found or initialization failed.");
     return 0;
@@ -124,7 +164,12 @@ bool SDModule::enable() {
     Shell.addFunction("sd.read", read);
     Shell.addFunction("sd.append", append);
     Shell.addFunction("sd.ls", ls);
+    Shell.addFunction("sd.rm", removeFile);
+    Shell.addFunction("sd.rmdir", removeDir);
+    Shell.addFunction("sd.mkdir", makeDir);
+
 }
+
 
 void SDModule::loop() { }
 
