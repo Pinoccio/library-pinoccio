@@ -110,12 +110,12 @@ static numvar ls() {
 
 static numvar removeFile() {
   if (getarg(0) < 1 || !isstringarg(1)) {
-    speol("usage: sd.remove(\"filename.txt\")");
+    speol("usage: sd.rm(\"filename.txt\")");
     return 0;
   }
-  SD.remove((char*)getstringarg(1)); // remove file
+  SD.remove((char*)getstringarg(1));
   File f = SD.open((const char*)getstringarg(1), FILE_READ);
-  if (f) { // check if it still exsists
+  if (f) { 
     speol("Failed to remove file");
     return 0;
   }
@@ -125,7 +125,7 @@ static numvar removeFile() {
 
 static numvar removeDir() {
   if (getarg(0) < 1 || !isstringarg(1)) {
-    speol("usage: sd.rmdir(\"/foldername\")");
+    speol("usage: sd.rmdir(\"/some_folder\")");
     return 0;
   }
   if (!SD.rmdir((char*)getstringarg(1)))
@@ -138,14 +138,14 @@ static numvar removeDir() {
 
 static numvar makeDir() {
   if (getarg(0) < 1 || !isstringarg(1)) {
-    speol("usage: sd.mkdir(\"/foldername\")");
+    speol("usage: sd.mkdir(\"/some_folder\")");
     return 0;
   }
   if (!SD.mkdir((char*)getstringarg(1)))
   {
     speol("Failed to create directory");
     return 0;
-  } // make dir
+  }
   return 1;
 }
 
