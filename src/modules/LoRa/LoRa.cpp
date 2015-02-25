@@ -65,7 +65,7 @@ bool LoRaModule::enable() {
 }
 
 void LoRaModule::loop() {
-  if (sx1272.receivePacketTimeoutACK(10) == 0)
-    speol("LoRa received");
+  if (sx1272.receivePacketTimeoutACK(1000) == 0)
+    speol("Received");
 }
 
