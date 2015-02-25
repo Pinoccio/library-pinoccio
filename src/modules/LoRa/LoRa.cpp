@@ -47,9 +47,8 @@ bool LoRaModule::enable() {
   // Select frequency channel
   err += sx1272.setChannel(CH_10_868);
   
-  // Select output power (Max, High or Low)
-  err += sx1272.setPower('H');
-  
+  sx1272.writeRegister(REG_PA_CONFIG, 0x8f); // Use PA_BOOST pin, with max power
+
   // Set the node address and print the result
   err += sx1272.setNodeAddress(Scout.getAddress());
   if(err)
