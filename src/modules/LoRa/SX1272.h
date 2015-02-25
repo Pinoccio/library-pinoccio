@@ -50,7 +50,7 @@
 
 #define SX1272_debug_mode 0
 
-#define SX1272_SS 9
+#define SX1272_SS SS
 //#define SX1272_SS 10
 
 //! MACROS //
