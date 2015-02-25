@@ -22,7 +22,9 @@ void keyInit() {
   memset(keytable, 0, sizeof(keytable));
   memset(keytableTmp, 0, sizeof(keytableTmp));
   keyMap("OVERFLOW", 0); // becomes 0, error
-  keyLoad(KEYS_BUNDLE, 0, 0);
+  char *tmp = strdup(KEYS_BUNDLE);
+  keyLoad(tmp, 0, 0);
+  free(tmp);
 }
 
 // idea was to use now to do time based expirations, but for now just expiring all temps immediately
