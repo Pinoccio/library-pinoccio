@@ -55,11 +55,13 @@ bool LoRaModule::enable() {
   {
     sp("LoRa SX1272 init failed: ");
     speol(err);
+    return 0;
   }else{
     speol("LoRa SX1272 successfully configured");
+
+    Shell.addFunction("lora.ping", ping);
+    return 1;
   }
-  
-  Shell.addFunction("lora.ping", ping);
 }
 
 void LoRaModule::loop() {
