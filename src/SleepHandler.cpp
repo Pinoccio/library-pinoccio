@@ -62,8 +62,9 @@ void SleepHandler::setup() {
   TCCR2B = (TCCR2B & ~((1<<CS22)|(1<<CS21))) | (1<<CS20);
 
   // Enable the symbol counter, using the external 32kHz crystal
+  // Enable SFD timesamping for synchronization protocols.
   // SCCR1 is left at defaults, with CMP3 in absolute compare mode.
-  SCCR0 |= (1 << SCEN) | (1 << SCCKSEL);
+  SCCR0 |= (1 << SCEN) | (1 << SCCKSEL) | (1 << SCTSE);
 
   // Enable the SCNT_OVFL interrupt for timekeeping
   SCIRQM |= (1 << IRQMOF);

@@ -152,7 +152,10 @@ static bool fieldCommands(NWK_DataInd_t *ind) {
     Serial.print(ind->lqi);
     Serial.print(F("  "));
     Serial.print(F("rssi: "));
-    Serial.println(ind->rssi);
+    Serial.print(ind->rssi);
+    Serial.print(F("  "));
+    Serial.print(F("timestamp: "));
+    Serial.println(ind->timestamp);
   }
 
   if (fieldAnswerTo) {
