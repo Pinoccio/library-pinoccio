@@ -253,6 +253,14 @@ static numvar uptimeSleepingSeconds(void) {
   return SleepHandler::sleeptime().seconds;
 }
 
+static numvar uptimeMeshSleepingMicros(void) {
+  return SleepHandler::meshsleeptime().us;
+}
+
+static numvar uptimeMeshSleepingSeconds(void) {
+  return SleepHandler::meshsleeptime().seconds;
+}
+
 static numvar uptimeMicros(void) {
   return SleepHandler::uptime().us;
 }
@@ -275,6 +283,16 @@ static void appendTime(StringBuffer &b, Duration d) {
 
   b.appendSprintf("%u days, %u hours, %u minutes, %d.%06lu seconds",
                   days, hours, minutes, seconds, d.us);
+}
+
+static numvar powerSleepRadio(void) {
+  if (!getarg(0) || getarg(0) > 2) {
+    speol("usage: power.sleep2(ms)");
+    return 0;
+  }
+  uint32_t ms = getarg(1);
+  SleepHandler::sleepRadio(ms);
+  return 1;
 }
 
 static numvar uptimeStatus(void) {
@@ -2396,6 +2414,7 @@ void PinoccioShell::setup() {
   addFunction("power.sleep", powerSleep);
   addFunction("power.report", powerReport);
   addFunction("power.wakeup.pin", powerWakeupPin);
+  addFunction("power.sleep2", powerSleepRadio);
 
   addFunction("mesh.config", meshConfig);
   addFunction("mesh.setchannel", meshSetChannel);
@@ -2450,6 +2469,9 @@ void PinoccioShell::setup() {
   addFunction("uptime.getlastreset", getLastResetCause);
   addFunction("uptime.status", uptimeStatus);
   addFunction("uptime", uptimeStatus);
+
+  addFunction("uptime.meshsleeping.micros", uptimeMeshSleepingMicros);
+  addFunction("uptime.meshsleeping.seconds", uptimeMeshSleepingSeconds);
 
   addFunction("led.on", ledTorch); // alias
   addFunction("led.off", ledOff);

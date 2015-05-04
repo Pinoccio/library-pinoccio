@@ -3,12 +3,19 @@
 
 #include "backpack-bus/Pbbe.h"
 #include "util/Duration.h"
+#include "lwm/sys/sysTimer.h"
+#include "lwm/nwk/nwk.h"
 
 ISR(SCNT_OVFL_vect);
 
 class SleepHandler {
   public:
+
     static void setup();
+    static void loop();
+
+    static const Duration& meshsleeptime();
+    static void sleepRadio(uint32_t ms);
 
     // Schedule a sleep until the given number of ms from now. The sleep
     // actually starts when doSleep is called, but any delay between
@@ -77,6 +84,11 @@ class SleepHandler {
     }
 
   protected:
+
+    // The total time radio spent sleeping since startup
+    static Duration meshSleep;
+    static uint32_t meshSleepStart;
+
     // The time from startup to the most recent overflow
     static Duration lastOverflow;
     // The total time spent sleeping since startup
@@ -91,6 +103,7 @@ class SleepHandler {
     static bool sleepUntilMatch(bool interruptible);
     static uint32_t read_sccnt();
     static void write_scocr3(uint32_t val);
+    static void write_scocr2(uint32_t val);
     static uint32_t read_scocr3();
 
     // The symbol counter always runs at 62.5kHz (period 16μs). When running

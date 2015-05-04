@@ -149,8 +149,7 @@ void PinoccioScout::setup(const char *sketchName, const char *sketchRevision, in
 void PinoccioScout::loop() {
   now = SleepHandler::uptime().seconds;
 
-  bool canSleep = true;
-  // TODO: Let other loop functions return some "cansleep" status as well
+  // TODO: Let other loop functions return some "cansleep" status
 
   PinoccioClass::loop();
 
@@ -180,7 +179,8 @@ void PinoccioScout::loop() {
   handler.loop();
   ModuleHandler::loop();
   Backpacks::loop();
-
+  SleepHandler::loop();
+  
   if(showStatus)
   {
     Led.setRedValue(Led.getRedValue());
@@ -189,14 +189,14 @@ void PinoccioScout::loop() {
   }
 
   if (sleepPending) {
-    canSleep = canSleep && !NWK_Busy();
-
     // if remaining <= 0, we won't actually sleep anymore, but still
     // call doSleep to run the callback and clean up
-    if (SleepHandler::scheduledTicksLeft() == 0)
+    if (SleepHandler::scheduledTicksLeft() == 0){
       doSleep(true);
-    else if (canSleep)
+    }
+    else{
       doSleep(false);
+    }
   }
 }
 
@@ -664,12 +664,8 @@ void PinoccioScout::doSleep(bool pastEnd) {
   sleepPending = false;
 
   if (!pastEnd) {
-    NWK_SleepReq();
-
     // TODO: suspend more stuff? Wait for UART byte completion?
-
     SleepHandler::doSleep(true);
-    NWK_WakeupReq();
   }
 
   // TODO: Allow ^C to stop running callbacks like this one
