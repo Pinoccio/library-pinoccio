@@ -12,6 +12,11 @@ ISR(SCNT_OVFL_vect);
 
 class SleepHandler {
   public:
+
+    static void setOffset(Duration d);
+    static void setOffsetInFuture(bool future);
+
+    static const Duration& getOffset();
     static const Duration& meshsleeptime();
 
     static bool getMatch();
@@ -94,7 +99,21 @@ class SleepHandler {
       return uptime() - totalSleep;
     }
 
+    // Returns the local authority's time
+    static Duration meshtime() {
+      if(offsetInFuture)
+        return uptime() + meshOffset;
+      else
+        return uptime() - meshOffset;
+    }
+
   protected:
+
+    // The mesh offset
+    static Duration meshOffset;
+    // The offset direction, forward is true, backward is false
+    static bool offsetInFuture;
+
     static radio_state_t radioState;
     static uint32_t sleepPeriod;
     static uint32_t wakePeriod;

@@ -13,10 +13,24 @@ uint32_t SleepHandler::meshSleepStart = 0;
 radio_state_t SleepHandler::radioState = RF_AWAKE;
 uint32_t SleepHandler::sleepPeriod = 100;
 uint32_t SleepHandler::wakePeriod = 100;
+Duration SleepHandler::meshOffset = {0, 0};
+boolean SleepHandler::offsetInFuture = true;
 
 // Returns the time mesh slept since startup
 const Duration& SleepHandler::meshsleeptime() {
   return meshSleep;
+}
+
+const Duration& SleepHandler::getOffset(){
+  return meshOffset;
+}
+
+void SleepHandler::setOffset(Duration d){
+  meshOffset = d;
+}
+
+void SleepHandler::setOffsetInFuture(bool future){
+  offsetInFuture = future;
 }
 
 Pbbe::LogicalPin::mask_t SleepHandler::pinWakeups = 0;
@@ -116,11 +130,11 @@ void SleepHandler::loop() {
   switch (radioState) {
     case RF_SHOULD_SLEEP:
       sleepRadio();
-      scheduleWakeRadio(uptime() + (uint64_t)(sleepPeriod * 1000));
+      scheduleWakeRadio(meshtime() + (uint64_t)(sleepPeriod * 1000));
       break;
     case RF_SHOULD_WAKE:
       wakeRadio();
-      scheduleSleepRadio(uptime() + (uint64_t)(wakePeriod * 1000));
+      scheduleSleepRadio(meshtime() + (uint64_t)(wakePeriod * 1000));
       break;
     default:
       // RF_WILL_SLEEP, RF_WILL_WAKE, RF_SLEEPING, RF_AWAKE
@@ -231,7 +245,7 @@ void SleepHandler::scheduleSleepRadio(Duration future) {
   // todo handle microseconds too
   // todo calculate off of an uptime + offset
   radioState = RF_WILL_SLEEP;
-  setTimer2((future.seconds - uptime().seconds) * 1000);
+  setTimer2((future.seconds - meshtime().seconds) * 1000);
 }
 
 void SleepHandler::scheduleWakeRadio(Duration future) {
@@ -239,7 +253,7 @@ void SleepHandler::scheduleWakeRadio(Duration future) {
   // todo handle microseconds too
   // todo calculate off of an uptime + offset
   radioState = RF_WILL_WAKE;
-  setTimer2((future.seconds - uptime().seconds) * 1000);
+  setTimer2((future.seconds - meshtime().seconds) * 1000);
 }
 
 // TODO take a few ticks off the schedule as it takes us some amount of

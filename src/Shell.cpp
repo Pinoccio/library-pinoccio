@@ -223,13 +223,16 @@ static StringBuffer uptimeReportHQ(void) {
   strncpy_P(reset, Scout.getLastResetCause(), sizeof(reset));
   reset[sizeof(reset) - 1] = 0; // ensure termination, strncpy is weird
 
-  report.appendSprintf("[%d,[%d,%d,%d,%d],[%ld,%ld,%d,",keyMap("uptime",0),
+  report.appendSprintf("[%d,[%d,%d,%d,%d,%d],[%ld,%ld,%ld,%d,",
+          keyMap("uptime",0),
           keyMap("total", 0),
           keyMap("sleep", 0),
+          keyMap("meshsleep", 0),
           keyMap("random", 0),
           keyMap("reset", 0),
           SleepHandler::uptime().seconds,
           SleepHandler::sleeptime().seconds,
+          SleepHandler::meshsleeptime().seconds,
           (int)random());
 
   report.appendJsonString(reset, true);
@@ -291,7 +294,38 @@ static numvar uptimeStatus(void) {
   appendTime(out, SleepHandler::sleeptime());
   speol(out.c_str());
 
+  out = F("Global: ");
+  appendTime(out, SleepHandler::meshtime());
+  speol(out.c_str());
   return true;
+}
+
+static numvar uptimeSetOffset(void) {
+  if (!checkArgs(3, F("usage: uptime.setoffset(seconds, micros, inFuture)"))) {
+    return 0;
+  }
+
+  uint32_t seconds = getarg(1);
+  uint32_t us = getarg(2);
+
+  Duration d;
+  d.seconds = seconds;
+  d.us = us;
+
+  bool future = getarg(3);
+
+  SleepHandler::setOffsetInFuture(future);
+  SleepHandler::setOffset(d);
+
+  return 1;
+}
+
+static numvar uptimeMeshOffsetMicros(void) {
+  return SleepHandler::getOffset().us;
+}
+
+static numvar uptimeMeshOffsetSeconds(void) {
+  return SleepHandler::getOffset().seconds;
 }
 
 static numvar uptimeMeshSleepingMicros(void) {
@@ -2504,9 +2538,13 @@ void PinoccioShell::setup() {
   addFunction("uptime.getlastreset", getLastResetCause);
   addFunction("uptime.status", uptimeStatus);
   addFunction("uptime", uptimeStatus);
+  addFunction("uptime.setoffset", uptimeSetOffset);
 
   addFunction("uptime.meshsleeping.micros", uptimeMeshSleepingMicros);
   addFunction("uptime.meshsleeping.seconds", uptimeMeshSleepingSeconds);
+
+  addFunction("uptime.meshoffset.micros", uptimeMeshOffsetMicros);
+  addFunction("uptime.meshoffset.seconds", uptimeMeshOffsetSeconds);
 
   addFunction("led.on", ledTorch); // alias
   addFunction("led.off", ledOff);
