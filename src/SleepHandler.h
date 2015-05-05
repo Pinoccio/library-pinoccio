@@ -5,17 +5,27 @@
 #include "util/Duration.h"
 #include "lwm/sys/sysTimer.h"
 #include "lwm/nwk/nwk.h"
+#include "util/radio_state_t.h"
 
+ISR(SCNT_CMP2_vect);
 ISR(SCNT_OVFL_vect);
 
 class SleepHandler {
   public:
+    static const Duration& meshsleeptime();
 
+    static bool getMatch();
     static void setup();
     static void loop();
 
-    static const Duration& meshsleeptime();
-    static void sleepRadio(uint32_t ms);
+    static void sleepRadio();
+    static void wakeRadio();
+
+    static void scheduleSleepRadio(Duration future);
+    static void scheduleWakeRadio(Duration future);
+
+    static void setRadioPeriod(uint32_t sleepms, uint32_t wakems);
+    static int getRadioState();
 
     // Schedule a sleep until the given number of ms from now. The sleep
     // actually starts when doSleep is called, but any delay between
@@ -28,6 +38,7 @@ class SleepHandler {
 
     // How many ticks are left before the end time is reached?
     static uint32_t scheduledTicksLeft();
+    static uint32_t scheduledTicksLeft2();
 
     // Sleep until the previously scheduled time. If interruptible is
     // true, this can return earlier if we are woken from sleep by
@@ -84,6 +95,9 @@ class SleepHandler {
     }
 
   protected:
+    static radio_state_t radioState;
+    static uint32_t sleepPeriod;
+    static uint32_t wakePeriod;
 
     // The total time radio spent sleeping since startup
     static Duration meshSleep;
@@ -99,12 +113,15 @@ class SleepHandler {
 
     // Allow the symbol counter overflow ISR to access our protected members
     friend void SCNT_OVFL_vect();
+    friend void SCNT_CMP2_vect();
 
     static bool sleepUntilMatch(bool interruptible);
     static uint32_t read_sccnt();
     static void write_scocr3(uint32_t val);
     static void write_scocr2(uint32_t val);
     static uint32_t read_scocr3();
+    static uint32_t read_scocr2();
+    static void setTimer2(uint32_t ms);
 
     // The symbol counter always runs at 62.5kHz (period 16μs). When running
     // off the 16Mhz crystal, this is just a prescaler. When running of the

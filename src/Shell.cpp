@@ -253,14 +253,6 @@ static numvar uptimeSleepingSeconds(void) {
   return SleepHandler::sleeptime().seconds;
 }
 
-static numvar uptimeMeshSleepingMicros(void) {
-  return SleepHandler::meshsleeptime().us;
-}
-
-static numvar uptimeMeshSleepingSeconds(void) {
-  return SleepHandler::meshsleeptime().seconds;
-}
-
 static numvar uptimeMicros(void) {
   return SleepHandler::uptime().us;
 }
@@ -285,16 +277,6 @@ static void appendTime(StringBuffer &b, Duration d) {
                   days, hours, minutes, seconds, d.us);
 }
 
-static numvar powerSleepRadio(void) {
-  if (!getarg(0) || getarg(0) > 2) {
-    speol("usage: power.sleep2(ms)");
-    return 0;
-  }
-  uint32_t ms = getarg(1);
-  SleepHandler::sleepRadio(ms);
-  return 1;
-}
-
 static numvar uptimeStatus(void) {
   StringBuffer out(100);
   out = F("Total: ");
@@ -310,6 +292,14 @@ static numvar uptimeStatus(void) {
   speol(out.c_str());
 
   return true;
+}
+
+static numvar uptimeMeshSleepingMicros(void) {
+  return SleepHandler::meshsleeptime().us;
+}
+
+static numvar uptimeMeshSleepingSeconds(void) {
+  return SleepHandler::meshsleeptime().seconds;
 }
 
 /****************************\
@@ -492,6 +482,47 @@ static numvar powerWakeupPin(void) {
 
   SleepHandler::setPinWakeup(pin, enable);
 
+  return 1;
+}
+
+static numvar powerGetRadioState(void) {
+  return SleepHandler::getRadioState();
+}
+
+static numvar powerSleepRadio(void) {
+  SleepHandler::sleepRadio();
+  return 1;
+}
+
+static numvar powerWakeRadio(void) {
+  SleepHandler::wakeRadio();
+  return 1;
+}
+
+static numvar powerScheduleSleepRadio(void) {
+  if (!checkArgs(2, F("usage: power.schedulesleepradio(seconds, micros)"))) {
+    return 0;
+  }
+  uint32_t seconds = getarg(1);
+  uint32_t us = getarg(2);
+
+  Duration d;
+  d.seconds = seconds;
+  d.us = us;
+
+  SleepHandler::scheduleSleepRadio(d);
+
+  return 1;
+}
+
+static numvar powerSetRadioPeriod(void) {
+  if (!checkArgs(2, F("usage: power.setradioperiod(sleepms, wakems)"))) {
+    return 0;
+  }
+  uint32_t sleepms = getarg(1);
+  uint32_t wakems = getarg(2);
+
+  SleepHandler::setRadioPeriod(sleepms, wakems);
   return 1;
 }
 
@@ -2414,7 +2445,11 @@ void PinoccioShell::setup() {
   addFunction("power.sleep", powerSleep);
   addFunction("power.report", powerReport);
   addFunction("power.wakeup.pin", powerWakeupPin);
-  addFunction("power.sleep2", powerSleepRadio);
+  addFunction("power.sleepradio", powerSleepRadio);
+  addFunction("power.schedulesleepradio", powerScheduleSleepRadio);
+  addFunction("power.setradioperiod", powerSetRadioPeriod);
+  addFunction("power.getradiostate", powerGetRadioState);
+  addFunction("power.wakeradio", powerWakeRadio);
 
   addFunction("mesh.config", meshConfig);
   addFunction("mesh.setchannel", meshSetChannel);
