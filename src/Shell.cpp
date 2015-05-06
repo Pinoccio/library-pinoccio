@@ -216,7 +216,7 @@ static numvar getLastResetCause(void) {
 }
 
 static StringBuffer uptimeReportHQ(void) {
-  StringBuffer report(100);
+  StringBuffer report(125);
   int freeMem = getFreeMemory();
 
   char reset[20];
