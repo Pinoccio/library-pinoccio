@@ -149,9 +149,6 @@ void PinoccioScout::setup(const char *sketchName, const char *sketchRevision, in
 void PinoccioScout::loop() {
   now = SleepHandler::uptime().seconds;
 
-  bool canSleep = true;
-  // TODO: Let other loop functions return some "cansleep" status as well
-
   PinoccioClass::loop();
 
   // every 5th second blink network status
@@ -188,15 +185,12 @@ void PinoccioScout::loop() {
     Led.setBlueValue(Led.getBlueValue());
   }
 
-  if (sleepPending) {
-    canSleep = canSleep && !NWK_Busy();
+  // TODO: suspend more stuff? Wait for UART byte completion?
+  // TODO: Let other loop functions return some "cansleep" status as well
+  bool canSleep = !NWK_Busy();
 
-    // if remaining <= 0, we won't actually sleep anymore, but still
-    // call doSleep to run the callback and clean up
-    if (SleepHandler::scheduledTicksLeft() == 0)
-      doSleep(true);
-    else if (canSleep)
-      doSleep(false);
+  if (sleepPending && canSleep) {
+    doSleep();
   }
 }
 
@@ -656,26 +650,27 @@ void PinoccioScout::scheduleSleep(uint32_t ms, const char *func) {
   sleepMs = ms;
 }
 
-void PinoccioScout::doSleep(bool pastEnd) {
+void PinoccioScout::doSleep() {
   // Copy the pointer, so the post command can set a new sleep
   // timeout again.
   char *func = postSleepFunction;
   postSleepFunction = NULL;
-  sleepPending = false;
 
-  if (!pastEnd) {
-    NWK_SleepReq();
+  NWK_SleepReq();
 
-    // TODO: suspend more stuff? Wait for UART byte completion?
+  uint32_t left = SleepHandler::doSleep();
 
-    SleepHandler::doSleep(true);
-    NWK_WakeupReq();
+  // we've now woken up
+  NWK_WakeupReq();
+
+  //if there no ticks left, stop sleeping
+  if (!left) {
+    sleepPending = false;
   }
 
   // TODO: Allow ^C to stop running callbacks like this one
   if (func) {
     StringBuffer cmd(64, 16);
-    uint32_t left = SleepHandler::ticksToMs(SleepHandler::scheduledTicksLeft());
     cmd += func;
     cmd += "(";
     cmd.appendSprintf("%lu", sleepMs);
@@ -684,7 +679,7 @@ void PinoccioScout::doSleep(bool pastEnd) {
 
     uint32_t ret = Shell.eval((char*)cmd.c_str());
 
-    if (!left || !ret || sleepPending) {
+    if (!ret || !sleepPending) {
       // If the callback returned false, or it scheduled a new sleep or
       // we finished our previous sleep, then we're done with this
       // callback.
@@ -694,7 +689,6 @@ void PinoccioScout::doSleep(bool pastEnd) {
       // sleep interval, and we're not done sleeping yet, this means we
       // should continue sleeping (though note that at least one loop
       // cycle is ran before actually sleeping again).
-      sleepPending = true;
       postSleepFunction = func;
     }
   }

@@ -73,44 +73,32 @@ void SleepHandler::setup() {
   PCICR |= (1 << PCIE0);
 }
 
-// Sleep until the timer match interrupt fired. If interruptible is
-// true, this can return before if some other interrupt wakes us up
-// from sleep. If this happens, true is returned.
-bool SleepHandler::sleepUntilMatch(bool interruptible) {
-  while (true) {
-    #ifdef sleep_bod_disable
-    // On 256rfr2, BOD is automatically disabled in deep sleep, but
-    // some other MCUs need explicit disabling. This should happen shortly
-    // before actually sleeping. It's always automatically re-enabled.
-    sleep_bod_disable();
-    #endif
-    sei();
-    // AVR guarantees that the instruction after sei is executed, so
-    // there is no race condition here
-    sleep_cpu();
-    // Immediately disable interrupts again, to ensure that
-    // exactly one interrupt routine runs after wakeup, so
-    // we prevent race conditions and can properly detect if
-    // another interrupt than overflow occurred.
-    cli();
-    if (!timer_match && interruptible) {
-      // We were woken up, but the overflow interrupt
-      // didn't run, so another interrupt must have
-      // triggered. Note that if the overflow
-      // interrupt did trigger but not run yet, but also another
-      // (lower priority) interrupt occured, its flag will
-      // remain set and it will immediately wake us up
-      // on the next sleep attempt.
-      return false;
-    }
-    // See if overflow happened. Also check the IRQSCP3 flag,
-    // for the case where the overflow happens together with
-    // another (higher priority) interrupt.
-    if (timer_match || SCIRQS & (1 << IRQSCP3)) {
-      SCIRQS = (1 << IRQSCP3);
-      timer_match = true;
-      return true;
-    }
+// Sleep until the timer match interrupt fired. This can return before
+// if some other interrupt wakes us up from sleep. Consult timer_match
+void SleepHandler::sleepUntilMatch() {
+  #ifdef sleep_bod_disable
+  // On 256rfr2, BOD is automatically disabled in deep sleep, but
+  // some other MCUs need explicit disabling. This should happen shortly
+  // before actually sleeping. It's always automatically re-enabled.
+  sleep_bod_disable();
+  #endif
+
+  sei();
+  // AVR guarantees that the instruction after sei is executed, so
+  // there is no race condition here
+  sleep_cpu();
+  // Immediately disable interrupts again, to ensure that
+  // exactly one interrupt routine runs after wakeup, so
+  // we prevent race conditions and can properly detect if
+  // another interrupt than overflow occurred.
+  cli();
+
+  // See if overflow happened. Also check the IRQSCP3 flag,
+  // for the case where the overflow happens together with
+  // another (higher priority) interrupt.
+  if (timer_match || SCIRQS & (1 << IRQSCP3)) {
+    SCIRQS = (1 << IRQSCP3);
+    timer_match = true;
   }
 }
 
@@ -147,7 +135,9 @@ uint32_t SleepHandler::scheduledTicksLeft() {
   return left;
 }
 
-void SleepHandler::doSleep(bool interruptible) {
+// prepares micro for sleep beforing calling internal sleep function
+// returns the amount of ticks left to sleep if was prematurely woken
+uint32_t SleepHandler::doSleep() {
   // Disable Analag comparator
   uint8_t acsr = ACSR;
   ACSR = (1 << ACD);
@@ -242,7 +232,7 @@ void SleepHandler::doSleep(bool interruptible) {
     SCIRQM |= (1 << IRQMCP3);
 
     uint32_t before = read_sccnt();
-    sleepUntilMatch(interruptible);
+    sleepUntilMatch();
     uint32_t after = read_sccnt();
     totalSleep += (uint64_t)(after - before) * US_PER_TICK;
 
@@ -267,6 +257,8 @@ void SleepHandler::doSleep(bool interruptible) {
   ACSR = acsr;
   ADCSRA = adcsra;
   while (!(ADCSRB & (1 << AVDDOK))) /* nothing */;
+
+  return scheduledTicksLeft();
 }
 
 void SleepHandler::setPinWakeup(uint8_t pin, bool enable) {
