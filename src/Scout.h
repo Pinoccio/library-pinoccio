@@ -23,6 +23,7 @@
 #include "lwm/nwk/nwk.h"
 #include "peripherals/halFuelGauge.h"
 #include "peripherals/halRgbLed.h"
+#include "util/radio_state_t.h"
 
 // This is a temporary hack to check the result of snprintf and print an
 // error
@@ -145,7 +146,7 @@ class PinoccioScout : public PinoccioClass {
     };
   protected:
     uint32_t lastIndicate = 0;
-    void checkStateChange();
+    radio_state_t radioState;
 
     void doSleep();
 

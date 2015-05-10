@@ -92,13 +92,14 @@ PinoccioScout::PinoccioScout() {
   eventVerboseOutput = false;
   isFactoryResetReady = false;
 
-  sleepPending = false;
   postSleepFunction = NULL;
 }
 
 PinoccioScout::~PinoccioScout() { }
 
 void PinoccioScout::setup(const char *sketchName, const char *sketchRevision, int32_t sketchBuild) {
+  radioState = PIN_AWAKE;
+
   PinoccioClass::setup(sketchName, sketchRevision, sketchBuild);
   SleepHandler::setup();
 
@@ -189,8 +190,15 @@ void PinoccioScout::loop() {
   // TODO: Let other loop functions return some "cansleep" status as well
   bool canSleep = !NWK_Busy();
 
-  if (sleepPending && canSleep) {
-    doSleep();
+  switch (radioState) {
+    case PIN_SHOULD_SLEEP:
+      if(canSleep){
+        doSleep();
+      }
+      break;
+    default:
+      // PIN_SLEEPING, PIN_AWAKE
+      break;
   }
 }
 
@@ -639,9 +647,9 @@ static void scoutPeripheralStateChangeTimerHandler(SYS_Timer_t *timer) {
 void PinoccioScout::scheduleSleep(uint32_t ms, const char *func) {
   if (ms) {
     SleepHandler::scheduleSleep(ms);
-    sleepPending = true;
+    radioState = PIN_SHOULD_SLEEP;
   } else {
-    sleepPending = false;
+    radioState = PIN_AWAKE;
   }
 
   if (postSleepFunction)
@@ -665,7 +673,7 @@ void PinoccioScout::doSleep() {
 
   //if there no ticks left, stop sleeping
   if (!left) {
-    sleepPending = false;
+    radioState = PIN_AWAKE;
   }
 
   // TODO: Allow ^C to stop running callbacks like this one
@@ -679,7 +687,7 @@ void PinoccioScout::doSleep() {
 
     uint32_t ret = Shell.eval((char*)cmd.c_str());
 
-    if (!ret || !sleepPending) {
+    if (!ret || PIN_AWAKE == radioState) {
       // If the callback returned false, or it scheduled a new sleep or
       // we finished our previous sleep, then we're done with this
       // callback.
