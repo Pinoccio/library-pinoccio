@@ -4,8 +4,26 @@
 #include "SleepHandler.h"
 
 static volatile bool timer_match;
+
 Duration SleepHandler::lastOverflow = {0, 0};
 Duration SleepHandler::totalSleep = {0, 0};
+Duration SleepHandler::meshOffset = {0, 0};
+
+boolean SleepHandler::offsetInFuture = true;
+
+
+const Duration& SleepHandler::getOffset(){
+  return meshOffset;
+}
+
+void SleepHandler::setOffset(Duration d){
+  meshOffset = d;
+}
+
+void SleepHandler::setOffsetInFuture(bool future){
+  offsetInFuture = future;
+}
+
 Pbbe::LogicalPin::mask_t SleepHandler::pinWakeups = 0;
 
 ISR(SCNT_CMP3_vect) {

@@ -20,6 +20,8 @@ using namespace pinoccio;
 static void scoutDigitalStateChangeTimerHandler(SYS_Timer_t *timer);
 static void scoutAnalogStateChangeTimerHandler(SYS_Timer_t *timer);
 static void scoutPeripheralStateChangeTimerHandler(SYS_Timer_t *timer);
+static void scheduleSleepTimerHandler(SYS_Timer_t *timer);
+static void wakeTimerHandler(SYS_Timer_t *timer);
 
 #ifndef lengthof
 #define lengthof(x) (sizeof(x)/sizeof(*x))
@@ -89,9 +91,18 @@ PinoccioScout::PinoccioScout() {
   peripheralStateChangeTimer.mode = SYS_TIMER_PERIODIC_MODE;
   peripheralStateChangeTimer.handler = scoutPeripheralStateChangeTimerHandler;
 
+  scheduleSleepTimer.interval = 100;
+  scheduleSleepTimer.mode = SYS_TIMER_INTERVAL_MODE;
+  scheduleSleepTimer.handler = scheduleSleepTimerHandler;
+
+  wakeTimer.interval = 900;
+  wakeTimer.mode = SYS_TIMER_INTERVAL_MODE;
+  wakeTimer.handler = wakeTimerHandler;
+
   eventVerboseOutput = false;
   isFactoryResetReady = false;
 
+  automatedSleep = false;
   postSleepFunction = NULL;
 }
 
@@ -193,7 +204,27 @@ void PinoccioScout::loop() {
   switch (radioState) {
     case PIN_SHOULD_SLEEP:
       if(canSleep){
-        doSleep();
+
+        if (isLeadScout()) {
+          sleepRadio();
+        } else {
+          doSleep();
+        }
+      }
+      break;
+    case PIN_SHOULD_WAKE:
+      radioState = PIN_AWAKE;
+
+      if (isLeadScout()) {
+        Scout.wakeRadio();
+      }
+
+      // shouldn't need any cleanup for microcontroller sleep
+
+      // set a sys timer for wakeperiod to put us back to sleep
+      // doesnt have to be exact, only our wake time does
+      if (automatedSleep) {
+        startScheduleSleepTimer();
       }
       break;
     default:
@@ -302,6 +333,22 @@ void PinoccioScout::startPeripheralStateChangeEvents() {
 
 void PinoccioScout::stopPeripheralStateChangeEvents() {
   SYS_TimerStop(&peripheralStateChangeTimer);
+}
+
+void PinoccioScout::startScheduleSleepTimer() {
+  SYS_TimerStart(&scheduleSleepTimer);
+}
+
+void PinoccioScout::stopScheduleSleepTimer() {
+  SYS_TimerStop(&scheduleSleepTimer);
+}
+
+void PinoccioScout::startWakeTimer() {
+  SYS_TimerStart(&wakeTimer);
+}
+
+void PinoccioScout::stopWakeTimer() {
+  SYS_TimerStop(&wakeTimer);
 }
 
 void PinoccioScout::setStateChangeEventCycle(uint32_t digitalInterval, uint32_t analogInterval, uint32_t peripheralInterval) {
@@ -644,18 +691,72 @@ static void scoutPeripheralStateChangeTimerHandler(SYS_Timer_t *timer) {
   }
 }
 
+// set sleep state and choose a wake timer
+void PinoccioScout::internalScheduleSleep() {
+
+  // sleep next time through loop and are able to
+  radioState = PIN_SHOULD_SLEEP;
+
+  // set a timer to wake us up
+  // compute the amount of ms until meshtime reaches a second
+  uint32_t ms = (1000000 - SleepHandler::meshtime().us) / 1000;
+
+  // if lead scout schedule using systimer
+  if (Scout.isLeadScout()) {
+    wakeTimer.interval = ms;
+    Scout.startWakeTimer();
+
+  // otherwise schedule using symbol counter
+  } else {
+    SleepHandler::scheduleSleep(ms);
+  }
+}
+
+// time to schedule another sleep
+static void scheduleSleepTimerHandler(SYS_Timer_t *timer) {
+  Scout.internalScheduleSleep();
+}
+
+// time to wake up (rf)
+static void wakeTimerHandler(SYS_Timer_t *timer) {
+  Scout.radioState = PIN_SHOULD_WAKE;
+}
+
+void PinoccioScout::setWakeMs(uint32_t wakePeriodMs) {
+  scheduleSleepTimer.interval = wakePeriodMs;
+}
+
+uint32_t PinoccioScout::getWakeMs() {
+  return scheduleSleepTimer.interval;
+}
+
+// TODO make sure not in an automated sleep cycle or exit cleanty from it
 void PinoccioScout::scheduleSleep(uint32_t ms, const char *func) {
   if (ms) {
     SleepHandler::scheduleSleep(ms);
     radioState = PIN_SHOULD_SLEEP;
   } else {
-    radioState = PIN_AWAKE;
+    radioState = PIN_SHOULD_WAKE;
   }
 
   if (postSleepFunction)
     free(postSleepFunction);
   postSleepFunction = func ? strdup(func) : NULL;
   sleepMs = ms;
+}
+
+// set automated sleep/wake cycle based on mesh time
+// TODO make sure not in an scheduled sleep cycle or exit cleanty from it
+void PinoccioScout::scheduleSleep2() {
+  automatedSleep = true;
+  internalScheduleSleep();
+}
+
+// stop automated sleep/wake cycle based on mesh time
+void PinoccioScout::cancelSleep2() {
+  automatedSleep = false;
+  radioState = PIN_SHOULD_WAKE;
+  stopWakeTimer();
 }
 
 void PinoccioScout::doSleep() {
@@ -673,7 +774,7 @@ void PinoccioScout::doSleep() {
 
   //if there no ticks left, stop sleeping
   if (!left) {
-    radioState = PIN_AWAKE;
+    radioState = PIN_SHOULD_WAKE;
   }
 
   // TODO: Allow ^C to stop running callbacks like this one
@@ -687,7 +788,7 @@ void PinoccioScout::doSleep() {
 
     uint32_t ret = Shell.eval((char*)cmd.c_str());
 
-    if (!ret || PIN_AWAKE == radioState) {
+    if (!ret || PIN_SHOULD_WAKE == radioState) {
       // If the callback returned false, or it scheduled a new sleep or
       // we finished our previous sleep, then we're done with this
       // callback.
@@ -700,4 +801,15 @@ void PinoccioScout::doSleep() {
       postSleepFunction = func;
     }
   }
+}
+
+// you need to be checking NWK_Busy() before calling this
+void PinoccioScout::sleepRadio() {
+  NWK_SleepReq();
+  NWK_PauseReq();
+}
+
+void PinoccioScout::wakeRadio() {
+  NWK_WakeupReq();
+  NWK_ResumeReq();
 }

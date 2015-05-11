@@ -294,6 +294,46 @@ static numvar uptimeStatus(void) {
   return true;
 }
 
+static numvar uptimeSetOffset(void) {
+  if (!checkArgs(3, F("usage: uptime.setoffset(seconds, micros, inFuture)"))) {
+    return 0;
+  }
+
+  uint32_t seconds = getarg(1);
+  uint32_t us = getarg(2);
+
+  Duration d;
+  d.seconds = seconds;
+  d.us = us;
+
+  bool future = getarg(3);
+
+  SleepHandler::setOffsetInFuture(future);
+  SleepHandler::setOffset(d);
+
+  return 1;
+}
+
+static numvar uptimeMeshOffsetMicros(void) {
+  return SleepHandler::getOffset().us;
+}
+
+static numvar uptimeMeshOffsetSeconds(void) {
+  return SleepHandler::getOffset().seconds;
+}
+
+static numvar powerGetWakeMs(void) {
+  return Scout.getWakeMs();
+}
+
+static numvar powerSetWakeMs(void) {
+  if (!checkArgs(1, F("usage: power.setwakems(ms)"))) {
+    return 0;
+  }
+  Scout.setWakeMs(getarg(1));
+  return 1;
+}
+
 /****************************\
 *        KEY HANDLERS        *
 \****************************/
@@ -474,6 +514,18 @@ static numvar powerWakeupPin(void) {
 
   SleepHandler::setPinWakeup(pin, enable);
 
+  return 1;
+}
+
+static numvar powerStartGlobalSleep(void) {
+
+  Scout.scheduleSleep2();
+  return 1;
+}
+
+static numvar powerStopGloballeep(void) {
+
+  Scout.cancelSleep2();
   return 1;
 }
 
@@ -2396,6 +2448,11 @@ void PinoccioShell::setup() {
   addFunction("power.sleep", powerSleep);
   addFunction("power.report", powerReport);
   addFunction("power.wakeup.pin", powerWakeupPin);
+  addFunction("power.startglobalsleep", powerStartGlobalSleep);
+  addFunction("power.stopglobalsleep", powerStopGloballeep);
+
+  addFunction("power.getwakems", powerGetWakeMs);
+  addFunction("power.setwakems", powerSetWakeMs);
 
   addFunction("mesh.config", meshConfig);
   addFunction("mesh.setchannel", meshSetChannel);
@@ -2450,6 +2507,10 @@ void PinoccioShell::setup() {
   addFunction("uptime.getlastreset", getLastResetCause);
   addFunction("uptime.status", uptimeStatus);
   addFunction("uptime", uptimeStatus);
+  addFunction("uptime.setoffset", uptimeSetOffset);
+
+  addFunction("uptime.meshoffset.micros", uptimeMeshOffsetMicros);
+  addFunction("uptime.meshoffset.seconds", uptimeMeshOffsetSeconds);
 
   addFunction("led.on", ledTorch); // alias
   addFunction("led.off", ledOff);

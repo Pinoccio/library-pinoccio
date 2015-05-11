@@ -40,6 +40,18 @@ class Duration {
 
       return result;
     }
+
+    Duration operator +(Duration d) {
+      Duration result(*this);
+      result.seconds += d.seconds;
+      result.us += d.us;
+      if (result.us > 1000000) {
+        result.us -= 1000000;
+        result.seconds++;
+      }
+
+      return result;
+    }
 };
 
 #endif // LIB_PINOCCIO_DURATION_H
