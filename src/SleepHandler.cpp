@@ -4,16 +4,12 @@
 #include "SleepHandler.h"
 
 static volatile bool timer_match;
-Duration SleepHandler::lastOverflow = {0, 0};
+
 Duration SleepHandler::totalSleep = {0, 0};
 Pbbe::LogicalPin::mask_t SleepHandler::pinWakeups = 0;
 
 ISR(SCNT_CMP3_vect) {
   timer_match = true;
-}
-
-ISR(SCNT_OVFL_vect) {
-  SleepHandler::lastOverflow += (1LL << 32) * SleepHandler::US_PER_TICK;
 }
 
 /* Do nothing, just meant to wake up the Scout. We would want to declare
@@ -49,24 +45,12 @@ void SleepHandler::write_scocr3(uint32_t val) {
 }
 
 void SleepHandler::setup() {
-  // Enable asynchronous mode for timer2. This is required to start the
-  // 32kiHz crystal at all, so we can use it for the symbol counter. See
-  // http://www.avrfreaks.net/index.php?name=PNphpBB2&file=viewtopic&t=142962
-  ASSR |= (1 << AS2);
-
   // Timer2 is used for PWM on the blue led on the Pinoccio scout, by
   // default using 16Mhz/64=250kHz. We set the prescaler to 1 (32kiHz)
   // to come as close to that as possible. This results in a PWM
   // frequency of 32k/256 = 128Hz, which should still be sufficient for
   // a LED.
   TCCR2B = (TCCR2B & ~((1<<CS22)|(1<<CS21))) | (1<<CS20);
-
-  // Enable the symbol counter, using the external 32kHz crystal
-  // SCCR1 is left at defaults, with CMP3 in absolute compare mode.
-  SCCR0 |= (1 << SCEN) | (1 << SCCKSEL);
-
-  // Enable the SCNT_OVFL interrupt for timekeeping
-  SCIRQM |= (1 << IRQMOF);
 
   // Enable the pin change interrupt 0 (for PCINT0-7). Individual pins
   // remain disabled until we actually sleep.
