@@ -141,7 +141,7 @@ class PinoccioScout : public PinoccioClass {
     void scheduleSleep(uint32_t ms, const char *cmd);
 
     // sleep basd on global mesh time
-    void scheduleSleep2();
+    void scheduleSleep2(const char *cmd);
     void cancelSleep2();
 
     void sleepRadio();

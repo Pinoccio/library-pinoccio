@@ -200,6 +200,8 @@ void PinoccioScout::loop() {
   // TODO: suspend more stuff? Wait for UART byte completion?
   // TODO: Let other loop functions return some "cansleep" status as well
   bool canSleep = !NWK_Busy();
+  char *func;
+  uint32_t left;
 
   switch (radioState) {
     case PIN_SHOULD_SLEEP:
@@ -208,18 +210,60 @@ void PinoccioScout::loop() {
         if (isLeadScout()) {
           sleepRadio();
         } else {
-          doSleep();
+
+          NWK_SleepReq();
+
+          uint32_t left = SleepHandler::doSleep();
+
+          // we've now woken up
+          NWK_WakeupReq();
+
+          //if there no ticks left, stop sleeping
+          if (!left) {
+            radioState = PIN_SHOULD_WAKE;
+          }
+
         }
       }
       break;
     case PIN_SHOULD_WAKE:
       radioState = PIN_AWAKE;
 
+      // Copy the pointer, so the post command can set a new sleep
+      // timeout again.
+      func = postSleepFunction;
+      postSleepFunction = NULL;
+
+      left = SleepHandler::scheduledTicksLeft();
+
+      // TODO: Allow ^C to stop running callbacks like this one
+      if (func) {
+
+        StringBuffer cmd(64, 16);
+        cmd += func;
+        cmd += "(";
+        cmd.appendSprintf("%lu", sleepMs);
+        cmd.appendSprintf(",%lu", left);
+        cmd += ")";
+
+        uint32_t ret = Shell.eval((char*)cmd.c_str());
+        if (ret || left || automatedSleep) {
+          // If the callback returned true, and it did not schedule a new
+          // sleep interval, and we're not done sleeping yet, this means we
+          // should continue sleeping (though note that at least one loop
+          // cycle is ran before actually sleeping again).
+          postSleepFunction = func;
+        } else {
+          // If the callback returned false, or it scheduled a new sleep or
+          // we finished our previous sleep, then we're done with this
+          // callback.
+          free(func);
+        }
+      }
+
       if (isLeadScout()) {
         Scout.wakeRadio();
       }
-
-      // shouldn't need any cleanup for microcontroller sleep
 
       // set a sys timer for wakeperiod to put us back to sleep
       // doesnt have to be exact, only our wake time does
@@ -747,9 +791,13 @@ void PinoccioScout::scheduleSleep(uint32_t ms, const char *func) {
 
 // set automated sleep/wake cycle based on mesh time
 // TODO make sure not in an scheduled sleep cycle or exit cleanty from it
-void PinoccioScout::scheduleSleep2() {
+void PinoccioScout::scheduleSleep2(const char *func) {
   automatedSleep = true;
   internalScheduleSleep();
+
+  if (postSleepFunction)
+    free(postSleepFunction);
+  postSleepFunction = func ? strdup(func) : NULL;
 }
 
 // stop automated sleep/wake cycle based on mesh time
@@ -757,50 +805,6 @@ void PinoccioScout::cancelSleep2() {
   automatedSleep = false;
   radioState = PIN_SHOULD_WAKE;
   stopWakeTimer();
-}
-
-void PinoccioScout::doSleep() {
-  // Copy the pointer, so the post command can set a new sleep
-  // timeout again.
-  char *func = postSleepFunction;
-  postSleepFunction = NULL;
-
-  NWK_SleepReq();
-
-  uint32_t left = SleepHandler::doSleep();
-
-  // we've now woken up
-  NWK_WakeupReq();
-
-  //if there no ticks left, stop sleeping
-  if (!left) {
-    radioState = PIN_SHOULD_WAKE;
-  }
-
-  // TODO: Allow ^C to stop running callbacks like this one
-  if (func) {
-    StringBuffer cmd(64, 16);
-    cmd += func;
-    cmd += "(";
-    cmd.appendSprintf("%lu", sleepMs);
-    cmd.appendSprintf(",%lu", left);
-    cmd += ")";
-
-    uint32_t ret = Shell.eval((char*)cmd.c_str());
-
-    if (!ret || PIN_SHOULD_WAKE == radioState) {
-      // If the callback returned false, or it scheduled a new sleep or
-      // we finished our previous sleep, then we're done with this
-      // callback.
-      free(func);
-    } else {
-      // If the callback returned true, and it did not schedule a new
-      // sleep interval, and we're not done sleeping yet, this means we
-      // should continue sleeping (though note that at least one loop
-      // cycle is ran before actually sleeping again).
-      postSleepFunction = func;
-    }
-  }
 }
 
 // you need to be checking NWK_Busy() before calling this

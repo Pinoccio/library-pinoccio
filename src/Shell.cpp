@@ -440,7 +440,7 @@ static numvar powerSleep(void) {
 
   if (func && !Shell.defined(func)) {
     sp("Must be the name of function: ");
-    sp(func);
+    speol(func);
     return 0;
   }
 
@@ -503,8 +503,25 @@ static numvar powerWakeupPin(void) {
 }
 
 static numvar powerStartGlobalSleep(void) {
+  if (!checkArgs(0, 1, F("usage: power.startglobalsleep([\"function\"])"))) {
+    return 0;
+  }
 
-  Scout.scheduleSleep2();
+  const char *func = NULL;
+  if (getarg(0) >= 1) {
+    if (isstringarg(1))
+      func = (const char*)getarg(1);
+    else
+      func = keyGet(getarg(1));
+  }
+
+  if (func && !Shell.defined(func)) {
+    sp("Must be the name of function: ");
+    speol(func);
+    return 0;
+  }
+
+  Scout.scheduleSleep2(func);
   return 1;
 }
 
