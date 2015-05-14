@@ -295,31 +295,16 @@ static numvar uptimeStatus(void) {
 }
 
 static numvar uptimeSetOffset(void) {
-  if (!checkArgs(3, F("usage: uptime.setoffset(seconds, micros, inFuture)"))) {
+  if (!checkArgs(1, F("usage: uptime.setoffset(micros)"))) {
     return 0;
   }
 
-  uint32_t seconds = getarg(1);
-  uint32_t us = getarg(2);
-
-  Duration d;
-  d.seconds = seconds;
-  d.us = us;
-
-  bool future = getarg(3);
-
-  SleepHandler::setOffsetInFuture(future);
-  SleepHandler::setOffset(d);
-
+  SleepHandler::setOffset(getarg(1));
   return 1;
 }
 
-static numvar uptimeMeshOffsetMicros(void) {
-  return SleepHandler::getOffset().us;
-}
-
-static numvar uptimeMeshOffsetSeconds(void) {
-  return SleepHandler::getOffset().seconds;
+static numvar uptimeMeshOffset(void) {
+  return SleepHandler::getOffset();
 }
 
 static numvar powerGetWakeMs(void) {
@@ -2509,8 +2494,7 @@ void PinoccioShell::setup() {
   addFunction("uptime", uptimeStatus);
   addFunction("uptime.setoffset", uptimeSetOffset);
 
-  addFunction("uptime.meshoffset.micros", uptimeMeshOffsetMicros);
-  addFunction("uptime.meshoffset.seconds", uptimeMeshOffsetSeconds);
+  addFunction("uptime.meshoffset", uptimeMeshOffset);
 
   addFunction("led.on", ledTorch); // alias
   addFunction("led.off", ledOff);

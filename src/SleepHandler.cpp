@@ -7,21 +7,19 @@ static volatile bool timer_match;
 
 Duration SleepHandler::lastOverflow = {0, 0};
 Duration SleepHandler::totalSleep = {0, 0};
-Duration SleepHandler::meshOffset = {0, 0};
+int32_t SleepHandler::meshOffset = 0;
 
-boolean SleepHandler::offsetInFuture = true;
-
-
-const Duration& SleepHandler::getOffset(){
+int32_t SleepHandler::getOffset(){
   return meshOffset;
 }
 
-void SleepHandler::setOffset(Duration d){
+void SleepHandler::setOffset(int32_t d){
   meshOffset = d;
 }
 
-void SleepHandler::setOffsetInFuture(bool future){
-  offsetInFuture = future;
+// Returns the local authority's time
+Duration SleepHandler::meshtime() {
+  return uptime() + meshOffset;
 }
 
 Pbbe::LogicalPin::mask_t SleepHandler::pinWakeups = 0;

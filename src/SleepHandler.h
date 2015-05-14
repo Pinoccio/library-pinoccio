@@ -9,10 +9,8 @@ ISR(SCNT_OVFL_vect);
 class SleepHandler {
   public:
 
-    static void setOffset(Duration d);
-    static void setOffsetInFuture(bool future);
-
-    static const Duration& getOffset();
+    static void setOffset(int32_t d);
+    static int32_t getOffset();
 
     static void setup();
 
@@ -78,20 +76,12 @@ class SleepHandler {
       return uptime() - totalSleep;
     }
 
-    // Returns the local authority's time
-    static Duration meshtime() {
-      if(offsetInFuture)
-        return uptime() + meshOffset;
-      else
-        return uptime() - meshOffset;
-    }
+    static Duration meshtime();
 
   protected:
 
     // The mesh offset
-    static Duration meshOffset;
-    // The offset direction, forward is true, backward is false
-    static bool offsetInFuture;
+    static int32_t meshOffset;
 
     // The time from startup to the most recent overflow
     static Duration lastOverflow;
