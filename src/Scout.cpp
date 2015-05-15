@@ -803,8 +803,6 @@ void PinoccioScout::scheduleSleep2(const char *func) {
 // stop automated sleep/wake cycle based on mesh time
 void PinoccioScout::cancelSleep2() {
   automatedSleep = false;
-  radioState = PIN_SHOULD_WAKE;
-  stopWakeTimer();
 }
 
 // you need to be checking NWK_Busy() before calling this
