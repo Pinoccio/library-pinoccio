@@ -208,6 +208,7 @@ void PinoccioScout::loop() {
       if(canSleep){
 
         if (isLeadScout()) {
+          radioState = PIN_SLEEPING;
           sleepRadio();
         } else {
 
@@ -746,9 +747,9 @@ void PinoccioScout::internalScheduleSleep() {
   uint32_t ms = (1000000 - SleepHandler::meshtime().us) / 1000;
 
   // if lead scout schedule using systimer
-  if (Scout.isLeadScout()) {
+  if (isLeadScout()) {
     wakeTimer.interval = ms;
-    Scout.startWakeTimer();
+    startWakeTimer();
 
   // otherwise schedule using symbol counter
   } else {
