@@ -21,6 +21,8 @@ static void scoutDigitalStateChangeTimerHandler(SYS_Timer_t *timer);
 static void scoutAnalogStateChangeTimerHandler(SYS_Timer_t *timer);
 static void scoutPeripheralStateChangeTimerHandler(SYS_Timer_t *timer);
 
+static void timerAHandler(SYS_Timer_t *timer);
+
 #ifndef lengthof
 #define lengthof(x) (sizeof(x)/sizeof(*x))
 #endif
@@ -94,6 +96,7 @@ PinoccioScout::PinoccioScout() {
 
   sleepPending = false;
   postSleepFunction = NULL;
+  timerAFunction = NULL;
 }
 
 PinoccioScout::~PinoccioScout() { }
@@ -300,6 +303,52 @@ void PinoccioScout::startPeripheralStateChangeEvents() {
 
 void PinoccioScout::stopPeripheralStateChangeEvents() {
   SYS_TimerStop(&peripheralStateChangeTimer);
+}
+
+
+void PinoccioScout::startTimerA(uint32_t ms, const char *func, bool continuous) {
+  stopTimerA();
+
+  timerA.interval = ms;
+  timerA.handler = timerAHandler;
+
+  if (continuous) {
+    timerA.mode = SYS_TIMER_PERIODIC_MODE;
+  } else {
+    timerA.mode = SYS_TIMER_INTERVAL_MODE;
+  }
+
+  if(timerAFunction){
+    free(timerAFunction);
+    timerAFunction = NULL;
+  }
+  timerAFunction = func ? strdup(func) : NULL;
+
+  SYS_TimerStart(&timerA);
+}
+
+void PinoccioScout::stopTimerA() {
+  if(SYS_TimerStarted(&timerA)){
+    SYS_TimerStop(&timerA);  
+  }
+
+  if(timerAFunction){
+    free(timerAFunction);
+    timerAFunction = NULL;
+  }
+}
+
+static void timerAHandler(SYS_Timer_t *timer) {
+
+  if(Scout.timerAFunction){
+
+    Shell.eval(Scout.timerAFunction);
+
+    if(SYS_TIMER_PERIODIC_MODE != timer->mode){
+      free(Scout.timerAFunction);
+      Scout.timerAFunction = NULL;
+    }
+  }
 }
 
 void PinoccioScout::setStateChangeEventCycle(uint32_t digitalInterval, uint32_t analogInterval, uint32_t peripheralInterval) {
