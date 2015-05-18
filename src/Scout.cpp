@@ -202,7 +202,6 @@ void PinoccioScout::loop() {
   bool canSleep = !NWK_Busy();
   char *func;
   uint32_t left;
-
   switch (radioState) {
     case PIN_SHOULD_SLEEP:
       if(canSleep){
@@ -229,6 +228,10 @@ void PinoccioScout::loop() {
       break;
     case PIN_SHOULD_WAKE:
       radioState = PIN_AWAKE;
+
+      if (isLeadScout()) {
+        Scout.wakeRadio();
+      }
 
       // Copy the pointer, so the post command can set a new sleep
       // timeout again.
@@ -262,15 +265,16 @@ void PinoccioScout::loop() {
         }
       }
 
-      if (isLeadScout()) {
-        Scout.wakeRadio();
-      }
-
       // set a sys timer for wakeperiod to put us back to sleep
       // doesnt have to be exact, only our wake time does
       if (automatedSleep) {
         startScheduleSleepTimer();
       }
+
+      if (eventVerboseOutput) {
+        Serial.println(SleepHandler::meshmicros());
+      }
+
       break;
     default:
       // PIN_SLEEPING, PIN_AWAKE
@@ -739,12 +743,18 @@ static void scoutPeripheralStateChangeTimerHandler(SYS_Timer_t *timer) {
 // set sleep state and choose a wake timer
 void PinoccioScout::internalScheduleSleep() {
 
-  // sleep next time through loop and are able to
-  radioState = PIN_SHOULD_SLEEP;
-
   // set a timer to wake us up
   // compute the amount of ms until meshtime reaches a second
-  uint32_t ms = (1000000 - SleepHandler::meshtime().us) / 1000;
+  uint32_t us = (1000000 - (SleepHandler::meshmicros() % 1000000));
+  uint32_t ms = us / 1000;
+
+  // whats the right number here?
+  if(ms < 10){
+    return;
+  }
+
+  // sleep next time through loop and are able to
+  radioState = PIN_SHOULD_SLEEP;
 
   // if lead scout schedule using systimer
   if (isLeadScout()) {

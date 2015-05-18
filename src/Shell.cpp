@@ -303,6 +303,14 @@ static numvar uptimeSetOffset(void) {
   return 1;
 }
 
+static numvar uptimeGetMeshtime(void) {
+  return SleepHandler::meshmicros();
+}
+
+static numvar mmicros(void) {
+  return micros();
+}
+
 static numvar uptimeMeshOffset(void) {
   return SleepHandler::getOffset();
 }
@@ -1201,6 +1209,11 @@ static numvar meshEach(void) {
     }
     Shell.eval((char*)getstringarg(1),table[i].dstAddr,table[i].lqi,table[i].nextHopAddr);
   }
+  return 1;
+}
+
+static numvar meshSync(void) {
+  Scout.handler.timeSyncSend();
   return 1;
 }
 
@@ -2475,6 +2488,7 @@ void PinoccioShell::setup() {
   addFunction("mesh.id", meshId);
   addFunction("mesh.fieldtest", meshFieldtest);
   addFunction("mesh.each", meshEach);
+  addFunction("mesh.sync", meshSync);
 
   // these supplant/replace message.*
   addFunction("command.scout", commandScout);
@@ -2512,6 +2526,9 @@ void PinoccioShell::setup() {
   addFunction("uptime.setoffset", uptimeSetOffset);
 
   addFunction("uptime.meshoffset", uptimeMeshOffset);
+  addFunction("uptime.meshtime", uptimeGetMeshtime);
+
+  addFunction("micros", mmicros);
 
   addFunction("led.on", ledTorch); // alias
   addFunction("led.off", ledOff);
