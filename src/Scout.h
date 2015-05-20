@@ -52,6 +52,8 @@ class PinoccioScout : public PinoccioClass {
     void setup(const char *sketchName = "Custom", const char *sketchRevision = "unknown", int32_t sketchBuild = -1);
     void loop();
 
+    bool isSleeping();
+
     bool isBatteryCharging();
     int getBatteryPercentage();
     int getBatteryVoltage();

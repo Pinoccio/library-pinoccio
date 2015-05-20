@@ -7,18 +7,19 @@ static volatile bool timer_match;
 
 Duration SleepHandler::lastOverflow = {0, 0};
 Duration SleepHandler::totalSleep = {0, 0};
-int64_t SleepHandler::meshOffset = 0;
+uint64_t SleepHandler::meshOffset = 0;
 
-int64_t SleepHandler::getOffset(){
+uint64_t SleepHandler::getOffset(){
   return meshOffset;
 }
 
-void SleepHandler::setOffset(int64_t d){
+void SleepHandler::setOffset(uint64_t d){
   meshOffset = d;
 }
 
-int32_t SleepHandler::meshmicros(){
-  return ((int64_t)micros() + meshOffset);
+uint32_t SleepHandler::meshmicros(){
+  uint64_t result = micros() + meshOffset;
+  return (uint32_t)(result % 4294967296);
 }
 
 Pbbe::LogicalPin::mask_t SleepHandler::pinWakeups = 0;

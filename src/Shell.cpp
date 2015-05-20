@@ -395,6 +395,10 @@ static numvar keySave(void) {
 *      POWER HANDLERS       *
 \****************************/
 
+static numvar isSleeping(void) {
+  return Scout.isSleeping();
+}
+
 static numvar isBatteryCharging(void) {
   return Scout.isBatteryCharging();
 }
@@ -2452,6 +2456,7 @@ PinoccioShell::~PinoccioShell() { }
 void PinoccioShell::setup() {
   keyInit();
 
+  addFunction("power.issleeping", isSleeping);
   addFunction("power.ischarging", isBatteryCharging);
   addFunction("power.hasbattery", isBatteryConnected);
   addFunction("power.percent", getBatteryPercentage);

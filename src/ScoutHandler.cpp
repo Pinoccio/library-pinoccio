@@ -398,9 +398,20 @@ static bool fieldTimeSync(NWK_DataInd_t *ind) {
 
   uint16_t top = (data[0] << 8) | data[1];
   uint16_t bot = (data[2] << 8) | data[3];
-  uint32_t them  = ((uint32_t)top <<16) | ((uint32_t)bot);
-  int64_t offset = (int64_t)((uint32_t)them - (uint32_t)now);
-  SleepHandler::setOffset(offset + 79923);
+  uint32_t them  = ((uint32_t)top <<16) | (uint32_t)bot;
+
+  uint64_t offset;
+  if(them >= now){
+    offset = (uint64_t)(them - now);
+  }else{
+    offset = (uint64_t)((4294967296 + them) - now);
+  }
+
+  // should I keep this number behind the scenes to not confuse?
+  // should it be user updatable?
+  SleepHandler::setOffset(offset + 109923);
+
+  if (Shell.defined("on.mesh.sync")) Shell.eval(F("on.mesh.sync"));
 
   if (Scout.handler.isVerbose) {
 
