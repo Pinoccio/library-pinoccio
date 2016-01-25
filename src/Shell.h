@@ -12,6 +12,7 @@
 #include "bitlash.h"
 #include "src/bitlash.h"
 
+#include <lwm.h>
 #include "lwm/sys/sysConfig.h"
 #include "lwm/phy/phy.h"
 #include "lwm/hal/hal.h"

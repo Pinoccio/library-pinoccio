@@ -16,6 +16,7 @@
 #include "backpack-bus/PBBP.h"
 #include "util/Callback.h"
 #include <Wire.h>
+#include <lwm.h>
 
 #include "lwm/phy/phy.h"
 #include "lwm/hal/hal.h"
