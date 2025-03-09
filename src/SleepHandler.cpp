@@ -22,6 +22,8 @@ ISR(SCNT_OVFL_vect) {
  * to the also weak __bad_interrupt). */
 EMPTY_INTERRUPT(PCINT0_vect);
 
+static void dummy_isr() { }
+
 uint32_t SleepHandler::read_sccnt() {
   // Read LL first, that will freeze the other registers for reading
   uint32_t sccnt = SCCNTLL;
@@ -217,21 +219,21 @@ void SleepHandler::doSleep(bool interruptible) {
   // We pass in NULL for the callback function, since we don't really
   // care about the interrupt itself.
   if (Pbbe::LogicalPin(SCL).in(pinWakeups))
-    attachInterrupt(2, NULL, CHANGE); // INT0
+    attachInterrupt(2, dummy_isr, CHANGE); // INT0
   if (Pbbe::LogicalPin(SDA).in(pinWakeups))
-    attachInterrupt(3, NULL, CHANGE); // INT1
+    attachInterrupt(3, dummy_isr, CHANGE); // INT1
   if (Pbbe::LogicalPin(RX1).in(pinWakeups))
-    attachInterrupt(4, NULL, CHANGE); // INT2
+    attachInterrupt(4, dummy_isr, CHANGE); // INT2
   if (Pbbe::LogicalPin(TX1).in(pinWakeups))
-    attachInterrupt(5, NULL, CHANGE); // INT3
+    attachInterrupt(5, dummy_isr, CHANGE); // INT3
   if (Pbbe::LogicalPin(D4).in(pinWakeups))
-    attachInterrupt(0, NULL, LOW); // INT4
+    attachInterrupt(0, dummy_isr, LOW); // INT4
   if (Pbbe::LogicalPin(D5).in(pinWakeups))
-    attachInterrupt(1, NULL, LOW); // INT5
+    attachInterrupt(1, dummy_isr, LOW); // INT5
   if (Pbbe::LogicalPin(D7).in(pinWakeups))
-    attachInterrupt(6, NULL, LOW); // INT6
+    attachInterrupt(6, dummy_isr, LOW); // INT6
   if (Pbbe::LogicalPin(BATT_ALERT).in(pinWakeups))
-    attachInterrupt(7, NULL, LOW); // INT7
+    attachInterrupt(7, dummy_isr, LOW); // INT7
 
   // Check to see if we haven't passed the until time yet. Due to
   // wraparound, we convert to an integer, but this effectively halves
