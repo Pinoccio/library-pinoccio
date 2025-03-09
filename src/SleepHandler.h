@@ -50,7 +50,7 @@ class SleepHandler {
     }
 
     // Maximum time that a single sleep can last (±9.5 hours)
-    static const uint32_t MAX_SLEEP_TICKS = (1 << 31);
+    static const uint32_t MAX_SLEEP_TICKS = ((uint32_t)1 << 31);
 
     // Returns the number of ticks since startup
     static uint32_t ticks() {
