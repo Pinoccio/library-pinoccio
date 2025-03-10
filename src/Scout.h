@@ -148,7 +148,7 @@ class PinoccioScout : public PinoccioClass {
     uint32_t lastIndicate = 0;
     void checkStateChange();
 
-    void doSleep(bool pastEnd);
+    void doSleep();
 
     bool isVccEnabled;
     bool isStateSaved;
