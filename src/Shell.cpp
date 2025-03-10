@@ -13,8 +13,7 @@
 #include "hq/HqHandler.h"
 #include "backpacks/Backpacks.h"
 #include "backpacks/wifi/WifiModule.h"
-#include "bitlash.h"
-#include "src/bitlash.h"
+#include <electron.h>
 #include "util/String.h"
 #include "util/PrintToString.h"
 #include "modules/ModuleHandler.h"
@@ -31,6 +30,13 @@ static bool isMeshVerbose = 0;
 /****************************\
  *     HELPER FUNCTIONS     *
 \****************************/
+
+void *e_debug(const char *file, int line, const char *function, const char * format, ...)
+{
+  Serial.print(file);
+  Serial.print(" ");
+  Serial.println(line);
+}
 
 static void printSpaces(int8_t number) {
   while (number-- > 0)

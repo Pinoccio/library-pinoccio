@@ -9,6 +9,9 @@
 #ifndef LIB_PINOCCIO_SCOUT_H_
 #define LIB_PINOCCIO_SCOUT_H_
 
+#include <bitlash.h>
+#include <src/bitlash.h>
+
 #include <Pinoccio.h>
 #include <Shell.h>
 #include <ScoutHandler.h>
@@ -24,6 +27,7 @@
 #include "lwm/nwk/nwk.h"
 #include "peripherals/halFuelGauge.h"
 #include "peripherals/halRgbLed.h"
+
 
 // This is a temporary hack to check the result of snprintf and print an
 // error
