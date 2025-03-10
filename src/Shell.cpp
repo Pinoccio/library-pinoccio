@@ -216,20 +216,23 @@ static numvar getLastResetCause(void) {
 }
 
 static StringBuffer uptimeReportHQ(void) {
-  StringBuffer report(100);
+  StringBuffer report(125);
   int freeMem = getFreeMemory();
 
   char reset[20];
   strncpy_P(reset, Scout.getLastResetCause(), sizeof(reset));
   reset[sizeof(reset) - 1] = 0; // ensure termination, strncpy is weird
 
-  report.appendSprintf("[%d,[%d,%d,%d,%d],[%ld,%ld,%d,",keyMap("uptime",0),
+  report.appendSprintf("[%d,[%d,%d,%d,%d,%d],[%ld,%ld,%ld,%d,",
+          keyMap("uptime",0),
           keyMap("total", 0),
           keyMap("sleep", 0),
+          keyMap("meshsleep", 0),
           keyMap("random", 0),
           keyMap("reset", 0),
           SleepHandler::uptime().seconds,
           SleepHandler::sleeptime().seconds,
+          SleepHandler::meshsleeptime().seconds,
           (int)random());
 
   report.appendJsonString(reset, true);
@@ -291,7 +294,46 @@ static numvar uptimeStatus(void) {
   appendTime(out, SleepHandler::sleeptime());
   speol(out.c_str());
 
+  out = F("Global: ");
+  appendTime(out, SleepHandler::meshtime());
+  speol(out.c_str());
   return true;
+}
+
+static numvar uptimeSetOffset(void) {
+  if (!checkArgs(3, F("usage: uptime.setoffset(seconds, micros, inFuture)"))) {
+    return 0;
+  }
+
+  uint32_t seconds = getarg(1);
+  uint32_t us = getarg(2);
+
+  Duration d;
+  d.seconds = seconds;
+  d.us = us;
+
+  bool future = getarg(3);
+
+  SleepHandler::setOffsetInFuture(future);
+  SleepHandler::setOffset(d);
+
+  return 1;
+}
+
+static numvar uptimeMeshOffsetMicros(void) {
+  return SleepHandler::getOffset().us;
+}
+
+static numvar uptimeMeshOffsetSeconds(void) {
+  return SleepHandler::getOffset().seconds;
+}
+
+static numvar uptimeMeshSleepingMicros(void) {
+  return SleepHandler::meshsleeptime().us;
+}
+
+static numvar uptimeMeshSleepingSeconds(void) {
+  return SleepHandler::meshsleeptime().seconds;
 }
 
 /****************************\
@@ -474,6 +516,47 @@ static numvar powerWakeupPin(void) {
 
   SleepHandler::setPinWakeup(pin, enable);
 
+  return 1;
+}
+
+static numvar powerGetRadioState(void) {
+  return SleepHandler::getRadioState();
+}
+
+static numvar powerSleepRadio(void) {
+  SleepHandler::sleepRadio();
+  return 1;
+}
+
+static numvar powerWakeRadio(void) {
+  SleepHandler::wakeRadio();
+  return 1;
+}
+
+static numvar powerScheduleSleepRadio(void) {
+  if (!checkArgs(2, F("usage: power.schedulesleepradio(seconds, micros)"))) {
+    return 0;
+  }
+  uint32_t seconds = getarg(1);
+  uint32_t us = getarg(2);
+
+  Duration d;
+  d.seconds = seconds;
+  d.us = us;
+
+  SleepHandler::scheduleSleepRadio(d);
+
+  return 1;
+}
+
+static numvar powerSetRadioPeriod(void) {
+  if (!checkArgs(2, F("usage: power.setradioperiod(sleepms, wakems)"))) {
+    return 0;
+  }
+  uint32_t sleepms = getarg(1);
+  uint32_t wakems = getarg(2);
+
+  SleepHandler::setRadioPeriod(sleepms, wakems);
   return 1;
 }
 
@@ -2396,6 +2479,11 @@ void PinoccioShell::setup() {
   addFunction("power.sleep", powerSleep);
   addFunction("power.report", powerReport);
   addFunction("power.wakeup.pin", powerWakeupPin);
+  addFunction("power.sleepradio", powerSleepRadio);
+  addFunction("power.schedulesleepradio", powerScheduleSleepRadio);
+  addFunction("power.setradioperiod", powerSetRadioPeriod);
+  addFunction("power.getradiostate", powerGetRadioState);
+  addFunction("power.wakeradio", powerWakeRadio);
 
   addFunction("mesh.config", meshConfig);
   addFunction("mesh.setchannel", meshSetChannel);
@@ -2450,6 +2538,13 @@ void PinoccioShell::setup() {
   addFunction("uptime.getlastreset", getLastResetCause);
   addFunction("uptime.status", uptimeStatus);
   addFunction("uptime", uptimeStatus);
+  addFunction("uptime.setoffset", uptimeSetOffset);
+
+  addFunction("uptime.meshsleeping.micros", uptimeMeshSleepingMicros);
+  addFunction("uptime.meshsleeping.seconds", uptimeMeshSleepingSeconds);
+
+  addFunction("uptime.meshoffset.micros", uptimeMeshOffsetMicros);
+  addFunction("uptime.meshoffset.seconds", uptimeMeshOffsetSeconds);
 
   addFunction("led.on", ledTorch); // alias
   addFunction("led.off", ledOff);

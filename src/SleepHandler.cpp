@@ -2,14 +2,49 @@
 #include <avr/sleep.h>
 #include <util/atomic.h>
 #include "SleepHandler.h"
+#include "util/radio_state_t.h"
 
 static volatile bool timer_match;
+
 Duration SleepHandler::lastOverflow = {0, 0};
 Duration SleepHandler::totalSleep = {0, 0};
+Duration SleepHandler::meshSleep = {0, 0};
+uint32_t SleepHandler::meshSleepStart = 0;
+radio_state_t SleepHandler::radioState = RF_AWAKE;
+uint32_t SleepHandler::sleepPeriod = 100;
+uint32_t SleepHandler::wakePeriod = 100;
+Duration SleepHandler::meshOffset = {0, 0};
+boolean SleepHandler::offsetInFuture = true;
+
+// Returns the time mesh slept since startup
+const Duration& SleepHandler::meshsleeptime() {
+  return meshSleep;
+}
+
+const Duration& SleepHandler::getOffset(){
+  return meshOffset;
+}
+
+void SleepHandler::setOffset(Duration d){
+  meshOffset = d;
+}
+
+void SleepHandler::setOffsetInFuture(bool future){
+  offsetInFuture = future;
+}
+
 Pbbe::LogicalPin::mask_t SleepHandler::pinWakeups = 0;
 
 ISR(SCNT_CMP3_vect) {
   timer_match = true;
+}
+
+ISR(SCNT_CMP2_vect) {
+  if (RF_WILL_SLEEP == SleepHandler::radioState) {
+    SleepHandler::radioState = RF_SHOULD_SLEEP;
+  } else if (RF_WILL_WAKE == SleepHandler::radioState) {
+    SleepHandler::radioState = RF_SHOULD_WAKE;
+  }
 }
 
 ISR(SCNT_OVFL_vect) {
@@ -42,6 +77,15 @@ uint32_t SleepHandler::read_scocr3() {
   return sccnt;
 }
 
+uint32_t SleepHandler::read_scocr2() {
+  // Read LL first, that will freeze the other registers for reading
+  uint32_t sccnt = SCOCR2LL;
+  sccnt |= (uint32_t)SCOCR2LH << 8;
+  sccnt |= (uint32_t)SCOCR2HL << 16;
+  sccnt |= (uint32_t)SCOCR2HH << 24;
+  return sccnt;
+}
+
 void SleepHandler::write_scocr3(uint32_t val) {
   // Write LL last, that will update the entire register atomically
   SCOCR3HH = val >> 24;
@@ -50,7 +94,16 @@ void SleepHandler::write_scocr3(uint32_t val) {
   SCOCR3LL = val;
 }
 
+void SleepHandler::write_scocr2(uint32_t val) {
+  // Write LL last, that will update the entire register atomically
+  SCOCR2HH = val >> 24;
+  SCOCR2HL = val >> 16;
+  SCOCR2LH = val >> 8;
+  SCOCR2LL = val;
+}
+
 void SleepHandler::setup() {
+
   // Enable asynchronous mode for timer2. This is required to start the
   // 32kiHz crystal at all, so we can use it for the symbol counter. See
   // http://www.avrfreaks.net/index.php?name=PNphpBB2&file=viewtopic&t=142962
@@ -73,6 +126,22 @@ void SleepHandler::setup() {
   // Enable the pin change interrupt 0 (for PCINT0-7). Individual pins
   // remain disabled until we actually sleep.
   PCICR |= (1 << PCIE0);
+}
+
+void SleepHandler::loop() {
+  switch (radioState) {
+    case RF_SHOULD_SLEEP:
+      sleepRadio();
+      scheduleWakeRadio(meshtime() + (uint64_t)(sleepPeriod * 1000));
+      break;
+    case RF_SHOULD_WAKE:
+      wakeRadio();
+      scheduleSleepRadio(meshtime() + (uint64_t)(wakePeriod * 1000));
+      break;
+    default:
+      // RF_WILL_SLEEP, RF_WILL_WAKE, RF_SLEEPING, RF_AWAKE
+      break;
+  }
 }
 
 // Sleep until the timer match interrupt fired. If interruptible is
@@ -147,6 +216,87 @@ uint32_t SleepHandler::scheduledTicksLeft() {
   if ((SCIRQS & (1 << IRQSCP3)) || timer_match)
     return 0;
   return left;
+}
+
+uint32_t SleepHandler::scheduledTicksLeft2() {
+  uint32_t left = read_scocr2() - read_sccnt();
+
+  // If a compare match has occured, we're past the end of sleep already.
+  // We check this _after_ grabbing the counter value above, to prevent
+  // a race condition where the counter goes past the compare value
+  // after checking for the timer_match flag. We check both the
+  // interrupt flag and the timer_match flag, to handle both before
+  // and after sleeping (since before sleeping, the IRQ is disabled, but
+  // during sleep the wakeup clears the flag).
+  if ((SCIRQS & (1 << IRQSCP2)) || radioState != RF_WILL_SLEEP || radioState != RF_WILL_WAKE)
+    return 0;
+  return left;
+}
+
+int SleepHandler::getRadioState() {
+  return radioState;
+}
+
+void SleepHandler::setRadioPeriod(uint32_t sleepms, uint32_t wakems){
+  sleepPeriod = sleepms;
+  wakePeriod = wakems;
+}
+
+void SleepHandler::scheduleSleepRadio(Duration future) {
+  // todo check its in the future
+  // todo handle microseconds too
+  // todo calculate off of an uptime + offset
+  radioState = RF_WILL_SLEEP;
+  setTimer2((future.seconds - meshtime().seconds) * 1000);
+}
+
+void SleepHandler::scheduleWakeRadio(Duration future) {
+  // todo check its in the future
+  // todo handle microseconds too
+  // todo calculate off of an uptime + offset
+  radioState = RF_WILL_WAKE;
+  setTimer2((future.seconds - meshtime().seconds) * 1000);
+}
+
+// TODO take a few ticks off the schedule as it takes us some amount of
+// time to service the interrupt, mark the flag, get around to the loop
+// and wake the radio
+void SleepHandler::sleepRadio() {
+
+  meshSleepStart = read_sccnt();
+
+  while (NWK_Busy()) {}
+
+  radioState = RF_SLEEPING;
+  NWK_SleepReq();
+}
+
+void SleepHandler::wakeRadio() {
+  uint32_t after = read_sccnt();
+  meshSleep += (uint64_t)(after - meshSleepStart) * US_PER_TICK;
+  NWK_WakeupReq();
+  radioState = RF_AWAKE;
+}
+
+void SleepHandler::setTimer2(uint32_t ms) {
+  uint32_t ticks = msToTicks(ms);
+
+  // Make sure we cannot "miss" the compare match if a low timeout is
+  // passed (really only ms = 0, which is forbidden, but handle it
+  // anyway).
+  if (ticks < 2) ticks = 2;
+  // Disable interrupts to prevent the counter passing the target before
+  // we clear the IRQSCP3 flag (due to other interrupts happening)
+  ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
+    // Schedule SCNT_CMP2 when the given counter is reached
+    write_scocr2(read_sccnt() + ticks);
+
+    // Clear any previously pending interrupt
+    SCIRQS = (1 << IRQSCP2);
+
+    // Enable the SCNT_CMP2 interrupt to wake us from sleep
+    SCIRQM |= (1 << IRQMCP2);
+  }
 }
 
 void SleepHandler::doSleep(bool interruptible) {
