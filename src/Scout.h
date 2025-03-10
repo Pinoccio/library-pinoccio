@@ -24,6 +24,7 @@
 #include "lwm/nwk/nwk.h"
 #include "peripherals/halFuelGauge.h"
 #include "peripherals/halRgbLed.h"
+#include "util/radio_state_t.h"
 
 // This is a temporary hack to check the result of snprintf and print an
 // error
@@ -52,6 +53,8 @@ class PinoccioScout : public PinoccioClass {
     void setup(const char *sketchName = "Custom", const char *sketchRevision = "unknown", int32_t sketchBuild = -1);
     void loop();
 
+    bool isSleeping();
+
     bool isBatteryCharging();
     int getBatteryPercentage();
     int getBatteryVoltage();
@@ -75,8 +78,14 @@ class PinoccioScout : public PinoccioClass {
     void stopAnalogStateChangeEvents();
     void startPeripheralStateChangeEvents();
     void stopPeripheralStateChangeEvents();
+    void startScheduleSleepTimer();
+    void stopScheduleSleepTimer();
+    void startWakeTimer();
+    void stopWakeTimer();
     void setStateChangeEventCycle(uint32_t digitalInterval, uint32_t analogInterval, uint32_t peripheralInterval);
     void saveState();
+    void setWakeMs(uint32_t wakePeriodMs);
+    uint32_t getWakeMs();
 
     int8_t getRegisterPinMode(uint8_t pin);
     int8_t getPinMode(uint8_t pin);
@@ -134,6 +143,17 @@ class PinoccioScout : public PinoccioClass {
     // copied, so it does not have to remain valid.
     void scheduleSleep(uint32_t ms, const char *cmd);
 
+    // sleep basd on global mesh time
+    void scheduleSleep2(const char *cmd);
+    void cancelSleep2();
+
+    void sleepRadio();
+    void wakeRadio();
+
+    //should probably be protected
+    void internalScheduleSleep();
+    radio_state_t radioState;
+
     enum {
       PINMODE_DISCONNECTED = -4,
       PINMODE_UNSET = -3,
@@ -146,9 +166,8 @@ class PinoccioScout : public PinoccioClass {
     };
   protected:
     uint32_t lastIndicate = 0;
-    void checkStateChange();
 
-    void doSleep(bool pastEnd);
+    void doSleep();
 
     bool isVccEnabled;
     bool isStateSaved;
@@ -157,8 +176,11 @@ class PinoccioScout : public PinoccioClass {
     SYS_Timer_t digitalStateChangeTimer;
     SYS_Timer_t analogStateChangeTimer;
     SYS_Timer_t peripheralStateChangeTimer;
+    SYS_Timer_t scheduleSleepTimer;
+    SYS_Timer_t wakeTimer;
 
     bool sleepPending;
+    bool automatedSleep;
     // The original sleep time, used to pass to the callback and to
     // re-sleep. The actual sleep time for the next sleep is stored by
     // SleepHandler instead.

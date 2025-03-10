@@ -294,6 +294,39 @@ static numvar uptimeStatus(void) {
   return true;
 }
 
+static numvar uptimeSetOffset(void) {
+  if (!checkArgs(1, F("usage: uptime.setoffset(micros)"))) {
+    return 0;
+  }
+
+  SleepHandler::setOffset(getarg(1));
+  return 1;
+}
+
+static numvar uptimeGetMeshtime(void) {
+  return SleepHandler::meshmicros();
+}
+
+static numvar mmicros(void) {
+  return micros();
+}
+
+static numvar uptimeMeshOffset(void) {
+  return SleepHandler::getOffset();
+}
+
+static numvar powerGetWakeMs(void) {
+  return Scout.getWakeMs();
+}
+
+static numvar powerSetWakeMs(void) {
+  if (!checkArgs(1, F("usage: power.setwakems(ms)"))) {
+    return 0;
+  }
+  Scout.setWakeMs(getarg(1));
+  return 1;
+}
+
 /****************************\
 *        KEY HANDLERS        *
 \****************************/
@@ -362,6 +395,10 @@ static numvar keySave(void) {
 *      POWER HANDLERS       *
 \****************************/
 
+static numvar isSleeping(void) {
+  return Scout.isSleeping();
+}
+
 static numvar isBatteryCharging(void) {
   return Scout.isBatteryCharging();
 }
@@ -415,7 +452,7 @@ static numvar powerSleep(void) {
 
   if (func && !Shell.defined(func)) {
     sp("Must be the name of function: ");
-    sp(func);
+    speol(func);
     return 0;
   }
 
@@ -474,6 +511,35 @@ static numvar powerWakeupPin(void) {
 
   SleepHandler::setPinWakeup(pin, enable);
 
+  return 1;
+}
+
+static numvar powerStartGlobalSleep(void) {
+  if (!checkArgs(0, 1, F("usage: power.startglobalsleep([\"function\"])"))) {
+    return 0;
+  }
+
+  const char *func = NULL;
+  if (getarg(0) >= 1) {
+    if (isstringarg(1))
+      func = (const char*)getarg(1);
+    else
+      func = keyGet(getarg(1));
+  }
+
+  if (func && !Shell.defined(func)) {
+    sp("Must be the name of function: ");
+    speol(func);
+    return 0;
+  }
+
+  Scout.scheduleSleep2(func);
+  return 1;
+}
+
+static numvar powerStopGloballeep(void) {
+
+  Scout.cancelSleep2();
   return 1;
 }
 
@@ -1147,6 +1213,11 @@ static numvar meshEach(void) {
     }
     Shell.eval((char*)getstringarg(1),table[i].dstAddr,table[i].lqi,table[i].nextHopAddr);
   }
+  return 1;
+}
+
+static numvar meshSync(void) {
+  Scout.handler.timeSyncSend();
   return 1;
 }
 
@@ -2385,6 +2456,7 @@ PinoccioShell::~PinoccioShell() { }
 void PinoccioShell::setup() {
   keyInit();
 
+  addFunction("power.issleeping", isSleeping);
   addFunction("power.ischarging", isBatteryCharging);
   addFunction("power.hasbattery", isBatteryConnected);
   addFunction("power.percent", getBatteryPercentage);
@@ -2396,6 +2468,11 @@ void PinoccioShell::setup() {
   addFunction("power.sleep", powerSleep);
   addFunction("power.report", powerReport);
   addFunction("power.wakeup.pin", powerWakeupPin);
+  addFunction("power.startglobalsleep", powerStartGlobalSleep);
+  addFunction("power.stopglobalsleep", powerStopGloballeep);
+
+  addFunction("power.getwakems", powerGetWakeMs);
+  addFunction("power.setwakems", powerSetWakeMs);
 
   addFunction("mesh.config", meshConfig);
   addFunction("mesh.setchannel", meshSetChannel);
@@ -2416,6 +2493,7 @@ void PinoccioShell::setup() {
   addFunction("mesh.id", meshId);
   addFunction("mesh.fieldtest", meshFieldtest);
   addFunction("mesh.each", meshEach);
+  addFunction("mesh.sync", meshSync);
 
   // these supplant/replace message.*
   addFunction("command.scout", commandScout);
@@ -2450,6 +2528,12 @@ void PinoccioShell::setup() {
   addFunction("uptime.getlastreset", getLastResetCause);
   addFunction("uptime.status", uptimeStatus);
   addFunction("uptime", uptimeStatus);
+  addFunction("uptime.setoffset", uptimeSetOffset);
+
+  addFunction("uptime.meshoffset", uptimeMeshOffset);
+  addFunction("uptime.meshtime", uptimeGetMeshtime);
+
+  addFunction("micros", mmicros);
 
   addFunction("led.on", ledTorch); // alias
   addFunction("led.off", ledOff);

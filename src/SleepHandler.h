@@ -8,6 +8,10 @@ ISR(SCNT_OVFL_vect);
 
 class SleepHandler {
   public:
+
+    static void setOffset(uint64_t d);
+    static uint64_t getOffset();
+
     static void setup();
 
     // Schedule a sleep until the given number of ms from now. The sleep
@@ -22,13 +26,9 @@ class SleepHandler {
     // How many ticks are left before the end time is reached?
     static uint32_t scheduledTicksLeft();
 
-    // Sleep until the previously scheduled time. If interruptible is
-    // true, this can return earlier if we are woken from sleep by
-    // another interrupt.
-    //
     // If the previously scheduled end time has already passed, this
     // returns immediately, without sleeping.
-    static void doSleep(bool interruptible);
+    static uint32_t doSleep();
 
     static void setPinWakeup(uint8_t pin, bool enable);
     static bool pinWakeupSupported(uint8_t pin);
@@ -76,7 +76,13 @@ class SleepHandler {
       return uptime() - totalSleep;
     }
 
+    static uint32_t meshmicros();
+
   protected:
+
+    // The mesh offset
+    static uint64_t meshOffset;
+
     // The time from startup to the most recent overflow
     static Duration lastOverflow;
     // The total time spent sleeping since startup
@@ -88,7 +94,7 @@ class SleepHandler {
     // Allow the symbol counter overflow ISR to access our protected members
     friend void SCNT_OVFL_vect();
 
-    static bool sleepUntilMatch(bool interruptible);
+    static void sleepUntilMatch();
     static uint32_t read_sccnt();
     static void write_scocr3(uint32_t val);
     static uint32_t read_scocr3();

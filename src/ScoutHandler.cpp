@@ -50,11 +50,17 @@ static bool fieldCommands(NWK_DataInd_t *ind);
 // chunk packet confirmation callback by mesh
 static void fieldAnswerChunkConfirm(NWK_DataReq_t *req);
 
+// timesync packet confirmation callback by mesh
+static void timeSyncConfirm(NWK_DataReq_t *req);
+
 // send the first/next chunk of the answer back and confirm
 static void fieldAnswerChunk();
 
 // mesh callback whenever another scout announces something on a channel
 static bool fieldAnnouncements(NWK_DataInd_t *ind);
+
+// mesh callback whenever lead scout sends time sync
+static bool fieldTimeSync(NWK_DataInd_t *ind);
 
 // simple wrapper for the incoming channel announcements up to HQ
 static void leadAnnouncementSend(uint16_t chan, uint16_t from, const ConstBuf& message);
@@ -107,7 +113,8 @@ void ScoutHandler::setup() {
   // anyone is commandable (TODO refactor this w/ the command stuff now in Shell)
   Scout.meshListen(2, fieldCommands);
   Scout.meshListen(4, fieldAnnouncements);
-  
+  Scout.meshListen(5, fieldTimeSync);
+
   memset(announceQ,0,announceQsize*sizeof(char*));
 }
 
@@ -332,6 +339,103 @@ void announceQSend(void){
   announceReq.size = strlen(announceQ[0]) + 1; // include NUL byte
   announceReq.confirm = announceConfirm;
   NWK_DataReq(&announceReq);
+}
+
+#define TIME_SYNC_SIZE 4
+static uint8_t timesync[TIME_SYNC_SIZE];
+static bool timeSyncInProgress = false;
+static NWK_DataReq_t timeSyncReq;
+
+void ScoutHandler::timeSyncSend() {
+  if(timeSyncInProgress) return;
+
+  uint32_t now = micros();
+
+  timesync[0] = (now >> 24) & 0xFF;
+  timesync[1] = (now >> 16) & 0xFF;
+  timesync[2] = (now >> 8) & 0xFF;
+  timesync[3] = now & 0xFF;
+  timeSyncInProgress = true;
+  timeSyncReq.dstAddr = 5; //group for multicast
+  timeSyncReq.dstEndpoint = 5; //??
+  timeSyncReq.srcEndpoint = Scout.getAddress();
+  timeSyncReq.options = NWK_OPT_MULTICAST|NWK_OPT_ENABLE_SECURITY;
+  timeSyncReq.data = (uint8_t*)timesync;
+  timeSyncReq.size = TIME_SYNC_SIZE;
+  timeSyncReq.confirm = timeSyncConfirm;
+  NWK_DataReq(&timeSyncReq);
+
+  if (Scout.handler.isVerbose) {
+    Serial.print(F("mesh timesyncing sent: "));
+    Serial.println(now);
+  }
+}
+
+
+void printLongLong(uint64_t n, uint8_t base) {
+  do {
+    uint64_t m = n;
+    n /= base;
+    char c = m - base * n;
+    c = c < 10 ? c + '0' : c + 'A' - 10;
+    Serial.print(c);
+  } while(n);
+  Serial.println();
+}
+
+
+static bool fieldTimeSync(NWK_DataInd_t *ind) {
+  uint32_t now = micros();
+  uint8_t *data = (uint8_t*)ind->data;
+  // be safe
+  if (!ind->options & NWK_IND_OPT_MULTICAST) {
+    return true;
+  }
+
+  if(ind->size < 4){
+    return false;
+  }
+
+  uint16_t top = (data[0] << 8) | data[1];
+  uint16_t bot = (data[2] << 8) | data[3];
+  uint32_t them  = ((uint32_t)top <<16) | (uint32_t)bot;
+
+  uint64_t offset;
+  if(them >= now){
+    offset = (uint64_t)(them - now);
+  }else{
+    offset = (uint64_t)((4294967296 + them) - now);
+  }
+
+  // should I keep this number behind the scenes to not confuse?
+  // should it be user updatable?
+  SleepHandler::setOffset(offset + 109923);
+
+  if (Shell.defined("on.mesh.sync")) Shell.eval(F("on.mesh.sync"));
+
+  if (Scout.handler.isVerbose) {
+
+    Serial.print(F(" us "));
+    Serial.print(now);
+
+    Serial.print(F(" them "));
+    Serial.print(them);
+
+    Serial.print(F(" so "));
+    Serial.print(micros());
+    Serial.print(F(" becomes "));
+    Serial.println(SleepHandler::meshmicros());
+  }
+
+  return true;
+}
+
+static void timeSyncConfirm(NWK_DataReq_t *req) {
+  if (req->status != NWK_SUCCESS_STATUS && Scout.handler.isVerbose) {
+    Serial.print(F("Time Sync announce failed: "));
+    Serial.println(req->status);
+  }
+  timeSyncInProgress = false;
 }
 
 static bool fieldAnnouncements(NWK_DataInd_t *ind) {

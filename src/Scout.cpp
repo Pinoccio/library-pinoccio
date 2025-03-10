@@ -20,6 +20,8 @@ using namespace pinoccio;
 static void scoutDigitalStateChangeTimerHandler(SYS_Timer_t *timer);
 static void scoutAnalogStateChangeTimerHandler(SYS_Timer_t *timer);
 static void scoutPeripheralStateChangeTimerHandler(SYS_Timer_t *timer);
+static void scheduleSleepTimerHandler(SYS_Timer_t *timer);
+static void wakeTimerHandler(SYS_Timer_t *timer);
 
 #ifndef lengthof
 #define lengthof(x) (sizeof(x)/sizeof(*x))
@@ -89,16 +91,26 @@ PinoccioScout::PinoccioScout() {
   peripheralStateChangeTimer.mode = SYS_TIMER_PERIODIC_MODE;
   peripheralStateChangeTimer.handler = scoutPeripheralStateChangeTimerHandler;
 
+  scheduleSleepTimer.interval = 100;
+  scheduleSleepTimer.mode = SYS_TIMER_INTERVAL_MODE;
+  scheduleSleepTimer.handler = scheduleSleepTimerHandler;
+
+  wakeTimer.interval = 900;
+  wakeTimer.mode = SYS_TIMER_INTERVAL_MODE;
+  wakeTimer.handler = wakeTimerHandler;
+
   eventVerboseOutput = false;
   isFactoryResetReady = false;
 
-  sleepPending = false;
+  automatedSleep = false;
   postSleepFunction = NULL;
 }
 
 PinoccioScout::~PinoccioScout() { }
 
 void PinoccioScout::setup(const char *sketchName, const char *sketchRevision, int32_t sketchBuild) {
+  radioState = PIN_AWAKE;
+
   PinoccioClass::setup(sketchName, sketchRevision, sketchBuild);
   SleepHandler::setup();
 
@@ -149,9 +161,6 @@ void PinoccioScout::setup(const char *sketchName, const char *sketchRevision, in
 void PinoccioScout::loop() {
   now = SleepHandler::uptime().seconds;
 
-  bool canSleep = true;
-  // TODO: Let other loop functions return some "cansleep" status as well
-
   PinoccioClass::loop();
 
   // every 5th second blink network status
@@ -188,16 +197,93 @@ void PinoccioScout::loop() {
     Led.setBlueValue(Led.getBlueValue());
   }
 
-  if (sleepPending) {
-    canSleep = canSleep && !NWK_Busy();
+  // TODO: suspend more stuff? Wait for UART byte completion?
+  // TODO: Let other loop functions return some "cansleep" status as well
+  bool canSleep = !NWK_Busy();
+  char *func;
+  uint32_t left;
+  switch (radioState) {
+    case PIN_SHOULD_SLEEP:
+      if(canSleep){
 
-    // if remaining <= 0, we won't actually sleep anymore, but still
-    // call doSleep to run the callback and clean up
-    if (SleepHandler::scheduledTicksLeft() == 0)
-      doSleep(true);
-    else if (canSleep)
-      doSleep(false);
+        if (isLeadScout()) {
+          radioState = PIN_SLEEPING;
+          sleepRadio();
+        } else {
+
+          NWK_SleepReq();
+
+          uint32_t left = SleepHandler::doSleep();
+
+          // we've now woken up
+          NWK_WakeupReq();
+
+          //if there no ticks left, stop sleeping
+          if (!left) {
+            radioState = PIN_SHOULD_WAKE;
+          }
+
+        }
+      }
+      break;
+    case PIN_SHOULD_WAKE:
+      radioState = PIN_AWAKE;
+
+      if (isLeadScout()) {
+        Scout.wakeRadio();
+      }
+
+      // Copy the pointer, so the post command can set a new sleep
+      // timeout again.
+      func = postSleepFunction;
+      postSleepFunction = NULL;
+
+      left = SleepHandler::scheduledTicksLeft();
+
+      // TODO: Allow ^C to stop running callbacks like this one
+      if (func) {
+
+        StringBuffer cmd(64, 16);
+        cmd += func;
+        cmd += "(";
+        cmd.appendSprintf("%lu", sleepMs);
+        cmd.appendSprintf(",%lu", left);
+        cmd += ")";
+
+        uint32_t ret = Shell.eval((char*)cmd.c_str());
+        if (ret || left || automatedSleep) {
+          // If the callback returned true, and it did not schedule a new
+          // sleep interval, and we're not done sleeping yet, this means we
+          // should continue sleeping (though note that at least one loop
+          // cycle is ran before actually sleeping again).
+          postSleepFunction = func;
+        } else {
+          // If the callback returned false, or it scheduled a new sleep or
+          // we finished our previous sleep, then we're done with this
+          // callback.
+          free(func);
+        }
+      }
+
+      // set a sys timer for wakeperiod to put us back to sleep
+      // doesnt have to be exact, only our wake time does
+      if (automatedSleep) {
+        startScheduleSleepTimer();
+      }
+
+      if (eventVerboseOutput) {
+        Serial.println(SleepHandler::meshmicros());
+      }
+
+      break;
+    default:
+      // PIN_SLEEPING, PIN_AWAKE
+      break;
   }
+}
+
+bool PinoccioScout::isSleeping() {
+  return automatedSleep;
 }
 
 bool PinoccioScout::isBatteryCharging() {
@@ -300,6 +386,22 @@ void PinoccioScout::startPeripheralStateChangeEvents() {
 
 void PinoccioScout::stopPeripheralStateChangeEvents() {
   SYS_TimerStop(&peripheralStateChangeTimer);
+}
+
+void PinoccioScout::startScheduleSleepTimer() {
+  SYS_TimerStart(&scheduleSleepTimer);
+}
+
+void PinoccioScout::stopScheduleSleepTimer() {
+  SYS_TimerStop(&scheduleSleepTimer);
+}
+
+void PinoccioScout::startWakeTimer() {
+  SYS_TimerStart(&wakeTimer);
+}
+
+void PinoccioScout::stopWakeTimer() {
+  SYS_TimerStop(&wakeTimer);
 }
 
 void PinoccioScout::setStateChangeEventCycle(uint32_t digitalInterval, uint32_t analogInterval, uint32_t peripheralInterval) {
@@ -642,12 +744,58 @@ static void scoutPeripheralStateChangeTimerHandler(SYS_Timer_t *timer) {
   }
 }
 
+// set sleep state and choose a wake timer
+void PinoccioScout::internalScheduleSleep() {
+
+  // set a timer to wake us up
+  // compute the amount of ms until meshtime reaches a second
+  uint32_t us = (1000000 - (SleepHandler::meshmicros() % 1000000));
+  uint32_t ms = us / 1000;
+
+  // whats the right number here?
+  if(ms < 10){
+    return;
+  }
+
+  // sleep next time through loop and are able to
+  radioState = PIN_SHOULD_SLEEP;
+
+  // if lead scout schedule using systimer
+  if (isLeadScout()) {
+    wakeTimer.interval = ms;
+    startWakeTimer();
+
+  // otherwise schedule using symbol counter
+  } else {
+    SleepHandler::scheduleSleep(ms);
+  }
+}
+
+// time to schedule another sleep
+static void scheduleSleepTimerHandler(SYS_Timer_t *timer) {
+  Scout.internalScheduleSleep();
+}
+
+// time to wake up (rf)
+static void wakeTimerHandler(SYS_Timer_t *timer) {
+  Scout.radioState = PIN_SHOULD_WAKE;
+}
+
+void PinoccioScout::setWakeMs(uint32_t wakePeriodMs) {
+  scheduleSleepTimer.interval = wakePeriodMs;
+}
+
+uint32_t PinoccioScout::getWakeMs() {
+  return scheduleSleepTimer.interval;
+}
+
+// TODO make sure not in an automated sleep cycle or exit cleanty from it
 void PinoccioScout::scheduleSleep(uint32_t ms, const char *func) {
   if (ms) {
     SleepHandler::scheduleSleep(ms);
-    sleepPending = true;
+    radioState = PIN_SHOULD_SLEEP;
   } else {
-    sleepPending = false;
+    radioState = PIN_SHOULD_WAKE;
   }
 
   if (postSleepFunction)
@@ -656,46 +804,29 @@ void PinoccioScout::scheduleSleep(uint32_t ms, const char *func) {
   sleepMs = ms;
 }
 
-void PinoccioScout::doSleep(bool pastEnd) {
-  // Copy the pointer, so the post command can set a new sleep
-  // timeout again.
-  char *func = postSleepFunction;
-  postSleepFunction = NULL;
-  sleepPending = false;
+// set automated sleep/wake cycle based on mesh time
+// TODO make sure not in an scheduled sleep cycle or exit cleanty from it
+void PinoccioScout::scheduleSleep2(const char *func) {
+  automatedSleep = true;
+  internalScheduleSleep();
 
-  if (!pastEnd) {
-    NWK_SleepReq();
+  if (postSleepFunction)
+    free(postSleepFunction);
+  postSleepFunction = func ? strdup(func) : NULL;
+}
 
-    // TODO: suspend more stuff? Wait for UART byte completion?
+// stop automated sleep/wake cycle based on mesh time
+void PinoccioScout::cancelSleep2() {
+  automatedSleep = false;
+}
 
-    SleepHandler::doSleep(true);
-    NWK_WakeupReq();
-  }
+// you need to be checking NWK_Busy() before calling this
+void PinoccioScout::sleepRadio() {
+  NWK_SleepReq();
+  NWK_PauseReq();
+}
 
-  // TODO: Allow ^C to stop running callbacks like this one
-  if (func) {
-    StringBuffer cmd(64, 16);
-    uint32_t left = SleepHandler::ticksToMs(SleepHandler::scheduledTicksLeft());
-    cmd += func;
-    cmd += "(";
-    cmd.appendSprintf("%lu", sleepMs);
-    cmd.appendSprintf(",%lu", left);
-    cmd += ")";
-
-    uint32_t ret = Shell.eval((char*)cmd.c_str());
-
-    if (!left || !ret || sleepPending) {
-      // If the callback returned false, or it scheduled a new sleep or
-      // we finished our previous sleep, then we're done with this
-      // callback.
-      free(func);
-    } else {
-      // If the callback returned true, and it did not schedule a new
-      // sleep interval, and we're not done sleeping yet, this means we
-      // should continue sleeping (though note that at least one loop
-      // cycle is ran before actually sleeping again).
-      sleepPending = true;
-      postSleepFunction = func;
-    }
-  }
+void PinoccioScout::wakeRadio() {
+  NWK_WakeupReq();
+  NWK_ResumeReq();
 }
