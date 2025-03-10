@@ -11,6 +11,11 @@
 #include "SnifferModule.h"
 
 #include <lwm/phy/atmegarfr2.h>
+#include "Scout.h"
+
+#include "util/StringBuffer.h"
+#include "util/String.h"
+#include "util/PrintToString.h"
 
 using namespace pinoccio;
 
@@ -179,8 +184,36 @@ static numvar start() {
   return 1;
 }
 
+static numvar ed() {
+  return PHY_EdReq();
+}
+
+static numvar survey() {
+  StringBuffer out(200);
+
+  for (uint8_t i = 11; i <= 26; i++){
+    PHY_SetChannel(i);
+
+    int8_t max = -90;
+    for (uint8_t j = 0; j <= 254; j++){
+      int8_t reading = PHY_EdReq();
+      if(max < reading){
+        max = reading;
+      }
+    }
+
+    out.appendSprintf("Ch: %d\t%d\r\n", i, max);
+  }
+
+  PHY_SetChannel(Scout.getChannel());
+  speol(out.c_str());
+  return 1;
+}
+
 bool SnifferModule::enable() {
   Shell.addFunction("sniffer.start", start);
+  Shell.addFunction("sniffer.ed", ed);
+  Shell.addFunction("sniffer.survey", survey);
 
   return true;
 }
