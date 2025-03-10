@@ -481,6 +481,35 @@ static numvar powerWakeupPin(void) {
 *      RGB LED HANDLERS     *
 \****************************/
 
+static numvar startTimerA(void) {
+  if (!checkArgs(2, 3, F("usage: timer.starta(ms, \"function\", [continuous])"))) {
+    return 0;
+  }
+
+  const char *func = NULL;
+  if (isstringarg(2))
+    func = (const char*)getarg(2);
+  else
+    func = keyGet(getarg(2));
+  
+  bool periodic = getarg(0) == 3 ? getarg(3) : 0;
+
+  if (func && !Shell.defined(func)) {
+    sp("Must be the name of function: ");
+    speol(func);
+    return 0;
+  }
+
+  Scout.startTimerA(getarg(1), func, periodic);
+  return 1;
+}
+
+static numvar stopTimerA(void) {
+
+  Scout.stopTimerA();
+  return 1;
+}
+
 static StringBuffer ledReportHQ(void) {
   StringBuffer report(100);
   report.appendSprintf("[%d,[%d,%d],[[%d,%d,%d],[%d,%d,%d]]]",
@@ -2527,6 +2556,9 @@ void PinoccioShell::setup() {
   addFunction("events.stop", stopStateChangeEvents);
   addFunction("events.setcycle", setEventCycle);
   addFunction("events.verbose", setEventVerbose);
+
+  addFunction("timer.starta", startTimerA);
+  addFunction("timer.stopa", stopTimerA);
 
   addFunction("key", keyMap);
   addFunction("key.free", keyFree);
