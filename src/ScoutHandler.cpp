@@ -152,7 +152,10 @@ static bool fieldCommands(NWK_DataInd_t *ind) {
     Serial.print(ind->lqi);
     Serial.print(F("  "));
     Serial.print(F("rssi: "));
-    Serial.println(ind->rssi);
+    Serial.print(ind->rssi);
+    Serial.print(F("  "));
+    Serial.print(F("timestamp: "));
+    Serial.println(ind->timestamp);
   }
 
   if (fieldAnswerTo) {
@@ -343,7 +346,9 @@ static bool fieldAnnouncements(NWK_DataInd_t *ind) {
 
   if (Scout.handler.isVerbose) {
     Serial.print(F("multicast in "));
-    Serial.println(ind->dstAddr);
+    Serial.print(ind->dstAddr);
+    Serial.print(F(" timestamp: "));
+    Serial.println(ind->timestamp);
   }
   if (Scout.isLeadScout()) {
     leadAnnouncementSend(ind->dstAddr, ind->srcAddr, ConstBuf(data, ind->size-1)); // no null
