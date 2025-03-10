@@ -1037,7 +1037,7 @@ static numvar meshFrom(void) {
   return Shell.lastMeshFrom;
 }
 
-
+/*
 static numvar meshFieldtest(void) {
   if (!checkArgs(1, F("usage: mesh.fieldtest(seconds)"))) {
     return 0;
@@ -1053,7 +1053,7 @@ static numvar meshFieldtest(void) {
 
   return 1;
 }
-
+*/
 static numvar meshVerbose(void) {
   if (!checkArgs(1, F("usage: mesh.verbose(flag)"))) {
     return 0;
@@ -1107,7 +1107,7 @@ static numvar meshReport(void) {
 static numvar meshId(void) {
   return Scout.getAddress();
 }
-
+/*
 static numvar meshRouting(void) {
   sp(F("|    Fixed    |  Multicast  |    Score    |    DstAdd   | NextHopAddr |    Rank     |     LQI     |"));
   speol();
@@ -1149,6 +1149,7 @@ static numvar meshEach(void) {
   }
   return 1;
 }
+*/
 
 static numvar messageScout(void) {
   if (!checkArgs(1, 99, F("usage: message.scout(scoutId, \"message\")"))) {
@@ -1650,7 +1651,7 @@ static numvar analogPinReport(void) {
 /****************************\
 *     BACKPACK HANDLERS     *
 \****************************/
-
+/*
 static StringBuffer backpackReportHQ(void) {
   StringBuffer report(100);
   report.appendSprintf("[%d,[%d],[[", keyMap("backpacks", 0), keyMap("list", 0));
@@ -1662,7 +1663,7 @@ static StringBuffer backpackReportHQ(void) {
       snprintf(report+strlen(report), sizeof(report) - strlen(report), "%s%d",comma++?",":"",info.id.raw_bytes[j]);
     }
   }
-  */
+  * /
   report += "]]]";
   return Scout.handler.report(report);
 }
@@ -1948,6 +1949,7 @@ static numvar backpackResources(void) {
 
   return 1;
 }
+*/
 
 /****************************\
  *   SCOUT REPORT HANDLERS  *
@@ -2409,13 +2411,13 @@ void PinoccioShell::setup() {
   addFunction("mesh.ingroup", meshIsInGroup);
   addFunction("mesh.verbose", meshVerbose);
   addFunction("mesh.report", meshReport);
-  addFunction("mesh.routing", meshRouting);
+//  addFunction("mesh.routing", meshRouting);
   addFunction("mesh.signal", meshSignal);
   addFunction("mesh.loss", meshLoss);
   addFunction("mesh.from", meshFrom);
   addFunction("mesh.id", meshId);
-  addFunction("mesh.fieldtest", meshFieldtest);
-  addFunction("mesh.each", meshEach);
+//  addFunction("mesh.fieldtest", meshFieldtest);
+//  addFunction("mesh.each", meshEach);
 
   // these supplant/replace message.*
   addFunction("command.scout", commandScout);
@@ -2495,14 +2497,14 @@ void PinoccioShell::setup() {
   addFunction("pin.othersdisconnected", pinOthersDisconnected);
   addFunction("pin.report.digital", digitalPinReport);
   addFunction("pin.report.analog", analogPinReport);
-
+  /*
   addFunction("backpack.report", backpackReport);
   addFunction("backpack.list", backpackList);
   addFunction("backpack.eeprom", backpackEeprom);
   addFunction("backpack.eeprom.update", backpackUpdateEeprom);
   addFunction("backpack.detail", backpackDetail);
   addFunction("backpack.resources", backpackResources);
-
+*/
   addFunction("scout.report", scoutReport);
   addFunction("scout.isleadscout", isScoutLeadScout);
   addFunction("scout.delay", scoutDelay);
@@ -2606,7 +2608,7 @@ void PinoccioShell::allReportHQ() {
   scoutReportHQ();
   uptimeReportHQ();
   powerReportHQ();
-  backpackReportHQ();
+//  backpackReportHQ();
   digitalPinReportHQ();
   analogPinReportHQ();
   meshReportHQ();
