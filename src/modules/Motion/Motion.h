@@ -32,7 +32,7 @@ namespace pinoccio {
     
       Adafruit_GPS *gps;  // GPS
       //MPU9150 *mpu;       // MPU9150 gyro/accel/mag
-      MS561101BA *ms;     // barometric pressure sensor
+      MS561101BA *ms;     // altimeter
     
       bool isVerbose;
 

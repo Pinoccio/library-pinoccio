@@ -120,7 +120,7 @@ static numvar baroTemperature(void) {
 }
 
 bool MotionModule::enable() {
-  gps = new Adafruit_GPS();
+  gps = new Adafruit_GPS(&Serial1);
   //mpu = new MPU9150();
   ms = new MS561101BA();
 
