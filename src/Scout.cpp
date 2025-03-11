@@ -318,12 +318,12 @@ void PinoccioScout::setStateChangeEventCycle(uint32_t digitalInterval, uint32_t 
 
 void PinoccioScout::saveState() {
   for (int i=0; i<NUM_DIGITAL_PINS; i++) {
+    PinState *state = &pinStates[i];
     if (isPinReserved(i)) {
-      pinModes[i] = PINMODE_RESERVED;
+      state->config = PinConfig::Mode::RESERVED;
     } else {
-      pinModes[i] = PINMODE_UNSET;
+      state->config = PinConfig::Mode::UNSET;
     }
-    pinStates[i] = -1;
   }
 
   batteryPercentage = this->getBatteryPercentage();
@@ -347,61 +347,77 @@ int8_t PinoccioScout::getRegisterPinMode(uint8_t pin) {
   }
 }
 
-int8_t PinoccioScout::getPinMode(uint8_t pin) {
+PinConfig PinoccioScout::getPinConfig(uint8_t pin) {
   if (pin < NUM_DIGITAL_PINS)
-    return pinModes[pin];
-  return PINMODE_UNSET;
+    return pinStates[pin].config;
+  return PinConfig::Mode::UNSET;
 }
 
 void PinoccioScout::makeUnsetDisconnected() {
   for (int i=0; i<NUM_DIGITAL_PINS; i++) {
-    if (getPinMode(i) == PINMODE_UNSET)
-      setMode(i, PINMODE_DISCONNECTED);
+    if (getPinConfig(i).mode() == PinConfig::Mode::UNSET)
+      setPinConfig(i, PinConfig::Mode::DISCONNECTED);
   }
 }
 
-bool PinoccioScout::setMode(uint8_t pin, int8_t mode) {
-  if (isPinReserved(pin)) {
+bool PinoccioScout::setPinConfig(uint8_t pin, PinConfig config, uint8_t outvalue) {
+  // Cannot change pins marked as reserved
+  if (getPinConfig(pin).mode() == PinConfig::Mode::RESERVED)
     return false;
-  }
 
-  // pre-set initial values for mode change
-  int value;
-  switch (mode) {
-    case PINMODE_DISABLED:
-    case PINMODE_INPUT:
+  // Pullup flag is only valid for input modes
+  if ((config & PinConfig::Flag::PULLUP)
+      && config.mode() != PinConfig::Mode::INPUT_DIGITAL
+      && config.mode() != PinConfig::Mode::INPUT_ANALOG)
+    return false;
+
+  if (config.mode() == PinConfig::Mode::OUTPUT_PWM && !digitalPinHasPWM(pin))
+    return false;
+
+  if (config.mode() == PinConfig::Mode::INPUT_ANALOG && !isAnalogPin(pin))
+    return false;
+
+  uint16_t value;
+  switch(config.mode()) {
+    case PinConfig::Mode::INPUT_DIGITAL:
+      pinMode(pin, INPUT);
+      // Writing non-zero to an input pin enables the pullup
+      digitalWrite(pin, config & PinConfig::Flag::PULLUP);
+      value = digitalRead(pin);
+      break;
+    case PinConfig::Mode::INPUT_ANALOG:
+      pinMode(pin, INPUT);
+      // Writing non-zero to an input pin enables the pullup
+      digitalWrite(pin, config & PinConfig::Flag::PULLUP);
+      value = analogRead(pin);
+      break;
+    case PinConfig::Mode::OUTPUT_DIGITAL:
+      value = outvalue;
+      pinMode(pin, OUTPUT);
+      digitalWrite(pin, outvalue);
+      break;
+    case PinConfig::Mode::OUTPUT_PWM:
+      value = outvalue;
+      pinMode(pin, OUTPUT);
+      analogWrite(pin, value);
+    case PinConfig::Mode::DISABLED:
+      // INPUT is effectively high-impedance
+      value = 0;
       pinMode(pin, INPUT);
       break;
-    // On disconnected (floating) pins, enable a pullup. Without the
-    // pullup, the input logic might switch between high and low all the
-    // time, causing excessive power usage.
-    case PINMODE_DISCONNECTED:
-    case PINMODE_INPUT_PULLUP:
+    case PinConfig::Mode::DISCONNECTED:
+      // On disconnected (floating) pins, enable a pullup. Without the
+      // pullup, the input logic might switch between high and low all
+      // the time, causing excessive power usage.
+      value = 0;
       pinMode(pin, INPUT_PULLUP);
       break;
-    case PINMODE_OUTPUT:
-    case PINMODE_PWM:
-      pinMode(pin, OUTPUT);
-      break;
+    case PinConfig::Mode::UNSET:
     default:
       return false;
   }
 
-  switch(mode) {
-    case PINMODE_DISABLED:
-      value = -1;
-      break;
-    case PINMODE_PWM:
-      value = 0;
-      break;
-    case PINMODE_INPUT:
-    case PINMODE_OUTPUT:
-    case PINMODE_INPUT_PULLUP:
-      value = pinRead(pin);
-      break;
-  }
-
-  updatePinState(pin, value, mode);
+  updatePinState(pin, value, config);
 
   return true;
 }
@@ -418,43 +434,40 @@ bool PinoccioScout::isPWMPin(uint8_t pin) {
   return digitalPinHasPWM(pin);
 }
 
-bool PinoccioScout::isInputPin(uint8_t pin) {
-  return (getPinMode(pin) == PINMODE_INPUT || getPinMode(pin) == PINMODE_INPUT_PULLUP) ? true : false;
-}
-
-bool PinoccioScout::isOutputPin(uint8_t pin) {
-  return (getPinMode(pin) == PINMODE_OUTPUT || getPinMode(pin) == PINMODE_PWM) ? true : false;
-}
-
 bool PinoccioScout::pinWrite(uint8_t pin, uint8_t value) {
-  if (isPinReserved(pin) || !isOutputPin(pin)) {
-    return false;
+  PinConfig config = getPinConfig(pin);
+  switch(config.mode()) {
+    case PinConfig::Mode::OUTPUT_DIGITAL:
+      digitalWrite(pin, value);
+      break;
+
+    case PinConfig::Mode::OUTPUT_PWM:
+      analogWrite(pin, value);
+      break;
+
+    default:
+      return false;
   }
 
-  if (getPinMode(pin) == PINMODE_PWM)
-    analogWrite(pin, value);
-  else
-    digitalWrite(pin, value);
-
-  updatePinState(pin, value, getPinMode(pin));
+  updatePinState(pin, value, config);
 
   return true;
 }
 
 uint16_t PinoccioScout::pinRead(uint8_t pin) {
-  switch(getPinMode(pin)) {
-    case PINMODE_PWM:
-      return pinStates[pin];
+  PinConfig config = getPinConfig(pin);
+  switch(config.mode()) {
+    case PinConfig::Mode::INPUT_ANALOG:
+      return analogRead(pin - A0);
 
-    case PINMODE_INPUT:
-    case PINMODE_INPUT_PULLUP:
-      if (isAnalogPin(pin))
-        return analogRead(pin - A0);
-      else
-        return digitalRead(pin);
-
-    case PINMODE_OUTPUT:
+    case PinConfig::Mode::INPUT_DIGITAL:
       return digitalRead(pin);
+
+    case PinConfig::Mode::OUTPUT_DIGITAL:
+      return digitalRead(pin);
+
+    case PinConfig::Mode::OUTPUT_PWM:
+      return pinStates[pin].value;
 
     default:
       return 0;
@@ -477,24 +490,24 @@ const __FlashStringHelper* PinoccioScout::getNameForPin(uint8_t pin) {
   return NULL;
 }
 
-const __FlashStringHelper* PinoccioScout::getNameForPinMode(int8_t mode) {
+const __FlashStringHelper* PinoccioScout::getNameForPinMode(PinConfig::Mode mode) {
   switch(mode) {
-    case (PINMODE_DISCONNECTED):
+    case (PinConfig::Mode::DISCONNECTED):
       return F("disconnected");
-    case (PINMODE_UNSET):
+    case (PinConfig::Mode::UNSET):
       return F("unset");
-    case (PINMODE_RESERVED):
-      return F("reserved");
-    case (PINMODE_DISABLED):
+    case (PinConfig::Mode::DISABLED):
       return F("disabled");
-    case (PINMODE_INPUT):
-      return F("input");
-    case (PINMODE_OUTPUT):
-      return F("output");
-    case (PINMODE_INPUT_PULLUP):
-      return F("input_pullup");
-    case (PINMODE_PWM):
-      return F("pwm");
+    case (PinConfig::Mode::RESERVED):
+      return F("reserved");
+    case (PinConfig::Mode::INPUT_DIGITAL):
+      return F("input_digital");
+    case (PinConfig::Mode::INPUT_ANALOG):
+      return F("input_analog");
+    case (PinConfig::Mode::OUTPUT_DIGITAL):
+      return F("output_digital");
+    case (PinConfig::Mode::OUTPUT_PWM):
+      return F("output_pwm");
     default:
       return NULL;
   }
@@ -523,10 +536,11 @@ bool PinoccioScout::isPinReserved(uint8_t pin) {
   }
 }
 
-bool PinoccioScout::updatePinState(uint8_t pin, int16_t val, int8_t mode) {
-  if (pinStates[pin] != val || pinModes[pin] != mode) {
-    pinStates[pin] = val;
-    pinModes[pin] = mode;
+bool PinoccioScout::updatePinState(uint8_t pin, int16_t val, PinConfig config) {
+  PinState *state = &pinStates[pin];
+  if (state->value != val || state->config != config) {
+    state->value = val;
+    state->config = config;
 
     if (isDigitalPin(pin) && digitalPinEventHandler != 0) {
       if (eventVerboseOutput) {
@@ -535,10 +549,10 @@ bool PinoccioScout::updatePinState(uint8_t pin, int16_t val, int8_t mode) {
         Serial.print(F(","));
         Serial.print(val);
         Serial.print(F(","));
-        Serial.print(mode);
+        Serial.print(config);
         Serial.println(F(")"));
       }
-      digitalPinEventHandler(pin, val, mode);
+      digitalPinEventHandler(pin, val, config);
     }
 
     if (isAnalogPin(pin) && analogPinEventHandler != 0) {
@@ -548,10 +562,10 @@ bool PinoccioScout::updatePinState(uint8_t pin, int16_t val, int8_t mode) {
         Serial.print(F(","));
         Serial.print(val);
         Serial.print(F(","));
-        Serial.print(mode);
+        Serial.print(config);
         Serial.println(F(")"));
       }
-      analogPinEventHandler(pin - A0, val, mode);
+      analogPinEventHandler(pin - A0, val, config);
     }
 
     return true;
@@ -562,10 +576,10 @@ bool PinoccioScout::updatePinState(uint8_t pin, int16_t val, int8_t mode) {
 static void scoutDigitalStateChangeTimerHandler(SYS_Timer_t *timer) {
   if (Scout.digitalPinEventHandler != 0) {
     for (int i=2; i<9; i++) {
-      int mode = Scout.getPinMode(i);
-      if (mode >= 0) {
+      PinConfig config = Scout.getPinConfig(i);
+      if (config.mode().active()) {
         int value = Scout.pinRead(i);
-        Scout.updatePinState(i, value, mode);
+        Scout.updatePinState(i, value, config);
       }
     }
   }
@@ -574,10 +588,10 @@ static void scoutDigitalStateChangeTimerHandler(SYS_Timer_t *timer) {
 static void scoutAnalogStateChangeTimerHandler(SYS_Timer_t *timer) {
   if (Scout.analogPinEventHandler != 0) {
     for (int i=0; i<NUM_ANALOG_INPUTS; i++) {
-      int mode = Scout.getPinMode(i+A0);
-      if (mode >= 0) {
+      PinConfig config = Scout.getPinConfig(i+A0);
+      if (config.mode().active()) {
         int value = Scout.pinRead(i+A0);
-        Scout.updatePinState(i+A0, value, mode);
+        Scout.updatePinState(i+A0, value, config);
       }
     }
   }
